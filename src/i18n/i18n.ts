@@ -14,8 +14,18 @@ export type I18nKey =
   | "home.hotTags"
   | "home.dailyBrief"
   | "home.randomPick"
+  | "home.copyBrief"
+  | "home.copied"
   | "search.placeholder"
   | "search.result"
+  | "prefs.title"
+  | "prefs.followOnly"
+  | "prefs.hideRead"
+  | "prefs.followPlaceholder"
+  | "prefs.followAdd"
+  | "prefs.blockPlaceholder"
+  | "prefs.blockAdd"
+  | "prefs.hint"
   | "common.loading"
   | "common.noData"
   | "common.updatedAt"
@@ -46,8 +56,18 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "home.hotTags": "今日热点",
     "home.dailyBrief": "今日快报",
     "home.randomPick": "随机安利",
+    "home.copyBrief": "复制快报",
+    "home.copied": "已复制到剪贴板",
     "search.placeholder": "搜索标题 / 摘要 / 标签…",
     "search.result": "匹配",
+    "prefs.title": "偏好",
+    "prefs.followOnly": "只看关注",
+    "prefs.hideRead": "隐藏已读",
+    "prefs.followPlaceholder": "关注关键词（作品/角色/声优）",
+    "prefs.followAdd": "添加",
+    "prefs.blockPlaceholder": "屏蔽关键词（不想看到的）",
+    "prefs.blockAdd": "屏蔽",
+    "prefs.hint": "以上设置仅保存在本机浏览器（localStorage）。",
     "common.loading": "加载中…",
     "common.noData": "暂无数据，稍后将自动更新。",
     "common.updatedAt": "更新于",
@@ -77,8 +97,18 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "home.hotTags": "今日のトレンド",
     "home.dailyBrief": "今日のまとめ",
     "home.randomPick": "ランダム推薦",
+    "home.copyBrief": "コピー",
+    "home.copied": "クリップボードにコピーしました",
     "search.placeholder": "検索（タイトル / 要約 / タグ）…",
     "search.result": "一致",
+    "prefs.title": "設定",
+    "prefs.followOnly": "フォローのみ",
+    "prefs.hideRead": "既読を隠す",
+    "prefs.followPlaceholder": "フォロー（作品/声優など）",
+    "prefs.followAdd": "追加",
+    "prefs.blockPlaceholder": "除外キーワード",
+    "prefs.blockAdd": "除外",
+    "prefs.hint": "設定はこのブラウザ内のみ（localStorage）。",
     "common.loading": "読み込み中…",
     "common.noData": "データがまだありません。自動更新をお待ちください。",
     "common.updatedAt": "更新",

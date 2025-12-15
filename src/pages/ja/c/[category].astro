@@ -1,6 +1,7 @@
 ---
 import SiteLayout from "../../../layouts/SiteLayout.astro";
 import PostList from "../../../components/PostList.astro";
+import PreferencesPanel from "../../../components/PreferencesPanel.astro";
 import { readGeneratedPosts } from "../../../lib/generated-data";
 import { CATEGORIES, categoryLabel, type Category } from "../../../lib/categories";
 import { t } from "../../../i18n/i18n";
@@ -39,6 +40,10 @@ const filtered = posts.filter((p) => p.category === category).slice(0, 120);
         placeholder={t("ja", "search.placeholder")}
       />
     </div>
+  </div>
+
+  <div class="mt-4">
+    <PreferencesPanel lang="ja" />
   </div>
 
   <div class="mt-4">

@@ -1,6 +1,7 @@
 ---
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import PostList from "../../components/PostList.astro";
+import PreferencesPanel from "../../components/PreferencesPanel.astro";
 import { t } from "../../i18n/i18n";
 import { readGeneratedPosts, readGeneratedStatus } from "../../lib/generated-data";
 import { formatDateTime } from "../../lib/format";
@@ -80,12 +81,22 @@ const randomPick = posts.length > 0 ? posts[Math.floor(Math.random() * Math.min(
     </div>
 
     <div class="grid gap-4">
+      <PreferencesPanel lang="ja" />
       <div class="glass rounded-2xl p-5">
         <h2 class="m-0 text-sm font-semibold text-slate-950">{t("ja", "home.dailyBrief")}</h2>
         {brief.length === 0 ? (
           <p class="mt-2 text-sm text-slate-700">{t("ja", "common.noData")}</p>
         ) : (
-          <ol class="mt-3 space-y-2 pl-4 text-sm text-slate-700">
+          <div class="mt-3">
+            <button
+              type="button"
+              id="acg-brief-copy"
+              class="glass rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable"
+            >
+              {t("ja", "home.copyBrief")}
+            </button>
+            <p id="acg-brief-message" class="mt-2 hidden text-xs text-slate-600"></p>
+            <ol id="acg-daily-brief" class="mt-3 space-y-2 pl-4 text-sm text-slate-700">
             {brief.map((p) => (
               <li class="leading-snug">
                 <a class="hover:underline" href={href(`/ja/p/${p.id}/`)}>
@@ -93,7 +104,8 @@ const randomPick = posts.length > 0 ? posts[Math.floor(Math.random() * Math.min(
                 </a>
               </li>
             ))}
-          </ol>
+            </ol>
+          </div>
         )}
       </div>
 
