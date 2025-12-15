@@ -24,7 +24,9 @@ const sources = SOURCES.map((s) => {
 
 <SiteLayout lang="zh" title={t("zh", "nav.about")} currentPath="/about/">
   <section class="glass rounded-2xl p-6">
-    <h1 class="m-0 text-2xl font-semibold text-slate-950">{t("zh", "nav.about")}</h1>
+    <h1 class="m-0 text-2xl font-semibold leading-tight tracking-tight text-slate-950 md:text-3xl">
+      {t("zh", "nav.about")}
+    </h1>
     <p class="mt-2 text-sm leading-relaxed text-slate-700">
       ACG Radar 是一个“伪全栈”的二次元资讯聚合站：用 GitHub Actions 定时抓取资讯，生成静态页面并发布到 GitHub Pages。
     </p>
@@ -41,7 +43,7 @@ const sources = SOURCES.map((s) => {
     </div>
   </section>
 
-  <section class="mt-4 glass rounded-2xl p-6">
+  <section class="mt-6 glass rounded-2xl p-6">
     <h2 class="m-0 text-sm font-semibold text-slate-950">来源列表</h2>
     <p class="mt-2 text-sm text-slate-700">
       如需增加/移除来源，编辑 <code class="rounded bg-slate-900/5 px-1 py-0.5">scripts/sources/index.ts</code>。
@@ -82,7 +84,7 @@ const sources = SOURCES.map((s) => {
     </div>
   </section>
 
-  <section class="mt-4 glass rounded-2xl p-6">
+  <section class="mt-6 glass rounded-2xl p-6">
     <h2 class="m-0 text-sm font-semibold text-slate-950">高风险抓取说明</h2>
     <p class="mt-2 text-sm leading-relaxed text-slate-700">
       某些来源并未提供标准 RSS/Atom，需要使用 HTML 解析（更容易因页面结构变化而失效）。
@@ -90,4 +92,3 @@ const sources = SOURCES.map((s) => {
     </p>
   </section>
 </SiteLayout>
-

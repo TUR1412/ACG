@@ -24,7 +24,9 @@ const sources = SOURCES.map((s) => {
 
 <SiteLayout lang="ja" title={t("ja", "nav.about")} currentPath="/about/">
   <section class="glass rounded-2xl p-6">
-    <h1 class="m-0 text-2xl font-semibold text-slate-950">{t("ja", "nav.about")}</h1>
+    <h1 class="m-0 text-2xl font-semibold leading-tight tracking-tight text-slate-950 md:text-3xl">
+      {t("ja", "nav.about")}
+    </h1>
     <p class="mt-2 text-sm leading-relaxed text-slate-700">
       ACG Radar は「擬似フルスタック」のACGニュース集約サイトです。GitHub Actions が定期的に取得し、静的ページとして GitHub Pages にデプロイします。
     </p>
@@ -41,7 +43,7 @@ const sources = SOURCES.map((s) => {
     </div>
   </section>
 
-  <section class="mt-4 glass rounded-2xl p-6">
+  <section class="mt-6 glass rounded-2xl p-6">
     <h2 class="m-0 text-sm font-semibold text-slate-950">ソース一覧</h2>
     <p class="mt-2 text-sm text-slate-700">
       追加/削除は <code class="rounded bg-slate-900/5 px-1 py-0.5">scripts/sources/index.ts</code> を編集してください。
@@ -82,7 +84,7 @@ const sources = SOURCES.map((s) => {
     </div>
   </section>
 
-  <section class="mt-4 glass rounded-2xl p-6">
+  <section class="mt-6 glass rounded-2xl p-6">
     <h2 class="m-0 text-sm font-semibold text-slate-950">高リスク取得について</h2>
     <p class="mt-2 text-sm leading-relaxed text-slate-700">
       RSS/Atom が無い場合、HTML 解析が必要になります（構造変更で壊れやすい）。
@@ -90,4 +92,3 @@ const sources = SOURCES.map((s) => {
     </p>
   </section>
 </SiteLayout>
-

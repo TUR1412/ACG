@@ -603,7 +603,7 @@ function buildBookmarkCard(params: {
   topLink.appendChild(whenWrap);
 
   const body = document.createElement("div");
-  body.className = "p-4";
+  body.className = "p-4 sm:p-5";
   article.appendChild(body);
 
   const head = document.createElement("div");
@@ -616,7 +616,8 @@ function buildBookmarkCard(params: {
 
   const titleLink = document.createElement("a");
   titleLink.href = detailHref;
-  titleLink.className = "block text-[15px] font-semibold leading-snug text-slate-950 hover:underline";
+  titleLink.className =
+    "block text-[15px] font-semibold leading-snug text-slate-950 hover:underline line-clamp-2 sm:text-base";
   titleLink.textContent = post.title || (lang === "ja" ? "（無題）" : "（无标题）");
   left.appendChild(titleLink);
 
@@ -648,7 +649,7 @@ function buildBookmarkCard(params: {
 
   if (post.summary) {
     const p = document.createElement("p");
-    p.className = "mt-2 line-clamp-3 text-sm leading-relaxed text-slate-700";
+    p.className = "mt-2 line-clamp-3 text-sm leading-relaxed text-slate-600";
     p.textContent = post.summary;
     body.appendChild(p);
   }

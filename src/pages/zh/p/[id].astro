@@ -44,7 +44,9 @@ const theme = getCategoryTheme(post.category);
           </span>
           <span class="text-xs text-white/80">{t("zh", "post.publishedAt")}: {published}</span>
         </div>
-        <h1 class="mt-3 text-2xl font-semibold leading-snug text-white">{post.title}</h1>
+        <h1 class="mt-3 text-2xl font-semibold leading-tight tracking-tight text-white md:text-3xl">
+          {post.title}
+        </h1>
         <a class="mt-2 inline-flex text-xs text-white/85 hover:underline" href={post.sourceUrl} target="_blank" rel="noreferrer">
           {t("zh", "post.source")}: {post.sourceName}
         </a>

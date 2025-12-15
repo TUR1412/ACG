@@ -25,6 +25,8 @@ body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  line-height: 1.55;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans",
     "Noto Sans JP", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   background:
@@ -47,6 +49,17 @@ body::before {
 
 ::selection {
   background: rgba(124, 58, 237, 0.22);
+}
+
+/* 标题断行：更“杂志感”，避免单词/短语孤悬 */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
 }
 
 /* 可访问性：键盘焦点可见 */
@@ -223,6 +236,13 @@ img {
 }
 
 /* Tailwind v3 未内置 line-clamp，这里提供轻量替代 */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-box-orient: vertical;

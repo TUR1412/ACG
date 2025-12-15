@@ -6,7 +6,9 @@ import { t } from "../../i18n/i18n";
 
 <SiteLayout lang="ja" title={t("ja", "bookmarks.title")} currentPath="/bookmarks/">
   <div class="glass rounded-2xl p-5">
-    <h1 class="m-0 text-2xl font-semibold text-slate-950">{t("ja", "bookmarks.title")}</h1>
+    <h1 class="m-0 text-2xl font-semibold leading-tight tracking-tight text-slate-950 md:text-3xl">
+      {t("ja", "bookmarks.title")}
+    </h1>
     <p class="mt-2 text-sm text-slate-700">
       <span id="acg-bookmarks-count">0</span> 件
     </p>
@@ -41,14 +43,14 @@ import { t } from "../../i18n/i18n";
     </noscript>
   </div>
 
-  <div class="mt-4" id="acg-bookmarks" hidden>
+  <div class="mt-6" id="acg-bookmarks" hidden>
     <div
       id="acg-bookmarks-grid"
       class="grid gap-4 sm:grid-cols-2 lg:gap-5 xl:grid-cols-3 2xl:grid-cols-4"
     ></div>
   </div>
 
-  <div class="mt-4 glass shine rounded-2xl p-8" id="acg-bookmarks-empty">
+  <div class="mt-6 glass shine rounded-2xl p-8" id="acg-bookmarks-empty">
     <div class="flex flex-col items-center gap-4 text-center">
       <div class="radar grid size-16 place-items-center shadow-sm">
         <span class="text-sm font-bold text-white/90">☆</span>
