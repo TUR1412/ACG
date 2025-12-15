@@ -1,0 +1,116 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import PostList from "../../components/PostList.astro";
+import { t } from "../../i18n/i18n";
+import { readGeneratedPosts, readGeneratedStatus } from "../../lib/generated-data";
+import { formatDateTime } from "../../lib/format";
+import { href } from "../../lib/href";
+
+const posts = await readGeneratedPosts();
+const status = await readGeneratedStatus();
+
+const latest = posts.slice(0, 60);
+
+const updatedAt = status.generatedAt ? formatDateTime("zh", status.generatedAt) : "-";
+
+const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
+const recent24h = posts.filter((p) => new Date(p.publishedAt).getTime() >= cutoff24h);
+
+const tagCount = new Map<string, number>();
+for (const p of recent24h) {
+  for (const tag of p.tags ?? []) tagCount.set(tag, (tagCount.get(tag) ?? 0) + 1);
+}
+const hotTags = [...tagCount.entries()]
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 12)
+  .map(([tag, count]) => ({ tag, count }));
+
+const brief = recent24h.slice(0, 10);
+const randomPick = posts.length > 0 ? posts[Math.floor(Math.random() * Math.min(200, posts.length))] : null;
+---
+
+<SiteLayout lang="zh" currentPath="/">
+  <section class="grid gap-4 md:grid-cols-3">
+    <div class="glass rounded-2xl p-5 md:col-span-2">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 class="m-0 text-2xl font-semibold text-slate-950">{t("zh", "nav.latest")}</h1>
+          <p class="mt-1 text-xs text-slate-600">
+            {t("zh", "common.updatedAt")} {updatedAt} · {posts.length} 条
+          </p>
+        </div>
+        <div class="text-xs text-slate-600">
+          {t("zh", "search.result")} <span id="acg-search-count">-</span>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <label class="sr-only" for="acg-search">{t("zh", "search.placeholder")}</label>
+        <input
+          id="acg-search"
+          class="w-full rounded-xl border border-slate-900/10 bg-white/60 px-4 py-3 text-sm text-slate-950 outline-none focus:border-slate-900/20 focus:bg-white/70"
+          placeholder={t("zh", "search.placeholder")}
+        />
+      </div>
+    </div>
+
+    <aside class="glass rounded-2xl p-5">
+      <h2 class="m-0 text-sm font-semibold text-slate-950">{t("zh", "home.hotTags")}</h2>
+      {hotTags.length === 0 ? (
+        <p class="mt-2 text-sm text-slate-700">{t("zh", "common.noData")}</p>
+      ) : (
+        <div class="mt-3 flex flex-wrap gap-2">
+          {hotTags.map(({ tag, count }) => (
+            <button
+              type="button"
+              class="rounded-full border border-slate-900/10 bg-white/50 px-3 py-1 text-xs text-slate-700 hover:bg-white/70 clickable"
+              data-tag={tag}
+              title={`${tag} · ${count}`}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
+    </aside>
+  </section>
+
+  <section class="mt-4 grid gap-4 md:grid-cols-3">
+    <div class="md:col-span-2">
+      <PostList posts={latest} lang="zh" />
+    </div>
+
+    <div class="grid gap-4">
+      <div class="glass rounded-2xl p-5">
+        <h2 class="m-0 text-sm font-semibold text-slate-950">{t("zh", "home.dailyBrief")}</h2>
+        {brief.length === 0 ? (
+          <p class="mt-2 text-sm text-slate-700">{t("zh", "common.noData")}</p>
+        ) : (
+          <ol class="mt-3 space-y-2 pl-4 text-sm text-slate-700">
+            {brief.map((p) => (
+              <li class="leading-snug">
+                <a class="hover:underline" href={href(`/zh/p/${p.id}/`)}>
+                  {p.title}
+                </a>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+
+      <div class="glass rounded-2xl p-5">
+        <h2 class="m-0 text-sm font-semibold text-slate-950">{t("zh", "home.randomPick")}</h2>
+        {randomPick ? (
+          <div class="mt-2">
+            <p class="m-0 text-sm text-slate-700 line-clamp-3">{randomPick.title}</p>
+            <a class="mt-3 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-xs font-medium text-white clickable" href={href(`/zh/p/${randomPick.id}/`)}>
+              去看看
+            </a>
+          </div>
+        ) : (
+          <p class="mt-2 text-sm text-slate-700">{t("zh", "common.noData")}</p>
+        )}
+      </div>
+    </div>
+  </section>
+</SiteLayout>

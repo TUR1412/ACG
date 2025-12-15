@@ -1,0 +1,29 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import PostList from "../../components/PostList.astro";
+import { readGeneratedPosts } from "../../lib/generated-data";
+import { t } from "../../i18n/i18n";
+
+const posts = await readGeneratedPosts();
+const latest = posts.slice(0, 300);
+---
+
+<SiteLayout lang="ja" title={t("ja", "bookmarks.title")} currentPath="/bookmarks/">
+  <div class="glass rounded-2xl p-5">
+    <h1 class="m-0 text-2xl font-semibold text-slate-950">{t("ja", "bookmarks.title")}</h1>
+    <p class="mt-2 text-sm text-slate-700">
+      <span id="acg-bookmarks-count">0</span> 件
+    </p>
+    <noscript>
+      <p class="mt-2 text-sm text-slate-700">このページは JavaScript が必要です（ローカルのブックマークを読むため）。</p>
+    </noscript>
+  </div>
+
+  <div class="mt-4" id="acg-bookmarks" hidden>
+    <PostList posts={latest} lang="ja" />
+  </div>
+
+  <div class="mt-4 glass rounded-2xl p-5" id="acg-bookmarks-empty">
+    <p class="m-0 text-sm text-slate-700">{t("ja", "bookmarks.empty")}</p>
+  </div>
+</SiteLayout>

@@ -1,0 +1,47 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+import PostList from "../../../components/PostList.astro";
+import { readGeneratedPosts } from "../../../lib/generated-data";
+import { CATEGORIES, categoryLabel, type Category } from "../../../lib/categories";
+import { t } from "../../../i18n/i18n";
+
+export function getStaticPaths() {
+  return CATEGORIES.map((category) => ({ params: { category } }));
+}
+
+const posts = await readGeneratedPosts();
+const category = Astro.params.category as Category;
+const filtered = posts.filter((p) => p.category === category).slice(0, 120);
+---
+
+<SiteLayout
+  lang="zh"
+  title={categoryLabel("zh", category)}
+  currentCategory={category}
+  currentPath={`/c/${category}/`}
+>
+  <div class="glass rounded-2xl p-5">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 class="m-0 text-2xl font-semibold text-slate-950">{categoryLabel("zh", category)}</h1>
+        <p class="mt-1 text-xs text-slate-600">{t("zh", "nav.latest")} · {filtered.length} 条</p>
+      </div>
+      <div class="text-xs text-slate-600">
+        {t("zh", "search.result")} <span id="acg-search-count">-</span>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <label class="sr-only" for="acg-search">{t("zh", "search.placeholder")}</label>
+      <input
+        id="acg-search"
+        class="w-full rounded-xl border border-slate-900/10 bg-white/60 px-4 py-3 text-sm text-slate-950 outline-none focus:border-slate-900/20 focus:bg-white/70"
+        placeholder={t("zh", "search.placeholder")}
+      />
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <PostList posts={filtered} lang="zh" />
+  </div>
+</SiteLayout>

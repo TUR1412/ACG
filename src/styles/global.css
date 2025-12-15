@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 轻噪点 + 极光背景（避免死白/死黑） */
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: #0b0f14;
+  background:
+    radial-gradient(1200px 800px at 10% 10%, rgba(124, 58, 237, 0.18), transparent 55%),
+    radial-gradient(1000px 700px at 90% 20%, rgba(59, 130, 246, 0.16), transparent 55%),
+    radial-gradient(1100px 900px at 30% 100%, rgba(16, 185, 129, 0.12), transparent 60%),
+    linear-gradient(180deg, #f7f8fb 0%, #f2f4f8 100%);
+}
+
+/* 玻璃卡片基础 */
+.glass {
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* 可点击触感 */
+.clickable {
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+}
+.clickable:hover {
+  transform: translateY(-2px);
+  border-color: rgba(15, 23, 42, 0.16);
+  box-shadow: 0 12px 30px rgba(2, 6, 23, 0.10);
+}
+.clickable:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Tailwind v3 未内置 line-clamp，这里提供轻量替代 */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}

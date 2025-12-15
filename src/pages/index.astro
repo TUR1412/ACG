@@ -1,0 +1,28 @@
+---
+import "../styles/global.css";
+---
+
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ACG Radar</title>
+    <meta name="description" content="一个每小时自动更新的 ACG 资讯聚合小站（中日双语 UI）。" />
+  </head>
+  <body>
+    <main class="mx-auto max-w-2xl px-4 py-10">
+      <div class="glass rounded-2xl p-6">
+        <h1 class="m-0 text-2xl font-semibold text-slate-950">ACG Radar</h1>
+        <p class="mt-2 text-sm text-slate-700">请选择语言 / 言語を選択してください</p>
+        <div class="mt-5 flex flex-wrap gap-3">
+          <a href="./zh/" class="glass rounded-xl px-4 py-2 text-sm font-medium text-slate-950 clickable">中文</a>
+          <a href="./ja/" class="glass rounded-xl px-4 py-2 text-sm font-medium text-slate-950 clickable">日本語</a>
+        </div>
+        <p class="mt-6 text-xs leading-relaxed text-slate-600">
+          说明：本站聚合标题/摘要并跳转原文，不转载全文；数据由 GitHub Actions 每小时更新。
+        </p>
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.astro/
+.cache/
+.cache/**/*
+.DS_Store
+
+# 本地环境
+.env
+.env.*
+
+# 生成数据（由 npm run sync 产生）
+src/data/generated/*.json
+public/data/*.json
+
+# 编辑器
+.vscode/

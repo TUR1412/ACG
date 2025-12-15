@@ -1,0 +1,19 @@
+---
+import type { Post } from "../lib/types";
+import type { Lang } from "../i18n/i18n";
+import PostCard from "./PostCard.astro";
+
+type Props = {
+  posts: Post[];
+  lang: Lang;
+};
+
+const { posts, lang } = Astro.props;
+---
+
+<div class="grid gap-4">
+  {posts.map((p) => (
+    <PostCard post={p} lang={lang} />
+  ))}
+</div>
+

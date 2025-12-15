@@ -1,0 +1,95 @@
+---
+import "../styles/global.css";
+import { t, type Lang } from "../i18n/i18n";
+import { CATEGORIES, categoryLabel, type Category } from "../lib/categories";
+import { href } from "../lib/href";
+import appUrl from "../client/app.ts?url";
+
+type Props = {
+  lang: Lang;
+  title?: string;
+  description?: string;
+  currentCategory?: Category;
+  currentPath?: string;
+  currentPostId?: string;
+};
+
+const { lang, title, description, currentCategory, currentPath, currentPostId } = Astro.props;
+
+const htmlLang = lang === "ja" ? "ja" : "zh-Hans";
+const pageTitle = title ? `${title} · ${t(lang, "site.name")}` : t(lang, "site.name");
+const pageDescription = description ?? t(lang, "site.tagline");
+
+function withLang(path: string): string {
+  return href(`/${lang}${path}`);
+}
+
+const otherLang = lang === "zh" ? "ja" : "zh";
+const langSwitchHref = href(`/${otherLang}${currentPath ?? "/"}`);
+---
+
+<!doctype html>
+<html lang={htmlLang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+  </head>
+  <body data-current-post-id={currentPostId}>
+    <header class="sticky top-0 z-10 border-b border-slate-900/10 bg-white/40 backdrop-blur-xl">
+      <div class="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+        <a href={withLang("/")} class="flex items-center gap-2">
+          <span class="grid size-9 place-items-center rounded-xl bg-slate-900 text-white shadow-sm">A</span>
+          <div class="leading-tight">
+            <div class="text-sm font-semibold text-slate-950">{t(lang, "site.name")}</div>
+            <div class="text-xs text-slate-600">{t(lang, "site.tagline")}</div>
+          </div>
+        </a>
+
+        <nav class="hidden items-center gap-2 md:flex">
+          {CATEGORIES.map((c) => (
+            <a
+              href={withLang(`/c/${c}/`)}
+              class:list={[
+                "rounded-xl px-3 py-2 text-sm clickable",
+                c === currentCategory
+                  ? "glass border-slate-900/20 text-slate-950"
+                  : "text-slate-700 hover:text-slate-950"
+              ]}
+            >
+              {categoryLabel(lang, c)}
+            </a>
+          ))}
+        </nav>
+
+        <div class="flex items-center gap-2">
+          <a href={withLang("/bookmarks/")} class="rounded-xl px-3 py-2 text-sm text-slate-700 hover:text-slate-950 clickable">
+            {t(lang, "nav.bookmarks")}
+          </a>
+          <a href={withLang("/status/")} class="rounded-xl px-3 py-2 text-sm text-slate-700 hover:text-slate-950 clickable">
+            {t(lang, "nav.status")}
+          </a>
+          <a
+            href={langSwitchHref}
+            class="glass rounded-xl px-3 py-2 text-sm font-medium text-slate-950 clickable"
+            aria-label="Switch language"
+          >
+            {lang === "zh" ? "日本語" : "中文"}
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-4 py-6">
+      <slot />
+    </main>
+
+    <footer class="mx-auto max-w-6xl px-4 pb-10 pt-4 text-xs text-slate-600">
+      <div class="glass rounded-2xl px-4 py-3">
+        <p class="m-0 leading-relaxed">{t(lang, "site.disclaimer")}</p>
+      </div>
+    </footer>
+    <script type="module" src={appUrl} is:inline></script>
+  </body>
+</html>
