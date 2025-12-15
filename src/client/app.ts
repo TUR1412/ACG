@@ -1074,7 +1074,10 @@ function wireDailyBriefCopy() {
 
   btn.addEventListener("click", async () => {
     const items = [...list.querySelectorAll<HTMLAnchorElement>("a[href]")];
-    const lines = items.slice(0, 20).map((a) => `- ${a.textContent?.trim() ?? ""}\n  ${a.href}`);
+    const lines = items.slice(0, 20).map((a) => {
+      const title = a.dataset.briefTitle ?? a.textContent?.trim() ?? "";
+      return `- ${title}\n  ${a.href}`;
+    });
     const header = isJapanese()
       ? `今日のまとめ (${new Date().toLocaleDateString("ja-JP")})`
       : `今日快报 (${new Date().toLocaleDateString("zh-CN")})`;
