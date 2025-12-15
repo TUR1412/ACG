@@ -9,17 +9,23 @@ import { formatDateTime, formatRelativeHours } from "../lib/format";
 type Props = {
   post: Post;
   lang: Lang;
+  animateIndex?: number;
 };
 
-const { post, lang } = Astro.props;
+const { post, lang, animateIndex } = Astro.props;
 const detailHref = href(`/${lang}/p/${post.id}/`);
 const when = formatRelativeHours(lang, post.publishedAt) ?? formatDateTime(lang, post.publishedAt);
 
 const theme = getCategoryTheme(post.category);
+const animateStyle = typeof animateIndex === "number" ? `--i: ${animateIndex};` : undefined;
 ---
 
 <article
-  class="glass clickable group relative overflow-hidden rounded-2xl"
+  class:list={[
+    "glass clickable shine group relative overflow-hidden rounded-2xl",
+    typeof animateIndex === "number" ? "stagger-item" : ""
+  ]}
+  style={animateStyle}
   data-post-id={post.id}
   data-category={post.category}
   data-source-id={post.sourceId}
@@ -49,6 +55,12 @@ const theme = getCategoryTheme(post.category);
         <span>{categoryLabel(lang, post.category)}</span>
       </span>
     </div>
+
+    <div class="absolute bottom-3 left-3">
+      <span class="inline-flex max-w-[22ch] truncate rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/90 backdrop-blur-md">
+        {when}
+      </span>
+    </div>
   </a>
 
   <div class="p-4">
@@ -61,8 +73,6 @@ const theme = getCategoryTheme(post.category);
           <a class="text-slate-700 hover:underline" href={post.sourceUrl} target="_blank" rel="noreferrer">
             {post.sourceName}
           </a>
-          <span class="text-slate-400">·</span>
-          <span class="text-slate-500">{when}</span>
         </div>
       </div>
 

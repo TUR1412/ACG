@@ -7,6 +7,13 @@ import { t } from "../../i18n/i18n";
 const status = await readGeneratedStatus();
 const updatedAt = status.generatedAt ? formatDateTime("zh", status.generatedAt) : "-";
 
+const totalSources = status.sources.length;
+const okSources = status.sources.filter((s) => s.ok).length;
+const errSources = totalSources - okSources;
+const totalItems = status.sources.reduce((sum, s) => sum + (s.itemCount ?? 0), 0);
+const slowest = [...status.sources].sort((a, b) => b.durationMs - a.durationMs)[0];
+const successRate = totalSources > 0 ? Math.round((okSources / totalSources) * 100) : 0;
+
 function suggest(s: (typeof status.sources)[number]): string {
   if (s.ok) return "-";
   if (s.httpStatus === 429) return "请求过于频繁：可降低更新频率、启用缓存或稍后重试。";
@@ -25,6 +32,34 @@ function suggest(s: (typeof status.sources)[number]): string {
       {t("zh", "status.lastRun")}: {updatedAt} · {status.durationMs}ms
     </p>
   </div>
+
+  <section class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="glass shine rounded-2xl p-5">
+      <div class="text-xs font-semibold text-slate-600">成功率</div>
+      <div class="mt-2 text-2xl font-semibold text-slate-950">{successRate}%</div>
+      <div class="mt-1 text-xs text-slate-600">
+        正常 {okSources} / {totalSources}
+      </div>
+    </div>
+
+    <div class="glass shine rounded-2xl p-5">
+      <div class="text-xs font-semibold text-slate-600">异常来源</div>
+      <div class="mt-2 text-2xl font-semibold text-rose-800">{errSources}</div>
+      <div class="mt-1 text-xs text-slate-600">单个来源失败不会影响全站部署</div>
+    </div>
+
+    <div class="glass shine rounded-2xl p-5">
+      <div class="text-xs font-semibold text-slate-600">本次条目</div>
+      <div class="mt-2 text-2xl font-semibold text-slate-950">{totalItems}</div>
+      <div class="mt-1 text-xs text-slate-600">聚合条目数（含缓存回退）</div>
+    </div>
+
+    <div class="glass shine rounded-2xl p-5">
+      <div class="text-xs font-semibold text-slate-600">最慢来源</div>
+      <div class="mt-2 text-base font-semibold text-slate-950 line-clamp-3">{slowest?.name ?? "-"}</div>
+      <div class="mt-1 text-xs text-slate-600">{slowest ? `${slowest.durationMs}ms · ${slowest.used}` : "-"}</div>
+    </div>
+  </section>
 
   <div class="mt-4 glass rounded-2xl p-5">
     <h2 class="m-0 text-sm font-semibold text-slate-950">{t("zh", "status.sources")}</h2>

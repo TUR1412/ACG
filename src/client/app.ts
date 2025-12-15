@@ -113,7 +113,8 @@ function applyReadState(readIds: Set<string>) {
   for (const card of cards) {
     const id = card.dataset.postId ?? "";
     const isRead = readIds.has(id);
-    card.classList.toggle("opacity-70", isRead);
+    if (isRead) card.setAttribute("data-read", "true");
+    else card.removeAttribute("data-read");
   }
 }
 

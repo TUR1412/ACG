@@ -2,6 +2,7 @@
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import PostList from "../../components/PostList.astro";
 import PreferencesPanel from "../../components/PreferencesPanel.astro";
+import SpotlightGrid from "../../components/SpotlightGrid.astro";
 import { t } from "../../i18n/i18n";
 import { readGeneratedPosts, readGeneratedStatus } from "../../lib/generated-data";
 import { CATEGORIES, categoryLabel, type Category } from "../../lib/categories";
@@ -33,6 +34,13 @@ for (const p of recent24h) categoryCount.set(p.category, (categoryCount.get(p.ca
 
 const brief = recent24h.slice(0, 10);
 const randomPick = posts.length > 0 ? posts[Math.floor(Math.random() * Math.min(200, posts.length))] : null;
+
+const spotlight = (() => {
+  const withCover = recent24h.filter((p) => Boolean(p.cover));
+  const used = new Set(withCover.map((p) => p.id));
+  const rest = recent24h.filter((p) => !used.has(p.id));
+  return [...withCover, ...rest].slice(0, 6);
+})();
 ---
 
 <SiteLayout lang="ja" currentPath="/">
@@ -183,6 +191,8 @@ const randomPick = posts.length > 0 ? posts[Math.floor(Math.random() * Math.min(
       )}
     </aside>
   </section>
+
+  <SpotlightGrid posts={spotlight} lang="ja" title={t("ja", "home.spotlight")} />
 
   <section class="mt-4 grid gap-4 md:grid-cols-12">
     <div class="md:col-span-8">

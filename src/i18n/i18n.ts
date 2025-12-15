@@ -13,6 +13,7 @@ export type I18nKey =
   | "nav.about"
   | "home.hotTags"
   | "home.dailyBrief"
+  | "home.spotlight"
   | "home.randomPick"
   | "home.copyBrief"
   | "home.copied"
@@ -59,6 +60,7 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "nav.about": "关于",
     "home.hotTags": "今日热点",
     "home.dailyBrief": "今日快报",
+    "home.spotlight": "今日精选",
     "home.randomPick": "随机安利",
     "home.copyBrief": "复制快报",
     "home.copied": "已复制到剪贴板",
@@ -104,6 +106,7 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "nav.about": "このサイトについて",
     "home.hotTags": "今日のトレンド",
     "home.dailyBrief": "今日のまとめ",
+    "home.spotlight": "ピックアップ",
     "home.randomPick": "ランダム推薦",
     "home.copyBrief": "コピー",
     "home.copied": "クリップボードにコピーしました",

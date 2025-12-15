@@ -7,6 +7,13 @@ import { t } from "../../i18n/i18n";
 const status = await readGeneratedStatus();
 const updatedAt = status.generatedAt ? formatDateTime("ja", status.generatedAt) : "-";
 
+const totalSources = status.sources.length;
+const okSources = status.sources.filter((s) => s.ok).length;
+const errSources = totalSources - okSources;
+const totalItems = status.sources.reduce((sum, s) => sum + (s.itemCount ?? 0), 0);
+const slowest = [...status.sources].sort((a, b) => b.durationMs - a.durationMs)[0];
+const successRate = totalSources > 0 ? Math.round((okSources / totalSources) * 100) : 0;
+
 function suggest(s: (typeof status.sources)[number]): string {
   if (s.ok) return "-";
   if (s.httpStatus === 429) return "リクエスト過多：更新頻度を下げる／キャッシュ利用／時間をおいて再試行。";
@@ -25,6 +32,34 @@ function suggest(s: (typeof status.sources)[number]): string {
       {t("ja", "status.lastRun")}: {updatedAt} · {status.durationMs}ms
     </p>
   </div>
+
+  <section class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="glass shine rounded-2xl p-5">
+      <div class="text-xs font-semibold text-slate-600">成功率</div>
+      <div class="mt-2 text-2xl font-semibold text-slate-950">{successRate}%</div>
+      <div class="mt-1 text-xs text-slate-600">
+        OK {okSources} / {totalSources}
+      </div>
+    </div>
+
+    <div class="glass shine rounded-2xl p-5">
+      <div class="text-xs font-semibold text-slate-600">エラー（ソース）</div>
+      <div class="mt-2 text-2xl font-semibold text-rose-800">{errSources}</div>
+      <div class="mt-1 text-xs text-slate-600">単一ソースの失敗は全体に影響しません</div>
+    </div>
+
+    <div class="glass shine rounded-2xl p-5">
+      <div class="text-xs font-semibold text-slate-600">取得件数</div>
+      <div class="mt-2 text-2xl font-semibold text-slate-950">{totalItems}</div>
+      <div class="mt-1 text-xs text-slate-600">キャッシュ/フォールバック含む</div>
+    </div>
+
+    <div class="glass shine rounded-2xl p-5">
+      <div class="text-xs font-semibold text-slate-600">最遅ソース</div>
+      <div class="mt-2 text-base font-semibold text-slate-950 line-clamp-3">{slowest?.name ?? "-"}</div>
+      <div class="mt-1 text-xs text-slate-600">{slowest ? `${slowest.durationMs}ms · ${slowest.used}` : "-"}</div>
+    </div>
+  </section>
 
   <div class="mt-4 glass rounded-2xl p-5">
     <h2 class="m-0 text-sm font-semibold text-slate-950">{t("ja", "status.sources")}</h2>
