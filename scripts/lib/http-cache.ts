@@ -6,6 +6,10 @@ export type HttpCacheEntry = {
   etag?: string;
   lastModified?: string;
   lastOkAt?: string;
+  /** 文章页补图：最近一次“未能解析出封面”的时间（用于避免每小时重复轰炸同一页面） */
+  coverMissAt?: string;
+  /** 文章页补图：最近一次“成功解析封面”的时间 */
+  coverOkAt?: string;
 };
 
 export type HttpCache = Record<string, HttpCacheEntry>;

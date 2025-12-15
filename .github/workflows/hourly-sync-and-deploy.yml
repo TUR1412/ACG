@@ -48,6 +48,7 @@ jobs:
           ACG_COVER_ENRICH_MAX: "260"
           ACG_COVER_ENRICH_PER_SOURCE_MAX: "220"
           ACG_COVER_ENRICH_DELAY_MS: "100"
+          ACG_COVER_ENRICH_MISS_TTL_HOURS: "24"
         run: npm run sync
 
       - name: Configure Pages

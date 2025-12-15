@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import type { AnyNode } from "domhandler";
 
 export function stripHtmlToText(html: string): string {
   const $ = cheerio.load(html);
@@ -11,6 +12,17 @@ function isHttpUrl(url: string): boolean {
 
 function isLikelyImageUrl(url: string): boolean {
   return /\.(png|jpe?g|gif|webp|avif|bmp|svg)(\?|#|$)/i.test(url);
+}
+
+export function isProbablyNonCoverImageUrl(url: string): boolean {
+  const lower = url.toLowerCase();
+  return (
+    /favicon|apple-touch-icon|site-icon|siteicon|manifest|sprite|avatar|emoji/.test(lower) ||
+    /spacer|blank|placeholder|noimage|no_image/.test(lower) ||
+    /\/icons?\//.test(lower) ||
+    /\/logo\./.test(lower) ||
+    /\/logos?\//.test(lower)
+  );
 }
 
 function toAbsoluteHttpUrl(raw: string, baseUrl?: string): string | undefined {
@@ -49,10 +61,7 @@ function pickBestFromSrcset(srcset: string): string | undefined {
   return best?.url;
 }
 
-export function extractFirstImageUrl(params: { html: string; baseUrl?: string }): string | undefined {
-  const { html, baseUrl } = params;
-  const $ = cheerio.load(html);
-  const img = $("img").first();
+function extractImageUrlFromImg(img: cheerio.Cheerio<AnyNode>, baseUrl?: string): string | undefined {
   const src =
     img.attr("src") ??
     img.attr("data-src") ??
@@ -62,6 +71,84 @@ export function extractFirstImageUrl(params: { html: string; baseUrl?: string })
     (img.attr("data-srcset") ? pickBestFromSrcset(img.attr("data-srcset") ?? "") : undefined);
   if (!src) return undefined;
   return toAbsoluteHttpUrl(src, baseUrl);
+}
+
+export function extractFirstImageUrl(params: { html: string; baseUrl?: string }): string | undefined {
+  const { html, baseUrl } = params;
+  const $ = cheerio.load(html);
+  const img = $("img").first();
+  return extractImageUrlFromImg(img, baseUrl);
+}
+
+function collectJsonLdImageCandidates(json: unknown, out: string[], depth: number) {
+  if (!json) return;
+  if (depth <= 0) return;
+
+  if (typeof json === "string") {
+    out.push(json);
+    return;
+  }
+
+  if (Array.isArray(json)) {
+    for (const item of json) collectJsonLdImageCandidates(item, out, depth - 1);
+    return;
+  }
+
+  if (typeof json !== "object") return;
+
+  const obj = json as Record<string, unknown>;
+
+  const directKeys: Array<keyof typeof obj> = ["image", "thumbnailUrl", "contentUrl", "url"];
+  for (const key of directKeys) {
+    const value = obj[key];
+    if (typeof value === "string") out.push(value);
+    else if (Array.isArray(value)) {
+      for (const item of value) collectJsonLdImageCandidates(item, out, depth - 1);
+    } else if (typeof value === "object" && value) {
+      collectJsonLdImageCandidates(value, out, depth - 1);
+    }
+  }
+
+  const graph = obj["@graph"];
+  if (graph) collectJsonLdImageCandidates(graph, out, depth - 1);
+}
+
+function extractJsonLdCandidates($: cheerio.CheerioAPI): string[] {
+  const out: string[] = [];
+  const scripts = $('script[type="application/ld+json"]');
+  scripts.each((_idx, el) => {
+    const raw = $(el).text().trim();
+    if (!raw) return;
+    try {
+      const json = JSON.parse(raw) as unknown;
+      collectJsonLdImageCandidates(json, out, 6);
+    } catch {
+      // ignore
+    }
+  });
+  return out;
+}
+
+function collectImgCandidates(params: {
+  $: cheerio.CheerioAPI;
+  baseUrl: string;
+  selector: string;
+  limit: number;
+}): string[] {
+  const { $, baseUrl, selector, limit } = params;
+  const out: string[] = [];
+  $(selector).each((_idx, el) => {
+    if (out.length >= limit) return false;
+    const url = extractImageUrlFromImg($(el), baseUrl);
+    if (!url) return;
+    if (!isHttpUrl(url)) return;
+    const lower = url.toLowerCase();
+    if (isProbablyNonCoverImageUrl(lower)) return;
+    // img 标签里经常混着装饰性资源；这里做一次更严格的“像图片”判断
+    if (!isLikelyImageUrl(lower) && !lower.includes("image") && !lower.includes("img")) return;
+    out.push(url);
+  });
+  return out;
 }
 
 export function extractCoverFromHtml(params: { html: string; baseUrl: string }): string | undefined {
@@ -83,31 +170,30 @@ export function extractCoverFromHtml(params: { html: string; baseUrl: string }):
     $('link[rel="preload"][as="image"]').attr("href")
   ].filter((x): x is string => typeof x === "string" && x.trim().length > 0);
 
-  const candidates = [...metaCandidates, ...linkCandidates];
+  const jsonLdCandidates = extractJsonLdCandidates($);
 
-  for (const raw of candidates) {
+  const imgCandidates = [
+    ...collectImgCandidates({ $, baseUrl, selector: "article img", limit: 12 }),
+    ...collectImgCandidates({ $, baseUrl, selector: "main img", limit: 12 }),
+    ...collectImgCandidates({ $, baseUrl, selector: "img", limit: 12 })
+  ];
+
+  type Candidate = { raw: string; kind: "meta" | "link" | "jsonld" | "img" };
+
+  const candidates: Candidate[] = [
+    ...metaCandidates.map((raw) => ({ raw, kind: "meta" as const })),
+    ...linkCandidates.map((raw) => ({ raw, kind: "link" as const })),
+    ...jsonLdCandidates.map((raw) => ({ raw, kind: "jsonld" as const })),
+    ...imgCandidates.map((raw) => ({ raw, kind: "img" as const }))
+  ];
+
+  for (const { raw, kind } of candidates) {
     const abs = toAbsoluteHttpUrl(raw, baseUrl);
     if (!abs) continue;
     const lower = abs.toLowerCase();
-    if (!isLikelyImageUrl(lower) && !lower.includes("image")) continue;
-    if (/favicon|sprite|icon|logo|avatar/.test(lower)) continue;
+    if (isProbablyNonCoverImageUrl(lower)) continue;
+    if (kind === "img" && !isLikelyImageUrl(lower) && !lower.includes("image") && !lower.includes("img")) continue;
     return abs;
-  }
-
-  const inArticle =
-    $("article img")
-      .first()
-      .attr("src") ??
-    $("main img")
-      .first()
-      .attr("src") ??
-    $("img")
-      .first()
-      .attr("src");
-
-  if (inArticle) {
-    const abs = toAbsoluteHttpUrl(inArticle, baseUrl);
-    if (abs) return abs;
   }
 
   return undefined;

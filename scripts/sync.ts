@@ -13,7 +13,7 @@ import {
 } from "./lib/http-cache";
 import { parseFeedToItems } from "./sources/feed-source";
 import { parseAnimeAnimeList } from "./sources/html-animeanime";
-import { extractCoverFromHtml } from "./lib/html";
+import { extractCoverFromHtml, isProbablyNonCoverImageUrl } from "./lib/html";
 import type { RawItem, Source } from "./sources/types";
 import type { Category } from "../src/lib/categories";
 import { deriveTags } from "./lib/tagger";
@@ -235,9 +235,11 @@ async function enrichCoversFromArticlePages(params: {
   const maxTotal = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_MAX, 200);
   const maxPerSource = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_PER_SOURCE_MAX, 160);
   const delayMs = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_DELAY_MS, 0);
+  const missTtlHours = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_MISS_TTL_HOURS, 72);
+  const missTtlMs = missTtlHours * 60 * 60 * 1000;
 
   const candidates = posts
-    .filter((p) => !p.cover)
+    .filter((p) => !p.cover || isProbablyNonCoverImageUrl(p.cover))
     .slice()
     .sort((a, b) => {
       const at = new Date(a.publishedAt).getTime();
@@ -255,6 +257,15 @@ async function enrichCoversFromArticlePages(params: {
     if (attempted >= maxTotal) break;
     const used = perSource.get(post.sourceId) ?? 0;
     if (used >= maxPerSource) continue;
+
+    const missAt = cache[post.url]?.coverMissAt;
+    if (missTtlMs > 0 && missAt) {
+      const age = Date.now() - new Date(missAt).getTime();
+      if (Number.isFinite(age) && age >= 0 && age < missTtlMs) {
+        if (verbose) console.log(`[COVER:SKIP] ${post.sourceId} ${post.url} recent-miss`);
+        continue;
+      }
+    }
 
     perSource.set(post.sourceId, used + 1);
     attempted += 1;
@@ -279,12 +290,22 @@ async function enrichCoversFromArticlePages(params: {
     const cover = extractCoverFromHtml({ html: res.text, baseUrl: post.url });
     if (!cover) {
       if (verbose) console.log(`[COVER:MISS] ${post.sourceId} ${post.url}`);
+      const entry = cache[post.url] ?? {};
+      entry.coverMissAt = new Date().toISOString();
+      cache[post.url] = entry;
+      if (persistCache) await writeJsonFile(cachePath, cache);
       continue;
     }
 
     post.cover = cover;
     enriched += 1;
     if (verbose) console.log(`[COVER:OK] ${post.sourceId} ${post.url}`);
+
+    const entry = cache[post.url] ?? {};
+    entry.coverOkAt = new Date().toISOString();
+    if (entry.coverMissAt) delete entry.coverMissAt;
+    cache[post.url] = entry;
+    if (persistCache) await writeJsonFile(cachePath, cache);
   }
 
   return { attempted, enriched, maxTotal };
