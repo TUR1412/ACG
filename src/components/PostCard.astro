@@ -5,6 +5,7 @@ import { categoryLabel } from "../lib/categories";
 import { getCategoryTheme } from "../lib/category-theme";
 import { href } from "../lib/href";
 import { formatDateTime, formatRelativeHours } from "../lib/format";
+import CategoryIcon from "./CategoryIcon.astro";
 
 type Props = {
   post: Post;
@@ -29,9 +30,19 @@ const animateStyle = typeof animateIndex === "number" ? `--i: ${animateIndex};` 
   data-post-id={post.id}
   data-category={post.category}
   data-source-id={post.sourceId}
+  data-has-cover={post.cover ? "true" : "false"}
 >
   <a href={detailHref} class="relative block aspect-[16/9]">
     <div class:list={["absolute inset-0 bg-gradient-to-br", theme.cover]}></div>
+    <div class="acg-cover-fallback" aria-hidden="true">
+      <div class="acg-cover-fallback-inner">
+        <div class="acg-cover-fallback-icon">
+          <CategoryIcon category={post.category} size={22} />
+        </div>
+        <div class="acg-cover-fallback-brand">ACG Radar</div>
+        <div class="acg-cover-fallback-meta">{categoryLabel(lang, post.category)}</div>
+      </div>
+    </div>
     {post.cover ? (
       <img
         src={post.cover}
@@ -40,13 +51,9 @@ const animateStyle = typeof animateIndex === "number" ? `--i: ${animateIndex};` 
         decoding="async"
         referrerpolicy="no-referrer"
         class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-        onerror="this.style.opacity='0'; this.style.pointerEvents='none'"
+        onerror="this.closest('[data-post-id]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none';"
       />
-    ) : (
-      <div class="absolute inset-0 grid place-items-center">
-        <div class="glass-card rounded-2xl px-3 py-2 text-xs font-semibold text-slate-950/80">ACG Radar</div>
-      </div>
-    )}
+    ) : null}
     <div class="absolute inset-0 bg-gradient-to-t from-slate-950/45 via-slate-950/10 to-transparent"></div>
 
     <div class="absolute left-3 top-3">

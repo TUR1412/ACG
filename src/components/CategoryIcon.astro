@@ -1,0 +1,83 @@
+---
+import type { Category } from "../lib/categories";
+
+type Props = {
+  category: Category;
+  size?: number;
+  class?: string;
+};
+
+const { category, size = 22, class: className } = Astro.props;
+---
+
+<svg
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill="none"
+  aria-hidden="true"
+  focusable="false"
+  class={className}
+>
+  {category === "anime" ? (
+    <>
+      <path
+        d="M7.5 4.8h9A2.7 2.7 0 0 1 19.2 7.5v6.2A2.7 2.7 0 0 1 16.5 16.4H12l-3.4 2.8v-2.8H7.5A2.7 2.7 0 0 1 4.8 13.7V7.5A2.7 2.7 0 0 1 7.5 4.8Z"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linejoin="round"
+      />
+      <path d="M9 9.5h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M9 12.2h4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </>
+  ) : category === "game" ? (
+    <>
+      <path
+        d="M8.4 10.5h7.2c1.6 0 2.9 1.3 2.9 2.9v2.2A3.4 3.4 0 0 1 15.1 19H8.9a3.4 3.4 0 0 1-3.4-3.4v-2.2c0-1.6 1.3-2.9 2.9-2.9Z"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linejoin="round"
+      />
+      <path d="M9.2 14.2h3.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M10.8 12.6v3.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M16.1 13.6h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+      <path d="M17.7 15.2h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+    </>
+  ) : category === "goods" ? (
+    <>
+      <path
+        d="M6 10.5V8.8A2.8 2.8 0 0 1 8.8 6h6.4A2.8 2.8 0 0 1 18 8.8v1.7"
+        stroke="currentColor"
+        stroke-width="2"
+      />
+      <path
+        d="M5.5 10.5h13v9.2A2.3 2.3 0 0 1 16.2 22H7.8A2.3 2.3 0 0 1 5.5 19.7v-9.2Z"
+        stroke="currentColor"
+        stroke-width="2"
+      />
+      <path d="M9 13.2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </>
+  ) : (
+    <>
+      <path
+        d="M12 22a8.5 8.5 0 1 0-8.5-8.5"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+      <path
+        d="M7.5 11.5c.7-1.8 2.4-3 4.5-3s3.8 1.2 4.5 3"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+      <path
+        d="M9.2 15.4h.01M14.8 15.4h.01"
+        stroke="currentColor"
+        stroke-width="3"
+        stroke-linecap="round"
+      />
+    </>
+  )}
+</svg>
+

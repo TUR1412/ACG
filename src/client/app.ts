@@ -1089,6 +1089,171 @@ function wireDailyBriefCopy() {
   });
 }
 
+function wireSpotlightCarousel() {
+  const roots = document.querySelectorAll<HTMLElement>("[data-spotlight-carousel]");
+  if (roots.length === 0) return;
+
+  for (const root of roots) {
+    const track = root.querySelector<HTMLElement>("[data-carousel-track]");
+    const slides = [...root.querySelectorAll<HTMLElement>("[data-carousel-slide]")];
+    const dots = [...root.querySelectorAll<HTMLButtonElement>("[data-carousel-dot]")];
+    const prev = root.querySelector<HTMLButtonElement>("[data-carousel-prev]");
+    const next = root.querySelector<HTMLButtonElement>("[data-carousel-next]");
+    if (!track || slides.length === 0) continue;
+
+    let index = 0;
+    const behavior: ScrollBehavior = prefersReducedMotion() ? "auto" : "smooth";
+
+    const applyDotState = (activeIndex: number) => {
+      for (let i = 0; i < dots.length; i += 1) {
+        const on = i === activeIndex;
+        dots[i].classList.toggle("is-active", on);
+        dots[i].setAttribute("aria-selected", on ? "true" : "false");
+        dots[i].tabIndex = on ? 0 : -1;
+      }
+    };
+
+    const setActive = (nextIndex: number) => {
+      const clamped = Math.max(0, Math.min(slides.length - 1, nextIndex));
+      if (index === clamped) return;
+      index = clamped;
+      applyDotState(index);
+    };
+
+    const scrollToIndex = (nextIndex: number) => {
+      const clamped = Math.max(0, Math.min(slides.length - 1, nextIndex));
+      const target = slides[clamped];
+      setActive(clamped);
+      try {
+        target.scrollIntoView({ behavior, inline: "start", block: "nearest" });
+      } catch {
+        // ignore
+      }
+    };
+
+    // a11y: dots are a "tablist"，把语义补齐（不改 HTML 也可工作）
+    for (const d of dots) {
+      if (!d.hasAttribute("role")) d.setAttribute("role", "tab");
+      d.setAttribute("aria-selected", "false");
+      d.tabIndex = -1;
+    }
+
+    // 初始化激活态
+    if (dots[0]) dots[0].tabIndex = 0;
+    applyDotState(0);
+
+    prev?.addEventListener("click", () => scrollToIndex(index - 1));
+    next?.addEventListener("click", () => scrollToIndex(index + 1));
+
+    for (let i = 0; i < dots.length; i += 1) {
+      dots[i]?.addEventListener("click", () => scrollToIndex(i));
+    }
+
+    // 键盘：←/→ 切换，Enter 打开当前
+    root.addEventListener("keydown", (e) => {
+      if (e.defaultPrevented) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isTypingTarget(e.target)) return;
+
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        scrollToIndex(index - 1);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        scrollToIndex(index + 1);
+      } else if (e.key === "Enter") {
+        const a = slides[index]?.querySelector<HTMLAnchorElement>("a[href]");
+        if (a?.href) {
+          e.preventDefault();
+          window.location.href = a.href;
+        }
+      }
+    });
+
+    // 拖拽（鼠标/触控板）：更“顺手”，同时避免误触点击
+    let dragging = false;
+    let dragged = false;
+    let pointerId: number | null = null;
+    let startX = 0;
+    let startScrollLeft = 0;
+
+    const endDrag = () => {
+      if (!dragging) return;
+      dragging = false;
+      pointerId = null;
+      track.classList.remove("is-dragging");
+      // click 事件会在 pointerup 后触发，留一拍让捕获阶段能拦截
+      window.setTimeout(() => {
+        dragged = false;
+      }, 0);
+    };
+
+    track.addEventListener("pointerdown", (e) => {
+      if (e.defaultPrevented) return;
+      if (e.pointerType !== "mouse") return;
+      if (e.button !== 0) return;
+      if (!(e.target instanceof HTMLElement)) return;
+      if (e.target.closest("button, input, textarea, select")) return;
+
+      dragging = true;
+      dragged = false;
+      pointerId = e.pointerId;
+      startX = e.clientX;
+      startScrollLeft = track.scrollLeft;
+      track.classList.add("is-dragging");
+      try {
+        track.setPointerCapture(pointerId);
+      } catch {
+        // ignore
+      }
+    });
+
+    track.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      if (pointerId != null && e.pointerId !== pointerId) return;
+      const dx = startX - e.clientX;
+      if (Math.abs(dx) > 6) dragged = true;
+      track.scrollLeft = startScrollLeft + dx;
+    });
+
+    track.addEventListener("pointerup", endDrag);
+    track.addEventListener("pointercancel", endDrag);
+
+    track.addEventListener(
+      "click",
+      (e) => {
+        if (!dragged) return;
+        e.preventDefault();
+        e.stopPropagation();
+      },
+      true
+    );
+
+    // 通过 IntersectionObserver 自动更新“当前”点（6 个元素，开销很小）
+    if ("IntersectionObserver" in window) {
+      const io = new IntersectionObserver(
+        (entries) => {
+          let bestIndex = index;
+          let bestRatio = 0;
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            const el = entry.target as HTMLElement;
+            const i = slides.indexOf(el);
+            if (i < 0) continue;
+            if (entry.intersectionRatio > bestRatio) {
+              bestRatio = entry.intersectionRatio;
+              bestIndex = i;
+            }
+          }
+          if (bestRatio > 0) setActive(bestIndex);
+        },
+        { root: track, threshold: [0.35, 0.55, 0.75, 0.9] }
+      );
+      for (const slide of slides) io.observe(slide);
+    }
+  }
+}
+
 function markCurrentPostRead(readIds: Set<string>) {
   const current = document.body.dataset.currentPostId ?? "";
   if (!current) return;
@@ -1116,6 +1281,7 @@ function main() {
   wireKeyboardShortcuts();
   wireTagChips();
   wireDailyBriefCopy();
+  wireSpotlightCarousel();
 }
 
 if (document.readyState === "loading") {

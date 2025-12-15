@@ -6,6 +6,7 @@ import { categoryLabel } from "../../../lib/categories";
 import { getCategoryTheme } from "../../../lib/category-theme";
 import { formatDateTime } from "../../../lib/format";
 import { t } from "../../../i18n/i18n";
+import CategoryIcon from "../../../components/CategoryIcon.astro";
 
 export async function getStaticPaths() {
   const posts = await readGeneratedPosts();
@@ -19,8 +20,17 @@ const theme = getCategoryTheme(post.category);
 
 <SiteLayout lang="ja" title={post.title} currentPath={`/p/${post.id}/`} currentPostId={post.id}>
   <article class="glass overflow-hidden rounded-2xl">
-    <div class="relative">
+    <div class="relative" data-has-cover={post.cover ? "true" : "false"}>
       <div class:list={["absolute inset-0 bg-gradient-to-br", theme.cover]}></div>
+      <div class="acg-cover-fallback" aria-hidden="true">
+        <div class="acg-cover-fallback-inner">
+          <div class="acg-cover-fallback-icon">
+            <CategoryIcon category={post.category} size={22} />
+          </div>
+          <div class="acg-cover-fallback-brand">ACG Radar</div>
+          <div class="acg-cover-fallback-meta">{categoryLabel("ja", post.category)}</div>
+        </div>
+      </div>
       {post.cover ? (
         <img
           src={post.cover}
@@ -29,11 +39,9 @@ const theme = getCategoryTheme(post.category);
           decoding="async"
           referrerpolicy="no-referrer"
           class="h-56 w-full object-cover"
-          onerror="this.style.opacity='0'; this.style.pointerEvents='none'"
+          onerror="this.closest('[data-has-cover]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none';"
         />
-      ) : (
-        <div class="h-40"></div>
-      )}
+      ) : null}
       <div class="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-slate-950/15 to-transparent"></div>
 
       <div class="absolute bottom-5 left-5 right-5">

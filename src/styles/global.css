@@ -42,9 +42,14 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.035;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+  opacity: 0.06;
+  /* 避免 feTurbulence 带来的重绘/卡顿：用多层点阵伪随机噪点替代 */
+  background-image:
+    radial-gradient(rgba(15, 23, 42, 0.28) 0.6px, transparent 0.7px),
+    radial-gradient(rgba(15, 23, 42, 0.18) 0.8px, transparent 0.9px),
+    radial-gradient(rgba(15, 23, 42, 0.12) 0.5px, transparent 0.6px);
+  background-size: 3px 3px, 4px 4px, 5px 5px;
+  background-position: 0 0, 1px 1px, 2px 2px;
 }
 
 ::selection {
@@ -89,6 +94,62 @@ img {
   box-shadow: var(--shadow-card);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+}
+
+/* 缺图占位：避免“纯文字感”，同时不引入外部图片资源 */
+.acg-cover-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  text-align: center;
+  pointer-events: none;
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.acg-cover-fallback-inner {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
+  box-shadow: 0 18px 60px rgba(2, 6, 23, 0.16);
+}
+
+.acg-cover-fallback-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.90);
+}
+
+.acg-cover-fallback-brand {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.acg-cover-fallback-meta {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+[data-has-cover="true"] .acg-cover-fallback {
+  opacity: 0;
+  transform: translateY(4px) scale(0.98);
+}
+
+.cover-failed .acg-cover-fallback {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
 /* 大量卡片的渲染优化：减少离屏绘制与布局影响 */
@@ -342,5 +403,169 @@ img {
 @media (prefers-reduced-motion: reduce) {
   .radar::before {
     animation: none;
+  }
+}
+
+/* Spotlight：封面轮播（杂志式“封面墙”） */
+.acg-carousel {
+  position: relative;
+  overflow: hidden;
+}
+
+.acg-carousel-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
+  gap: 14px;
+  padding: 14px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 14px;
+  scroll-padding-right: 14px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+@media (pointer: fine) {
+  .acg-carousel-track {
+    cursor: grab;
+  }
+  .acg-carousel-track.is-dragging {
+    cursor: grabbing;
+  }
+}
+
+.acg-carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .acg-carousel-track {
+    grid-auto-columns: minmax(520px, 72%);
+    gap: 16px;
+    padding: 16px;
+    scroll-padding-left: 16px;
+    scroll-padding-right: 16px;
+  }
+}
+
+.acg-carousel-slide {
+  position: relative;
+  min-height: 320px;
+  border-radius: 22px;
+  overflow: hidden;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
+  contain: layout paint style;
+}
+
+@media (min-width: 768px) {
+  .acg-carousel-slide {
+    min-height: 360px;
+  }
+}
+
+.acg-carousel-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+
+.acg-carousel-bg,
+.acg-carousel-img,
+.acg-carousel-vignette {
+  position: absolute;
+  inset: 0;
+}
+
+.acg-carousel-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.02);
+  transition: transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.acg-carousel-slide:hover .acg-carousel-img {
+  transform: scale(1.04);
+}
+
+.acg-carousel-vignette {
+  background:
+    radial-gradient(900px 420px at 18% 15%, rgba(255, 255, 255, 0.10), transparent 55%),
+    linear-gradient(180deg, rgba(2, 6, 23, 0.08) 0%, rgba(2, 6, 23, 0.42) 70%, rgba(2, 6, 23, 0.62) 100%);
+}
+
+.acg-carousel-content {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 4;
+}
+
+.acg-carousel-bookmark {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 6;
+  border-radius: 14px;
+  padding: 10px 12px;
+  color: #0b0f14;
+}
+
+.acg-carousel-controls {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  z-index: 7;
+  display: flex;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.acg-carousel-btn {
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 16px;
+  font-weight: 800;
+  color: rgba(15, 23, 42, 0.92);
+}
+
+.acg-carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 2px 14px 14px;
+}
+
+.acg-carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  transition: width 180ms ease, background-color 180ms ease, transform 180ms ease;
+}
+
+.acg-carousel-dot.is-active {
+  width: 18px;
+  background: rgba(124, 58, 237, 0.55);
+}
+
+.acg-carousel-dot:active {
+  transform: scale(0.95);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acg-carousel-img {
+    transition: none;
+    transform: none;
   }
 }
