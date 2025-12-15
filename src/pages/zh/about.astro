@@ -1,0 +1,93 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { readGeneratedStatus } from "../../lib/generated-data";
+import { t } from "../../i18n/i18n";
+import { categoryLabel, isCategory, type Category } from "../../lib/categories";
+import { formatDateTime } from "../../lib/format";
+import { SOURCES } from "../../../scripts/sources/index";
+
+const status = await readGeneratedStatus();
+const updatedAt = status.generatedAt ? formatDateTime("zh", status.generatedAt) : "-";
+
+const sources = SOURCES.map((s) => {
+  const category = isCategory(s.category) ? (s.category as Category) : "anime";
+  return {
+    id: s.id,
+    name: s.name,
+    kind: s.kind,
+    category,
+    url: s.url,
+    homepage: s.homepage ?? s.url
+  };
+});
+---
+
+<SiteLayout lang="zh" title={t("zh", "nav.about")} currentPath="/about/">
+  <section class="glass rounded-2xl p-6">
+    <h1 class="m-0 text-2xl font-semibold text-slate-950">{t("zh", "nav.about")}</h1>
+    <p class="mt-2 text-sm leading-relaxed text-slate-700">
+      ACG Radar 是一个“伪全栈”的二次元资讯聚合站：用 GitHub Actions 定时抓取资讯，生成静态页面并发布到 GitHub Pages。
+    </p>
+    <ul class="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-700">
+      <li>更新频率：每小时（UTC 整点）</li>
+      <li>展示策略：仅聚合标题/摘要/时间/来源链接，详情页优先引导跳转原文</li>
+      <li>个性化：收藏/已读/搜索等功能都保存在你的浏览器（localStorage）</li>
+      <li>状态页：你可以在“状态”页看到每个来源的抓取健康度</li>
+    </ul>
+
+    <div class="mt-5 rounded-2xl border border-slate-900/10 bg-white/50 p-4 text-sm text-slate-700">
+      <div class="text-xs font-semibold text-slate-950">当前数据</div>
+      <div class="mt-1 text-xs text-slate-600">上次更新：{updatedAt}</div>
+    </div>
+  </section>
+
+  <section class="mt-4 glass rounded-2xl p-6">
+    <h2 class="m-0 text-sm font-semibold text-slate-950">来源列表</h2>
+    <p class="mt-2 text-sm text-slate-700">
+      如需增加/移除来源，编辑 <code class="rounded bg-slate-900/5 px-1 py-0.5">scripts/sources/index.ts</code>。
+    </p>
+
+    <div class="mt-3 overflow-x-auto">
+      <table class="w-full border-separate border-spacing-y-2 text-sm">
+        <thead class="text-left text-xs text-slate-600">
+          <tr>
+            <th class="px-3">来源</th>
+            <th class="px-3">分类</th>
+            <th class="px-3">类型</th>
+            <th class="px-3">入口</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sources.map((s) => (
+            <tr class="glass">
+              <td class="px-3 py-2">
+                <div class="font-medium text-slate-950">{s.name}</div>
+                <div class="text-xs text-slate-600">{s.id}</div>
+              </td>
+              <td class="px-3 py-2">{categoryLabel("zh", s.category)}</td>
+              <td class="px-3 py-2">{s.kind}</td>
+              <td class="px-3 py-2">
+                <a class="text-slate-950 hover:underline" href={s.homepage} target="_blank" rel="noreferrer">
+                  首页
+                </a>
+                <span class="px-2 text-slate-400">·</span>
+                <a class="text-slate-950 hover:underline" href={s.url} target="_blank" rel="noreferrer">
+                  Feed/列表
+                </a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mt-4 glass rounded-2xl p-6">
+    <h2 class="m-0 text-sm font-semibold text-slate-950">高风险抓取说明</h2>
+    <p class="mt-2 text-sm leading-relaxed text-slate-700">
+      某些来源并未提供标准 RSS/Atom，需要使用 HTML 解析（更容易因页面结构变化而失效）。
+      本项目采用“失败降级”：单个来源失败不会影响全站部署，你可以在状态页查看错误并调整适配器。
+    </p>
+  </section>
+</SiteLayout>
+

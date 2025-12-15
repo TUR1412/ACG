@@ -58,9 +58,17 @@ function applyReadState(readIds: Set<string>) {
 
 function wireBookmarks(bookmarkIds: Set<string>) {
   const buttons = document.querySelectorAll<HTMLButtonElement>("button[data-bookmark-id]");
+  const apply = () => {
+    for (const btn of buttons) {
+      const id = btn.dataset.bookmarkId ?? "";
+      setBookmarkButtonState(btn, bookmarkIds.has(id));
+    }
+  };
+
+  apply();
+
   for (const btn of buttons) {
     const id = btn.dataset.bookmarkId ?? "";
-    setBookmarkButtonState(btn, bookmarkIds.has(id));
     btn.addEventListener("click", () => {
       if (!id) return;
       if (bookmarkIds.has(id)) bookmarkIds.delete(id);
@@ -70,6 +78,8 @@ function wireBookmarks(bookmarkIds: Set<string>) {
       document.dispatchEvent(new CustomEvent("acg:bookmarks-changed"));
     });
   }
+
+  document.addEventListener("acg:bookmarks-changed", apply);
 }
 
 function wireTagChips() {
@@ -143,6 +153,100 @@ function wireBookmarksPage(bookmarkIds: Set<string>) {
   document.addEventListener("acg:bookmarks-changed", apply);
 }
 
+function isJapanese(): boolean {
+  const lang = document.documentElement.lang || "";
+  return lang.toLowerCase().startsWith("ja");
+}
+
+function setBookmarksMessage(text: string) {
+  const el = document.querySelector<HTMLElement>("#acg-bookmarks-message");
+  if (!el) return;
+  el.textContent = text;
+  el.classList.remove("hidden");
+}
+
+function wireBookmarkTools(bookmarkIds: Set<string>) {
+  const exportBtn = document.querySelector<HTMLButtonElement>("#acg-bookmarks-export");
+  const importBtn = document.querySelector<HTMLButtonElement>("#acg-bookmarks-import");
+  const clearBtn = document.querySelector<HTMLButtonElement>("#acg-bookmarks-clear");
+  const importFile = document.querySelector<HTMLInputElement>("#acg-bookmarks-import-file");
+
+  if (!exportBtn && !importBtn && !clearBtn) return;
+
+  const downloadJson = (filename: string, data: unknown) => {
+    const blob = new Blob([JSON.stringify(data, null, 2) + "\n"], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  exportBtn?.addEventListener("click", () => {
+    const now = new Date();
+    const stamp = now
+      .toISOString()
+      .replace(/[:.]/g, "")
+      .replace("T", "-")
+      .slice(0, 15);
+    const payload = {
+      version: 1,
+      exportedAt: now.toISOString(),
+      ids: [...bookmarkIds]
+    };
+    downloadJson(`acg-bookmarks-${stamp}.json`, payload);
+    setBookmarksMessage(isJapanese() ? "エクスポートしました。" : "已导出收藏。");
+  });
+
+  importBtn?.addEventListener("click", () => {
+    importFile?.click();
+  });
+
+  importFile?.addEventListener("change", async () => {
+    const file = importFile.files?.[0];
+    importFile.value = "";
+    if (!file) return;
+
+    try {
+      const raw = await file.text();
+      const parsed = JSON.parse(raw) as unknown;
+      const ids = Array.isArray(parsed)
+        ? parsed
+        : parsed && typeof parsed === "object"
+          ? (parsed as any).ids
+          : null;
+
+      const list = Array.isArray(ids) ? ids.filter((x) => typeof x === "string") : [];
+      const before = bookmarkIds.size;
+      for (const id of list) bookmarkIds.add(id);
+      saveIds(BOOKMARK_KEY, bookmarkIds);
+      document.dispatchEvent(new CustomEvent("acg:bookmarks-changed"));
+
+      const added = bookmarkIds.size - before;
+      setBookmarksMessage(
+        isJapanese()
+          ? `インポート完了（+${added}）。`
+          : `导入完成（新增 +${added}）。`
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setBookmarksMessage(isJapanese() ? `インポート失敗: ${msg}` : `导入失败：${msg}`);
+    }
+  });
+
+  clearBtn?.addEventListener("click", () => {
+    const ok = confirm(isJapanese() ? "ブックマークを全て削除しますか？" : "确定要清空所有收藏吗？");
+    if (!ok) return;
+    bookmarkIds.clear();
+    saveIds(BOOKMARK_KEY, bookmarkIds);
+    document.dispatchEvent(new CustomEvent("acg:bookmarks-changed"));
+    setBookmarksMessage(isJapanese() ? "クリアしました。" : "已清空收藏。");
+  });
+}
+
 function markCurrentPostRead(readIds: Set<string>) {
   const current = document.body.dataset.currentPostId ?? "";
   if (!current) return;
@@ -158,6 +262,7 @@ function main() {
   applyReadState(readIds);
   wireBookmarks(bookmarkIds);
   wireBookmarksPage(bookmarkIds);
+  wireBookmarkTools(bookmarkIds);
   wireSearch();
   wireTagChips();
 }

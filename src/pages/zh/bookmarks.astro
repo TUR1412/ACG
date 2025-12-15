@@ -14,6 +14,32 @@ const latest = posts.slice(0, 300);
     <p class="mt-2 text-sm text-slate-700">
       <span id="acg-bookmarks-count">0</span> 条
     </p>
+    <div class="mt-3 flex flex-wrap gap-2">
+      <button
+        type="button"
+        id="acg-bookmarks-export"
+        class="glass rounded-xl px-4 py-2 text-xs font-medium text-slate-950 clickable"
+      >
+        {t("zh", "bookmarks.export")}
+      </button>
+      <button
+        type="button"
+        id="acg-bookmarks-import"
+        class="glass rounded-xl px-4 py-2 text-xs font-medium text-slate-950 clickable"
+      >
+        {t("zh", "bookmarks.import")}
+      </button>
+      <button
+        type="button"
+        id="acg-bookmarks-clear"
+        class="rounded-xl border border-rose-600/20 bg-rose-500/10 px-4 py-2 text-xs font-medium text-rose-800 clickable"
+      >
+        {t("zh", "bookmarks.clear")}
+      </button>
+      <input id="acg-bookmarks-import-file" type="file" accept="application/json" class="hidden" />
+    </div>
+    <p class="mt-3 text-xs text-slate-600">{t("zh", "bookmarks.hint")}</p>
+    <p id="acg-bookmarks-message" class="mt-2 hidden text-xs text-slate-700"></p>
     <noscript>
       <p class="mt-2 text-sm text-slate-700">此页面需要启用 JavaScript 才能读取你的本地收藏。</p>
     </noscript>

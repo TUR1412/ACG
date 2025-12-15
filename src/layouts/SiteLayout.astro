@@ -70,6 +70,9 @@ const langSwitchHref = href(`/${otherLang}${currentPath ?? "/"}`);
           <a href={withLang("/status/")} class="rounded-xl px-3 py-2 text-sm text-slate-700 hover:text-slate-950 clickable">
             {t(lang, "nav.status")}
           </a>
+          <a href={withLang("/about/")} class="rounded-xl px-3 py-2 text-sm text-slate-700 hover:text-slate-950 clickable">
+            {t(lang, "nav.about")}
+          </a>
           <a
             href={langSwitchHref}
             class="glass rounded-xl px-3 py-2 text-sm font-medium text-slate-950 clickable"

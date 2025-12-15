@@ -24,6 +24,10 @@ export type I18nKey =
   | "post.publishedAt"
   | "bookmarks.title"
   | "bookmarks.empty"
+  | "bookmarks.export"
+  | "bookmarks.import"
+  | "bookmarks.clear"
+  | "bookmarks.hint"
   | "status.title"
   | "status.lastRun"
   | "status.sources"
@@ -52,6 +56,10 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "post.publishedAt": "发布时间",
     "bookmarks.title": "我的收藏",
     "bookmarks.empty": "你还没有收藏任何资讯。",
+    "bookmarks.export": "导出收藏",
+    "bookmarks.import": "导入收藏",
+    "bookmarks.clear": "清空收藏",
+    "bookmarks.hint": "导入/导出仅在本机浏览器生效（localStorage）。",
     "status.title": "抓取状态",
     "status.lastRun": "上次更新",
     "status.sources": "来源健康度",
@@ -79,6 +87,10 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "post.publishedAt": "公開日時",
     "bookmarks.title": "ブックマーク",
     "bookmarks.empty": "まだブックマークがありません。",
+    "bookmarks.export": "エクスポート",
+    "bookmarks.import": "インポート",
+    "bookmarks.clear": "クリア",
+    "bookmarks.hint": "インポート/エクスポートはこのブラウザ内のみ（localStorage）。",
     "status.title": "取得ステータス",
     "status.lastRun": "最終更新",
     "status.sources": "ソースの健康状態",

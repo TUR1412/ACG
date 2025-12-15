@@ -30,6 +30,14 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Restore HTTP cache
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: http-cache-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            http-cache-${{ runner.os }}-
+
       - name: Install
         run: npm ci
 
