@@ -1,12 +1,7 @@
 ---
 import SiteLayout from "../../layouts/SiteLayout.astro";
-import PostList from "../../components/PostList.astro";
-import { readGeneratedPosts } from "../../lib/generated-data";
 import { href } from "../../lib/href";
 import { t } from "../../i18n/i18n";
-
-const posts = await readGeneratedPosts();
-const latest = posts.slice(0, 300);
 ---
 
 <SiteLayout lang="zh" title={t("zh", "bookmarks.title")} currentPath="/bookmarks/">
@@ -47,7 +42,10 @@ const latest = posts.slice(0, 300);
   </div>
 
   <div class="mt-4" id="acg-bookmarks" hidden>
-    <PostList posts={latest} lang="zh" />
+    <div
+      id="acg-bookmarks-grid"
+      class="grid gap-4 sm:grid-cols-2 lg:gap-5 xl:grid-cols-3 2xl:grid-cols-4"
+    ></div>
   </div>
 
   <div class="mt-4 glass shine rounded-2xl p-8" id="acg-bookmarks-empty">

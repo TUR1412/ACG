@@ -147,8 +147,9 @@ function toast(params: { title: string; desc?: string; variant?: ToastVariant; t
 
 function pop(el: HTMLElement) {
   el.classList.remove("pop");
-  void el.offsetWidth;
-  el.classList.add("pop");
+  window.requestAnimationFrame(() => {
+    el.classList.add("pop");
+  });
 }
 
 function setBookmarkButtonState(button: HTMLButtonElement, on: boolean) {
@@ -170,8 +171,8 @@ function applyReadState(readIds: Set<string>) {
 }
 
 function wireBookmarks(bookmarkIds: Set<string>) {
-  const buttons = document.querySelectorAll<HTMLButtonElement>("button[data-bookmark-id]");
   const apply = () => {
+    const buttons = document.querySelectorAll<HTMLButtonElement>("button[data-bookmark-id]");
     for (const btn of buttons) {
       const id = btn.dataset.bookmarkId ?? "";
       setBookmarkButtonState(btn, bookmarkIds.has(id));
@@ -180,23 +181,27 @@ function wireBookmarks(bookmarkIds: Set<string>) {
 
   apply();
 
-  for (const btn of buttons) {
-    const id = btn.dataset.bookmarkId ?? "";
-    btn.addEventListener("click", () => {
-      if (!id) return;
-      if (bookmarkIds.has(id)) bookmarkIds.delete(id);
-      else bookmarkIds.add(id);
-      saveIds(BOOKMARK_KEY, bookmarkIds);
-      const on = bookmarkIds.has(id);
-      setBookmarkButtonState(btn, on);
-      pop(btn);
-      toast({
-        title: on ? (isJapanese() ? "ブックマークしました" : "已收藏") : isJapanese() ? "已取消ブックマーク" : "已取消收藏",
-        variant: on ? "success" : "info"
-      });
-      document.dispatchEvent(new CustomEvent("acg:bookmarks-changed"));
+  document.addEventListener("click", (e) => {
+    if (e.defaultPrevented) return;
+    if (!(e.target instanceof HTMLElement)) return;
+    const el = e.target.closest("button[data-bookmark-id]");
+    if (!(el instanceof HTMLButtonElement)) return;
+
+    const id = el.dataset.bookmarkId ?? "";
+    if (!id) return;
+
+    if (bookmarkIds.has(id)) bookmarkIds.delete(id);
+    else bookmarkIds.add(id);
+    saveIds(BOOKMARK_KEY, bookmarkIds);
+    const on = bookmarkIds.has(id);
+    setBookmarkButtonState(el, on);
+    pop(el);
+    toast({
+      title: on ? (isJapanese() ? "ブックマークしました" : "已收藏") : isJapanese() ? "已取消ブックマーク" : "已取消收藏",
+      variant: on ? "success" : "info"
     });
-  }
+    document.dispatchEvent(new CustomEvent("acg:bookmarks-changed"));
+  });
 
   document.addEventListener("acg:bookmarks-changed", apply);
 }
@@ -204,16 +209,19 @@ function wireBookmarks(bookmarkIds: Set<string>) {
 function wireTagChips() {
   const input = document.querySelector<HTMLInputElement>("#acg-search");
   if (!input) return;
-  const chips = document.querySelectorAll<HTMLButtonElement>("button[data-tag]");
-  for (const chip of chips) {
-    chip.addEventListener("click", () => {
-      const tag = chip.dataset.tag ?? "";
-      if (!tag) return;
-      input.value = tag;
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.focus();
-    });
-  }
+
+  document.addEventListener("click", (e) => {
+    if (e.defaultPrevented) return;
+    if (!(e.target instanceof HTMLElement)) return;
+    const el = e.target.closest("button[data-tag]");
+    if (!(el instanceof HTMLButtonElement)) return;
+
+    const tag = el.dataset.tag ?? "";
+    if (!tag) return;
+    input.value = tag;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.focus();
+  });
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -327,6 +335,7 @@ function createListFilter(params: {
     const tags = [...card.querySelectorAll("button[data-tag]")].map((b) => b.textContent ?? "").join(" ");
     return normalizeText(`${title} ${summary} ${tags}`);
   });
+  const hiddenState = cards.map((c) => c.classList.contains("hidden"));
 
   clear?.addEventListener("click", () => {
     input.value = "";
@@ -335,12 +344,12 @@ function createListFilter(params: {
     toast({ title: isJapanese() ? "検索をクリアしました" : "已清空搜索", variant: "info" });
   });
 
-  const apply = () => {
+  const applyNow = () => {
     const q = normalizeText(input.value);
     const followOnlyEnabled = filters.onlyFollowed;
     const hideReadEnabled = filters.hideRead;
-    const followWords = [...follows];
-    const blockWords = [...blocklist];
+    const followWords = followOnlyEnabled ? [...follows] : [];
+    const blockWords = blocklist.size > 0 ? [...blocklist] : [];
 
     let shown = 0;
     let unreadShown = 0;
@@ -361,44 +370,397 @@ function createListFilter(params: {
       const sourceEnabled = !sourceId || !disabledSources.has(sourceId);
 
       const ok = matchSearch && matchFollow && !blocked && !hideByRead && sourceEnabled;
-      cards[i].classList.toggle("hidden", !ok);
+      const hidden = !ok;
+      if (hiddenState[i] !== hidden) {
+        cards[i].classList.toggle("hidden", hidden);
+        hiddenState[i] = hidden;
+      }
       if (ok) {
         shown += 1;
         if (!read) unreadShown += 1;
       }
     }
-    if (count) count.textContent = `${shown}/${cards.length}`;
-    if (unreadCount) unreadCount.textContent = String(unreadShown);
+    if (count) {
+      const next = `${shown}/${cards.length}`;
+      if (count.textContent !== next) count.textContent = next;
+    }
+    if (unreadCount) {
+      const next = String(unreadShown);
+      if (unreadCount.textContent !== next) unreadCount.textContent = next;
+    }
     if (empty) empty.classList.toggle("hidden", shown > 0);
   };
 
-  input.addEventListener("input", apply);
-  document.addEventListener("acg:filters-changed", apply);
-  apply();
+  let scheduled = false;
+  const schedule = () => {
+    if (scheduled) return;
+    scheduled = true;
+    window.requestAnimationFrame(() => {
+      scheduled = false;
+      applyNow();
+    });
+  };
+
+  input.addEventListener("input", schedule);
+  document.addEventListener("acg:filters-changed", schedule);
+  applyNow();
 }
 
-function wireBookmarksPage(bookmarkIds: Set<string>) {
+type BookmarkLang = "zh" | "ja";
+type BookmarkCategory = "anime" | "game" | "goods" | "seiyuu";
+
+type BookmarkPost = {
+  id: string;
+  title: string;
+  summary?: string;
+  url: string;
+  publishedAt: string;
+  cover?: string;
+  category: BookmarkCategory;
+  tags?: string[];
+  sourceId: string;
+  sourceName: string;
+  sourceUrl: string;
+};
+
+const BOOKMARK_CATEGORY_LABELS: Record<BookmarkLang, Record<BookmarkCategory, string>> = {
+  zh: { anime: "动画", game: "游戏联动", goods: "周边手办", seiyuu: "声优活动" },
+  ja: { anime: "アニメ", game: "ゲーム/コラボ", goods: "グッズ/フィギュア", seiyuu: "声優/イベント" }
+};
+
+const BOOKMARK_CATEGORY_THEME: Record<
+  BookmarkCategory,
+  { dot: string; ink: string; cover: string; glow: string }
+> = {
+  anime: {
+    dot: "bg-violet-400",
+    ink: "text-violet-900",
+    cover: "from-violet-500/25 via-fuchsia-500/15 to-sky-500/20",
+    glow: "bg-violet-500/10"
+  },
+  game: {
+    dot: "bg-sky-400",
+    ink: "text-sky-900",
+    cover: "from-sky-500/25 via-cyan-500/15 to-emerald-500/15",
+    glow: "bg-sky-500/10"
+  },
+  goods: {
+    dot: "bg-amber-400",
+    ink: "text-amber-900",
+    cover: "from-amber-500/25 via-orange-500/15 to-rose-500/15",
+    glow: "bg-amber-500/10"
+  },
+  seiyuu: {
+    dot: "bg-emerald-400",
+    ink: "text-emerald-900",
+    cover: "from-emerald-500/25 via-teal-500/15 to-sky-500/15",
+    glow: "bg-emerald-500/10"
+  }
+};
+
+function hrefInBase(pathname: string): string {
+  const base = import.meta.env.BASE_URL ?? "/";
+  const trimmed = pathname.startsWith("/") ? pathname.slice(1) : pathname;
+  return `${base}${trimmed}`;
+}
+
+function getBookmarkLang(): BookmarkLang {
+  return isJapanese() ? "ja" : "zh";
+}
+
+function normalizeCategory(value: unknown): BookmarkCategory {
+  if (value === "anime" || value === "game" || value === "goods" || value === "seiyuu") return value;
+  return "anime";
+}
+
+function whenLabel(lang: BookmarkLang, publishedAt: string): string {
+  const t = new Date(publishedAt).getTime();
+  if (!Number.isFinite(t)) return publishedAt;
+  const diffMs = Date.now() - t;
+  if (!Number.isFinite(diffMs) || diffMs < 0) {
+    return new Date(t).toLocaleDateString(lang === "ja" ? "ja-JP" : "zh-CN");
+  }
+  const hours = Math.floor(diffMs / (60 * 60 * 1000));
+  if (hours < 1) return lang === "ja" ? "たった今" : "刚刚";
+  if (hours < 24) return lang === "ja" ? `${hours}時間前` : `${hours} 小时前`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return lang === "ja" ? `${days}日前` : `${days} 天前`;
+  return new Date(t).toLocaleDateString(lang === "ja" ? "ja-JP" : "zh-CN");
+}
+
+let bookmarkPostsByIdPromise: Promise<Map<string, BookmarkPost>> | null = null;
+async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {
+  if (bookmarkPostsByIdPromise) return bookmarkPostsByIdPromise;
+  bookmarkPostsByIdPromise = (async () => {
+    const url = hrefInBase("/data/posts.json");
+    const res = await fetch(url, { headers: { accept: "application/json" } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = (await res.json()) as unknown;
+    if (!Array.isArray(json)) throw new Error("posts.json 格式错误");
+    const map = new Map<string, BookmarkPost>();
+    for (const item of json) {
+      if (!item || typeof item !== "object") continue;
+      const it = item as any;
+      const id = typeof it.id === "string" ? it.id : "";
+      if (!id) continue;
+      const post: BookmarkPost = {
+        id,
+        title: typeof it.title === "string" ? it.title : "",
+        summary: typeof it.summary === "string" ? it.summary : undefined,
+        url: typeof it.url === "string" ? it.url : "",
+        publishedAt: typeof it.publishedAt === "string" ? it.publishedAt : "",
+        cover: typeof it.cover === "string" ? it.cover : undefined,
+        category: normalizeCategory(it.category),
+        tags: Array.isArray(it.tags) ? it.tags.filter((x: unknown) => typeof x === "string") : undefined,
+        sourceId: typeof it.sourceId === "string" ? it.sourceId : "",
+        sourceName: typeof it.sourceName === "string" ? it.sourceName : "",
+        sourceUrl: typeof it.sourceUrl === "string" ? it.sourceUrl : ""
+      };
+      map.set(id, post);
+    }
+    return map;
+  })();
+
+  return bookmarkPostsByIdPromise;
+}
+
+function buildBookmarkCard(params: {
+  post: BookmarkPost;
+  lang: BookmarkLang;
+  readIds: Set<string>;
+}): HTMLElement {
+  const { post, lang, readIds } = params;
+  const theme = BOOKMARK_CATEGORY_THEME[post.category];
+  const label = BOOKMARK_CATEGORY_LABELS[lang][post.category];
+  const detailHref = hrefInBase(`/${lang}/p/${post.id}/`);
+  const when = whenLabel(lang, post.publishedAt);
+
+  const article = document.createElement("article");
+  article.className = "glass-card acg-card clickable shine group relative overflow-hidden rounded-2xl";
+  article.dataset.postId = post.id;
+  article.dataset.category = post.category;
+  article.dataset.sourceId = post.sourceId;
+  if (readIds.has(post.id)) article.setAttribute("data-read", "true");
+
+  const topLink = document.createElement("a");
+  topLink.href = detailHref;
+  topLink.className = "relative block aspect-[16/9]";
+  article.appendChild(topLink);
+
+  const coverGrad = document.createElement("div");
+  coverGrad.className = `absolute inset-0 bg-gradient-to-br ${theme.cover}`;
+  topLink.appendChild(coverGrad);
+
+  if (post.cover) {
+    const img = document.createElement("img");
+    img.src = post.cover;
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+    img.className =
+      "absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]";
+    img.addEventListener("error", () => {
+      img.style.opacity = "0";
+      img.style.pointerEvents = "none";
+    });
+    topLink.appendChild(img);
+  } else {
+    const placeholder = document.createElement("div");
+    placeholder.className = "absolute inset-0 grid place-items-center";
+    const tag = document.createElement("div");
+    tag.className = "glass-card rounded-2xl px-3 py-2 text-xs font-semibold text-slate-950/80";
+    tag.textContent = "ACG Radar";
+    placeholder.appendChild(tag);
+    topLink.appendChild(placeholder);
+  }
+
+  const overlay = document.createElement("div");
+  overlay.className = "absolute inset-0 bg-gradient-to-t from-slate-950/45 via-slate-950/10 to-transparent";
+  topLink.appendChild(overlay);
+
+  const badgeWrap = document.createElement("div");
+  badgeWrap.className = "absolute left-3 top-3";
+  const badge = document.createElement("span");
+  badge.className =
+    "inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white";
+  const dot = document.createElement("span");
+  dot.className = `size-1.5 rounded-full ${theme.dot}`;
+  const badgeText = document.createElement("span");
+  badgeText.textContent = label;
+  badge.appendChild(dot);
+  badge.appendChild(badgeText);
+  badgeWrap.appendChild(badge);
+  topLink.appendChild(badgeWrap);
+
+  const whenWrap = document.createElement("div");
+  whenWrap.className = "absolute bottom-3 left-3";
+  const whenChip = document.createElement("span");
+  whenChip.className =
+    "inline-flex max-w-[22ch] truncate rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/90";
+  whenChip.textContent = when;
+  whenWrap.appendChild(whenChip);
+  topLink.appendChild(whenWrap);
+
+  const body = document.createElement("div");
+  body.className = "p-4";
+  article.appendChild(body);
+
+  const head = document.createElement("div");
+  head.className = "flex items-start justify-between gap-3";
+  body.appendChild(head);
+
+  const left = document.createElement("div");
+  left.className = "min-w-0";
+  head.appendChild(left);
+
+  const titleLink = document.createElement("a");
+  titleLink.href = detailHref;
+  titleLink.className = "block text-[15px] font-semibold leading-snug text-slate-950 hover:underline";
+  titleLink.textContent = post.title || (lang === "ja" ? "（無題）" : "（无标题）");
+  left.appendChild(titleLink);
+
+  const meta = document.createElement("div");
+  meta.className = "mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs";
+  left.appendChild(meta);
+
+  if (post.sourceUrl && post.sourceName) {
+    const sourceLink = document.createElement("a");
+    sourceLink.className = "text-slate-700 hover:underline";
+    sourceLink.href = post.sourceUrl;
+    sourceLink.target = "_blank";
+    sourceLink.rel = "noreferrer";
+    sourceLink.textContent = post.sourceName;
+    meta.appendChild(sourceLink);
+  }
+
+  const star = document.createElement("button");
+  star.type = "button";
+  star.className = "glass-card rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable";
+  star.dataset.bookmarkId = post.id;
+  star.setAttribute("aria-pressed", "true");
+  star.title = "Bookmark";
+  const starLabel = document.createElement("span");
+  starLabel.setAttribute("data-bookmark-label", "");
+  star.appendChild(starLabel);
+  setBookmarkButtonState(star, true);
+  head.appendChild(star);
+
+  if (post.summary) {
+    const p = document.createElement("p");
+    p.className = "mt-2 line-clamp-3 text-sm leading-relaxed text-slate-700";
+    p.textContent = post.summary;
+    body.appendChild(p);
+  }
+
+  return article;
+}
+
+function wireBookmarksPage(bookmarkIds: Set<string>, readIds: Set<string>) {
   const container = document.querySelector<HTMLElement>("#acg-bookmarks");
   if (!container) return;
 
-  const apply = () => {
-    const cards = container.querySelectorAll<HTMLElement>("[data-post-id]");
-    let shown = 0;
-    for (const card of cards) {
-      const id = card.dataset.postId ?? "";
-      const ok = bookmarkIds.has(id);
-      card.classList.toggle("hidden", !ok);
-      if (ok) shown += 1;
+  const grid = container.querySelector<HTMLElement>("#acg-bookmarks-grid");
+  if (!grid) {
+    // 兼容旧页面：如果仍然是“预渲染 300 条再隐藏”，沿用旧逻辑。
+    const applyLegacy = () => {
+      const cards = container.querySelectorAll<HTMLElement>("[data-post-id]");
+      let shown = 0;
+      for (const card of cards) {
+        const id = card.dataset.postId ?? "";
+        const ok = bookmarkIds.has(id);
+        card.classList.toggle("hidden", !ok);
+        if (ok) shown += 1;
+      }
+      container.hidden = false;
+      const count = document.querySelector<HTMLElement>("#acg-bookmarks-count");
+      if (count) count.textContent = String(shown);
+      const empty = document.querySelector<HTMLElement>("#acg-bookmarks-empty");
+      if (empty) empty.classList.toggle("hidden", shown > 0);
+    };
+    applyLegacy();
+    document.addEventListener("acg:bookmarks-changed", applyLegacy);
+    return;
+  }
+
+  const lang = getBookmarkLang();
+  const count = document.querySelector<HTMLElement>("#acg-bookmarks-count");
+  const empty = document.querySelector<HTMLElement>("#acg-bookmarks-empty");
+
+  let renderedIds = new Set<string>();
+  let applyRunning = false;
+
+  const apply = async () => {
+    if (applyRunning) return;
+    applyRunning = true;
+
+    try {
+      if (bookmarkIds.size === 0) {
+        grid.innerHTML = "";
+        renderedIds = new Set();
+        container.hidden = true;
+        if (count) count.textContent = "0";
+        if (empty) empty.classList.remove("hidden");
+        return;
+      }
+
+      const byId = await getBookmarkPostsById();
+
+      // 只处理“删除”场景，避免每次点击都全量重排；新增（导入/其它页新增）则全量重绘一次。
+      const hasAdd = bookmarkIds.size > renderedIds.size;
+      if (!hasAdd) {
+        let removed = 0;
+        for (const id of [...renderedIds]) {
+          if (bookmarkIds.has(id)) continue;
+          grid.querySelector(`[data-post-id="${id}"]`)?.remove();
+          renderedIds.delete(id);
+          removed += 1;
+        }
+        if (removed > 0) applyReadState(readIds);
+      } else {
+        const list: BookmarkPost[] = [];
+        const missing: string[] = [];
+        for (const id of bookmarkIds) {
+          const post = byId.get(id);
+          if (post) list.push(post);
+          else missing.push(id);
+        }
+        list.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+
+        const frag = document.createDocumentFragment();
+        for (const post of list) {
+          frag.appendChild(buildBookmarkCard({ post, lang, readIds }));
+        }
+        grid.innerHTML = "";
+        grid.appendChild(frag);
+        renderedIds = new Set(list.map((p) => p.id));
+
+        if (missing.length > 0) {
+          setBookmarksMessage(
+            lang === "ja"
+              ? `一部のブックマークは期間外のため表示できません（${missing.length}件）。`
+              : `部分收藏因超出数据保留期而无法展示（${missing.length} 条）。`
+          );
+        }
+      }
+
+      container.hidden = false;
+      if (count) count.textContent = String(renderedIds.size);
+      if (empty) empty.classList.toggle("hidden", renderedIds.size > 0);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      container.hidden = true;
+      if (count) count.textContent = "0";
+      if (empty) empty?.classList.remove("hidden");
+      setBookmarksMessage(lang === "ja" ? `読み込み失敗: ${msg}` : `加载失败：${msg}`);
+      toast({ title: lang === "ja" ? "ブックマーク読み込み失敗" : "收藏加载失败", desc: msg, variant: "error" });
+    } finally {
+      applyRunning = false;
     }
-    container.hidden = false;
-    const count = document.querySelector<HTMLElement>("#acg-bookmarks-count");
-    if (count) count.textContent = String(shown);
-    const empty = document.querySelector<HTMLElement>("#acg-bookmarks-empty");
-    if (empty) empty.classList.toggle("hidden", shown > 0);
   };
 
-  apply();
-  document.addEventListener("acg:bookmarks-changed", apply);
+  void apply();
+  document.addEventListener("acg:bookmarks-changed", () => void apply());
 }
 
 function isJapanese(): boolean {
@@ -745,7 +1107,7 @@ function main() {
   applyReadState(readIds);
   wireBackToTop();
   wireBookmarks(bookmarkIds);
-  wireBookmarksPage(bookmarkIds);
+  wireBookmarksPage(bookmarkIds, readIds);
   wireBookmarkTools(bookmarkIds);
   wirePreferences({ follows, blocklist, filters });
   wireSourceToggles(disabledSources);

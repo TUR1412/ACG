@@ -22,7 +22,7 @@ const animateStyle = typeof animateIndex === "number" ? `--i: ${animateIndex};` 
 
 <article
   class:list={[
-    "glass clickable shine group relative overflow-hidden rounded-2xl",
+    "glass-card acg-card clickable shine group relative overflow-hidden rounded-2xl",
     typeof animateIndex === "number" ? "stagger-item" : ""
   ]}
   style={animateStyle}
@@ -44,20 +44,20 @@ const animateStyle = typeof animateIndex === "number" ? `--i: ${animateIndex};` 
       />
     ) : (
       <div class="absolute inset-0 grid place-items-center">
-        <div class="glass rounded-2xl px-3 py-2 text-xs font-semibold text-slate-950/80">ACG Radar</div>
+        <div class="glass-card rounded-2xl px-3 py-2 text-xs font-semibold text-slate-950/80">ACG Radar</div>
       </div>
     )}
     <div class="absolute inset-0 bg-gradient-to-t from-slate-950/45 via-slate-950/10 to-transparent"></div>
 
     <div class="absolute left-3 top-3">
-      <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
+      <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white">
         <span class:list={["size-1.5 rounded-full", theme.dot]}></span>
         <span>{categoryLabel(lang, post.category)}</span>
       </span>
     </div>
 
     <div class="absolute bottom-3 left-3">
-      <span class="inline-flex max-w-[22ch] truncate rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/90 backdrop-blur-md">
+      <span class="inline-flex max-w-[22ch] truncate rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/90">
         {when}
       </span>
     </div>
@@ -78,7 +78,7 @@ const animateStyle = typeof animateIndex === "number" ? `--i: ${animateIndex};` 
 
       <button
         type="button"
-        class="glass rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable"
+        class="glass-card rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable"
         data-bookmark-id={post.id}
         aria-pressed="false"
         title="Bookmark"

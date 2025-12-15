@@ -69,6 +69,22 @@ img {
   box-shadow: var(--shadow-card);
 }
 
+/* 列表卡片：保留“玻璃感”，但不使用昂贵的 backdrop-filter（大列表更顺滑） */
+.glass-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.90), rgba(255, 255, 255, 0.62));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* 大量卡片的渲染优化：减少离屏绘制与布局影响 */
+.acg-card {
+  content-visibility: auto;
+  contain: layout paint style;
+  contain-intrinsic-size: 360px 320px;
+}
+
 /* 可点击触感 */
 .clickable {
   transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 160ms ease,
@@ -219,7 +235,7 @@ img {
   opacity: 0.78;
 }
 [data-post-id][data-read="true"] img {
-  filter: saturate(0.72) contrast(0.98);
+  opacity: 0.92;
 }
 
 /* 列表“交错入场”（不使用 opacity=0，避免空白屏） */
