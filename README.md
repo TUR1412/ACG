@@ -88,8 +88,9 @@ npm run sync -- --days 30 --limit 2000 --verbose
 
 可用环境变量控制：
 
-- `ACG_COVER_ENRICH_MAX`：每次同步最多补全多少条封面（默认 `48`，设为 `0` 可关闭）
-- `ACG_COVER_ENRICH_PER_SOURCE_MAX`：每次同步每个来源最多补全多少条（默认 `48`）
+- `ACG_COVER_ENRICH_MAX`：每次同步最多补全多少条封面（默认 `200`，设为 `0` 可关闭）
+- `ACG_COVER_ENRICH_PER_SOURCE_MAX`：每次同步每个来源最多补全多少条（默认 `160`）
+- `ACG_COVER_ENRICH_DELAY_MS`：补全时每次请求前的延迟（毫秒，默认 `0`，可用来更“礼貌”）
 
 ---
 

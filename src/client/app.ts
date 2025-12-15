@@ -223,6 +223,57 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return target.isContentEditable;
 }
 
+function prefersReducedMotion(): boolean {
+  try {
+    return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+  } catch {
+    return false;
+  }
+}
+
+function wireBackToTop() {
+  try {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.id = "acg-back-to-top";
+    button.className = "acg-fab glass clickable";
+    button.hidden = true;
+    button.setAttribute("aria-label", isJapanese() ? "トップへ戻る" : "回到顶部");
+
+    const icon = document.createElement("span");
+    icon.className = "acg-fab-icon";
+    icon.textContent = "↑";
+
+    const label = document.createElement("span");
+    label.className = "acg-fab-label";
+    label.textContent = isJapanese() ? "トップ" : "顶部";
+
+    button.appendChild(icon);
+    button.appendChild(label);
+    document.body.appendChild(button);
+
+    button.addEventListener("click", () => {
+      const behavior = prefersReducedMotion() ? "auto" : "smooth";
+      window.scrollTo({ top: 0, behavior });
+    });
+
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        ticking = false;
+        button.hidden = window.scrollY < 700;
+      });
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+  } catch {
+    // ignore
+  }
+}
+
 function wireKeyboardShortcuts() {
   const input = document.querySelector<HTMLInputElement>("#acg-search");
   if (!input) return;
@@ -692,6 +743,7 @@ function main() {
   const disabledSources = loadIds(DISABLED_SOURCES_KEY);
   markCurrentPostRead(readIds);
   applyReadState(readIds);
+  wireBackToTop();
   wireBookmarks(bookmarkIds);
   wireBookmarksPage(bookmarkIds);
   wireBookmarkTools(bookmarkIds);

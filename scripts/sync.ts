@@ -217,26 +217,32 @@ function parseNonNegativeInt(value: string | undefined, fallback: number): numbe
   return Math.floor(parsed);
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function enrichCoversFromArticlePages(params: {
   posts: Post[];
-  previousIds: Set<string>;
   cache: HttpCache;
   cachePath: string;
   verbose: boolean;
   persistCache: boolean;
 }): Promise<{ attempted: number; enriched: number; maxTotal: number }> {
-  const { posts, previousIds, cache, cachePath, verbose, persistCache } = params;
+  const { posts, cache, cachePath, verbose, persistCache } = params;
 
-  const maxTotal = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_MAX, 48);
-  const maxPerSource = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_PER_SOURCE_MAX, 48);
+  // 偏激进默认值：优先让“最新可见内容”尽量都有封面。
+  // 仍可通过环境变量一键调回保守/关闭（设为 0）。
+  const maxTotal = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_MAX, 200);
+  const maxPerSource = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_PER_SOURCE_MAX, 160);
+  const delayMs = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_DELAY_MS, 0);
 
   const candidates = posts
     .filter((p) => !p.cover)
     .slice()
     .sort((a, b) => {
-      const aOld = previousIds.has(a.id);
-      const bOld = previousIds.has(b.id);
-      if (aOld !== bOld) return aOld ? 1 : -1;
+      const at = new Date(a.publishedAt).getTime();
+      const bt = new Date(b.publishedAt).getTime();
+      if (Number.isFinite(at) && Number.isFinite(bt) && at !== bt) return bt - at;
       return b.publishedAt.localeCompare(a.publishedAt);
     });
 
@@ -252,6 +258,8 @@ async function enrichCoversFromArticlePages(params: {
 
     perSource.set(post.sourceId, used + 1);
     attempted += 1;
+
+    if (delayMs > 0) await sleep(delayMs);
 
     const res = await fetchTextWithCache({
       url: post.url,
@@ -341,10 +349,8 @@ async function main() {
   const pruned = filterByDays(dedupeAndSort(allPosts), args.days).slice(0, args.limit);
 
   if (!args.dryRun) {
-    const previousIds = new Set(previousPosts.map((p) => p.id));
     const { attempted, enriched, maxTotal } = await enrichCoversFromArticlePages({
       posts: pruned,
-      previousIds,
       cache,
       cachePath,
       verbose: args.verbose,
