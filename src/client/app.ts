@@ -13,6 +13,7 @@ const READ_KEY = "acg.read.v1";
 const FOLLOWS_KEY = "acg.follows.v1";
 const BLOCKLIST_KEY = "acg.blocklist.v1";
 const FILTERS_KEY = "acg.filters.v1";
+const DISABLED_SOURCES_KEY = "acg.sourcesDisabled.v1";
 
 type WordStore = {
   version: 1;
@@ -165,11 +166,13 @@ function createListFilter(params: {
   readIds: Set<string>;
   follows: Set<string>;
   blocklist: Set<string>;
+  disabledSources: Set<string>;
   filters: FilterStore;
 }) {
-  const { readIds, follows, blocklist, filters } = params;
+  const { readIds, follows, blocklist, disabledSources, filters } = params;
   const input = document.querySelector<HTMLInputElement>("#acg-search");
   const count = document.querySelector<HTMLElement>("#acg-search-count");
+  const unreadCount = document.querySelector<HTMLElement>("#acg-unread-count");
   if (!input) return;
 
   const cards = [...document.querySelectorAll<HTMLElement>("[data-post-id]")];
@@ -188,8 +191,10 @@ function createListFilter(params: {
     const blockWords = [...blocklist];
 
     let shown = 0;
+    let unreadShown = 0;
     for (let i = 0; i < cards.length; i += 1) {
       const id = cards[i].dataset.postId ?? "";
+      const sourceId = cards[i].dataset.sourceId ?? "";
       const hay = haystacks[i];
 
       const matchSearch = q.length === 0 ? true : hay.includes(q);
@@ -201,12 +206,17 @@ function createListFilter(params: {
       const blocked = blockWords.some((w) => w && hay.includes(w));
       const read = id ? readIds.has(id) : false;
       const hideByRead = hideReadEnabled && read;
+      const sourceEnabled = !sourceId || !disabledSources.has(sourceId);
 
-      const ok = matchSearch && matchFollow && !blocked && !hideByRead;
+      const ok = matchSearch && matchFollow && !blocked && !hideByRead && sourceEnabled;
       cards[i].classList.toggle("hidden", !ok);
-      if (ok) shown += 1;
+      if (ok) {
+        shown += 1;
+        if (!read) unreadShown += 1;
+      }
     }
     if (count) count.textContent = `${shown}/${cards.length}`;
+    if (unreadCount) unreadCount.textContent = String(unreadShown);
   };
 
   input.addEventListener("input", apply);
@@ -463,6 +473,56 @@ function wirePreferences(params: {
   });
 }
 
+function wireSourceToggles(disabledSources: Set<string>) {
+  const inputs = [...document.querySelectorAll<HTMLInputElement>("input[data-source-toggle-id]")];
+  if (inputs.length === 0) return;
+
+  const enableAll = document.querySelector<HTMLButtonElement>("#acg-sources-enable-all");
+  const disableAll = document.querySelector<HTMLButtonElement>("#acg-sources-disable-all");
+
+  const apply = () => {
+    for (const input of inputs) {
+      const id = input.dataset.sourceToggleId ?? "";
+      input.checked = id ? !disabledSources.has(id) : true;
+    }
+  };
+
+  const persist = () => {
+    saveIds(DISABLED_SOURCES_KEY, disabledSources);
+    document.dispatchEvent(new CustomEvent("acg:filters-changed"));
+  };
+
+  apply();
+
+  for (const input of inputs) {
+    input.addEventListener("change", () => {
+      const id = input.dataset.sourceToggleId ?? "";
+      if (!id) return;
+      if (input.checked) disabledSources.delete(id);
+      else disabledSources.add(id);
+      persist();
+      setPrefsMessage(isJapanese() ? "ソース設定を更新しました。" : "来源设置已更新。");
+    });
+  }
+
+  enableAll?.addEventListener("click", () => {
+    disabledSources.clear();
+    persist();
+    apply();
+    setPrefsMessage(isJapanese() ? "すべて有効化しました。" : "已启用全部来源。");
+  });
+
+  disableAll?.addEventListener("click", () => {
+    for (const input of inputs) {
+      const id = input.dataset.sourceToggleId ?? "";
+      if (id) disabledSources.add(id);
+    }
+    persist();
+    apply();
+    setPrefsMessage(isJapanese() ? "すべて無効化しました。" : "已全部禁用。");
+  });
+}
+
 async function copyToClipboard(text: string): Promise<boolean> {
   try {
     if (navigator.clipboard?.writeText) {
@@ -523,13 +583,15 @@ function main() {
   const follows = loadWords(FOLLOWS_KEY);
   const blocklist = loadWords(BLOCKLIST_KEY);
   const filters = loadFilters();
+  const disabledSources = loadIds(DISABLED_SOURCES_KEY);
   markCurrentPostRead(readIds);
   applyReadState(readIds);
   wireBookmarks(bookmarkIds);
   wireBookmarksPage(bookmarkIds);
   wireBookmarkTools(bookmarkIds);
   wirePreferences({ follows, blocklist, filters });
-  createListFilter({ readIds, follows, blocklist, filters });
+  wireSourceToggles(disabledSources);
+  createListFilter({ readIds, follows, blocklist, disabledSources, filters });
   wireTagChips();
   wireDailyBriefCopy();
 }

@@ -28,7 +28,8 @@ const filtered = posts.filter((p) => p.category === category).slice(0, 120);
         <p class="mt-1 text-xs text-slate-600">{t("ja", "nav.latest")} · {filtered.length} 件</p>
       </div>
       <div class="text-xs text-slate-600">
-        {t("ja", "search.result")} <span id="acg-search-count">-</span>
+        {t("ja", "search.result")} <span id="acg-search-count">-</span> · {t("ja", "home.unread")}{" "}
+        <span id="acg-unread-count">-</span>
       </div>
     </div>
 

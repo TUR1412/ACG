@@ -6,6 +6,16 @@ import { t } from "../../i18n/i18n";
 
 const status = await readGeneratedStatus();
 const updatedAt = status.generatedAt ? formatDateTime("zh", status.generatedAt) : "-";
+
+function suggest(s: (typeof status.sources)[number]): string {
+  if (s.ok) return "-";
+  if (s.httpStatus === 429) return "请求过于频繁：可降低更新频率、启用缓存或稍后重试。";
+  if (s.httpStatus === 403 || s.httpStatus === 401) return "可能被拦截：建议改用 RSS/公开源，或减少抓取。";
+  if (s.httpStatus === 404) return "地址可能变更：检查来源 URL 并更新适配器。";
+  const err = (s.error ?? "").toLowerCase();
+  if (err.includes("timeout") || err.includes("aborted")) return "请求超时：可稍后重试或降低并发。";
+  return "请查看错误详情，并在 sources 配置中调整该来源。";
+}
 ---
 
 <SiteLayout lang="zh" title={t("zh", "status.title")} currentPath="/status/">
@@ -29,6 +39,7 @@ const updatedAt = status.generatedAt ? formatDateTime("zh", status.generatedAt) 
             <th class="px-3">耗时</th>
             <th class="px-3">方式</th>
             <th class="px-3">错误</th>
+            <th class="px-3">建议</th>
           </tr>
         </thead>
         <tbody>
@@ -61,6 +72,7 @@ const updatedAt = status.generatedAt ? formatDateTime("zh", status.generatedAt) 
               <td class="px-3 py-2 text-xs text-slate-600" title={s.error ?? ""}>
                 {s.ok ? "-" : s.error?.slice(0, 80) ?? "未知错误"}
               </td>
+              <td class="px-3 py-2 text-xs text-slate-600">{suggest(s)}</td>
             </tr>
           ))}
         </tbody>
