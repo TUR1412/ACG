@@ -13,6 +13,7 @@ import {
 } from "./lib/http-cache";
 import { parseFeedToItems } from "./sources/feed-source";
 import { parseAnimeAnimeList } from "./sources/html-animeanime";
+import { extractCoverFromHtml } from "./lib/html";
 import type { RawItem, Source } from "./sources/types";
 import type { Category } from "../src/lib/categories";
 import { deriveTags } from "./lib/tagger";
@@ -209,6 +210,78 @@ function filterByDays(posts: Post[], days: number): Post[] {
   });
 }
 
+function parseNonNegativeInt(value: string | undefined, fallback: number): number {
+  if (value == null) return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+  return Math.floor(parsed);
+}
+
+async function enrichCoversFromArticlePages(params: {
+  posts: Post[];
+  previousIds: Set<string>;
+  cache: HttpCache;
+  cachePath: string;
+  verbose: boolean;
+  persistCache: boolean;
+}): Promise<{ attempted: number; enriched: number; maxTotal: number }> {
+  const { posts, previousIds, cache, cachePath, verbose, persistCache } = params;
+
+  const maxTotal = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_MAX, 48);
+  const maxPerSource = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_PER_SOURCE_MAX, 48);
+
+  const candidates = posts
+    .filter((p) => !p.cover)
+    .slice()
+    .sort((a, b) => {
+      const aOld = previousIds.has(a.id);
+      const bOld = previousIds.has(b.id);
+      if (aOld !== bOld) return aOld ? 1 : -1;
+      return b.publishedAt.localeCompare(a.publishedAt);
+    });
+
+  const perSource = new Map<string, number>();
+  let attempted = 0;
+  let enriched = 0;
+
+  for (const post of candidates) {
+    if (maxTotal <= 0) break;
+    if (attempted >= maxTotal) break;
+    const used = perSource.get(post.sourceId) ?? 0;
+    if (used >= maxPerSource) continue;
+
+    perSource.set(post.sourceId, used + 1);
+    attempted += 1;
+
+    const res = await fetchTextWithCache({
+      url: post.url,
+      cache,
+      cachePath,
+      timeoutMs: 25_000,
+      verbose,
+      force: true,
+      persistCache
+    });
+
+    if (!res.ok) {
+      if (verbose) console.log(`[COVER:ERR] ${post.sourceId} ${post.url} ${res.error}`);
+      continue;
+    }
+
+    const cover = extractCoverFromHtml({ html: res.text, baseUrl: post.url });
+    if (!cover) {
+      if (verbose) console.log(`[COVER:MISS] ${post.sourceId} ${post.url}`);
+      continue;
+    }
+
+    post.cover = cover;
+    enriched += 1;
+    if (verbose) console.log(`[COVER:OK] ${post.sourceId} ${post.url}`);
+  }
+
+  return { attempted, enriched, maxTotal };
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const root = process.cwd();
@@ -266,6 +339,22 @@ async function main() {
   }
 
   const pruned = filterByDays(dedupeAndSort(allPosts), args.days).slice(0, args.limit);
+
+  if (!args.dryRun) {
+    const previousIds = new Set(previousPosts.map((p) => p.id));
+    const { attempted, enriched, maxTotal } = await enrichCoversFromArticlePages({
+      posts: pruned,
+      previousIds,
+      cache,
+      cachePath,
+      verbose: args.verbose,
+      persistCache: true
+    });
+    console.log(`[COVER] enriched=${enriched}/${attempted} max=${maxTotal}`);
+  } else {
+    console.log(`[COVER] skipped (dry-run)`);
+  }
+
   const generatedAt = new Date().toISOString();
   const status: SyncStatus = { generatedAt, durationMs: Date.now() - start, sources: sourceStatuses };
 

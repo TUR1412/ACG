@@ -82,6 +82,15 @@ npm run sync -- --days 30 --limit 2000 --verbose
 - `--dry-run`：只跑抓取/解析，不写文件
 - `--verbose`：输出更多日志
 
+### 封面补全（解决“缺图”）
+
+部分来源的 RSS/Atom 本身不提供图片（例如 ANN / Inside Games / 音楽ナタリー），为了让页面观感更“杂志化”，同步脚本会**额外抓取少量文章页**，读取 `og:image` / `twitter:image` 来补全封面（有上限，避免过度请求）。
+
+可用环境变量控制：
+
+- `ACG_COVER_ENRICH_MAX`：每次同步最多补全多少条封面（默认 `48`，设为 `0` 可关闭）
+- `ACG_COVER_ENRICH_PER_SOURCE_MAX`：每次同步每个来源最多补全多少条（默认 `48`）
+
 ---
 
 ## GitHub Pages 部署（Deploy）

@@ -100,6 +100,57 @@ function saveFilters(filters: FilterStore) {
   }
 }
 
+type ToastVariant = "info" | "success" | "error";
+
+function getToastRoot(): HTMLElement {
+  let root = document.querySelector<HTMLElement>("#acg-toast-root");
+  if (root) return root;
+  root = document.createElement("div");
+  root.id = "acg-toast-root";
+  root.className = "acg-toast-root";
+  root.setAttribute("role", "status");
+  root.setAttribute("aria-live", "polite");
+  root.setAttribute("aria-atomic", "true");
+  document.body.appendChild(root);
+  return root;
+}
+
+function toast(params: { title: string; desc?: string; variant?: ToastVariant; timeoutMs?: number }) {
+  const { title, desc, variant = "info", timeoutMs = 2200 } = params;
+  try {
+    const root = getToastRoot();
+    const el = document.createElement("div");
+    el.className = "acg-toast";
+    el.dataset.variant = variant;
+
+    const t = document.createElement("div");
+    t.className = "acg-toast-title";
+    t.textContent = title;
+    el.appendChild(t);
+
+    if (desc) {
+      const d = document.createElement("div");
+      d.className = "acg-toast-desc";
+      d.textContent = desc;
+      el.appendChild(d);
+    }
+
+    root.appendChild(el);
+    window.setTimeout(() => {
+      el.remove();
+      if (root.childElementCount === 0) root.remove();
+    }, timeoutMs);
+  } catch {
+    // ignore
+  }
+}
+
+function pop(el: HTMLElement) {
+  el.classList.remove("pop");
+  void el.offsetWidth;
+  el.classList.add("pop");
+}
+
 function setBookmarkButtonState(button: HTMLButtonElement, on: boolean) {
   button.setAttribute("aria-pressed", on ? "true" : "false");
   const label = button.querySelector<HTMLElement>("[data-bookmark-label]");
@@ -136,7 +187,13 @@ function wireBookmarks(bookmarkIds: Set<string>) {
       if (bookmarkIds.has(id)) bookmarkIds.delete(id);
       else bookmarkIds.add(id);
       saveIds(BOOKMARK_KEY, bookmarkIds);
-      setBookmarkButtonState(btn, bookmarkIds.has(id));
+      const on = bookmarkIds.has(id);
+      setBookmarkButtonState(btn, on);
+      pop(btn);
+      toast({
+        title: on ? (isJapanese() ? "ブックマークしました" : "已收藏") : isJapanese() ? "已取消ブックマーク" : "已取消收藏",
+        variant: on ? "success" : "info"
+      });
       document.dispatchEvent(new CustomEvent("acg:bookmarks-changed"));
     });
   }
@@ -159,6 +216,40 @@ function wireTagChips() {
   }
 }
 
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!target || !(target instanceof HTMLElement)) return false;
+  const tag = target.tagName.toLowerCase();
+  if (tag === "input" || tag === "textarea" || tag === "select") return true;
+  return target.isContentEditable;
+}
+
+function wireKeyboardShortcuts() {
+  const input = document.querySelector<HTMLInputElement>("#acg-search");
+  if (!input) return;
+
+  document.addEventListener("keydown", (e) => {
+    if (e.defaultPrevented) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+    if (e.key === "/" && !isTypingTarget(e.target)) {
+      e.preventDefault();
+      input.focus();
+      input.select();
+      toast({ title: isJapanese() ? "検索へフォーカス" : "已聚焦搜索", variant: "info", timeoutMs: 900 });
+      return;
+    }
+
+    if (e.key === "Escape" && document.activeElement === input) {
+      if (input.value) {
+        input.value = "";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        toast({ title: isJapanese() ? "検索をクリアしました" : "已清空搜索", variant: "info" });
+      }
+      input.blur();
+    }
+  });
+}
+
 function normalizeText(text: string): string {
   return text.toLowerCase().replace(/\s+/g, " ").trim();
 }
@@ -174,6 +265,8 @@ function createListFilter(params: {
   const input = document.querySelector<HTMLInputElement>("#acg-search");
   const count = document.querySelector<HTMLElement>("#acg-search-count");
   const unreadCount = document.querySelector<HTMLElement>("#acg-unread-count");
+  const empty = document.querySelector<HTMLElement>("#acg-list-empty");
+  const clear = document.querySelector<HTMLButtonElement>("#acg-clear-search");
   if (!input) return;
 
   const cards = [...document.querySelectorAll<HTMLElement>("[data-post-id]")];
@@ -182,6 +275,13 @@ function createListFilter(params: {
     const summary = card.querySelector("p")?.textContent ?? "";
     const tags = [...card.querySelectorAll("button[data-tag]")].map((b) => b.textContent ?? "").join(" ");
     return normalizeText(`${title} ${summary} ${tags}`);
+  });
+
+  clear?.addEventListener("click", () => {
+    input.value = "";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.focus();
+    toast({ title: isJapanese() ? "検索をクリアしました" : "已清空搜索", variant: "info" });
   });
 
   const apply = () => {
@@ -218,6 +318,7 @@ function createListFilter(params: {
     }
     if (count) count.textContent = `${shown}/${cards.length}`;
     if (unreadCount) unreadCount.textContent = String(unreadShown);
+    if (empty) empty.classList.toggle("hidden", shown > 0);
   };
 
   input.addEventListener("input", apply);
@@ -567,6 +668,10 @@ function wireDailyBriefCopy() {
     if (!msg) return;
     msg.textContent = ok ? (isJapanese() ? "クリップボードにコピーしました。" : "已复制到剪贴板。") : (isJapanese() ? "コピーに失敗しました。" : "复制失败。");
     msg.classList.remove("hidden");
+    toast({
+      title: ok ? (isJapanese() ? "コピーしました" : "已复制") : isJapanese() ? "コピー失敗" : "复制失败",
+      variant: ok ? "success" : "error"
+    });
   });
 }
 
@@ -593,6 +698,7 @@ function main() {
   wirePreferences({ follows, blocklist, filters });
   wireSourceToggles(disabledSources);
   createListFilter({ readIds, follows, blocklist, disabledSources, filters });
+  wireKeyboardShortcuts();
   wireTagChips();
   wireDailyBriefCopy();
 }

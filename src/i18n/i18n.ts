@@ -20,6 +20,9 @@ export type I18nKey =
   | "home.unread"
   | "search.placeholder"
   | "search.result"
+  | "search.emptyTitle"
+  | "search.emptyHint"
+  | "search.clear"
   | "prefs.title"
   | "prefs.followOnly"
   | "prefs.hideRead"
@@ -67,6 +70,9 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "home.unread": "未读",
     "search.placeholder": "搜索标题 / 摘要 / 标签…",
     "search.result": "匹配",
+    "search.emptyTitle": "没有匹配结果",
+    "search.emptyHint": "试试清空搜索词，或关闭“只看关注 / 隐藏已读 / 来源过滤”。",
+    "search.clear": "清空搜索",
     "prefs.title": "偏好",
     "prefs.followOnly": "只看关注",
     "prefs.hideRead": "隐藏已读",
@@ -113,6 +119,9 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "home.unread": "未読",
     "search.placeholder": "検索（タイトル / 要約 / タグ）…",
     "search.result": "一致",
+    "search.emptyTitle": "一致する結果がありません",
+    "search.emptyHint": "検索語をクリアするか、「フォローのみ / 既読を隠す / ソース無効化」を見直してください。",
+    "search.clear": "クリア",
     "prefs.title": "設定",
     "prefs.followOnly": "フォローのみ",
     "prefs.hideRead": "既読を隠す",
