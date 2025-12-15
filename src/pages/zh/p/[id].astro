@@ -38,8 +38,10 @@ const theme = getCategoryTheme(post.category);
           loading="lazy"
           decoding="async"
           referrerpolicy="no-referrer"
+          data-acg-cover
           class="h-56 w-full object-cover"
-          onerror="this.closest('[data-has-cover]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none';"
+          onload="window.__acgCoverLoad?.(this)"
+          onerror="this.closest('[data-has-cover]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
         />
       ) : null}
       <div class="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-slate-950/15 to-transparent"></div>

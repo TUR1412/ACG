@@ -99,6 +99,32 @@ const spotlight = (() => {
         </div>
       </div>
 
+      <div class="relative mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-toggle="only-followed"
+          data-active="false"
+        >
+          {t("zh", "prefs.followOnly")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-toggle="hide-read"
+          data-active="false"
+        >
+          {t("zh", "prefs.hideRead")}
+        </button>
+        <a
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          href="#acg-prefs"
+          data-active="false"
+        >
+          {t("zh", "prefs.title")}
+        </a>
+      </div>
+
       <div class="relative mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {CATEGORIES.map((c) => (
           <a
@@ -222,7 +248,9 @@ const spotlight = (() => {
     </div>
 
     <div class="grid gap-4 md:col-span-4">
-      <PreferencesPanel lang="zh" />
+      <div id="acg-prefs">
+        <PreferencesPanel lang="zh" />
+      </div>
 
       <div class="glass rounded-2xl p-6">
         <div class="flex items-center justify-between gap-3">
@@ -261,8 +289,10 @@ const spotlight = (() => {
                           loading="lazy"
                           decoding="async"
                           referrerpolicy="no-referrer"
+                          data-acg-cover
                           class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-                          onerror="this.style.opacity='0'; this.style.pointerEvents='none'"
+                          onload="window.__acgCoverLoad?.(this)"
+                          onerror="this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
                         />
                       ) : null}
                       <span class="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-transparent to-transparent"></span>
@@ -310,8 +340,10 @@ const spotlight = (() => {
                   loading="lazy"
                   decoding="async"
                   referrerpolicy="no-referrer"
+                  data-acg-cover
                   class="h-40 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-                  onerror="this.closest('[data-has-cover]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none';"
+                  onload="window.__acgCoverLoad?.(this)"
+                  onerror="this.closest('[data-has-cover]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
                 />
               ) : null}
               <div class="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-slate-950/10 to-transparent"></div>

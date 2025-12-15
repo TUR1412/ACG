@@ -232,8 +232,8 @@ async function enrichCoversFromArticlePages(params: {
 
   // 偏激进默认值：优先让“最新可见内容”尽量都有封面。
   // 仍可通过环境变量一键调回保守/关闭（设为 0）。
-  const maxTotal = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_MAX, 200);
-  const maxPerSource = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_PER_SOURCE_MAX, 160);
+  const maxTotal = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_MAX, 320);
+  const maxPerSource = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_PER_SOURCE_MAX, 200);
   const delayMs = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_DELAY_MS, 0);
   const missTtlHours = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_MISS_TTL_HOURS, 72);
   const missTtlMs = missTtlHours * 60 * 60 * 1000;

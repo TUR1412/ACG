@@ -73,10 +73,34 @@ const theme = getCategoryTheme(category);
           />
         </div>
       </div>
+
+      <div class="relative mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-toggle="only-followed"
+          data-active="false"
+        >
+          {t("ja", "prefs.followOnly")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-toggle="hide-read"
+          data-active="false"
+        >
+          {t("ja", "prefs.hideRead")}
+        </button>
+        <a class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable" href="#acg-prefs" data-active="false">
+          {t("ja", "prefs.title")}
+        </a>
+      </div>
     </div>
 
     <div class="md:col-span-4">
-      <PreferencesPanel lang="ja" />
+      <div id="acg-prefs">
+        <PreferencesPanel lang="ja" />
+      </div>
     </div>
   </section>
 

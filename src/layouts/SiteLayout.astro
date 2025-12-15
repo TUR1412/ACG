@@ -30,6 +30,7 @@ const langSwitchHref = href(`/${otherLang}${currentPath ?? "/"}`);
 const isBookmarks = currentPath === "/bookmarks/";
 const isStatus = currentPath === "/status/";
 const isAbout = currentPath === "/about/";
+const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
 ---
 
 <!doctype html>
@@ -37,11 +38,15 @@ const isAbout = currentPath === "/about/";
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="view-transition" content="same-origin" />
     <title>{pageTitle}</title>
     <meta name="description" content={pageDescription} />
   </head>
   <body data-current-post-id={currentPostId}>
-    <header class="sticky top-0 z-20 border-b border-slate-900/10 bg-white/70 lg:bg-white/35 lg:backdrop-blur-xl">
+    <header
+      class="sticky top-0 z-20 border-b border-slate-900/10 bg-white/70 lg:bg-white/35 lg:backdrop-blur-xl"
+      style="view-transition-name: acg-header;"
+    >
       <div class="mx-auto max-w-7xl px-4 py-3">
         <div class="flex items-center justify-between gap-3">
           <a href={withLang("/")} class="flex items-center gap-3">
@@ -141,15 +146,120 @@ const isAbout = currentPath === "/about/";
       </div>
     </header>
 
-    <main class="mx-auto max-w-7xl px-4 py-8">
+    <main class="mx-auto max-w-7xl px-4 pt-8 pb-28 lg:py-8" style="view-transition-name: acg-main;">
       <slot />
     </main>
 
-    <footer class="mx-auto max-w-7xl px-4 pb-10 pt-4 text-xs text-slate-600">
+    <footer class="mx-auto max-w-7xl px-4 pb-28 pt-4 text-xs text-slate-600 lg:pb-10">
       <div class="glass rounded-2xl px-4 py-3">
         <p class="m-0 leading-relaxed">{t(lang, "site.disclaimer")}</p>
       </div>
     </footer>
+
+    <nav class="acg-bottom-nav lg:hidden" aria-label="Primary">
+      <a
+        href={withLang("/")}
+        class="acg-bottom-nav-item"
+        data-active={isLatest ? "true" : "false"}
+        aria-current={isLatest ? "page" : undefined}
+      >
+        <span class="acg-bottom-nav-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 8.2v4.6l3 1.8"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M12 22a10 10 0 1 0-10-10"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+          </svg>
+        </span>
+        <span class="acg-bottom-nav-label">{t(lang, "nav.latest")}</span>
+      </a>
+
+      <a href={withLang("/#search")} class="acg-bottom-nav-item" data-active="false">
+        <span class="acg-bottom-nav-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M10.5 19a8.5 8.5 0 1 1 0-17 8.5 8.5 0 0 1 0 17Z"
+              stroke="currentColor"
+              stroke-width="2"
+            />
+            <path
+              d="M21 21l-4.3-4.3"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+          </svg>
+        </span>
+        <span class="acg-bottom-nav-label">{t(lang, "nav.search")}</span>
+      </a>
+
+      <a
+        href={withLang("/bookmarks/")}
+        class="acg-bottom-nav-item"
+        data-active={isBookmarks ? "true" : "false"}
+        aria-current={isBookmarks ? "page" : undefined}
+      >
+        <span class="acg-bottom-nav-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 17.3l-5.1 2.7 1-5.7-4.1-4 5.7-.8L12 4.3l2.6 5.2 5.7.8-4.1 4 1 5.7L12 17.3Z"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </span>
+        <span class="acg-bottom-nav-label">{t(lang, "nav.bookmarks")}</span>
+      </a>
+
+      <a
+        href={withLang("/status/")}
+        class="acg-bottom-nav-item"
+        data-active={isStatus ? "true" : "false"}
+        aria-current={isStatus ? "page" : undefined}
+      >
+        <span class="acg-bottom-nav-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M4 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <path d="M8 19V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <path d="M12 19V8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <path d="M16 19V14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <path d="M20 19V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </span>
+        <span class="acg-bottom-nav-label">{t(lang, "nav.status")}</span>
+      </a>
+
+      <a
+        href={withLang("/about/")}
+        class="acg-bottom-nav-item"
+        data-active={isAbout ? "true" : "false"}
+        aria-current={isAbout ? "page" : undefined}
+      >
+        <span class="acg-bottom-nav-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 22a10 10 0 1 0-10-10"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <path d="M12 10.7v5.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <path d="M12 7.2h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+          </svg>
+        </span>
+        <span class="acg-bottom-nav-label">{t(lang, "nav.about")}</span>
+      </a>
+    </nav>
     <script type="module" src={appUrl} is:inline></script>
   </body>
 </html>

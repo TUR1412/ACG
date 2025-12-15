@@ -88,8 +88,10 @@ function whenLabel(post: Post): string {
                   decoding="async"
                   fetchpriority={i === 0 ? "high" : undefined}
                   referrerpolicy="no-referrer"
+                  data-acg-cover
                   class="acg-carousel-img"
-                  onerror="this.closest('[data-carousel-slide]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none';"
+                  onload="window.__acgCoverLoad?.(this)"
+                  onerror="this.closest('[data-carousel-slide]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
                 />
               ) : null}
               <div class="acg-carousel-vignette"></div>

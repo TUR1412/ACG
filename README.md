@@ -1,49 +1,77 @@
-# ACG Radar（中日双语 / 日中バイリンガル）
+# ACG Radar / ACGレーダー
 
-一个“伪全栈”的二次元资讯聚合小站：**每小时自动抓取** → 生成静态页面 → 部署到 **GitHub Pages**。  
-UI 支持 **中文 / 日本語**，并提供本地收藏、已读标记、站内搜索与抓取状态页。
+> **每小时更新**的 ACG 资讯雷达：抓取 → 静态构建 → GitHub Pages 部署。  
+> **毎時更新**の ACG ニュースレーダー：取得 → 静的ビルド → GitHub Pages へデプロイ。
 
-> 设计目标：**不需要你本地 7×24 开机**，也不需要数据库或后端常驻服务；依靠 GitHub Actions 定时更新即可。
+[![Hourly Sync & Deploy (GitHub Pages)](https://github.com/TUR1412/ACG/actions/workflows/hourly-sync-and-deploy.yml/badge.svg)](https://github.com/TUR1412/ACG/actions/workflows/hourly-sync-and-deploy.yml)
+![MIT](https://img.shields.io/badge/License-MIT-black)
+
+**在线预览 / Demo**
+
+- `https://tur1412.github.io/ACG/`
 
 ---
 
-## 功能（Features）
+## 为什么是“伪全栈 / 擬似フルスタック”？
 
-- **每小时更新**：GitHub Actions `cron` 定时抓取并重新部署
-- **分类聚合**：动画 / 游戏联动 / 周边手办 / 声优活动
-- **站内搜索**：在列表页直接过滤（标题/摘要/标签）
-- **本地收藏**：使用 `localStorage`，无需登录
-- **收藏导入/导出**：JSON 文件导入导出，方便迁移浏览器
-- **已读标记**：打开详情页自动标记已读
-- **关注/屏蔽**：关注关键词 + 屏蔽关键词（可选“只看关注”“隐藏已读”）
-- **来源开关**：可按来源启用/禁用（本地设置）
-- **未读计数**：列表会显示未读数量（配合“隐藏已读”更好用）
-- **今日快报复制**：一键复制首页快报文本（适合发群）
-- **抓取状态页**：查看各来源健康度（成功/失败、耗时、条目数）
-- **关于页**：说明机制 + 来源列表（便于维护）
+- 不需要你本地 7×24 开机（GitHub Actions 定时跑）
+- 不需要后端常驻服务 / 数据库
+- 数据更新：每小时自动抓取并重新部署到 GitHub Pages
+- 个性化状态：全部在浏览器本地（`localStorage`）
+
+---
+
+## 功能亮点（Features）
+
+- **中日双语 / 日中バイリンガル**：`/zh/`、`/ja/` 路由隔离
+- **每小时更新**：GitHub Actions `cron` 自动抓取 + 部署
+- **封面轮播（Spotlight）**：键盘 ←/→、拖拽、点阵指示（更“杂志封面墙”）
+- **图片缺失治理**：RSS 不带图时自动抓取文章页补全 `og:image` / `twitter:image`
+- **封面失败自愈**：封面加载失败会自动重试（升级 https / 调整 referrer / cache bust）
+- **站内搜索**：标题/摘要/标签实时过滤（不会请求后端）
+- **本地收藏/已读**：打开详情自动标记已读；收藏可导入/导出
+- **关注/屏蔽**：关键词关注 + 屏蔽（支持“只看关注 / 隐藏已读”）
+- **来源开关**：按来源启用/禁用（本地设置）
+- **抓取状态页**：`/zh/status/`、`/ja/status/` 查看健康度与错误提示
+- **移动端体验**：底部导航 + 搜索直达（更像 App）
+
+---
+
+## 架构（Architecture）
+
+```mermaid
+flowchart TD
+  A[GitHub Actions (cron 每小时)] --> B[Node 同步脚本 scripts/sync.ts]
+  B --> C[生成 posts.json + status.json]
+  C --> D[Astro Build 静态站点]
+  D --> E[GitHub Pages 部署]
+  E --> F[浏览器访问]
+  F --> G[localStorage: 收藏/已读/过滤/来源开关]
+```
 
 ---
 
 ## 技术栈（Tech）
 
 - Astro + Tailwind CSS（静态输出，首屏可见）
-- 少量前端脚本（`src/client/app.ts`）负责收藏/已读/搜索增强
-- Node 抓取脚本（`scripts/sync.ts`）
+- 少量前端脚本：`src/client/app.ts`（收藏/已读/过滤/交互增强）
+- 抓取脚本：`scripts/sync.ts`（RSS/Atom/RDF + HTML 示例）
 - GitHub Actions + GitHub Pages 自动部署
 
 ---
 
 ## 数据来源（Sources）
 
-默认内置来源在 `scripts/sources/index.ts`（包含 RSS/Atom/RDF + 1 个 HTML 抓取示例）。
+默认来源在 `scripts/sources/index.ts`。
 
-本站仅聚合**标题/摘要/时间/来源链接**并导流至原文，不转载全文。若你是来源方希望移除，请在仓库提 Issue。
+本站仅聚合 **标题 / 摘要 / 时间 / 来源链接** 并导流至原文，不转载全文。  
+若你是来源方希望移除，请提 Issue。
 
 ---
 
 ## 本地开发（Local Development）
 
-> 注意：`npm run dev` 是常驻开发服务（你自己手动运行即可），仓库默认不会在后台偷偷启动任何服务。
+> 注意：`npm run dev` 是常驻开发服务（需要你自己手动运行），仓库不会在后台偷偷启动任何服务。
 
 1) 安装依赖
 
@@ -51,13 +79,13 @@ UI 支持 **中文 / 日本語**，并提供本地收藏、已读标记、站内
 npm install
 ```
 
-2) 抓取一次数据（生成到 `src/data/generated/` 与 `public/data/`，文件会被 `.gitignore` 忽略）
+2) 抓取一次数据（生成到 `src/data/generated/` 与 `public/data/`，默认会被 `.gitignore` 忽略）
 
 ```bash
 npm run sync
 ```
 
-3) 启动开发服务器
+3) 启动开发服务器（仅本机）
 
 ```bash
 npm run dev
@@ -82,16 +110,20 @@ npm run sync -- --days 30 --limit 2000 --verbose
 - `--dry-run`：只跑抓取/解析，不写文件
 - `--verbose`：输出更多日志
 
-### 封面补全（解决“缺图”）
+---
 
-部分来源的 RSS/Atom 本身不提供图片（例如 ANN / Inside Games / 音楽ナタリー），为了让页面观感更“杂志化”，同步脚本会**额外抓取少量文章页**，读取 `og:image` / `twitter:image` 来补全封面（有上限，避免过度请求）。
+## 封面补全（解决“缺图”）
 
-可用环境变量控制：
+部分来源的 RSS/Atom 本身不提供图片。为让页面更“杂志化”，同步脚本会额外抓取**少量文章页**，读取 `og:image` / `twitter:image` / JSON-LD 等来补全封面（有上限，避免过度请求）。
 
-- `ACG_COVER_ENRICH_MAX`：每次同步最多补全多少条封面（默认 `200`，设为 `0` 可关闭）
-- `ACG_COVER_ENRICH_PER_SOURCE_MAX`：每次同步每个来源最多补全多少条（默认 `160`）
-- `ACG_COVER_ENRICH_DELAY_MS`：补全时每次请求前的延迟（毫秒，默认 `0`，可用来更“礼貌”）
+可用环境变量控制（本地默认值）：
+
+- `ACG_COVER_ENRICH_MAX`：每次同步最多补全多少条封面（默认 `320`，设为 `0` 可关闭）
+- `ACG_COVER_ENRICH_PER_SOURCE_MAX`：每次同步每个来源最多补全多少条（默认 `200`）
+- `ACG_COVER_ENRICH_DELAY_MS`：补全时每次请求前的延迟（毫秒，默认 `0`）
 - `ACG_COVER_ENRICH_MISS_TTL_HOURS`：对“确实解析不到封面”的文章页，暂时跳过多久再重试（小时，默认 `72`；设为 `0` 可关闭跳过）
+
+> GitHub Actions 工作流可能会覆盖这些默认值：见 `.github/workflows/hourly-sync-and-deploy.yml`。
 
 ---
 
@@ -99,7 +131,7 @@ npm run sync -- --days 30 --limit 2000 --verbose
 
 工作流：`.github/workflows/hourly-sync-and-deploy.yml`
 
-- `push main` 时会部署一次
+- `push main` 会部署一次
 - `schedule` 每小时整点（UTC）自动同步并部署一次
 
 ### Base Path（很重要）
@@ -109,8 +141,9 @@ GitHub Pages 项目站点的 base path 通常是 `/<repo>`。本仓库名为 `AC
 - `ACG_BASE=/ACG`
 
 如果你 fork 后改了仓库名，请同步修改：
-- `.github/workflows/hourly-sync-and-deploy.yml`
-- （可选）`astro.config.mjs` 里 `site`，用于 SEO/绝对链接
+
+- `.github/workflows/hourly-sync-and-deploy.yml` 中的 `ACG_BASE`
+- （可选）`astro.config.mjs` 里的 `site`（用于 SEO/绝对链接）
 
 ### 历史数据（不提交也能滚动累计）
 
@@ -122,14 +155,12 @@ GitHub Pages 项目站点的 base path 通常是 `/<repo>`。本仓库名为 `AC
 
 ---
 
-## 日本語（簡易）
+## Roadmap（路线图）
 
-これは「擬似フルスタック」ACGニュースサイトです。  
-GitHub Actions が毎時データを取得し、静的ページを再生成して GitHub Pages にデプロイします。
-
-- ブックマーク / 既読：`localStorage`
-- 検索：ページ内フィルタ
-- ステータス：`/ja/status/`
+- [ ] 来源徽章（更强“杂志感”）
+- [ ] 详情页“同类推荐”
+- [ ] 更细粒度的封面失败提示与手动重试
+- [ ] 轻量“新鲜度”标记（刚更新的内容更醒目）
 
 ---
 

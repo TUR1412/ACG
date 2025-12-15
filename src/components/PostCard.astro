@@ -50,8 +50,10 @@ const animateStyle = typeof animateIndex === "number" ? `--i: ${animateIndex};` 
         loading="lazy"
         decoding="async"
         referrerpolicy="no-referrer"
+        data-acg-cover
         class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-        onerror="this.closest('[data-post-id]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none';"
+        onload="window.__acgCoverLoad?.(this)"
+        onerror="this.closest('[data-post-id]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
       />
     ) : null}
     <div class="absolute inset-0 bg-gradient-to-t from-slate-950/45 via-slate-950/10 to-transparent"></div>

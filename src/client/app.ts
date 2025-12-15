@@ -26,6 +26,13 @@ type FilterStore = {
   hideRead: boolean;
 };
 
+declare global {
+  interface Window {
+    __acgCoverError?: (img: HTMLImageElement) => void;
+    __acgCoverLoad?: (img: HTMLImageElement) => void;
+  }
+}
+
 function safeJsonParse<T>(raw: string | null): T | null {
   if (!raw) return null;
   try {
@@ -239,6 +246,100 @@ function prefersReducedMotion(): boolean {
   }
 }
 
+function getCoverContainer(img: HTMLElement): HTMLElement | null {
+  return (
+    img.closest<HTMLElement>("[data-has-cover]") ??
+    img.closest<HTMLElement>("[data-carousel-slide]") ??
+    img.closest<HTMLElement>("[data-post-id]") ??
+    img.closest<HTMLElement>("a") ??
+    null
+  );
+}
+
+function withCacheBust(url: string, key = "acg"): string {
+  try {
+    const u = new URL(url);
+    u.searchParams.set(key, String(Date.now()));
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
+function handleCoverLoad(img: HTMLImageElement) {
+  try {
+    const container = getCoverContainer(img);
+    container?.classList.remove("cover-failed");
+    container?.classList.add("cover-loaded");
+    img.style.opacity = "";
+    img.style.pointerEvents = "";
+  } catch {
+    // ignore
+  }
+}
+
+function handleCoverError(img: HTMLImageElement) {
+  try {
+    const container = getCoverContainer(img);
+    const current = img.dataset.acgCoverOriginalSrc ?? img.currentSrc ?? img.src;
+    if (!img.dataset.acgCoverOriginalSrc) img.dataset.acgCoverOriginalSrc = current;
+
+    const retry = Number(img.dataset.acgCoverRetry ?? "0");
+    const canRetry = retry < 2;
+
+    if (canRetry) {
+      // retry 1：https 页面里遇到 http 图片，优先尝试升级（部分站点两者都存在）
+      if (retry === 0 && current.startsWith("http://") && window.location.protocol === "https:") {
+        img.dataset.acgCoverRetry = "1";
+        container?.classList.remove("cover-failed");
+        img.style.opacity = "";
+        img.style.pointerEvents = "";
+        img.src = `https://${current.slice("http://".length)}`;
+        return;
+      }
+
+      // retry 2：有些图床对 referrer 策略更敏感，失败后放宽一次 + cache bust
+      if (img.referrerPolicy === "no-referrer") {
+        img.dataset.acgCoverRetry = String(retry + 1);
+        img.referrerPolicy = "strict-origin-when-cross-origin";
+        container?.classList.remove("cover-failed");
+        img.style.opacity = "";
+        img.style.pointerEvents = "";
+        img.src = withCacheBust(current);
+        return;
+      }
+
+      // retry 3：常规 cache bust（网络抖动/中间缓存偶发）
+      img.dataset.acgCoverRetry = String(retry + 1);
+      container?.classList.remove("cover-failed");
+      img.style.opacity = "";
+      img.style.pointerEvents = "";
+      img.src = withCacheBust(current);
+      return;
+    }
+
+    container?.classList.add("cover-failed");
+    img.style.opacity = "0";
+    img.style.pointerEvents = "none";
+  } catch {
+    // ignore
+  }
+}
+
+function hydrateFailedCovers() {
+  try {
+    const imgs = document.querySelectorAll<HTMLImageElement>("img[data-acg-cover]");
+    for (const img of imgs) {
+      // 이미失败：complete=true 且 naturalWidth=0
+      if (!img.complete) continue;
+      if (img.naturalWidth > 0) continue;
+      handleCoverError(img);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 function wireBackToTop() {
   try {
     const button = document.createElement("button");
@@ -307,6 +408,66 @@ function wireKeyboardShortcuts() {
       input.blur();
     }
   });
+}
+
+function wireQuickToggles() {
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>("button[data-quick-toggle]")];
+  if (buttons.length === 0) return;
+
+  const onlyFollowed = document.querySelector<HTMLInputElement>("#acg-only-followed");
+  const hideRead = document.querySelector<HTMLInputElement>("#acg-hide-read");
+
+  const apply = () => {
+    const only = Boolean(onlyFollowed?.checked);
+    const hide = Boolean(hideRead?.checked);
+    for (const btn of buttons) {
+      const kind = btn.dataset.quickToggle ?? "";
+      const active = kind === "only-followed" ? only : kind === "hide-read" ? hide : false;
+      btn.dataset.active = active ? "true" : "false";
+    }
+  };
+
+  const toggle = (kind: "only-followed" | "hide-read") => {
+    if (kind === "only-followed" && onlyFollowed) {
+      onlyFollowed.checked = !onlyFollowed.checked;
+      onlyFollowed.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    if (kind === "hide-read" && hideRead) {
+      hideRead.checked = !hideRead.checked;
+      hideRead.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  };
+
+  document.addEventListener("click", (e) => {
+    if (e.defaultPrevented) return;
+    if (!(e.target instanceof HTMLElement)) return;
+    const el = e.target.closest("button[data-quick-toggle]");
+    if (!(el instanceof HTMLButtonElement)) return;
+
+    const kind = el.dataset.quickToggle;
+    if (kind !== "only-followed" && kind !== "hide-read") return;
+    toggle(kind);
+    apply();
+  });
+
+  document.addEventListener("acg:filters-changed", apply);
+  apply();
+}
+
+function focusSearchFromHash() {
+  try {
+    if (window.location.hash !== "#search") return;
+    const input = document.querySelector<HTMLInputElement>("#acg-search");
+    if (!input) return;
+    const behavior = prefersReducedMotion() ? "auto" : "smooth";
+    input.scrollIntoView({ behavior, block: "center" });
+    input.focus();
+    input.select();
+    // 清理 hash，避免返回/刷新时重复聚焦
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  } catch {
+    // ignore
+  }
 }
 
 function normalizeText(text: string): string {
@@ -458,6 +619,85 @@ const BOOKMARK_CATEGORY_THEME: Record<
   }
 };
 
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function createSvgEl<K extends keyof SVGElementTagNameMap>(tag: K): SVGElementTagNameMap[K] {
+  return document.createElementNS(SVG_NS, tag);
+}
+
+function createCategoryIcon(params: { category: BookmarkCategory; size: number }): SVGSVGElement {
+  const { category, size } = params;
+
+  const svg = createSvgEl("svg");
+  svg.setAttribute("width", String(size));
+  svg.setAttribute("height", String(size));
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+
+  const addPath = (attrs: Record<string, string>) => {
+    const p = createSvgEl("path");
+    for (const [k, v] of Object.entries(attrs)) p.setAttribute(k, v);
+    svg.appendChild(p);
+  };
+
+  if (category === "anime") {
+    addPath({
+      d: "M7.5 4.8h9A2.7 2.7 0 0 1 19.2 7.5v6.2A2.7 2.7 0 0 1 16.5 16.4H12l-3.4 2.8v-2.8H7.5A2.7 2.7 0 0 1 4.8 13.7V7.5A2.7 2.7 0 0 1 7.5 4.8Z",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linejoin": "round"
+    });
+    addPath({ d: "M9 9.5h6", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round" });
+    addPath({ d: "M9 12.2h4.2", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round" });
+  } else if (category === "game") {
+    addPath({
+      d: "M8.4 10.5h7.2c1.6 0 2.9 1.3 2.9 2.9v2.2A3.4 3.4 0 0 1 15.1 19H8.9a3.4 3.4 0 0 1-3.4-3.4v-2.2c0-1.6 1.3-2.9 2.9-2.9Z",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linejoin": "round"
+    });
+    addPath({ d: "M9.2 14.2h3.2", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round" });
+    addPath({ d: "M10.8 12.6v3.2", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round" });
+    addPath({ d: "M16.1 13.6h.01", stroke: "currentColor", "stroke-width": "3", "stroke-linecap": "round" });
+    addPath({ d: "M17.7 15.2h.01", stroke: "currentColor", "stroke-width": "3", "stroke-linecap": "round" });
+  } else if (category === "goods") {
+    addPath({
+      d: "M6 10.5V8.8A2.8 2.8 0 0 1 8.8 6h6.4A2.8 2.8 0 0 1 18 8.8v1.7",
+      stroke: "currentColor",
+      "stroke-width": "2"
+    });
+    addPath({
+      d: "M5.5 10.5h13v9.2A2.3 2.3 0 0 1 16.2 22H7.8A2.3 2.3 0 0 1 5.5 19.7v-9.2Z",
+      stroke: "currentColor",
+      "stroke-width": "2"
+    });
+    addPath({ d: "M9 13.2h6", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round" });
+  } else {
+    addPath({
+      d: "M12 22a8.5 8.5 0 1 0-8.5-8.5",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round"
+    });
+    addPath({
+      d: "M7.5 11.5c.7-1.8 2.4-3 4.5-3s3.8 1.2 4.5 3",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round"
+    });
+    addPath({
+      d: "M9.2 15.4h.01M14.8 15.4h.01",
+      stroke: "currentColor",
+      "stroke-width": "3",
+      "stroke-linecap": "round"
+    });
+  }
+
+  return svg;
+}
+
 function hrefInBase(pathname: string): string {
   const base = import.meta.env.BASE_URL ?? "/";
   const trimmed = pathname.startsWith("/") ? pathname.slice(1) : pathname;
@@ -540,6 +780,7 @@ function buildBookmarkCard(params: {
   article.dataset.postId = post.id;
   article.dataset.category = post.category;
   article.dataset.sourceId = post.sourceId;
+  article.dataset.hasCover = post.cover ? "true" : "false";
   if (readIds.has(post.id)) article.setAttribute("data-read", "true");
 
   const topLink = document.createElement("a");
@@ -551,6 +792,30 @@ function buildBookmarkCard(params: {
   coverGrad.className = `absolute inset-0 bg-gradient-to-br ${theme.cover}`;
   topLink.appendChild(coverGrad);
 
+  const fallback = document.createElement("div");
+  fallback.className = "acg-cover-fallback";
+  fallback.setAttribute("aria-hidden", "true");
+  const fallbackInner = document.createElement("div");
+  fallbackInner.className = "acg-cover-fallback-inner";
+
+  const fallbackIcon = document.createElement("div");
+  fallbackIcon.className = "acg-cover-fallback-icon";
+  fallbackIcon.appendChild(createCategoryIcon({ category: post.category, size: 22 }));
+
+  const fallbackBrand = document.createElement("div");
+  fallbackBrand.className = "acg-cover-fallback-brand";
+  fallbackBrand.textContent = "ACG Radar";
+
+  const fallbackMeta = document.createElement("div");
+  fallbackMeta.className = "acg-cover-fallback-meta";
+  fallbackMeta.textContent = label;
+
+  fallbackInner.appendChild(fallbackIcon);
+  fallbackInner.appendChild(fallbackBrand);
+  fallbackInner.appendChild(fallbackMeta);
+  fallback.appendChild(fallbackInner);
+  topLink.appendChild(fallback);
+
   if (post.cover) {
     const img = document.createElement("img");
     img.src = post.cover;
@@ -558,21 +823,17 @@ function buildBookmarkCard(params: {
     img.loading = "lazy";
     img.decoding = "async";
     img.referrerPolicy = "no-referrer";
+    img.dataset.acgCover = "true";
     img.className =
       "absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]";
+    img.addEventListener("load", () => handleCoverLoad(img));
     img.addEventListener("error", () => {
+      article.classList.add("cover-failed");
       img.style.opacity = "0";
       img.style.pointerEvents = "none";
+      handleCoverError(img);
     });
     topLink.appendChild(img);
-  } else {
-    const placeholder = document.createElement("div");
-    placeholder.className = "absolute inset-0 grid place-items-center";
-    const tag = document.createElement("div");
-    tag.className = "glass-card rounded-2xl px-3 py-2 text-xs font-semibold text-slate-950/80";
-    tag.textContent = "ACG Radar";
-    placeholder.appendChild(tag);
-    topLink.appendChild(placeholder);
   }
 
   const overlay = document.createElement("div");
@@ -1266,6 +1527,9 @@ function markCurrentPostRead(readIds: Set<string>) {
 }
 
 function main() {
+  window.__acgCoverError = handleCoverError;
+  window.__acgCoverLoad = handleCoverLoad;
+
   const bookmarkIds = loadIds(BOOKMARK_KEY);
   const readIds = loadIds(READ_KEY);
   const follows = loadWords(FOLLOWS_KEY);
@@ -1281,10 +1545,13 @@ function main() {
   wirePreferences({ follows, blocklist, filters });
   wireSourceToggles(disabledSources);
   createListFilter({ readIds, follows, blocklist, disabledSources, filters });
+  wireQuickToggles();
   wireKeyboardShortcuts();
   wireTagChips();
   wireDailyBriefCopy();
   wireSpotlightCarousel();
+  hydrateFailedCovers();
+  focusSearchFromHash();
 }
 
 if (document.readyState === "loading") {

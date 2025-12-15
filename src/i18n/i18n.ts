@@ -8,6 +8,7 @@ export type I18nKey =
   | "site.tagline"
   | "site.disclaimer"
   | "nav.latest"
+  | "nav.search"
   | "nav.bookmarks"
   | "nav.status"
   | "nav.about"
@@ -58,6 +59,7 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "site.tagline": "每小时更新的二次元资讯雷达（聚合 + 收藏 + 关注）",
     "site.disclaimer": "本站仅聚合标题/摘要并跳转原文，不转载全文。数据由 GitHub Actions 定时更新。",
     "nav.latest": "最新",
+    "nav.search": "搜索",
     "nav.bookmarks": "收藏",
     "nav.status": "状态",
     "nav.about": "关于",
@@ -107,6 +109,7 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "site.tagline": "毎時更新のACGニュースレーダー（集約 + ブックマーク + フォロー）",
     "site.disclaimer": "本サイトはタイトル/要約を集約し元記事へ誘導します。全文転載は禁止しません。データは GitHub Actions により定期更新されます。",
     "nav.latest": "最新",
+    "nav.search": "検索",
     "nav.bookmarks": "ブックマーク",
     "nav.status": "ステータス",
     "nav.about": "このサイトについて",

@@ -45,8 +45,8 @@ jobs:
         env:
           # 偏激进：尽量补齐封面（og:image / twitter:image），让首页“少缺图”。
           # 如需回退保守，可把 MAX 调小或设为 0 关闭补全。
-          ACG_COVER_ENRICH_MAX: "260"
-          ACG_COVER_ENRICH_PER_SOURCE_MAX: "220"
+          ACG_COVER_ENRICH_MAX: "360"
+          ACG_COVER_ENRICH_PER_SOURCE_MAX: "240"
           ACG_COVER_ENRICH_DELAY_MS: "100"
           ACG_COVER_ENRICH_MISS_TTL_HOURS: "24"
         run: npm run sync
