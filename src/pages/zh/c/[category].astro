@@ -4,6 +4,7 @@ import PostList from "../../../components/PostList.astro";
 import PreferencesPanel from "../../../components/PreferencesPanel.astro";
 import { readGeneratedPosts } from "../../../lib/generated-data";
 import { CATEGORIES, categoryLabel, type Category } from "../../../lib/categories";
+import { getCategoryTheme } from "../../../lib/category-theme";
 import { t } from "../../../i18n/i18n";
 
 export function getStaticPaths() {
@@ -13,6 +14,7 @@ export function getStaticPaths() {
 const posts = await readGeneratedPosts();
 const category = Astro.params.category as Category;
 const filtered = posts.filter((p) => p.category === category).slice(0, 120);
+const theme = getCategoryTheme(category);
 ---
 
 <SiteLayout
@@ -21,33 +23,62 @@ const filtered = posts.filter((p) => p.category === category).slice(0, 120);
   currentCategory={category}
   currentPath={`/c/${category}/`}
 >
-  <div class="glass rounded-2xl p-5">
-    <div class="flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 class="m-0 text-2xl font-semibold text-slate-950">{categoryLabel("zh", category)}</h1>
-        <p class="mt-1 text-xs text-slate-600">{t("zh", "nav.latest")} · {filtered.length} 条</p>
+  <section class="grid gap-4 md:grid-cols-12">
+    <div class="glass relative overflow-hidden rounded-2xl p-6 md:col-span-8">
+      <div class="pointer-events-none absolute inset-0">
+        <div class:list={["absolute -left-24 -top-24 h-72 w-72 rounded-full blur-3xl", theme.glow]}></div>
+        <div class="absolute -right-24 -bottom-24 h-72 w-72 rounded-full bg-slate-900/5 blur-3xl"></div>
       </div>
-      <div class="text-xs text-slate-600">
-        {t("zh", "search.result")} <span id="acg-search-count">-</span> · {t("zh", "home.unread")}{" "}
-        <span id="acg-unread-count">-</span>
+
+      <div class="relative flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 class="m-0 text-2xl font-semibold text-slate-950">{categoryLabel("zh", category)}</h1>
+          <p class="mt-1 text-xs text-slate-600">{t("zh", "nav.latest")} · {filtered.length} 条</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 text-xs text-slate-700">
+          <span class="glass rounded-full px-3 py-1">
+            {t("zh", "search.result")} <span id="acg-search-count">-</span>
+          </span>
+          <span class="glass rounded-full px-3 py-1">
+            {t("zh", "home.unread")} <span id="acg-unread-count">-</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="relative mt-4">
+        <label class="sr-only" for="acg-search">{t("zh", "search.placeholder")}</label>
+        <div class="relative">
+          <div class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M10.5 19a8.5 8.5 0 1 1 0-17 8.5 8.5 0 0 1 0 17Z"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+              <path
+                d="M21 21l-4.3-4.3"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+          <input
+            id="acg-search"
+            class="w-full rounded-xl border border-slate-900/10 bg-white/60 px-4 py-3 pl-10 text-sm text-slate-950 outline-none focus:border-slate-900/20 focus:bg-white/70"
+            placeholder={t("zh", "search.placeholder")}
+          />
+        </div>
       </div>
     </div>
 
-    <div class="mt-4">
-      <label class="sr-only" for="acg-search">{t("zh", "search.placeholder")}</label>
-      <input
-        id="acg-search"
-        class="w-full rounded-xl border border-slate-900/10 bg-white/60 px-4 py-3 text-sm text-slate-950 outline-none focus:border-slate-900/20 focus:bg-white/70"
-        placeholder={t("zh", "search.placeholder")}
-      />
+    <div class="md:col-span-4">
+      <PreferencesPanel lang="zh" />
     </div>
-  </div>
+  </section>
 
-  <div class="mt-4">
-    <PreferencesPanel lang="zh" />
-  </div>
-
-  <div class="mt-4">
+  <section class="mt-4">
     <PostList posts={filtered} lang="zh" />
-  </div>
+  </section>
 </SiteLayout>

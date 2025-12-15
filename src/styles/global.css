@@ -5,6 +5,11 @@
 /* 轻噪点 + 极光背景（避免死白/死黑） */
 :root {
   color-scheme: light;
+  --text: #0b0f14;
+  --muted: rgba(15, 23, 42, 0.62);
+  --glass-bg: rgba(255, 255, 255, 0.70);
+  --glass-border: rgba(15, 23, 42, 0.10);
+  --shadow-soft: 0 18px 55px rgba(2, 6, 23, 0.12);
 }
 
 html,
@@ -14,7 +19,11 @@ body {
 
 body {
   margin: 0;
-  color: #0b0f14;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans",
+    "Noto Sans JP", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   background:
     radial-gradient(1200px 800px at 10% 10%, rgba(124, 58, 237, 0.18), transparent 55%),
     radial-gradient(1000px 700px at 90% 20%, rgba(59, 130, 246, 0.16), transparent 55%),
@@ -22,22 +31,50 @@ body {
     linear-gradient(180deg, #f7f8fb 0%, #f2f4f8 100%);
 }
 
+/* 噪点纹理层（纯 CSS/SVG data url，不引入外部资源） */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background: rgba(124, 58, 237, 0.22);
+}
+
+/* 可访问性：键盘焦点可见 */
+:focus-visible {
+  outline: 2px solid rgba(124, 58, 237, 0.55);
+  outline-offset: 2px;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
 /* 玻璃卡片基础 */
 .glass {
-  background: rgba(255, 255, 255, 0.62);
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.60));
+  border: 1px solid var(--glass-border);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.06);
 }
 
 /* 可点击触感 */
 .clickable {
-  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 160ms ease,
+    border-color 160ms ease, background-color 160ms ease;
 }
 .clickable:hover {
   transform: translateY(-2px);
   border-color: rgba(15, 23, 42, 0.16);
-  box-shadow: 0 12px 30px rgba(2, 6, 23, 0.10);
+  box-shadow: var(--shadow-soft);
 }
 .clickable:active {
   transform: translateY(0) scale(0.98);
@@ -49,4 +86,52 @@ body {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   overflow: hidden;
+}
+
+/* 雷达 Logo（纯 CSS，减少“纯文字”观感） */
+.radar {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 35% 35%, rgba(16, 185, 129, 0.35), transparent 55%),
+    radial-gradient(circle at 70% 35%, rgba(59, 130, 246, 0.30), transparent 55%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.radar::before {
+  content: "";
+  position: absolute;
+  inset: -55%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(124, 58, 237, 0) 0deg,
+    rgba(124, 58, 237, 0.55) 30deg,
+    rgba(124, 58, 237, 0) 60deg,
+    rgba(124, 58, 237, 0) 360deg
+  );
+  animation: radar-sweep 3.2s linear infinite;
+}
+
+.radar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at center, transparent 0 42%, rgba(255, 255, 255, 0.10) 43%, transparent 44%),
+    radial-gradient(circle at center, transparent 0 66%, rgba(255, 255, 255, 0.06) 67%, transparent 68%);
+  opacity: 0.85;
+}
+
+@keyframes radar-sweep {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radar::before {
+    animation: none;
+  }
 }

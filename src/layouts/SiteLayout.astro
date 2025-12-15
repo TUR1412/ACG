@@ -26,6 +26,10 @@ function withLang(path: string): string {
 
 const otherLang = lang === "zh" ? "ja" : "zh";
 const langSwitchHref = href(`/${otherLang}${currentPath ?? "/"}`);
+
+const isBookmarks = currentPath === "/bookmarks/";
+const isStatus = currentPath === "/status/";
+const isAbout = currentPath === "/about/";
 ---
 
 <!doctype html>
@@ -37,54 +41,107 @@ const langSwitchHref = href(`/${otherLang}${currentPath ?? "/"}`);
     <meta name="description" content={pageDescription} />
   </head>
   <body data-current-post-id={currentPostId}>
-    <header class="sticky top-0 z-10 border-b border-slate-900/10 bg-white/40 backdrop-blur-xl">
-      <div class="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-        <a href={withLang("/")} class="flex items-center gap-2">
-          <span class="grid size-9 place-items-center rounded-xl bg-slate-900 text-white shadow-sm">A</span>
-          <div class="leading-tight">
-            <div class="text-sm font-semibold text-slate-950">{t(lang, "site.name")}</div>
-            <div class="text-xs text-slate-600">{t(lang, "site.tagline")}</div>
-          </div>
-        </a>
+    <header class="sticky top-0 z-20 border-b border-slate-900/10 bg-white/35 backdrop-blur-xl">
+      <div class="mx-auto max-w-6xl px-4 py-3">
+        <div class="flex items-center justify-between gap-3">
+          <a href={withLang("/")} class="flex items-center gap-3">
+            <span class="radar grid size-10 place-items-center shadow-sm">
+              <span class="text-[10px] font-bold text-white/90">ACG</span>
+            </span>
+            <div class="leading-tight">
+              <div class="text-sm font-semibold text-slate-950">{t(lang, "site.name")}</div>
+              <div class="text-xs text-slate-600">{t(lang, "site.tagline")}</div>
+            </div>
+          </a>
 
-        <nav class="hidden items-center gap-2 md:flex">
+          <nav class="hidden items-center gap-2 lg:flex">
+            {CATEGORIES.map((c) => (
+              <a
+                href={withLang(`/c/${c}/`)}
+                aria-current={c === currentCategory ? "page" : undefined}
+                class:list={[
+                  "rounded-xl px-3 py-2 text-sm clickable",
+                  c === currentCategory
+                    ? "glass border-slate-900/20 text-slate-950 shadow-sm"
+                    : "text-slate-700 hover:text-slate-950"
+                ]}
+              >
+                {categoryLabel(lang, c)}
+              </a>
+            ))}
+          </nav>
+
+          <div class="flex items-center gap-1 sm:gap-2">
+            <a
+              href={withLang("/bookmarks/")}
+              aria-current={isBookmarks ? "page" : undefined}
+              class:list={[
+                "rounded-xl px-3 py-2 text-sm clickable",
+                isBookmarks ? "glass border-slate-900/20 text-slate-950 shadow-sm" : "text-slate-700 hover:text-slate-950"
+              ]}
+            >
+              {t(lang, "nav.bookmarks")}
+            </a>
+            <a
+              href={withLang("/status/")}
+              aria-current={isStatus ? "page" : undefined}
+              class:list={[
+                "rounded-xl px-3 py-2 text-sm clickable",
+                isStatus ? "glass border-slate-900/20 text-slate-950 shadow-sm" : "text-slate-700 hover:text-slate-950"
+              ]}
+            >
+              {t(lang, "nav.status")}
+            </a>
+            <a
+              href={withLang("/about/")}
+              aria-current={isAbout ? "page" : undefined}
+              class:list={[
+                "hidden rounded-xl px-3 py-2 text-sm clickable sm:inline-flex",
+                isAbout ? "glass border-slate-900/20 text-slate-950 shadow-sm" : "text-slate-700 hover:text-slate-950"
+              ]}
+            >
+              {t(lang, "nav.about")}
+            </a>
+            <a
+              href={langSwitchHref}
+              class="glass rounded-xl px-3 py-2 text-sm font-medium text-slate-950 clickable shadow-sm"
+              aria-label="Switch language"
+            >
+              {lang === "zh" ? "日本語" : "中文"}
+            </a>
+          </div>
+        </div>
+
+        <nav class="mt-3 flex gap-2 overflow-x-auto pb-1 lg:hidden" aria-label="Categories">
           {CATEGORIES.map((c) => (
             <a
               href={withLang(`/c/${c}/`)}
+              aria-current={c === currentCategory ? "page" : undefined}
               class:list={[
-                "rounded-xl px-3 py-2 text-sm clickable",
+                "whitespace-nowrap rounded-full px-4 py-2 text-xs clickable",
                 c === currentCategory
-                  ? "glass border-slate-900/20 text-slate-950"
-                  : "text-slate-700 hover:text-slate-950"
+                  ? "glass border-slate-900/20 text-slate-950 shadow-sm"
+                  : "border border-slate-900/10 bg-white/45 text-slate-700 hover:bg-white/60"
               ]}
             >
               {categoryLabel(lang, c)}
             </a>
           ))}
-        </nav>
-
-        <div class="flex items-center gap-2">
-          <a href={withLang("/bookmarks/")} class="rounded-xl px-3 py-2 text-sm text-slate-700 hover:text-slate-950 clickable">
-            {t(lang, "nav.bookmarks")}
-          </a>
-          <a href={withLang("/status/")} class="rounded-xl px-3 py-2 text-sm text-slate-700 hover:text-slate-950 clickable">
-            {t(lang, "nav.status")}
-          </a>
-          <a href={withLang("/about/")} class="rounded-xl px-3 py-2 text-sm text-slate-700 hover:text-slate-950 clickable">
+          <a
+            href={withLang("/about/")}
+            aria-current={isAbout ? "page" : undefined}
+            class:list={[
+              "whitespace-nowrap rounded-full px-4 py-2 text-xs clickable",
+              isAbout ? "glass border-slate-900/20 text-slate-950 shadow-sm" : "border border-slate-900/10 bg-white/45 text-slate-700 hover:bg-white/60"
+            ]}
+          >
             {t(lang, "nav.about")}
           </a>
-          <a
-            href={langSwitchHref}
-            class="glass rounded-xl px-3 py-2 text-sm font-medium text-slate-950 clickable"
-            aria-label="Switch language"
-          >
-            {lang === "zh" ? "日本語" : "中文"}
-          </a>
-        </div>
+        </nav>
       </div>
     </header>
 
-    <main class="mx-auto max-w-6xl px-4 py-6">
+    <main class="mx-auto max-w-6xl px-4 py-7">
       <slot />
     </main>
 
