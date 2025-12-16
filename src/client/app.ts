@@ -699,6 +699,232 @@ function parseJinaMarkdown(raw: string): string {
   return md.replace(/\r\n/g, "\n").trim();
 }
 
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function safeHttpUrl(raw: string, baseUrl: string): string | null {
+  const cleaned = raw.trim().replace(/\s+/g, "");
+  try {
+    const u = new URL(cleaned, baseUrl);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
+function normalizeFullTextMarkdown(md: string): string {
+  let text = md.replace(/\r\n/g, "\n").trim();
+  // 兼容一些来源的“项目符号 + 标题”写法：`* #### ...` -> `#### ...`
+  text = text.replace(/^\s*[*-]\s+(#{1,6}\s+)/gm, "$1");
+  // 兼容中文书名号样式链接：`【标题】(url)` -> `[标题](url)`
+  text = text.replace(/【([^\n\r]+?)】\((https?:\/\/[^)\s]+)\)/g, "[$1]($2)");
+  // 修复“链接 URL 被换行/空白打断”的情况：把 `](` 到 `)` 之间的空白去掉
+  text = text.replace(/\]\(([^)]+)\)/g, (_m, url) => `](${String(url).replace(/\s+/g, "")})`);
+  return text.trim();
+}
+
+type InlineToken =
+  | { type: "code"; text: string }
+  | { type: "link"; text: string; href: string }
+  | { type: "img"; alt: string; src: string; href: string };
+
+function renderInlineMarkdown(input: string, baseUrl: string): string {
+  const tokens: InlineToken[] = [];
+  const push = (t: InlineToken) => {
+    const id = tokens.length;
+    tokens.push(t);
+    return `@@ACG_TOKEN_${id}@@`;
+  };
+
+  let text = input;
+
+  // code spans（先处理，避免把 code 里的 `[]()` 误当成链接）
+  text = text.replace(/`([^`]+)`/g, (_m, code) => push({ type: "code", text: String(code) }));
+
+  // images
+  text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_m, alt, url) => {
+    const abs = safeHttpUrl(String(url), baseUrl);
+    if (!abs) return String(alt ?? "");
+    const src = bestInitialCoverSrc(abs, 1200);
+    return push({ type: "img", alt: String(alt ?? ""), src, href: abs });
+  });
+
+  // links
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, url) => {
+    const abs = safeHttpUrl(String(url), baseUrl);
+    if (!abs) return String(label ?? "");
+    return push({ type: "link", text: String(label ?? ""), href: abs });
+  });
+
+  // 先整体 escape，再把 token 注入为 HTML
+  text = escapeHtml(text);
+
+  text = text.replace(/@@ACG_TOKEN_(\d+)@@/g, (_m, n) => {
+    const idx = Number(n);
+    const t = tokens[idx];
+    if (!t) return "";
+
+    if (t.type === "code") return `<code>${escapeHtml(t.text)}</code>`;
+
+    if (t.type === "link") {
+      const href = escapeHtml(t.href);
+      const label = escapeHtml(t.text);
+      return `<a href="${href}" target="_blank" rel="noreferrer noopener">${label}</a>`;
+    }
+
+    if (t.type === "img") {
+      const href = escapeHtml(t.href);
+      const src = escapeHtml(t.src);
+      const alt = escapeHtml(t.alt);
+      return `<a class="acg-prose-img-link" href="${href}" target="_blank" rel="noreferrer noopener"><img src="${src}" alt="${alt}" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-acg-cover data-acg-cover-original-src="${href}" onload="window.__acgCoverLoad?.(this)" onerror="window.__acgCoverError?.(this)" /></a>`;
+    }
+
+    return "";
+  });
+
+  return text;
+}
+
+function renderMarkdownToHtml(md: string, baseUrl: string): string {
+  const text = normalizeFullTextMarkdown(md);
+  if (!text) return "";
+
+  const lines = text.split("\n");
+  const out: string[] = [];
+  let para: string[] = [];
+  let list: "ul" | "ol" | null = null;
+  let inCode = false;
+  let codeLines: string[] = [];
+
+  const flushPara = () => {
+    if (para.length === 0) return;
+    const joined = para.join("\n").trim();
+    para = [];
+    if (!joined) return;
+    const html = renderInlineMarkdown(joined, baseUrl).replace(/\n+/g, "<br />");
+    out.push(`<p>${html}</p>`);
+  };
+
+  const closeList = () => {
+    if (!list) return;
+    out.push(`</${list}>`);
+    list = null;
+  };
+
+  const openList = (kind: "ul" | "ol") => {
+    if (list === kind) return;
+    closeList();
+    out.push(`<${kind}>`);
+    list = kind;
+  };
+
+  const flushCode = () => {
+    if (!inCode) return;
+    const code = escapeHtml(codeLines.join("\n"));
+    out.push(`<pre><code>${code}</code></pre>`);
+    inCode = false;
+    codeLines = [];
+  };
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const rawLine = lines[i] ?? "";
+    const line = rawLine.replace(/\s+$/g, "");
+    const trimmed = line.trim();
+
+    // code fence
+    if (trimmed.startsWith("```")) {
+      flushPara();
+      closeList();
+      if (inCode) flushCode();
+      else {
+        inCode = true;
+        codeLines = [];
+      }
+      continue;
+    }
+
+    if (inCode) {
+      codeLines.push(line);
+      continue;
+    }
+
+    if (!trimmed) {
+      flushPara();
+      closeList();
+      continue;
+    }
+
+    // headings
+    const h = /^(#{1,6})\s+(.*)$/.exec(trimmed);
+    if (h) {
+      flushPara();
+      closeList();
+      const level = h[1]?.length ?? 2;
+      const content = h[2] ?? "";
+      out.push(`<h${level}>${renderInlineMarkdown(content, baseUrl)}</h${level}>`);
+      continue;
+    }
+
+    // hr
+    if (/^(-{3,}|_{3,}|\*{3,})$/.test(trimmed)) {
+      flushPara();
+      closeList();
+      out.push("<hr />");
+      continue;
+    }
+
+    // blockquote
+    if (/^>\s?/.test(trimmed)) {
+      flushPara();
+      closeList();
+      const q: string[] = [];
+      let j = i;
+      while (j < lines.length) {
+        const t = (lines[j] ?? "").trim();
+        if (!/^>\s?/.test(t)) break;
+        q.push(t.replace(/^>\s?/, ""));
+        j += 1;
+      }
+      i = j - 1;
+      const html = q.map((x) => renderInlineMarkdown(x, baseUrl)).join("<br />");
+      out.push(`<blockquote>${html}</blockquote>`);
+      continue;
+    }
+
+    // lists
+    const ul = /^[-*]\s+(.*)$/.exec(trimmed);
+    if (ul) {
+      flushPara();
+      openList("ul");
+      out.push(`<li>${renderInlineMarkdown(ul[1] ?? "", baseUrl)}</li>`);
+      continue;
+    }
+
+    const ol = /^\d+\.\s+(.*)$/.exec(trimmed);
+    if (ol) {
+      flushPara();
+      openList("ol");
+      out.push(`<li>${renderInlineMarkdown(ol[1] ?? "", baseUrl)}</li>`);
+      continue;
+    }
+
+    // normal paragraph
+    para.push(trimmed);
+  }
+
+  if (inCode) flushCode();
+  flushPara();
+  closeList();
+  return out.join("\n");
+}
+
 async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), timeoutMs);
@@ -826,7 +1052,7 @@ function wireFullTextReader() {
     };
 
     const render = (text: string) => {
-      contentEl.textContent = text;
+      contentEl.innerHTML = renderMarkdownToHtml(text, url);
     };
 
     const showOriginal = (cache: FullTextCacheEntry) => {
@@ -861,7 +1087,7 @@ function wireFullTextReader() {
         let cache = force ? null : readFullTextCache(postId);
         if (!cache || cache.url !== url || !cache.original) {
           const md = await loadFullTextMarkdown({ url, timeoutMs: 22_000 });
-          cache = { url, fetchedAt: new Date().toISOString(), original: md };
+          cache = { url, fetchedAt: new Date().toISOString(), original: normalizeFullTextMarkdown(md) };
           writeFullTextCache(postId, cache);
         }
         memoryCache = cache;
