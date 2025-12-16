@@ -554,7 +554,10 @@ function wirePrefsDrawer() {
     }
   })();
 
+  const isPhoneDevice = () => document.documentElement?.dataset?.acgDevice === "phone";
+
   const isOverlayMode = () => {
+    if (isPhoneDevice()) return true;
     if (mq) return mq.matches;
     return window.innerWidth < 768;
   };

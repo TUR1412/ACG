@@ -16,13 +16,21 @@
   --acg-bottom-nav-h: 0px;
 }
 
-@media (max-width: 640px), (pointer: coarse) {
+@media (max-width: 640px) {
   :root {
     /* 移动端性能优先：降低阴影开销，滚动更顺滑 */
     --shadow-soft: 0 14px 40px rgba(2, 6, 23, 0.10);
     --shadow-card: 0 8px 18px rgba(2, 6, 23, 0.08);
     --shadow-card-hover: 0 16px 55px rgba(2, 6, 23, 0.12);
   }
+}
+
+html[data-acg-device="phone"] {
+  /* 手机端性能优先：即使启用了“桌面站点/大视口”，也应保持移动端阴影与布局节奏 */
+  --shadow-soft: 0 14px 40px rgba(2, 6, 23, 0.10);
+  --shadow-card: 0 8px 18px rgba(2, 6, 23, 0.08);
+  --shadow-card-hover: 0 16px 55px rgba(2, 6, 23, 0.12);
+  --acg-bottom-nav-h: 78px;
 }
 
 html,
@@ -62,16 +70,17 @@ body::before {
   background-position: 0 0, 1px 1px, 2px 2px;
 }
 
+html[data-acg-device="phone"] body::before {
+  /* 手机端进一步降噪：减少层数与透明度，降低滚动/合成压力 */
+  opacity: 0.045;
+  background-image: radial-gradient(rgba(15, 23, 42, 0.22) 0.7px, transparent 0.8px);
+  background-size: 4px 4px;
+  background-position: 0 0;
+}
+
 @media (max-width: 1023px) {
   :root {
     /* 移动端底部导航默认高度（含 safe-area）。用于把 FAB/Toast 顶上去 */
-    --acg-bottom-nav-h: 78px;
-  }
-}
-
-@media (pointer: coarse) {
-  :root {
-    /* 触控设备强制按“移动端”处理（即使浏览器启用了桌面站点/大视口） */
     --acg-bottom-nav-h: 78px;
   }
 }
@@ -122,6 +131,12 @@ img {
   box-shadow: var(--shadow-card);
 }
 
+html[data-acg-device="phone"] .glass {
+  /* 手机端降低 blur 开销：保持玻璃质感，但更稳更顺 */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
 /* 列表卡片：保留“玻璃感”，但不使用昂贵的 backdrop-filter（大列表更顺滑） */
 .glass-card {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.90), rgba(255, 255, 255, 0.62));
@@ -137,10 +152,14 @@ img {
   contain-intrinsic-size: 360px;
 }
 
-@media (max-width: 640px), (pointer: coarse) {
+@media (max-width: 640px) {
   .acg-card {
     contain-intrinsic-size: 180px;
   }
+}
+
+html[data-acg-device="phone"] .acg-card {
+  contain-intrinsic-size: 180px;
 }
 
 /* 缺图占位：避免“纯文字感”，同时不引入外部图片资源 */
@@ -255,64 +274,64 @@ img {
   }
 }
 
-@media (pointer: coarse) {
-  /* 防止“手机被当成 PC 布局”：触控设备即使视口很宽，也强制单列 */
-  .acg-layout-grid {
-    grid-template-columns: 1fr !important;
-  }
+/* 防止“手机被当成 PC 布局”：当浏览器启用桌面站点时，宽度断点不可信；以设备分级为准 */
+html[data-acg-device="phone"] .acg-layout-grid {
+  grid-template-columns: 1fr !important;
+}
 
-  .acg-layout-grid > * {
-    grid-column: 1 / -1 !important;
-  }
+html[data-acg-device="phone"] .acg-layout-grid > * {
+  grid-column: 1 / -1 !important;
+}
 
-  .acg-post-grid {
-    grid-template-columns: 1fr !important;
-  }
+html[data-acg-device="phone"] .acg-post-grid {
+  grid-template-columns: 1fr !important;
+}
 
-  /* 横向滚动容器：触屏设备优先“可滑动”而不是换行（避免桌面断点把它变成一坨） */
-  .acg-hscroll {
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-  }
+/* 横向滚动容器：手机端优先“可滑动”而不是换行（避免桌面断点把它变成一坨） */
+html[data-acg-device="phone"] .acg-hscroll {
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
 
-  /* 列表卡片：触屏设备始终用“移动端媒体卡片”布局（避免 sm/md 触发桌面版） */
-  .acg-post-card-body {
-    display: flex !important;
-    padding: 12px !important;
-  }
+/* 列表卡片：手机端始终用“移动端媒体卡片”布局（避免 sm/md 触发桌面版） */
+html[data-acg-device="phone"] .acg-post-card-body {
+  display: flex !important;
+  padding: 12px !important;
+}
 
-  .acg-post-card-cover {
-    width: 8rem !important;
-  }
+html[data-acg-device="phone"] .acg-post-card-cover {
+  width: 8rem !important;
+}
 
-  .acg-post-card-cover-link {
-    aspect-ratio: 4 / 3 !important;
-    border-radius: 12px !important;
-  }
+html[data-acg-device="phone"] .acg-post-card-cover-link {
+  aspect-ratio: 4 / 3 !important;
+  border-radius: 12px !important;
+}
 
-  .acg-post-card-cover-badges,
-  .acg-post-card-cover-when {
-    display: none !important;
-  }
+html[data-acg-device="phone"] .acg-post-card-cover-badges,
+html[data-acg-device="phone"] .acg-post-card-cover-when {
+  display: none !important;
+}
 
-  .acg-post-card-content {
-    padding: 4px 0 !important;
-  }
+html[data-acg-device="phone"] .acg-post-card-content {
+  padding: 4px 0 !important;
+}
 
-  .acg-nav-desktop {
-    display: none !important;
-  }
+/* 兜底：若手机在“桌面站点”下误触发了 lg 导航，也要强制回到移动端分类条 */
+html[data-acg-device="phone"] .acg-nav-desktop {
+  display: none !important;
+}
 
-  .acg-nav-mobile {
-    display: flex !important;
-  }
+html[data-acg-device="phone"] .acg-nav-mobile {
+  display: flex !important;
+}
 
-  /* 即使触发了 `lg:*`，也要给底部导航留出空间（否则会挡内容） */
-  .acg-main,
-  .acg-footer {
-    padding-bottom: calc(32px + var(--acg-bottom-nav-h)) !important;
-  }
+/* 兜底：避免底部导航遮挡内容 */
+html[data-acg-device="phone"] .acg-main,
+html[data-acg-device="phone"] .acg-footer {
+  padding-bottom: calc(32px + var(--acg-bottom-nav-h)) !important;
 }
 
 /* Icon 基础：统一 SVG 图标风格（替换符号/emoji） */
@@ -790,8 +809,8 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   scroll-padding-left: 14px;
   scroll-padding-right: 14px;
   -webkit-overflow-scrolling: touch;
-  /* 让移动端更容易“横向滑动”，减少被页面纵向滚动抢走手势 */
-  touch-action: pan-x;
+  /* 允许横向滑动，同时不阻断纵向滚动（避免“卡住”） */
+  touch-action: pan-x pan-y;
   scrollbar-width: none;
 }
 
@@ -808,7 +827,7 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   display: none;
 }
 
-@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+@media (min-width: 768px) {
   .acg-carousel-track {
     grid-auto-columns: minmax(520px, 72%);
     gap: 16px;
@@ -828,11 +847,9 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-card);
   contain: layout paint style;
-  /* 触控优先横向滑动（避免被点击层误判为“点开详情”） */
-  touch-action: pan-x;
 }
 
-@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+@media (min-width: 768px) {
   .acg-carousel-slide {
     min-height: 360px;
   }
@@ -842,7 +859,6 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   position: absolute;
   inset: 0;
   z-index: 5;
-  touch-action: pan-x;
 }
 
 .acg-carousel-bg,
@@ -896,6 +912,11 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   padding: 10px 14px 14px;
 }
 
+html[data-acg-device="phone"] .acg-carousel-footer {
+  /* 手机端更“嵌入式”：减少占高，把注意力留给封面 */
+  padding: 8px 12px 12px;
+}
+
 .acg-carousel-nav {
   display: grid;
   place-items: center;
@@ -904,6 +925,10 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   border-radius: 16px;
   font-weight: 900;
   color: rgba(15, 23, 42, 0.92);
+}
+
+html[data-acg-device="phone"] .acg-carousel-nav {
+  display: none;
 }
 
 .acg-carousel-dots {
@@ -921,9 +946,18 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   transition: width 180ms ease, background-color 180ms ease, transform 180ms ease;
 }
 
+html[data-acg-device="phone"] .acg-carousel-dot {
+  width: 10px;
+  height: 10px;
+}
+
 .acg-carousel-dot.is-active {
   width: 18px;
   background: rgba(124, 58, 237, 0.55);
+}
+
+html[data-acg-device="phone"] .acg-carousel-dot.is-active {
+  width: 24px;
 }
 
 .acg-carousel-dot:active {
@@ -956,11 +990,22 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   -webkit-backdrop-filter: blur(14px);
 }
 
-@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+html[data-acg-device="phone"] .acg-bottom-nav {
+  /* 手机端：固定层的 blur/阴影更容易拖慢滚动，适度降级更“稳” */
+  box-shadow: 0 18px 55px rgba(2, 6, 23, 0.14);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@media (min-width: 1024px) {
   /* 桌面端不显示底部导航（避免与顶部导航重复） */
   .acg-bottom-nav {
     display: none;
   }
+}
+
+html[data-acg-device="phone"] .acg-bottom-nav {
+  display: flex;
 }
 
 .acg-bottom-nav-item {
@@ -1020,7 +1065,7 @@ body.acg-no-scroll {
   position: relative;
 }
 
-@media (max-width: 767px), (pointer: coarse) {
+@media (max-width: 767px) {
   .acg-prefs-drawer {
     position: fixed;
     inset: 0;
@@ -1079,7 +1124,7 @@ body.acg-no-scroll {
   }
 }
 
-@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+@media (min-width: 768px) {
   .acg-prefs-drawer {
     position: static;
     inset: auto;
@@ -1105,4 +1150,52 @@ body.acg-no-scroll {
   .acg-prefs-drawer-panel::before {
     content: none;
   }
+}
+
+/* 手机端偏好设置抽屉：即使处于“桌面站点/大视口”，也保持抽屉模式 */
+html[data-acg-device="phone"] .acg-prefs-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  background: rgba(2, 6, 23, 0.38);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+html[data-acg-device="phone"] .acg-prefs-drawer.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+html[data-acg-device="phone"] .acg-prefs-drawer-panel {
+  width: 100%;
+  max-height: calc(100vh - 24px - env(safe-area-inset-top));
+  overflow: auto;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.01);
+  box-shadow: 0 40px 120px rgba(2, 6, 23, 0.28);
+  transform: translateY(20px);
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+html[data-acg-device="phone"] .acg-prefs-drawer-panel::before {
+  content: "";
+  display: block;
+  width: 44px;
+  height: 5px;
+  margin: 10px auto 0;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+}
+
+html[data-acg-device="phone"] .acg-prefs-drawer.is-open .acg-prefs-drawer-panel {
+  transform: translateY(0);
 }

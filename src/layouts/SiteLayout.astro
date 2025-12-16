@@ -42,6 +42,20 @@ const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
     <title>{pageTitle}</title>
     <meta name="description" content={pageDescription} />
     <meta name="theme-color" content="#f2f4f8" />
+    <script>
+      try {
+        const el = document.documentElement;
+        const sw = window.screen ? Math.min(window.screen.width, window.screen.height) : 0;
+        const vw = Math.min(window.innerWidth || 0, window.innerHeight || 0);
+        const shortSide = sw || vw || 0;
+        const touchPoints = navigator.maxTouchPoints || 0;
+        const isTouch = touchPoints > 0;
+        const device = shortSide > 0 && shortSide <= 480 ? "phone" : isTouch && shortSide > 0 && shortSide <= 900 ? "tablet" : "desktop";
+        el.dataset.acgDevice = device;
+      } catch {
+        // ignore
+      }
+    </script>
     <link rel="icon" type="image/svg+xml" href={href("/favicon.svg")} />
     <link rel="preconnect" href="https://images.weserv.nl" crossorigin />
     <link rel="preconnect" href="https://wsrv.nl" crossorigin />
