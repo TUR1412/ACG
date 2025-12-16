@@ -166,8 +166,6 @@ function pop(el: HTMLElement) {
 
 function setBookmarkButtonState(button: HTMLButtonElement, on: boolean) {
   button.setAttribute("aria-pressed", on ? "true" : "false");
-  const label = button.querySelector<HTMLElement>("[data-bookmark-label]");
-  if (label) label.textContent = on ? "★" : "☆";
   button.classList.toggle("ring-2", on);
   button.classList.toggle("ring-violet-400/50", on);
 }
@@ -810,6 +808,80 @@ function createCategoryIcon(params: { category: BookmarkCategory; size: number }
   return svg;
 }
 
+type UiIconName = "refresh" | "external-link" | "star";
+
+function createUiIcon(params: { name: UiIconName; size: number; filled?: boolean }): SVGSVGElement {
+  const { name, size, filled = false } = params;
+
+  const svg = createSvgEl("svg");
+  svg.setAttribute("width", String(size));
+  svg.setAttribute("height", String(size));
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  svg.classList.add("acg-icon");
+
+  const addPath = (attrs: Record<string, string>) => {
+    const p = createSvgEl("path");
+    for (const [k, v] of Object.entries(attrs)) p.setAttribute(k, v);
+    svg.appendChild(p);
+  };
+
+  if (name === "refresh") {
+    addPath({
+      d: "M20 12a8 8 0 1 1-2.35-5.65",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round"
+    });
+    addPath({
+      d: "M20 4v4h-4",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round"
+    });
+  }
+
+  if (name === "external-link") {
+    addPath({
+      d: "M14 5h5v5",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round"
+    });
+    addPath({
+      d: "M10 14 19 5",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round"
+    });
+    addPath({
+      d: "M10 5H6.8A2.8 2.8 0 0 0 4 7.8v9.4A2.8 2.8 0 0 0 6.8 20h9.4A2.8 2.8 0 0 0 19 17.2V14",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round"
+    });
+  }
+
+  if (name === "star") {
+    addPath({
+      class: "acg-icon-star",
+      d: "M12 17.3l-5.1 2.7 1-5.7-4.1-4 5.7-.8L12 4.3l2.6 5.2 5.7.8-4.1 4 1 5.7L12 17.3Z",
+      fill: filled ? "currentColor" : "none",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linejoin": "round"
+    });
+  }
+
+  return svg;
+}
+
 function hrefInBase(pathname: string): string {
   const base = import.meta.env.BASE_URL ?? "/";
   const trimmed = pathname.startsWith("/") ? pathname.slice(1) : pathname;
@@ -913,7 +985,7 @@ function buildBookmarkCard(params: {
   retryBtn.dataset.coverRetry = "true";
   retryBtn.setAttribute("aria-label", retryCoverLabel);
   retryBtn.title = retryCoverLabel;
-  retryBtn.textContent = "↻";
+  retryBtn.appendChild(createUiIcon({ name: "refresh", size: 18 }));
   article.appendChild(retryBtn);
 
   const coverGrad = document.createElement("div");
@@ -1048,7 +1120,8 @@ function buildBookmarkCard(params: {
 
     const sourceIcon = document.createElement("span");
     sourceIcon.className = "text-slate-500";
-    sourceIcon.textContent = "↗";
+    sourceIcon.setAttribute("aria-hidden", "true");
+    sourceIcon.appendChild(createUiIcon({ name: "external-link", size: 14 }));
     sourceLink.appendChild(sourceIcon);
 
     meta.appendChild(sourceLink);
@@ -1060,9 +1133,11 @@ function buildBookmarkCard(params: {
   star.dataset.bookmarkId = post.id;
   star.setAttribute("aria-pressed", "true");
   star.title = "Bookmark";
-  const starLabel = document.createElement("span");
-  starLabel.setAttribute("data-bookmark-label", "");
-  star.appendChild(starLabel);
+  const starIcon = document.createElement("span");
+  starIcon.setAttribute("data-bookmark-icon", "");
+  starIcon.setAttribute("aria-hidden", "true");
+  starIcon.appendChild(createUiIcon({ name: "star", size: 18 }));
+  star.appendChild(starIcon);
   setBookmarkButtonState(star, true);
   head.appendChild(star);
 
@@ -1511,8 +1586,13 @@ function wireSourceFollows(followedSources: Set<string>) {
       const chip = document.createElement("button");
       chip.type = "button";
       chip.className =
-        "rounded-full border border-slate-900/10 bg-white/55 px-3 py-1 text-xs text-slate-700 hover:bg-white/75 clickable";
-      chip.textContent = `${name} ★`;
+        "inline-flex items-center gap-2 rounded-full border border-slate-900/10 bg-white/55 px-3 py-1 text-xs text-slate-700 hover:bg-white/75 clickable";
+      chip.appendChild(document.createTextNode(name));
+      const icon = document.createElement("span");
+      icon.className = "text-amber-600";
+      icon.setAttribute("aria-hidden", "true");
+      icon.appendChild(createUiIcon({ name: "star", size: 16, filled: true }));
+      chip.appendChild(icon);
       chip.title = isJapanese() ? "クリックで解除" : "点击取消关注";
       chip.addEventListener("click", () => {
         followedSources.delete(id);
@@ -1528,8 +1608,6 @@ function wireSourceFollows(followedSources: Set<string>) {
       const id = btn.dataset.sourceFollowId ?? "";
       const on = Boolean(id) && followedSources.has(id);
       btn.setAttribute("aria-pressed", on ? "true" : "false");
-      const star = btn.querySelector<HTMLElement>("[data-source-follow-star]");
-      if (star) star.textContent = on ? "★" : "☆";
       btn.classList.toggle("ring-2", on);
       btn.classList.toggle("ring-amber-400/40", on);
     }

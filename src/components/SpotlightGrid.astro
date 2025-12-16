@@ -7,6 +7,7 @@ import { formatDateTime, formatRelativeHours } from "../lib/format";
 import { href } from "../lib/href";
 import { resolveCover } from "../lib/cover";
 import CategoryIcon from "./CategoryIcon.astro";
+import Icon from "./Icon.astro";
 import SourceBadge from "./SourceBadge.astro";
 
 type Props = {
@@ -163,7 +164,9 @@ function whenLabel(post: Post): string {
                 aria-pressed="false"
                 title="Bookmark"
               >
-                <span data-bookmark-label>☆</span>
+                <span data-bookmark-icon aria-hidden="true">
+                  <Icon name="star" size={18} />
+                </span>
               </button>
 
               <button
@@ -173,7 +176,7 @@ function whenLabel(post: Post): string {
                 aria-label={retryCoverLabel}
                 title={retryCoverLabel}
               >
-                <span aria-hidden="true">↻</span>
+                <Icon name="refresh" size={18} />
               </button>
             </article>
           );
@@ -188,7 +191,7 @@ function whenLabel(post: Post): string {
           aria-label={prevLabel}
           title={prevLabel}
         >
-          <span aria-hidden="true">←</span>
+          <Icon name="arrow-left" size={18} />
         </button>
 
         <div class="acg-carousel-dots" role="tablist" aria-label="Spotlight slides">
@@ -210,7 +213,7 @@ function whenLabel(post: Post): string {
           aria-label={nextLabel}
           title={nextLabel}
         >
-          <span aria-hidden="true">→</span>
+          <Icon name="arrow-right" size={18} />
         </button>
       </div>
     </div>

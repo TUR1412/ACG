@@ -11,6 +11,7 @@ import { href } from "../../../lib/href";
 import { createRecommender } from "../../../lib/recommend";
 import { resolveCover } from "../../../lib/cover";
 import CategoryIcon from "../../../components/CategoryIcon.astro";
+import Icon from "../../../components/Icon.astro";
 import SourceBadge from "../../../components/SourceBadge.astro";
 
 export async function getStaticPaths() {
@@ -73,7 +74,7 @@ const freshLabel = "NEW";
         aria-label={retryCoverLabel}
         title={retryCoverLabel}
       >
-        <span aria-hidden="true">↻</span>
+        <Icon name="refresh" size={18} />
       </button>
 
       <div class="absolute bottom-5 left-5 right-5">
@@ -148,7 +149,9 @@ const freshLabel = "NEW";
           data-bookmark-id={post.id}
           aria-pressed="false"
         >
-          <span data-bookmark-label>☆</span>
+          <span data-bookmark-icon aria-hidden="true">
+            <Icon name="star" size={18} />
+          </span>
           <span class="ml-2">{t("zh", "nav.bookmarks")}</span>
         </button>
       </div>

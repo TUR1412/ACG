@@ -236,6 +236,54 @@ img {
   }
 }
 
+/* Icon 基础：统一 SVG 图标风格（替换符号/emoji） */
+.acg-icon {
+  display: inline-block;
+  vertical-align: -0.12em;
+  flex: 0 0 auto;
+}
+
+button[data-bookmark-id] [data-bookmark-icon],
+button[data-source-follow-id] [data-source-follow-icon] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button[data-bookmark-id] [data-bookmark-icon] {
+  color: rgba(15, 23, 42, 0.78);
+}
+
+button[data-bookmark-id][aria-pressed="true"] [data-bookmark-icon] {
+  color: rgba(124, 58, 237, 0.95);
+}
+
+button[data-bookmark-id] .acg-icon-star {
+  fill: none;
+  transition: fill 160ms ease, transform 160ms ease;
+}
+
+button[data-bookmark-id][aria-pressed="true"] .acg-icon-star {
+  fill: currentColor;
+}
+
+button[data-source-follow-id] [data-source-follow-icon] {
+  color: rgba(15, 23, 42, 0.78);
+}
+
+button[data-source-follow-id][aria-pressed="true"] [data-source-follow-icon] {
+  color: rgba(245, 158, 11, 0.95);
+}
+
+button[data-source-follow-id] .acg-icon-star {
+  fill: none;
+  transition: fill 160ms ease;
+}
+
+button[data-source-follow-id][aria-pressed="true"] .acg-icon-star {
+  fill: currentColor;
+}
+
 /* 快捷筛选 Chip：移动端更好点 */
 .acg-chip {
   border: 1px solid rgba(15, 23, 42, 0.10);

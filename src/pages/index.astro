@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 import { href } from "../lib/href";
+import Icon from "../components/Icon.astro";
 ---
 
 <!doctype html>
@@ -43,7 +44,11 @@ import { href } from "../lib/href";
                 <div class="text-sm font-semibold text-slate-950">中文</div>
                 <div class="mt-1 text-xs text-slate-600">进入站点</div>
               </div>
-              <span class="text-slate-700">→</span>
+              <Icon
+                name="chevron-right"
+                size={18}
+                class="text-slate-700 transition-transform duration-200 group-hover:translate-x-0.5"
+              />
             </div>
           </a>
           <a href="./ja/" class="glass clickable group relative overflow-hidden rounded-2xl p-5">
@@ -53,7 +58,11 @@ import { href } from "../lib/href";
                 <div class="text-sm font-semibold text-slate-950">日本語</div>
                 <div class="mt-1 text-xs text-slate-600">サイトへ</div>
               </div>
-              <span class="text-slate-700">→</span>
+              <Icon
+                name="chevron-right"
+                size={18}
+                class="text-slate-700 transition-transform duration-200 group-hover:translate-x-0.5"
+              />
             </div>
           </a>
         </div>
