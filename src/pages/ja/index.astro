@@ -112,6 +112,14 @@ const spotlight = (() => {
         <button
           type="button"
           class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-toggle="only-followed-sources"
+          data-active="false"
+        >
+          {t("ja", "prefs.followedSourcesOnly")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
           data-quick-toggle="hide-read"
           data-active="false"
         >

@@ -395,6 +395,36 @@ img {
   opacity: 0.92;
 }
 
+/* 新鲜度：小脉冲点（只用于少量 “NEW/新着” 徽章，避免全站高频动画） */
+.acg-dot-pulse {
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55);
+  animation: acg-pulse 1.6s ease-out infinite;
+}
+
+@keyframes acg-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+[data-post-id][data-read="true"] .acg-dot-pulse {
+  animation: none;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acg-dot-pulse {
+    animation: none;
+    box-shadow: none;
+  }
+}
+
 /* 列表“交错入场”（不使用 opacity=0，避免空白屏） */
 .stagger-item {
   animation: rise-in 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both;

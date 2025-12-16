@@ -26,12 +26,18 @@ export type I18nKey =
   | "search.clear"
   | "prefs.title"
   | "prefs.followOnly"
+  | "prefs.followedSourcesOnly"
   | "prefs.hideRead"
   | "prefs.followPlaceholder"
   | "prefs.followAdd"
   | "prefs.blockPlaceholder"
   | "prefs.blockAdd"
   | "prefs.sources"
+  | "prefs.sourcesFollowHint"
+  | "prefs.followedSources"
+  | "prefs.followSource"
+  | "prefs.followAllSources"
+  | "prefs.unfollowAllSources"
   | "prefs.enableAllSources"
   | "prefs.disableAllSources"
   | "prefs.hint"
@@ -73,16 +79,22 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "search.placeholder": "搜索标题 / 摘要 / 标签…",
     "search.result": "匹配",
     "search.emptyTitle": "没有匹配结果",
-    "search.emptyHint": "试试清空搜索词，或关闭“只看关注 / 隐藏已读 / 来源过滤”。",
+    "search.emptyHint": "试试清空搜索词，或关闭“只看关注 / 只看关注源 / 隐藏已读 / 来源过滤”。",
     "search.clear": "清空搜索",
     "prefs.title": "偏好",
     "prefs.followOnly": "只看关注",
+    "prefs.followedSourcesOnly": "只看关注源",
     "prefs.hideRead": "隐藏已读",
     "prefs.followPlaceholder": "关注关键词（作品/角色/声优）",
     "prefs.followAdd": "添加",
     "prefs.blockPlaceholder": "屏蔽关键词（不想看到的）",
     "prefs.blockAdd": "屏蔽",
     "prefs.sources": "来源",
+    "prefs.sourcesFollowHint": "★ = 关注源（用于订阅过滤）",
+    "prefs.followedSources": "已关注来源",
+    "prefs.followSource": "关注",
+    "prefs.followAllSources": "关注全部",
+    "prefs.unfollowAllSources": "取消全部关注",
     "prefs.enableAllSources": "启用全部来源",
     "prefs.disableAllSources": "全部禁用",
     "prefs.hint": "以上设置仅保存在本机浏览器（localStorage）。",
@@ -123,16 +135,22 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "search.placeholder": "検索（タイトル / 要約 / タグ）…",
     "search.result": "一致",
     "search.emptyTitle": "一致する結果がありません",
-    "search.emptyHint": "検索語をクリアするか、「フォローのみ / 既読を隠す / ソース無効化」を見直してください。",
+    "search.emptyHint": "検索語をクリアするか、「フォローのみ / フォローしたソースのみ / 既読を隠す / ソース無効化」を見直してください。",
     "search.clear": "クリア",
     "prefs.title": "設定",
     "prefs.followOnly": "フォローのみ",
+    "prefs.followedSourcesOnly": "フォローしたソースのみ",
     "prefs.hideRead": "既読を隠す",
     "prefs.followPlaceholder": "フォロー（作品/声優など）",
     "prefs.followAdd": "追加",
     "prefs.blockPlaceholder": "除外キーワード",
     "prefs.blockAdd": "除外",
     "prefs.sources": "ソース",
+    "prefs.sourcesFollowHint": "★ = フォロー（購読フィルター用）",
+    "prefs.followedSources": "フォロー中のソース",
+    "prefs.followSource": "フォロー",
+    "prefs.followAllSources": "すべてフォロー",
+    "prefs.unfollowAllSources": "すべて解除",
     "prefs.enableAllSources": "すべて有効化",
     "prefs.disableAllSources": "すべて無効化",
     "prefs.hint": "設定はこのブラウザ内のみ（localStorage）。",

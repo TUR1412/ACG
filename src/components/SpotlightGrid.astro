@@ -28,6 +28,7 @@ const nextLabel = lang === "ja" ? "次へ" : "下一张";
 const emptyText = lang === "ja" ? "データがありません" : "暂无数据";
 const helpId = "acg-spotlight-help";
 const retryCoverLabel = lang === "ja" ? "画像を再試行" : "重试封面";
+const freshLabel = lang === "ja" ? "新着" : "NEW";
 
 function postHref(post: Post): string {
   return href(`/${lang}/p/${post.id}/`);
@@ -62,6 +63,11 @@ function whenLabel(post: Post): string {
         {items.map((post, i) => {
           const theme = getCategoryTheme(post.category);
           const cover = resolveCover(post.cover, 1200);
+          const publishedAtMs = new Date(post.publishedAt).getTime();
+          const isFresh =
+            Number.isFinite(publishedAtMs) &&
+            Date.now() - publishedAtMs >= 0 &&
+            Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
           return (
             <article
               class="acg-carousel-slide"
@@ -103,6 +109,12 @@ function whenLabel(post: Post): string {
 
               <div class="acg-carousel-content">
                 <div class="flex flex-wrap items-center gap-2">
+                  {isFresh ? (
+                    <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-md">
+                      <span class="acg-dot-pulse size-1.5 rounded-full bg-emerald-400"></span>
+                      <span>{freshLabel}</span>
+                    </span>
+                  ) : null}
                   <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-white">
                     <span class:list={["size-1.5 rounded-full", theme.dot]}></span>
                     <span>{categoryLabel(lang, post.category)}</span>

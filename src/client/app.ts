@@ -16,6 +16,7 @@ const FOLLOWS_KEY = "acg.follows.v1";
 const BLOCKLIST_KEY = "acg.blocklist.v1";
 const FILTERS_KEY = "acg.filters.v1";
 const DISABLED_SOURCES_KEY = "acg.sourcesDisabled.v1";
+const FOLLOWED_SOURCES_KEY = "acg.sourcesFollowed.v1";
 
 type WordStore = {
   version: 1;
@@ -23,8 +24,9 @@ type WordStore = {
 };
 
 type FilterStore = {
-  version: 1;
+  version: 2;
   onlyFollowed: boolean;
+  onlyFollowedSources: boolean;
   hideRead: boolean;
 };
 
@@ -90,14 +92,15 @@ function saveWords(key: string, words: Set<string>) {
 
 function loadFilters(): FilterStore {
   try {
-    const parsed = safeJsonParse<FilterStore>(localStorage.getItem(FILTERS_KEY));
+    const parsed = safeJsonParse<Partial<FilterStore>>(localStorage.getItem(FILTERS_KEY));
     return {
-      version: 1,
+      version: 2,
       onlyFollowed: Boolean(parsed?.onlyFollowed),
+      onlyFollowedSources: Boolean((parsed as any)?.onlyFollowedSources),
       hideRead: Boolean(parsed?.hideRead)
     };
   } catch {
-    return { version: 1, onlyFollowed: false, hideRead: false };
+    return { version: 2, onlyFollowed: false, onlyFollowedSources: false, hideRead: false };
   }
 }
 
@@ -489,22 +492,35 @@ function wireQuickToggles() {
   if (buttons.length === 0) return;
 
   const onlyFollowed = document.querySelector<HTMLInputElement>("#acg-only-followed");
+  const onlyFollowedSources = document.querySelector<HTMLInputElement>("#acg-only-followed-sources");
   const hideRead = document.querySelector<HTMLInputElement>("#acg-hide-read");
 
   const apply = () => {
     const only = Boolean(onlyFollowed?.checked);
+    const onlySources = Boolean(onlyFollowedSources?.checked);
     const hide = Boolean(hideRead?.checked);
     for (const btn of buttons) {
       const kind = btn.dataset.quickToggle ?? "";
-      const active = kind === "only-followed" ? only : kind === "hide-read" ? hide : false;
+      const active =
+        kind === "only-followed"
+          ? only
+          : kind === "only-followed-sources"
+            ? onlySources
+            : kind === "hide-read"
+              ? hide
+              : false;
       btn.dataset.active = active ? "true" : "false";
     }
   };
 
-  const toggle = (kind: "only-followed" | "hide-read") => {
+  const toggle = (kind: "only-followed" | "only-followed-sources" | "hide-read") => {
     if (kind === "only-followed" && onlyFollowed) {
       onlyFollowed.checked = !onlyFollowed.checked;
       onlyFollowed.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    if (kind === "only-followed-sources" && onlyFollowedSources) {
+      onlyFollowedSources.checked = !onlyFollowedSources.checked;
+      onlyFollowedSources.dispatchEvent(new Event("change", { bubbles: true }));
     }
     if (kind === "hide-read" && hideRead) {
       hideRead.checked = !hideRead.checked;
@@ -519,7 +535,7 @@ function wireQuickToggles() {
     if (!(el instanceof HTMLButtonElement)) return;
 
     const kind = el.dataset.quickToggle;
-    if (kind !== "only-followed" && kind !== "hide-read") return;
+    if (kind !== "only-followed" && kind !== "only-followed-sources" && kind !== "hide-read") return;
     toggle(kind);
     apply();
   });
@@ -553,9 +569,10 @@ function createListFilter(params: {
   follows: Set<string>;
   blocklist: Set<string>;
   disabledSources: Set<string>;
+  followedSources: Set<string>;
   filters: FilterStore;
 }) {
-  const { readIds, follows, blocklist, disabledSources, filters } = params;
+  const { readIds, follows, blocklist, disabledSources, followedSources, filters } = params;
   const input = document.querySelector<HTMLInputElement>("#acg-search");
   const count = document.querySelector<HTMLElement>("#acg-search-count");
   const unreadCount = document.querySelector<HTMLElement>("#acg-unread-count");
@@ -582,6 +599,7 @@ function createListFilter(params: {
   const applyNow = () => {
     const q = normalizeText(input.value);
     const followOnlyEnabled = filters.onlyFollowed;
+    const followSourcesOnlyEnabled = filters.onlyFollowedSources;
     const hideReadEnabled = filters.hideRead;
     const followWords = followOnlyEnabled ? [...follows] : [];
     const blockWords = blocklist.size > 0 ? [...blocklist] : [];
@@ -599,12 +617,13 @@ function createListFilter(params: {
         : followWords.length === 0
           ? false
           : followWords.some((w) => w && hay.includes(w));
+      const matchFollowSources = !followSourcesOnlyEnabled ? true : sourceId ? followedSources.has(sourceId) : false;
       const blocked = blockWords.some((w) => w && hay.includes(w));
       const read = id ? readIds.has(id) : false;
       const hideByRead = hideReadEnabled && read;
       const sourceEnabled = !sourceId || !disabledSources.has(sourceId);
 
-      const ok = matchSearch && matchFollow && !blocked && !hideByRead && sourceEnabled;
+      const ok = matchSearch && matchFollow && matchFollowSources && !blocked && !hideByRead && sourceEnabled;
       const hidden = !ok;
       if (hiddenState[i] !== hidden) {
         cards[i].classList.toggle("hidden", hidden);
@@ -849,6 +868,10 @@ function buildBookmarkCard(params: {
   const retryCoverLabel = lang === "ja" ? "画像を再試行" : "重试封面";
   const detailHref = hrefInBase(`/${lang}/p/${post.id}/`);
   const when = whenLabel(lang, post.publishedAt);
+  const publishedAtMs = new Date(post.publishedAt).getTime();
+  const isFresh =
+    Number.isFinite(publishedAtMs) && Date.now() - publishedAtMs >= 0 && Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
+  const freshLabel = lang === "ja" ? "新着" : "NEW";
 
   const article = document.createElement("article");
   article.className = "glass-card acg-card clickable shine group relative overflow-hidden rounded-2xl";
@@ -926,7 +949,7 @@ function buildBookmarkCard(params: {
   topLink.appendChild(overlay);
 
   const badgeWrap = document.createElement("div");
-  badgeWrap.className = "absolute left-3 top-3";
+  badgeWrap.className = "absolute left-3 top-3 flex flex-wrap items-center gap-2";
   const badge = document.createElement("span");
   badge.className =
     "inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white";
@@ -937,6 +960,20 @@ function buildBookmarkCard(params: {
   badge.appendChild(dot);
   badge.appendChild(badgeText);
   badgeWrap.appendChild(badge);
+
+  if (isFresh) {
+    const fresh = document.createElement("span");
+    fresh.className =
+      "inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/90";
+    const freshDot = document.createElement("span");
+    freshDot.className = "acg-dot-pulse size-1.5 rounded-full bg-emerald-400";
+    const freshText = document.createElement("span");
+    freshText.textContent = freshLabel;
+    fresh.appendChild(freshDot);
+    fresh.appendChild(freshText);
+    badgeWrap.appendChild(fresh);
+  }
+
   topLink.appendChild(badgeWrap);
 
   const whenWrap = document.createElement("div");
@@ -1257,6 +1294,7 @@ function wirePreferences(params: {
   const { follows, blocklist, filters } = params;
 
   const onlyFollowed = document.querySelector<HTMLInputElement>("#acg-only-followed");
+  const onlyFollowedSources = document.querySelector<HTMLInputElement>("#acg-only-followed-sources");
   const hideRead = document.querySelector<HTMLInputElement>("#acg-hide-read");
   const followInput = document.querySelector<HTMLInputElement>("#acg-follow-input");
   const followAdd = document.querySelector<HTMLButtonElement>("#acg-follow-add");
@@ -1265,11 +1303,22 @@ function wirePreferences(params: {
   const blockAdd = document.querySelector<HTMLButtonElement>("#acg-block-add");
   const blockList = document.querySelector<HTMLElement>("#acg-block-list");
 
-  if (!onlyFollowed || !hideRead || !followInput || !followAdd || !followList || !blockInput || !blockAdd || !blockList) {
+  if (
+    !onlyFollowed ||
+    !onlyFollowedSources ||
+    !hideRead ||
+    !followInput ||
+    !followAdd ||
+    !followList ||
+    !blockInput ||
+    !blockAdd ||
+    !blockList
+  ) {
     return;
   }
 
   onlyFollowed.checked = filters.onlyFollowed;
+  onlyFollowedSources.checked = filters.onlyFollowedSources;
   hideRead.checked = filters.hideRead;
 
   const emit = () => document.dispatchEvent(new CustomEvent("acg:filters-changed"));
@@ -1310,6 +1359,11 @@ function wirePreferences(params: {
 
   onlyFollowed.addEventListener("change", () => {
     filters.onlyFollowed = onlyFollowed.checked;
+    saveFilters(filters);
+    emit();
+  });
+  onlyFollowedSources.addEventListener("change", () => {
+    filters.onlyFollowedSources = onlyFollowedSources.checked;
     saveFilters(filters);
     emit();
   });
@@ -1397,6 +1451,110 @@ function wireSourceToggles(disabledSources: Set<string>) {
     persist();
     apply();
     setPrefsMessage(isJapanese() ? "すべて無効化しました。" : "已全部禁用。");
+  });
+}
+
+function wireSourceFollows(followedSources: Set<string>) {
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>("button[data-source-follow-id]")];
+  if (buttons.length === 0) return;
+
+  const countEl = document.querySelector<HTMLElement>("#acg-sources-followed-count");
+  const listEl = document.querySelector<HTMLElement>("#acg-followed-sources-list");
+  const emptyEl = document.querySelector<HTMLElement>("#acg-followed-sources-empty");
+  const followAll = document.querySelector<HTMLButtonElement>("#acg-sources-follow-all");
+  const unfollowAll = document.querySelector<HTMLButtonElement>("#acg-sources-unfollow-all");
+
+  const getName = (id: string): string => {
+    const btn = buttons.find((b) => (b.dataset.sourceFollowId ?? "") === id);
+    return btn?.dataset.sourceFollowName ?? id;
+  };
+
+  const renderList = () => {
+    if (!listEl || !emptyEl) return;
+    listEl.innerHTML = "";
+
+    const ids = [...followedSources];
+    ids.sort((a, b) => getName(a).localeCompare(getName(b)));
+
+    if (ids.length === 0) {
+      emptyEl.textContent = isJapanese() ? "まだフォローしていません。" : "你还没有关注任何来源。";
+      emptyEl.classList.remove("hidden");
+      return;
+    }
+
+    emptyEl.classList.add("hidden");
+
+    for (const id of ids) {
+      const name = getName(id);
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className =
+        "rounded-full border border-slate-900/10 bg-white/55 px-3 py-1 text-xs text-slate-700 hover:bg-white/75 clickable";
+      chip.textContent = `${name} ★`;
+      chip.title = isJapanese() ? "クリックで解除" : "点击取消关注";
+      chip.addEventListener("click", () => {
+        followedSources.delete(id);
+        persist();
+        toast({ title: isJapanese() ? `解除: ${name}` : `已取消关注：${name}`, variant: "info" });
+      });
+      listEl.appendChild(chip);
+    }
+  };
+
+  const apply = () => {
+    for (const btn of buttons) {
+      const id = btn.dataset.sourceFollowId ?? "";
+      const on = Boolean(id) && followedSources.has(id);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      const star = btn.querySelector<HTMLElement>("[data-source-follow-star]");
+      if (star) star.textContent = on ? "★" : "☆";
+      btn.classList.toggle("ring-2", on);
+      btn.classList.toggle("ring-amber-400/40", on);
+    }
+    if (countEl) countEl.textContent = String(followedSources.size);
+    renderList();
+  };
+
+  const persist = () => {
+    saveIds(FOLLOWED_SOURCES_KEY, followedSources);
+    document.dispatchEvent(new CustomEvent("acg:filters-changed"));
+    apply();
+  };
+
+  apply();
+
+  for (const btn of buttons) {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.sourceFollowId ?? "";
+      const name = btn.dataset.sourceFollowName ?? id;
+      if (!id) return;
+
+      if (followedSources.has(id)) {
+        followedSources.delete(id);
+        persist();
+        toast({ title: isJapanese() ? `解除: ${name}` : `已取消关注：${name}`, variant: "info" });
+        return;
+      }
+
+      followedSources.add(id);
+      persist();
+      toast({ title: isJapanese() ? `フォロー: ${name}` : `已关注来源：${name}`, variant: "success" });
+    });
+  }
+
+  followAll?.addEventListener("click", () => {
+    for (const btn of buttons) {
+      const id = btn.dataset.sourceFollowId ?? "";
+      if (id) followedSources.add(id);
+    }
+    persist();
+    toast({ title: isJapanese() ? "すべてフォローしました。" : "已关注全部来源。", variant: "success" });
+  });
+
+  unfollowAll?.addEventListener("click", () => {
+    followedSources.clear();
+    persist();
+    toast({ title: isJapanese() ? "すべて解除しました。" : "已取消全部关注。", variant: "info" });
   });
 }
 
@@ -1636,6 +1794,7 @@ function main() {
   const blocklist = loadWords(BLOCKLIST_KEY);
   const filters = loadFilters();
   const disabledSources = loadIds(DISABLED_SOURCES_KEY);
+  const followedSources = loadIds(FOLLOWED_SOURCES_KEY);
   markCurrentPostRead(readIds);
   applyReadState(readIds);
   wireBackToTop();
@@ -1645,7 +1804,8 @@ function main() {
   wireBookmarkTools(bookmarkIds);
   wirePreferences({ follows, blocklist, filters });
   wireSourceToggles(disabledSources);
-  createListFilter({ readIds, follows, blocklist, disabledSources, filters });
+  wireSourceFollows(followedSources);
+  createListFilter({ readIds, follows, blocklist, disabledSources, followedSources, filters });
   wireQuickToggles();
   wireKeyboardShortcuts();
   wireTagChips();
