@@ -380,14 +380,16 @@ function handleCoverError(img: HTMLImageElement) {
   }
 }
 
-function hydrateFailedCovers() {
+function hydrateCoverStates() {
   try {
     const imgs = document.querySelectorAll<HTMLImageElement>("img[data-acg-cover]");
     for (const img of imgs) {
-      // 이미失败：complete=true 且 naturalWidth=0
       if (!img.complete) continue;
-      if (img.naturalWidth > 0) continue;
-      handleCoverError(img);
+      // 部分封面（尤其是同源本地 covers）可能在 DOMContentLoaded 前就已加载完成，
+      // 此时 onload handler 会因为 __acgCoverLoad 尚未挂载而“错过”标记 cover-loaded。
+      // 这里统一补齐：成功的 -> cover-loaded；失败的 -> 走重试链路。
+      if (img.naturalWidth > 0) handleCoverLoad(img);
+      else handleCoverError(img);
     }
   } catch {
     // ignore
@@ -1831,7 +1833,7 @@ function main() {
   wireTagChips();
   wireDailyBriefCopy();
   wireSpotlightCarousel();
-  hydrateFailedCovers();
+  hydrateCoverStates();
   focusSearchFromHash();
 }
 

@@ -18,7 +18,8 @@ type Props = {
 const { posts, lang, title } = Astro.props;
 
 const items = posts.slice(0, 6);
-const metaLabel = lang === "ja" ? "Cover Carousel · ←/→" : "封面轮播 · ←/→";
+const metaLabel = lang === "ja" ? "カバーカルーセル" : "封面轮播";
+const hintMobile = lang === "ja" ? "左右にスワイプ" : "左右滑动";
 const helpText =
   lang === "ja"
     ? "左右キーで切り替え、Enter で開きます。"
@@ -42,7 +43,27 @@ function whenLabel(post: Post): string {
 <section class="mt-6">
   <div class="flex flex-wrap items-end justify-between gap-3">
     <h2 class="m-0 text-sm font-semibold text-slate-950">{title}</h2>
-    <div class="text-xs text-slate-600">{metaLabel}</div>
+    <div class="flex flex-wrap items-center justify-end gap-2 text-xs">
+      <span class="inline-flex items-center gap-2 rounded-full border border-slate-900/10 bg-white/55 px-3 py-1 text-xs font-semibold text-slate-700">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M6.8 7.2h10.4A3.8 3.8 0 0 1 21 11v2A3.8 3.8 0 0 1 17.2 16.8H6.8A3.8 3.8 0 0 1 3 13v-2a3.8 3.8 0 0 1 3.8-3.8Z"
+            stroke="currentColor"
+            stroke-width="2"
+          />
+          <path d="M8.6 10.3 6.8 12l1.8 1.7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M15.4 10.3 17.2 12l-1.8 1.7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span>{metaLabel}</span>
+      </span>
+
+      <span class="hidden sm:inline-flex items-center gap-1 rounded-full border border-slate-900/10 bg-white/45 px-2.5 py-1 text-[11px] font-medium text-slate-600">
+        <kbd class="rounded-md border border-slate-900/10 bg-white/70 px-1.5 py-0.5 font-mono text-[11px] text-slate-700">←</kbd>
+        <span class="px-0.5 text-slate-500">/</span>
+        <kbd class="rounded-md border border-slate-900/10 bg-white/70 px-1.5 py-0.5 font-mono text-[11px] text-slate-700">→</kbd>
+      </span>
+      <span class="sm:hidden text-[11px] font-medium text-slate-600">{hintMobile}</span>
+    </div>
   </div>
 
   {items.length === 0 ? (
