@@ -124,6 +124,18 @@ img {
   -webkit-backdrop-filter: none;
 }
 
+/* 大列表滚动：用 content-visibility 降低离屏渲染开销（支持的浏览器会更顺滑） */
+.acg-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 360px;
+}
+
+@media (max-width: 640px) {
+  .acg-card {
+    contain-intrinsic-size: 180px;
+  }
+}
+
 /* 缺图占位：避免“纯文字感”，同时不引入外部图片资源 */
 .acg-cover-fallback {
   position: absolute;
@@ -244,8 +256,12 @@ img {
   transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 180ms ease, opacity 180ms ease;
 }
 
-.acg-icon path {
+.acg-icon path,
+.acg-icon circle {
   vector-effect: non-scaling-stroke;
+}
+
+.acg-icon path {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -446,6 +462,13 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   transform: rotate(18deg) translateX(360%);
 }
 
+@media (hover: none) {
+  /* 触控设备禁用 hover 扫光：减少伪元素数量与潜在重绘 */
+  .shine::after {
+    content: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .shine::after {
     display: none;
@@ -598,7 +621,6 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 .stagger-item {
   animation: rise-in 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   animation-delay: calc(var(--i, 0) * 26ms);
-  will-change: transform;
 }
 
 @keyframes rise-in {
@@ -860,8 +882,8 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   border: 1px solid rgba(15, 23, 42, 0.10);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.62));
   box-shadow: 0 22px 70px rgba(2, 6, 23, 0.16);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .acg-bottom-nav-item {
@@ -882,8 +904,9 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 }
 
 .acg-bottom-nav-item[data-active="true"] {
-  background: rgba(124, 58, 237, 0.10);
+  background: linear-gradient(180deg, rgba(124, 58, 237, 0.16), rgba(124, 58, 237, 0.08));
   color: rgba(15, 23, 42, 0.92);
+  transform: translateY(-1px);
 }
 
 .acg-bottom-nav-icon {
@@ -897,7 +920,9 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 }
 
 .acg-bottom-nav-item[data-active="true"] .acg-bottom-nav-icon {
-  background: rgba(124, 58, 237, 0.18);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.28), rgba(59, 130, 246, 0.18));
+  color: rgba(124, 58, 237, 0.95);
+  box-shadow: 0 14px 40px rgba(124, 58, 237, 0.18);
 }
 
 .acg-bottom-nav-label {
@@ -907,4 +932,100 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* 移动端：偏好设置抽屉（避免 prefs 把页面拖得很长，也更像 App） */
+body.acg-no-scroll {
+  overflow: hidden;
+}
+
+.acg-prefs-drawer {
+  position: relative;
+}
+
+@media (max-width: 767px) {
+  .acg-prefs-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    display: flex;
+    align-items: flex-end;
+    padding: 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    background: rgba(2, 6, 23, 0.38);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease;
+  }
+
+  .acg-prefs-drawer.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .acg-prefs-drawer-panel {
+    width: 100%;
+    max-height: calc(100vh - 24px - env(safe-area-inset-top));
+    overflow: auto;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.01);
+    box-shadow: 0 40px 120px rgba(2, 6, 23, 0.28);
+    transform: translateY(20px);
+    transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .acg-prefs-drawer-panel::before {
+    content: "";
+    display: block;
+    width: 44px;
+    height: 5px;
+    margin: 10px auto 0;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+  }
+
+  .acg-prefs-drawer.is-open .acg-prefs-drawer-panel {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acg-prefs-drawer {
+    transition: none;
+  }
+  .acg-prefs-drawer-panel {
+    transition: none;
+    transform: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .acg-prefs-drawer {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    display: block;
+    padding: 0;
+    background: none;
+    opacity: 1;
+    pointer-events: auto;
+    transition: none;
+  }
+
+  .acg-prefs-drawer-panel {
+    max-height: none;
+    overflow: visible;
+    border-radius: 0;
+    box-shadow: none;
+    transform: none;
+    transition: none;
+    background: none;
+  }
+
+  .acg-prefs-drawer-panel::before {
+    content: none;
+  }
 }

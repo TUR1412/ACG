@@ -41,3 +41,6 @@
 - [x] 26. 品牌与可读性：favicon/theme-color + README Banner + 缺图兜底策略说明 + Roadmap 对齐
 - [x] 27. 新鲜度标记：近 6 小时显示 NEW/新着（已读自动停动画）
 - [x] 28. 订阅流：关注来源（★）+ 只看关注源过滤 + Preferences 来源按分类分组
+- [x] 29. 移动端质变：偏好设置抽屉化（不再拖长页面，按钮一键打开/关闭）
+- [x] 30. 图标系统升级：新增 search/clock/chart/info/sliders，并统一底部导航与搜索框图标
+- [x] 31. 顺滑优化：content-visibility 降离屏渲染 + 限制首屏入场数 + 触控禁用扫光 + 底栏 blur 降级

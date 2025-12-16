@@ -1,7 +1,7 @@
 ---
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import PostList from "../../components/PostList.astro";
-import PreferencesPanel from "../../components/PreferencesPanel.astro";
+import PreferencesDrawer from "../../components/PreferencesDrawer.astro";
 import SpotlightGrid from "../../components/SpotlightGrid.astro";
 import CategoryIcon from "../../components/CategoryIcon.astro";
 import Icon from "../../components/Icon.astro";
@@ -81,19 +81,7 @@ const spotlight = (() => {
         <label class="sr-only" for="acg-search">{t("zh", "search.placeholder")}</label>
         <div class="relative">
           <div class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M10.5 19a8.5 8.5 0 1 1 0-17 8.5 8.5 0 0 1 0 17Z"
-                stroke="currentColor"
-                stroke-width="2"
-              />
-              <path
-                d="M21 21l-4.3-4.3"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              />
-            </svg>
+            <Icon name="search" size={18} />
           </div>
           <input
             id="acg-search"
@@ -140,13 +128,15 @@ const spotlight = (() => {
         >
           {t("zh", "prefs.hideRead")}
         </button>
-        <a
-          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
-          href="#acg-prefs"
+        <button
+          type="button"
+          class="acg-chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-open-prefs
           data-active="false"
         >
-          {t("zh", "prefs.title")}
-        </a>
+          <Icon name="sliders" size={16} />
+          <span>{t("zh", "prefs.title")}</span>
+        </button>
       </div>
 
       <div class="acg-hscroll relative mt-5 -mx-1 flex gap-3 overflow-x-auto px-1 pb-1 sm:hidden snap-x snap-mandatory">
@@ -300,9 +290,7 @@ const spotlight = (() => {
     </div>
 
     <div class="grid gap-4 md:col-span-4">
-      <div id="acg-prefs">
-        <PreferencesPanel lang="zh" />
-      </div>
+      <PreferencesDrawer lang="zh" />
 
       <div class="glass rounded-2xl p-6">
         <div class="flex items-center justify-between gap-3">

@@ -539,6 +539,109 @@ function wireSearchClear() {
   apply();
 }
 
+function wirePrefsDrawer() {
+  const drawer = document.querySelector<HTMLElement>("[data-prefs-drawer]");
+  if (!drawer) return;
+
+  const openers = [...document.querySelectorAll<HTMLElement>("[data-open-prefs]")];
+  const closers = [...drawer.querySelectorAll<HTMLElement>("[data-close-prefs]")];
+
+  const mq = (() => {
+    try {
+      return window.matchMedia("(max-width: 767px)");
+    } catch {
+      return null;
+    }
+  })();
+
+  const isOverlayMode = () => {
+    if (mq) return mq.matches;
+    return window.innerWidth < 768;
+  };
+
+  const syncA11y = () => {
+    if (isOverlayMode()) {
+      if (!drawer.classList.contains("is-open")) {
+        drawer.setAttribute("aria-hidden", "true");
+        drawer.setAttribute("inert", "");
+      }
+    } else {
+      drawer.classList.remove("is-open");
+      document.body.classList.remove("acg-no-scroll");
+      drawer.removeAttribute("aria-hidden");
+      drawer.removeAttribute("inert");
+    }
+  };
+
+  const open = () => {
+    if (!isOverlayMode()) {
+      const behavior = prefersReducedMotion() ? "auto" : "smooth";
+      drawer.scrollIntoView({ behavior, block: "start" });
+      drawer.classList.add("pop");
+      window.setTimeout(() => drawer.classList.remove("pop"), 360);
+      return;
+    }
+
+    drawer.classList.add("is-open");
+    drawer.removeAttribute("inert");
+    drawer.removeAttribute("aria-hidden");
+    document.body.classList.add("acg-no-scroll");
+
+    window.setTimeout(() => {
+      const focusTarget = drawer.querySelector<HTMLInputElement>("#acg-follow-input")
+        ?? drawer.querySelector<HTMLInputElement>("#acg-block-input")
+        ?? drawer.querySelector<HTMLInputElement>("#acg-only-followed");
+      try {
+        focusTarget?.focus();
+      } catch {
+        // ignore
+      }
+    }, 0);
+  };
+
+  const close = () => {
+    if (!isOverlayMode()) return;
+    drawer.classList.remove("is-open");
+    document.body.classList.remove("acg-no-scroll");
+    drawer.setAttribute("aria-hidden", "true");
+    drawer.setAttribute("inert", "");
+  };
+
+  for (const el of openers) {
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      open();
+    });
+  }
+
+  for (const el of closers) {
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      close();
+    });
+  }
+
+  drawer.addEventListener("click", (e) => {
+    if (!isOverlayMode()) return;
+    if (e.target === drawer) close();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (!drawer.classList.contains("is-open")) return;
+    if (e.key === "Escape") close();
+  });
+
+  syncA11y();
+  if (mq) {
+    try {
+      mq.addEventListener("change", syncA11y);
+    } catch {
+      // Safari（legacy API）
+      mq.addListener(syncA11y);
+    }
+  }
+}
+
 function wireQuickToggles() {
   const buttons = [...document.querySelectorAll<HTMLButtonElement>("button[data-quick-toggle]")];
   if (buttons.length === 0) return;
@@ -1989,6 +2092,7 @@ function main() {
   wireQuickToggles();
   wireKeyboardShortcuts();
   wireSearchClear();
+  wirePrefsDrawer();
   wireTagChips();
   wireDailyBriefCopy();
   wireSpotlightCarousel();

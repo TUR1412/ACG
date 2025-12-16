@@ -1,5 +1,5 @@
 ---
-export type IconName = "arrow-left" | "arrow-right" | "arrow-up" | "chevron-right" | "external-link" | "refresh" | "star" | "x";
+export type IconName = "arrow-left" | "arrow-right" | "arrow-up" | "chart" | "chevron-right" | "clock" | "external-link" | "info" | "refresh" | "search" | "sliders" | "star" | "x";
 
 type Props = {
   name: IconName;
@@ -58,6 +58,49 @@ const cls = ["acg-icon", className].filter(Boolean).join(" ");
 
   {name === "chevron-right" ? (
     <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+  ) : null}
+
+  {name === "clock" ? (
+    <>
+      <path d="M12 8.2v4.6l3 1.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M12 22a10 10 0 1 0-10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </>
+  ) : null}
+
+  {name === "search" ? (
+    <>
+      <path d="M10.5 19a8.5 8.5 0 1 1 0-17 8.5 8.5 0 0 1 0 17Z" stroke="currentColor" stroke-width="2" />
+      <path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </>
+  ) : null}
+
+  {name === "chart" ? (
+    <>
+      <path d="M4 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M8 19V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M12 19V8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M16 19V14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M20 19V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </>
+  ) : null}
+
+  {name === "info" ? (
+    <>
+      <path d="M12 22a10 10 0 1 0-10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M12 10.7v5.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M12 7.2h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+    </>
+  ) : null}
+
+  {name === "sliders" ? (
+    <>
+      <path d="M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <circle cx="9" cy="6" r="2" stroke="currentColor" stroke-width="2" />
+      <circle cx="15" cy="12" r="2" stroke="currentColor" stroke-width="2" />
+      <circle cx="7" cy="18" r="2" stroke="currentColor" stroke-width="2" />
+    </>
   ) : null}
 
   {name === "external-link" ? (
