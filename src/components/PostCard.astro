@@ -24,6 +24,7 @@ const animateStyle = typeof animateIndex === "number" ? `--i: ${animateIndex};` 
 const retryCoverLabel = lang === "ja" ? "画像を再試行" : "重试封面";
 const cover = resolveCover(post.cover, 960);
 const coverOriginal = post.coverOriginal ?? cover?.original;
+const snippet = post.summary ?? post.preview;
 const publishedAtMs = new Date(post.publishedAt).getTime();
 const isFresh = Number.isFinite(publishedAtMs) && Date.now() - publishedAtMs >= 0 && Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
 const freshLabel = lang === "ja" ? "新着" : "NEW";
@@ -123,7 +124,7 @@ const freshLabel = lang === "ja" ? "新着" : "NEW";
       </button>
     </div>
 
-    {post.summary && <p class="mt-2 line-clamp-3 text-sm leading-relaxed text-slate-600">{post.summary}</p>}
+    {snippet && <p class="mt-2 line-clamp-3 text-sm leading-relaxed text-slate-600">{snippet}</p>}
 
     {post.tags?.length > 0 && (
       <div class="mt-3 flex flex-wrap gap-2">

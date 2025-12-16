@@ -29,6 +29,9 @@ const theme = getCategoryTheme(post.category);
 const retryCoverLabel = "重试封面";
 const cover = resolveCover(post.cover, 1400);
 const coverOriginal = post.coverOriginal ?? cover?.original;
+const primaryText = post.summary ?? post.preview;
+const extraPreview = post.summary && post.preview && post.preview !== post.summary ? post.preview : undefined;
+const previewOpen = (post.summary?.length ?? 0) < 90;
 const publishedAtMs = new Date(post.publishedAt).getTime();
 const isFresh = Number.isFinite(publishedAtMs) && Date.now() - publishedAtMs >= 0 && Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
 const freshLabel = "NEW";
@@ -107,11 +110,28 @@ const freshLabel = "NEW";
         </div>
       )}
 
-      {post.summary ? (
-        <p class="mt-4 whitespace-pre-line text-sm leading-relaxed text-slate-800">{post.summary}</p>
+      {primaryText ? (
+        <p class="mt-4 whitespace-pre-line text-sm leading-relaxed text-slate-800">{primaryText}</p>
       ) : (
         <p class="mt-4 text-sm text-slate-700">{t("zh", "common.noData")}</p>
       )}
+
+      {!post.summary && post.preview ? (
+        <p class="mt-2 text-xs text-slate-600">{t("zh", "post.previewHint")}</p>
+      ) : null}
+
+      {extraPreview ? (
+        <details
+          class="mt-4 rounded-2xl border border-slate-900/10 bg-white/55 p-4"
+          open={previewOpen ? true : undefined}
+        >
+          <summary class="cursor-pointer select-none text-sm font-semibold text-slate-950">
+            {t("zh", "post.previewTitle")}
+          </summary>
+          <p class="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-800">{extraPreview}</p>
+          <p class="mt-2 text-xs text-slate-600">{t("zh", "post.previewHint")}</p>
+        </details>
+      ) : null}
 
       <div class="mt-6 flex flex-wrap gap-3">
         <a

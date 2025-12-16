@@ -198,3 +198,93 @@ export function extractCoverFromHtml(params: { html: string; baseUrl: string }):
 
   return undefined;
 }
+
+function normalizePreviewText(input: string): string {
+  return input
+    .replace(/\s+/g, " ")
+    .replace(/\u00a0/g, " ")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .trim();
+}
+
+function isJunkPreview(text: string): boolean {
+  const t = text.toLowerCase();
+  return (
+    t.length < 20 ||
+    t.includes("cookie") ||
+    t.includes("javascript") ||
+    t.includes("enable cookies") ||
+    t.includes("sign up") ||
+    t.includes("log in") ||
+    t.includes("ログイン") ||
+    t.includes("会員登録") ||
+    t.includes("利用規約") ||
+    t.includes("プライバシー") ||
+    t.includes("privacy policy") ||
+    t.includes("terms of") ||
+    t.includes("subscribe")
+  );
+}
+
+/**
+ * 从文章页提取“可展示的内容预览”，优先级：
+ * 1) og:description / description / twitter:description
+ * 2) article/main 的首段落（严格截断）
+ *
+ * 重要：本函数只用于“预览”，不会返回完整正文。
+ */
+export function extractPreviewFromHtml(params: {
+  html: string;
+  baseUrl?: string;
+  maxLen?: number;
+}): string | undefined {
+  const { html, maxLen = 420 } = params;
+  const $ = cheerio.load(html);
+
+  const meta = [
+    $('meta[property="og:description"]').attr("content"),
+    $('meta[name="description"]').attr("content"),
+    $('meta[name="twitter:description"]').attr("content")
+  ]
+    .filter((x): x is string => typeof x === "string")
+    .map((x) => normalizePreviewText(x))
+    .filter((x) => x.length > 0 && !isJunkPreview(x));
+
+  if (meta[0]) {
+    const text = meta[0];
+    if (text.length <= maxLen) return text;
+    return text.slice(0, Math.max(0, maxLen - 1)).trimEnd() + "…";
+  }
+
+  const selectors = ["article p", "main p", '[role="main"] p', "section p", "p"];
+  const paras: string[] = [];
+
+  for (const selector of selectors) {
+    $(selector).each((_idx, el) => {
+      if (paras.length >= 6) return false;
+      const raw = $(el).text();
+      const text = normalizePreviewText(raw);
+      if (!text) return;
+      if (isJunkPreview(text)) return;
+      paras.push(text);
+    });
+    if (paras.length > 0) break;
+  }
+
+  if (paras.length === 0) return undefined;
+
+  let combined = "";
+  for (const p of paras) {
+    const next = combined ? `${combined} ${p}` : p;
+    if (next.length >= maxLen) {
+      combined = next.slice(0, Math.max(0, maxLen - 1)).trimEnd() + "…";
+      break;
+    }
+    combined = next;
+    if (combined.length >= Math.floor(maxLen * 0.72)) break;
+  }
+
+  const out = normalizePreviewText(combined);
+  return out && !isJunkPreview(out) ? out : undefined;
+}

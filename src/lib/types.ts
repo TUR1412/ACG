@@ -4,6 +4,8 @@ export type Post = {
   id: string;
   title: string;
   summary?: string;
+  /** 文章预览（严格截断，不是全文） */
+  preview?: string;
   url: string;
   publishedAt: string;
   cover?: string;

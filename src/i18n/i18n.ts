@@ -45,6 +45,8 @@ export type I18nKey =
   | "common.noData"
   | "common.updatedAt"
   | "post.openSource"
+  | "post.previewTitle"
+  | "post.previewHint"
   | "post.source"
   | "post.publishedAt"
   | "bookmarks.title"
@@ -102,6 +104,8 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "common.noData": "暂无数据，稍后将自动更新。",
     "common.updatedAt": "更新于",
     "post.openSource": "打开原文",
+    "post.previewTitle": "内容预览",
+    "post.previewHint": "预览来自页面描述/自动摘录（非全文）。完整内容请点击「打开原文」。",
     "post.source": "来源",
     "post.publishedAt": "发布时间",
     "bookmarks.title": "我的收藏",
@@ -158,6 +162,8 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "common.noData": "データがまだありません。自動更新をお待ちください。",
     "common.updatedAt": "更新",
     "post.openSource": "元記事へ",
+    "post.previewTitle": "内容プレビュー",
+    "post.previewHint": "プレビューはページの説明/自動抽出（全文ではありません）。全文は「元記事へ」からご確認ください。",
     "post.source": "出典",
     "post.publishedAt": "公開日時",
     "bookmarks.title": "ブックマーク",

@@ -10,6 +10,10 @@ export type HttpCacheEntry = {
   coverMissAt?: string;
   /** 文章页补图：最近一次“成功解析封面”的时间 */
   coverOkAt?: string;
+  /** 文章页预览：最近一次“未能解析出可用预览”的时间 */
+  previewMissAt?: string;
+  /** 文章页预览：最近一次“成功解析预览”的时间 */
+  previewOkAt?: string;
 };
 
 export type HttpCache = Record<string, HttpCacheEntry>;

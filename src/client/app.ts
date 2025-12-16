@@ -682,6 +682,7 @@ type BookmarkPost = {
   id: string;
   title: string;
   summary?: string;
+  preview?: string;
   url: string;
   publishedAt: string;
   cover?: string;
@@ -856,6 +857,7 @@ async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {
         id,
         title: typeof it.title === "string" ? it.title : "",
         summary: typeof it.summary === "string" ? it.summary : undefined,
+        preview: typeof it.preview === "string" ? it.preview : undefined,
         url: typeof it.url === "string" ? it.url : "",
         publishedAt: typeof it.publishedAt === "string" ? it.publishedAt : "",
         cover: typeof it.cover === "string" ? it.cover : undefined,
@@ -1062,10 +1064,11 @@ function buildBookmarkCard(params: {
   setBookmarkButtonState(star, true);
   head.appendChild(star);
 
-  if (post.summary) {
+  const snippet = post.summary ?? post.preview;
+  if (snippet) {
     const p = document.createElement("p");
     p.className = "mt-2 line-clamp-3 text-sm leading-relaxed text-slate-600";
-    p.textContent = post.summary;
+    p.textContent = snippet;
     body.appendChild(p);
   }
 

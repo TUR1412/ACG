@@ -38,6 +38,7 @@
 - **封面轮播（Spotlight）**：键盘 ←/→、拖拽、点阵指示（更“杂志封面墙”）
 - **新鲜度标记**：近 6 小时内容会显示 `NEW/新着`（更容易扫到“刚更新”）
 - **图片缺失治理**：RSS 不带图时自动抓取文章页补全 `og:image` / `twitter:image`
+- **内容预览增强**：摘要缺失/过短时，从文章页抽取 `og:description` / `description` 等生成预览（严格截断，非全文）
 - **缺图观感优化**：封面占位会先出现，图片真正加载后再淡出（慢网也不显空）
 - **封面失败自愈**：升级 https / 代理兜底（Weserv）/ 调整 referrer / cache bust
 - **站内搜索**：标题/摘要/标签实时过滤（不会请求后端）
@@ -155,6 +156,10 @@ npm run sync -- --days 30 --limit 2000 --verbose
 - `ACG_COVER_CACHE_MAX`：本地缓存封面数量（默认 `260`，设为 `0` 关闭）
 - `ACG_COVER_CACHE_WIDTH`：本地缓存封面宽度（默认 `960`）
 - `ACG_COVER_CACHE_CONCURRENCY`：并发下载数（默认 `6`）
+
+- `ACG_PREVIEW_MIN_LEN`：摘要少于多少字符时尝试补齐预览（默认 `90`）
+- `ACG_PREVIEW_MAX_LEN`：预览最大长度（默认 `420`）
+- `ACG_PREVIEW_MISS_TTL_HOURS`：对“确实解析不到预览”的文章页，暂时跳过多久再重试（默认 `24`）
 
 > GitHub Actions 工作流可能会覆盖这些默认值：见 `.github/workflows/hourly-sync-and-deploy.yml`。
 

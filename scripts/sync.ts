@@ -15,7 +15,7 @@ import {
 } from "./lib/http-cache";
 import { parseFeedToItems } from "./sources/feed-source";
 import { parseAnimeAnimeList } from "./sources/html-animeanime";
-import { extractCoverFromHtml, isProbablyNonCoverImageUrl } from "./lib/html";
+import { extractCoverFromHtml, extractPreviewFromHtml, isProbablyNonCoverImageUrl } from "./lib/html";
 import type { RawItem, Source } from "./sources/types";
 import type { Category } from "../src/lib/categories";
 import { deriveTags } from "./lib/tagger";
@@ -24,6 +24,8 @@ type Post = {
   id: string;
   title: string;
   summary?: string;
+  /** 文章预览（严格截断，不是全文） */
+  preview?: string;
   url: string;
   publishedAt: string;
   cover?: string;
@@ -156,7 +158,8 @@ async function runSource(params: {
     const url = normalizeUrl(it.url);
     const id = sha1(url);
     const title = stripAndTruncate(it.title, 180);
-    const summary = it.summary ? stripAndTruncate(it.summary, 220) : undefined;
+    // summary 是“资讯预览”的核心之一：列表页会被 line-clamp 截断，详情页可完整展示（仍然是短摘要，不是全文）。
+    const summary = it.summary ? stripAndTruncate(it.summary, 360) : undefined;
     const tags = deriveTags({ title, summary, category: source.category });
     return {
       id,
@@ -417,10 +420,23 @@ async function enrichCoversFromArticlePages(params: {
   const missTtlHours = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_MISS_TTL_HOURS, 72);
   const missTtlMs = missTtlHours * 60 * 60 * 1000;
 
+  // 预览策略：只要摘要缺失或过短，就尝试从文章页抓取 og:description / meta description / 首段落。
+  const previewMinLen = parseNonNegativeInt(process.env.ACG_PREVIEW_MIN_LEN, 90);
+  const previewMaxLen = parseNonNegativeInt(process.env.ACG_PREVIEW_MAX_LEN, 420);
+  const previewMissTtlHours = parseNonNegativeInt(process.env.ACG_PREVIEW_MISS_TTL_HOURS, 24);
+  const previewMissTtlMs = previewMissTtlHours * 60 * 60 * 1000;
+
   const candidates = posts
-    .filter((p) => !p.cover || isProbablyNonCoverImageUrl(p.cover))
+    .filter((p) => {
+      const wantCover = !p.cover || isProbablyNonCoverImageUrl(p.cover);
+      const wantPreview = !p.preview && (!p.summary || p.summary.length < previewMinLen);
+      return wantCover || wantPreview;
+    })
     .slice()
     .sort((a, b) => {
+      const aWantCover = !a.cover || (a.cover ? isProbablyNonCoverImageUrl(a.cover) : false);
+      const bWantCover = !b.cover || (b.cover ? isProbablyNonCoverImageUrl(b.cover) : false);
+      if (aWantCover !== bWantCover) return aWantCover ? -1 : 1;
       const at = new Date(a.publishedAt).getTime();
       const bt = new Date(b.publishedAt).getTime();
       if (Number.isFinite(at) && Number.isFinite(bt) && at !== bt) return bt - at;
@@ -437,13 +453,33 @@ async function enrichCoversFromArticlePages(params: {
     const used = perSource.get(post.sourceId) ?? 0;
     if (used >= maxPerSource) continue;
 
-    const missAt = cache[post.url]?.coverMissAt;
-    if (missTtlMs > 0 && missAt) {
-      const age = Date.now() - new Date(missAt).getTime();
-      if (Number.isFinite(age) && age >= 0 && age < missTtlMs) {
-        if (verbose) console.log(`[COVER:SKIP] ${post.sourceId} ${post.url} recent-miss`);
-        continue;
-      }
+    const wantCover = !post.cover || (post.cover ? isProbablyNonCoverImageUrl(post.cover) : false);
+    const wantPreview = !post.preview && (!post.summary || post.summary.length < previewMinLen);
+
+    const entry = cache[post.url] ?? {};
+    const coverMissAt = entry.coverMissAt;
+    const previewMissAt = entry.previewMissAt;
+
+    const coverRecentMiss = (() => {
+      if (!wantCover) return false;
+      if (missTtlMs <= 0) return false;
+      if (!coverMissAt) return false;
+      const age = Date.now() - new Date(coverMissAt).getTime();
+      return Number.isFinite(age) && age >= 0 && age < missTtlMs;
+    })();
+
+    const previewRecentMiss = (() => {
+      if (!wantPreview) return false;
+      if (previewMissTtlMs <= 0) return false;
+      if (!previewMissAt) return false;
+      const age = Date.now() - new Date(previewMissAt).getTime();
+      return Number.isFinite(age) && age >= 0 && age < previewMissTtlMs;
+    })();
+
+    // 如果当前“需要做的事情”都在 TTL 内刚失败过，就跳过，避免每小时轰炸同一页面。
+    if ((wantCover ? coverRecentMiss : true) && (wantPreview ? previewRecentMiss : true)) {
+      if (verbose) console.log(`[ENRICH:SKIP] ${post.sourceId} ${post.url} recent-miss`);
+      continue;
     }
 
     perSource.set(post.sourceId, used + 1);
@@ -462,29 +498,52 @@ async function enrichCoversFromArticlePages(params: {
     });
 
     if (!res.ok) {
-      if (verbose) console.log(`[COVER:ERR] ${post.sourceId} ${post.url} ${res.error}`);
+      if (verbose) console.log(`[ENRICH:ERR] ${post.sourceId} ${post.url} ${res.error}`);
       continue;
     }
 
-    const cover = extractCoverFromHtml({ html: res.text, baseUrl: post.url });
-    if (!cover) {
-      if (verbose) console.log(`[COVER:MISS] ${post.sourceId} ${post.url}`);
-      const entry = cache[post.url] ?? {};
-      entry.coverMissAt = new Date().toISOString();
-      cache[post.url] = entry;
-      if (persistCache) await writeJsonFile(cachePath, cache);
-      continue;
+    // cover：尽量补齐 og:image / twitter:image
+    if (wantCover) {
+      const cover = extractCoverFromHtml({ html: res.text, baseUrl: post.url });
+      if (!cover) {
+        if (verbose) console.log(`[COVER:MISS] ${post.sourceId} ${post.url}`);
+        const next = cache[post.url] ?? {};
+        next.coverMissAt = new Date().toISOString();
+        cache[post.url] = next;
+        if (persistCache) await writeJsonFile(cachePath, cache);
+      } else {
+        post.cover = cover;
+        enriched += 1;
+        if (verbose) console.log(`[COVER:OK] ${post.sourceId} ${post.url}`);
+
+        const next = cache[post.url] ?? {};
+        next.coverOkAt = new Date().toISOString();
+        if (next.coverMissAt) delete next.coverMissAt;
+        cache[post.url] = next;
+        if (persistCache) await writeJsonFile(cachePath, cache);
+      }
     }
 
-    post.cover = cover;
-    enriched += 1;
-    if (verbose) console.log(`[COVER:OK] ${post.sourceId} ${post.url}`);
+    // preview：尽量补齐 og:description / meta description / 首段落（严格截断，不是全文）
+    if (wantPreview) {
+      const preview = extractPreviewFromHtml({ html: res.text, baseUrl: post.url, maxLen: previewMaxLen });
+      if (!preview) {
+        if (verbose) console.log(`[PREVIEW:MISS] ${post.sourceId} ${post.url}`);
+        const next = cache[post.url] ?? {};
+        next.previewMissAt = new Date().toISOString();
+        cache[post.url] = next;
+        if (persistCache) await writeJsonFile(cachePath, cache);
+      } else {
+        post.preview = stripAndTruncate(preview, previewMaxLen);
+        if (verbose) console.log(`[PREVIEW:OK] ${post.sourceId} ${post.url}`);
 
-    const entry = cache[post.url] ?? {};
-    entry.coverOkAt = new Date().toISOString();
-    if (entry.coverMissAt) delete entry.coverMissAt;
-    cache[post.url] = entry;
-    if (persistCache) await writeJsonFile(cachePath, cache);
+        const next = cache[post.url] ?? {};
+        next.previewOkAt = new Date().toISOString();
+        if (next.previewMissAt) delete next.previewMissAt;
+        cache[post.url] = next;
+        if (persistCache) await writeJsonFile(cachePath, cache);
+      }
+    }
   }
 
   return { attempted, enriched, maxTotal };
