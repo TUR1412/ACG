@@ -815,6 +815,9 @@ function wireFullTextReader() {
     if (!postId || !url || !contentEl) continue;
 
     let running = false;
+    // 说明：全文可能很长，localStorage 写入会被配额/上限拦截（或被我们主动跳过）。
+    // 但用户在“本次会话”里依然应该能用「查看原文/查看翻译」切换，所以保留内存态兜底。
+    let memoryCache: FullTextCacheEntry | null = null;
 
     const setStatus = (text: string) => {
       if (!statusEl) return;
@@ -827,14 +830,24 @@ function wireFullTextReader() {
     };
 
     const showOriginal = (cache: FullTextCacheEntry) => {
+      memoryCache = cache;
       render(cache.original);
       if (btnShowOriginal) btnShowOriginal.hidden = true;
       if (btnShowTranslated) btnShowTranslated.hidden = false;
     };
 
     const showTranslated = (cache: FullTextCacheEntry) => {
+      memoryCache = cache;
       const t = lang === "zh" ? cache.zh : cache.ja;
-      if (t) render(t);
+      if (!t) {
+        // 翻译未就绪：保持原文视图（避免按钮状态来回跳，造成“点了没反应”的错觉）
+        setStatus(lang === "ja" ? "翻訳がまだありません。" : "翻译还未完成。");
+        if (btnShowOriginal) btnShowOriginal.hidden = true;
+        if (btnShowTranslated) btnShowTranslated.hidden = false;
+        return;
+      }
+
+      render(t);
       if (btnShowOriginal) btnShowOriginal.hidden = false;
       if (btnShowTranslated) btnShowTranslated.hidden = true;
     };
@@ -851,6 +864,7 @@ function wireFullTextReader() {
           cache = { url, fetchedAt: new Date().toISOString(), original: md };
           writeFullTextCache(postId, cache);
         }
+        memoryCache = cache;
 
         // 先展示原文（马上有内容），再异步翻译
         showOriginal(cache);
@@ -869,6 +883,7 @@ function wireFullTextReader() {
 
         if (lang === "zh") cache.zh = translated;
         else cache.ja = translated;
+        memoryCache = cache;
         writeFullTextCache(postId, cache);
 
         // 默认切到翻译（满足“选中文/日文就看懂”）
@@ -888,19 +903,20 @@ function wireFullTextReader() {
 
     btnShowOriginal?.addEventListener("click", (e) => {
       e.preventDefault();
-      const cache = readFullTextCache(postId);
-      if (cache) showOriginal(cache);
+      const cache = memoryCache ?? readFullTextCache(postId);
+      if (cache && cache.url === url) showOriginal(cache);
     });
 
     btnShowTranslated?.addEventListener("click", (e) => {
       e.preventDefault();
-      const cache = readFullTextCache(postId);
-      if (cache) showTranslated(cache);
+      const cache = memoryCache ?? readFullTextCache(postId);
+      if (cache && cache.url === url) showTranslated(cache);
     });
 
     // 初始：如果已有缓存并包含翻译，直接展示翻译；否则按配置自动加载
     const cached = readFullTextCache(postId);
     if (cached && cached.url === url) {
+      memoryCache = cached;
       const hasTranslated = lang === "zh" ? Boolean(cached.zh) : Boolean(cached.ja);
       if (hasTranslated) {
         showTranslated(cached);
