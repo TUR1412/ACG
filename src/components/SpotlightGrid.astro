@@ -21,6 +21,7 @@ const { posts, lang, title } = Astro.props;
 const items = posts.slice(0, 6);
 const metaLabel = lang === "ja" ? "カバーカルーセル" : "封面轮播";
 const hintMobile = lang === "ja" ? "左右にスワイプ" : "左右滑动";
+const hintDesktop = lang === "ja" ? "ドラッグ / スクロール" : "拖拽 / 滑动";
 const helpText =
   lang === "ja"
     ? "左右キーで切り替え、Enter で開きます。"
@@ -63,9 +64,9 @@ function whenLabel(post: Post): string {
       </span>
 
       <span class="hidden sm:inline-flex items-center gap-1 rounded-full border border-slate-900/10 bg-white/45 px-2.5 py-1 text-[11px] font-medium text-slate-600">
-        <kbd class="rounded-md border border-slate-900/10 bg-white/70 px-1.5 py-0.5 font-mono text-[11px] text-slate-700">←</kbd>
-        <span class="px-0.5 text-slate-500">/</span>
-        <kbd class="rounded-md border border-slate-900/10 bg-white/70 px-1.5 py-0.5 font-mono text-[11px] text-slate-700">→</kbd>
+        <Icon name="arrow-left" size={14} />
+        <span>{hintDesktop}</span>
+        <Icon name="arrow-right" size={14} />
       </span>
       <span class="sm:hidden text-[11px] font-medium text-slate-600">{hintMobile}</span>
     </div>

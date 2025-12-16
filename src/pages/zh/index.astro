@@ -50,7 +50,7 @@ const spotlight = (() => {
 ---
 
 <SiteLayout lang="zh" currentPath="/">
-  <section class="grid gap-4 md:grid-cols-12">
+  <section class="acg-layout-grid grid gap-4 md:grid-cols-12">
     <div class="glass relative overflow-hidden rounded-2xl p-6 md:col-span-8">
       <div class="pointer-events-none absolute inset-0">
         <div class="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-violet-500/10 blur-3xl"></div>
@@ -266,7 +266,7 @@ const spotlight = (() => {
 
   <SpotlightGrid posts={spotlight} lang="zh" title={t("zh", "home.spotlight")} />
 
-  <section class="mt-6 grid gap-4 md:grid-cols-12">
+  <section class="acg-layout-grid mt-6 grid gap-4 md:grid-cols-12">
     <div class="md:col-span-8">
       <PostList posts={latest} lang="zh" />
       <div id="acg-list-empty" class="mt-4 glass shine rounded-2xl p-8 hidden">

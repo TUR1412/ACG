@@ -16,7 +16,7 @@
   --acg-bottom-nav-h: 0px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 640px), (pointer: coarse) {
   :root {
     /* 移动端性能优先：降低阴影开销，滚动更顺滑 */
     --shadow-soft: 0 14px 40px rgba(2, 6, 23, 0.10);
@@ -65,6 +65,13 @@ body::before {
 @media (max-width: 1023px) {
   :root {
     /* 移动端底部导航默认高度（含 safe-area）。用于把 FAB/Toast 顶上去 */
+    --acg-bottom-nav-h: 78px;
+  }
+}
+
+@media (pointer: coarse) {
+  :root {
+    /* 触控设备强制按“移动端”处理（即使浏览器启用了桌面站点/大视口） */
     --acg-bottom-nav-h: 78px;
   }
 }
@@ -130,7 +137,7 @@ img {
   contain-intrinsic-size: 360px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 640px), (pointer: coarse) {
   .acg-card {
     contain-intrinsic-size: 180px;
   }
@@ -245,6 +252,66 @@ img {
     transform: none;
     border-color: rgba(15, 23, 42, 0.12);
     box-shadow: var(--shadow-card);
+  }
+}
+
+@media (pointer: coarse) {
+  /* 防止“手机被当成 PC 布局”：触控设备即使视口很宽，也强制单列 */
+  .acg-layout-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .acg-layout-grid > * {
+    grid-column: 1 / -1 !important;
+  }
+
+  .acg-post-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 横向滚动容器：触屏设备优先“可滑动”而不是换行（避免桌面断点把它变成一坨） */
+  .acg-hscroll {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+
+  /* 列表卡片：触屏设备始终用“移动端媒体卡片”布局（避免 sm/md 触发桌面版） */
+  .acg-post-card-body {
+    display: flex !important;
+    padding: 12px !important;
+  }
+
+  .acg-post-card-cover {
+    width: 8rem !important;
+  }
+
+  .acg-post-card-cover-link {
+    aspect-ratio: 4 / 3 !important;
+    border-radius: 12px !important;
+  }
+
+  .acg-post-card-cover-badges,
+  .acg-post-card-cover-when {
+    display: none !important;
+  }
+
+  .acg-post-card-content {
+    padding: 4px 0 !important;
+  }
+
+  .acg-nav-desktop {
+    display: none !important;
+  }
+
+  .acg-nav-mobile {
+    display: flex !important;
+  }
+
+  /* 即使触发了 `lg:*`，也要给底部导航留出空间（否则会挡内容） */
+  .acg-main,
+  .acg-footer {
+    padding-bottom: calc(32px + var(--acg-bottom-nav-h)) !important;
   }
 }
 
@@ -741,7 +808,7 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   display: none;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
   .acg-carousel-track {
     grid-auto-columns: minmax(520px, 72%);
     gap: 16px;
@@ -761,9 +828,11 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-card);
   contain: layout paint style;
+  /* 触控优先横向滑动（避免被点击层误判为“点开详情”） */
+  touch-action: pan-x;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
   .acg-carousel-slide {
     min-height: 360px;
   }
@@ -773,6 +842,7 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   position: absolute;
   inset: 0;
   z-index: 5;
+  touch-action: pan-x;
 }
 
 .acg-carousel-bg,
@@ -886,6 +956,13 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   -webkit-backdrop-filter: blur(14px);
 }
 
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  /* 桌面端不显示底部导航（避免与顶部导航重复） */
+  .acg-bottom-nav {
+    display: none;
+  }
+}
+
 .acg-bottom-nav-item {
   flex: 1;
   min-width: 0;
@@ -943,7 +1020,7 @@ body.acg-no-scroll {
   position: relative;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) {
   .acg-prefs-drawer {
     position: fixed;
     inset: 0;
@@ -1002,7 +1079,7 @@ body.acg-no-scroll {
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
   .acg-prefs-drawer {
     position: static;
     inset: auto;

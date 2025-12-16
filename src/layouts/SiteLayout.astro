@@ -63,7 +63,7 @@ const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
             </div>
           </a>
 
-          <nav class="hidden items-center gap-2 lg:flex">
+          <nav class="acg-nav-desktop hidden items-center gap-2 lg:flex">
             {CATEGORIES.map((c) => (
               <a
                 href={withLang(`/c/${c}/`)}
@@ -121,7 +121,10 @@ const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
           </div>
         </div>
 
-        <nav class="acg-hscroll mt-2 flex gap-2 overflow-x-auto pb-1 sm:mt-3 lg:hidden" aria-label="Categories">
+        <nav
+          class="acg-nav-mobile acg-hscroll mt-2 flex gap-2 overflow-x-auto pb-1 sm:mt-3 lg:hidden"
+          aria-label="Categories"
+        >
           {CATEGORIES.map((c) => (
             <a
               href={withLang(`/c/${c}/`)}
@@ -150,11 +153,11 @@ const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
       </div>
     </header>
 
-    <main class="mx-auto max-w-7xl px-4 pt-8 pb-28 lg:py-8" style="view-transition-name: acg-main;">
+    <main class="acg-main mx-auto max-w-7xl px-4 pt-8 pb-28 lg:py-8" style="view-transition-name: acg-main;">
       <slot />
     </main>
 
-    <footer class="mx-auto max-w-7xl px-4 pb-28 pt-4 text-xs text-slate-600 lg:pb-10">
+    <footer class="acg-footer mx-auto max-w-7xl px-4 pb-28 pt-4 text-xs text-slate-600 lg:pb-10">
       <div class="glass rounded-2xl px-4 py-3">
         <p class="m-0 leading-relaxed">{t(lang, "site.disclaimer")}</p>
       </div>

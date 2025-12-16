@@ -2264,15 +2264,18 @@ function wireSpotlightCarousel() {
       }
     });
 
-    // 拖拽（鼠标/触控板）：更“顺手”，同时避免误触点击
+    // 拖拽（鼠标/触控）：更“顺手”，同时避免误触点击
     let dragging = false;
     let dragged = false;
     let pointerId: number | null = null;
     let startX = 0;
+    let startY = 0;
     let startScrollLeft = 0;
 
     const endDrag = () => {
       if (!dragging) return;
+      // 触控端可能直接触发原生滚动，pointermove 不一定可靠：用 scrollLeft 兜底判断是否发生拖拽
+      if (Math.abs(track.scrollLeft - startScrollLeft) > 6) dragged = true;
       dragging = false;
       pointerId = null;
       track.classList.remove("is-dragging");
@@ -2284,8 +2287,7 @@ function wireSpotlightCarousel() {
 
     track.addEventListener("pointerdown", (e) => {
       if (e.defaultPrevented) return;
-      if (e.pointerType !== "mouse") return;
-      if (e.button !== 0) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
       if (!(e.target instanceof HTMLElement)) return;
       if (e.target.closest("button, input, textarea, select")) return;
 
@@ -2293,10 +2295,11 @@ function wireSpotlightCarousel() {
       dragged = false;
       pointerId = e.pointerId;
       startX = e.clientX;
+      startY = e.clientY;
       startScrollLeft = track.scrollLeft;
       track.classList.add("is-dragging");
       try {
-        track.setPointerCapture(pointerId);
+        if (e.pointerType === "mouse") track.setPointerCapture(pointerId);
       } catch {
         // ignore
       }
@@ -2306,8 +2309,13 @@ function wireSpotlightCarousel() {
       if (!dragging) return;
       if (pointerId != null && e.pointerId !== pointerId) return;
       const dx = startX - e.clientX;
-      if (Math.abs(dx) > 6) dragged = true;
-      track.scrollLeft = startScrollLeft + dx;
+      const dy = startY - e.clientY;
+      if (Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy)) dragged = true;
+
+      // mouse: 用脚本模拟“抓取拖拽”更顺手；touch: 交给原生滚动（性能更好）
+      if (e.pointerType === "mouse") {
+        track.scrollLeft = startScrollLeft + dx;
+      }
     });
 
     track.addEventListener("pointerup", endDrag);
