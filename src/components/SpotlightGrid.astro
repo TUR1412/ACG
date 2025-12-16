@@ -36,6 +36,10 @@ function postHref(post: Post): string {
   return href(`/${lang}/p/${post.id}/`);
 }
 
+function postTitle(post: Post): string {
+  return lang === "zh" ? post.titleZh ?? post.title : post.titleJa ?? post.title;
+}
+
 function whenLabel(post: Post): string {
   return formatRelativeHours(lang, post.publishedAt) ?? formatDateTime(lang, post.publishedAt);
 }
@@ -101,7 +105,7 @@ function whenLabel(post: Post): string {
               data-source-id={post.sourceId}
               data-has-cover={post.cover ? "true" : "false"}
             >
-              <a href={postHref(post)} class="acg-carousel-hit" aria-label={post.title}></a>
+              <a href={postHref(post)} class="acg-carousel-hit" aria-label={postTitle(post)}></a>
 
               <div class:list={["acg-carousel-bg bg-gradient-to-br", theme.cover]}></div>
               <div class="acg-cover-fallback" aria-hidden="true">
@@ -149,7 +153,7 @@ function whenLabel(post: Post): string {
 
                 <div class="mt-3 text-white">
                   <div class="text-xl font-semibold leading-tight tracking-tight md:text-2xl line-clamp-3">
-                    {post.title}
+                    {postTitle(post)}
                   </div>
                   <div class="mt-2">
                     <SourceBadge name={post.sourceName} tone="dark" dotClass={theme.dot} compact />
@@ -201,7 +205,7 @@ function whenLabel(post: Post): string {
               class="acg-carousel-dot"
               data-carousel-dot
               data-index={i}
-              aria-label={`${i + 1}: ${post.title}`}
+              aria-label={`${i + 1}: ${postTitle(post)}`}
             ></button>
           ))}
         </div>

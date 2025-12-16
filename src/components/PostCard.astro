@@ -25,7 +25,11 @@ const animateStyle = typeof animateIndex === "number" ? `--i: ${animateIndex};` 
 const retryCoverLabel = lang === "ja" ? "画像を再試行" : "重试封面";
 const cover = resolveCover(post.cover, 960);
 const coverOriginal = post.coverOriginal ?? cover?.original;
-const snippet = post.summary ?? post.preview;
+const title = lang === "zh" ? post.titleZh ?? post.title : post.titleJa ?? post.title;
+const snippet =
+  lang === "zh"
+    ? post.summaryZh ?? post.previewZh ?? post.summary ?? post.preview
+    : post.summaryJa ?? post.previewJa ?? post.summary ?? post.preview;
 const publishedAtMs = new Date(post.publishedAt).getTime();
 const isFresh = Number.isFinite(publishedAtMs) && Date.now() - publishedAtMs >= 0 && Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
 const freshLabel = lang === "ja" ? "新着" : "NEW";
@@ -110,7 +114,7 @@ const freshLabel = lang === "ja" ? "新着" : "NEW";
             href={detailHref}
             class="block text-[15px] font-semibold leading-snug text-slate-950 hover:underline line-clamp-2 sm:text-base"
           >
-            {post.title}
+            {title}
           </a>
 
           <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-600 sm:text-xs">

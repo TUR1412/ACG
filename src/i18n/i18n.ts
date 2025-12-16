@@ -47,6 +47,11 @@ export type I18nKey =
   | "post.openSource"
   | "post.previewTitle"
   | "post.previewHint"
+  | "post.fullTextTitle"
+  | "post.fullTextHint"
+  | "post.fullTextReload"
+  | "post.fullTextOriginal"
+  | "post.fullTextTranslated"
   | "post.source"
   | "post.publishedAt"
   | "bookmarks.title"
@@ -65,7 +70,7 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
   zh: {
     "site.name": "ACG Radar",
     "site.tagline": "每小时更新的二次元资讯雷达（聚合 + 收藏 + 关注）",
-    "site.disclaimer": "本站仅聚合标题/摘要并跳转原文，不转载全文。数据由 GitHub Actions 定时更新。",
+    "site.disclaimer": "本站聚合标题/摘要并跳转原文；详情页提供「全文预览（实验）」阅读模式（实时解析/翻译，可能有误），版权归原站。数据由 GitHub Actions 定时更新。",
     "nav.latest": "最新",
     "nav.search": "搜索",
     "nav.bookmarks": "收藏",
@@ -106,6 +111,11 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "post.openSource": "打开原文",
     "post.previewTitle": "内容预览",
     "post.previewHint": "预览来自页面描述/自动摘录（非全文）。完整内容请点击「打开原文」。",
+    "post.fullTextTitle": "全文预览（实验）",
+    "post.fullTextHint": "实验功能：全文由第三方阅读模式实时解析并翻译，可能有误；版权归原站。加载失败请点击「打开原文」。",
+    "post.fullTextReload": "重新加载",
+    "post.fullTextOriginal": "查看原文",
+    "post.fullTextTranslated": "查看翻译",
     "post.source": "来源",
     "post.publishedAt": "发布时间",
     "bookmarks.title": "我的收藏",
@@ -123,7 +133,7 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
   ja: {
     "site.name": "ACG Radar",
     "site.tagline": "毎時更新のACGニュースレーダー（集約 + ブックマーク + フォロー）",
-    "site.disclaimer": "本サイトはタイトル/要約を集約し元記事へ誘導します。全文転載は禁止しません。データは GitHub Actions により定期更新されます。",
+    "site.disclaimer": "本サイトはタイトル/要約を集約し元記事へ誘導します。詳細ページの「全文プレビュー（実験）」はリアルタイム解析/翻訳（誤訳の可能性あり）で、著作権は原サイトに帰属します。データは GitHub Actions により定期更新されます。",
     "nav.latest": "最新",
     "nav.search": "検索",
     "nav.bookmarks": "ブックマーク",
@@ -164,6 +174,11 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "post.openSource": "元記事へ",
     "post.previewTitle": "内容プレビュー",
     "post.previewHint": "プレビューはページの説明/自動抽出（全文ではありません）。全文は「元記事へ」からご確認ください。",
+    "post.fullTextTitle": "全文プレビュー（実験）",
+    "post.fullTextHint": "実験機能：全文は第三者のリーダーモードでリアルタイムに解析/翻訳されます（誤訳の可能性あり）。著作権は原サイトに帰属します。失敗時は「元記事へ」をご利用ください。",
+    "post.fullTextReload": "再読み込み",
+    "post.fullTextOriginal": "原文",
+    "post.fullTextTranslated": "翻訳",
     "post.source": "出典",
     "post.publishedAt": "公開日時",
     "bookmarks.title": "ブックマーク",

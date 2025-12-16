@@ -54,6 +54,9 @@ jobs:
           ACG_COVER_CACHE_MAX: "260"
           ACG_COVER_CACHE_WIDTH: "960"
           ACG_COVER_CACHE_CONCURRENCY: "6"
+          # 语言转换：让 /zh 与 /ja 信息流更“可读”（默认仅翻译最新一段，避免每小时大量请求）
+          ACG_TRANSLATE_MAX_POSTS: "220"
+          ACG_TRANSLATE_TIMEOUT_MS: "18000"
         run: npm run sync
 
       - name: Configure Pages

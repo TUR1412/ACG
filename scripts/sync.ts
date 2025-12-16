@@ -19,13 +19,22 @@ import { extractCoverFromHtml, extractPreviewFromHtml, isProbablyNonCoverImageUr
 import type { RawItem, Source } from "./sources/types";
 import type { Category } from "../src/lib/categories";
 import { deriveTags } from "./lib/tagger";
+import { readTranslateCache, translateTextCached, type TranslateCache } from "./lib/translate";
 
 type Post = {
   id: string;
   title: string;
+  /** 中文翻译标题（用于 /zh 路由显示） */
+  titleZh?: string;
+  /** 日文翻译标题（用于 /ja 路由显示） */
+  titleJa?: string;
   summary?: string;
   /** 文章预览（严格截断，不是全文） */
   preview?: string;
+  previewZh?: string;
+  previewJa?: string;
+  summaryZh?: string;
+  summaryJa?: string;
   url: string;
   publishedAt: string;
   cover?: string;
@@ -57,6 +66,138 @@ type SyncStatus = {
   durationMs: number;
   sources: SourceStatus[];
 };
+
+function hasJapaneseKana(text: string): boolean {
+  // Hiragana + Katakana。仅靠汉字无法区分中/日，所以用 kana 作为“强证据”。
+  return /[\u3041-\u30ff]/.test(text);
+}
+
+async function translatePosts(params: {
+  posts: Post[];
+  cache: TranslateCache;
+  cachePath: string;
+  verbose: boolean;
+  persistCache: boolean;
+}): Promise<{ translated: number; attempted: number }> {
+  const { posts, cache, cachePath, verbose, persistCache } = params;
+
+  const timeoutMs = parseNonNegativeInt(process.env.ACG_TRANSLATE_TIMEOUT_MS, 18_000);
+  const maxPosts = parseNonNegativeInt(process.env.ACG_TRANSLATE_MAX_POSTS, 220);
+
+  const limit = Math.min(Math.max(0, maxPosts), posts.length);
+  const targets = posts.slice(0, limit);
+  let attempted = 0;
+  let translated = 0;
+
+  for (const post of targets) {
+    // 标题
+    if (post.title) {
+      attempted += 1;
+      const nextZh = await translateTextCached({
+        text: post.title,
+        target: "zh",
+        cache,
+        cachePath,
+        timeoutMs,
+        verbose,
+        persistCache
+      });
+      if (nextZh && nextZh !== post.title) {
+        post.titleZh = stripAndTruncate(nextZh, 180);
+        translated += 1;
+      }
+
+      // 日文：如果原文已经明显是日文（含 kana），就不“翻译回日文”（避免破坏原标题）
+      if (!hasJapaneseKana(post.title)) {
+        attempted += 1;
+        const nextJa = await translateTextCached({
+          text: post.title,
+          target: "ja",
+          cache,
+          cachePath,
+          timeoutMs,
+          verbose,
+          persistCache
+        });
+        if (nextJa && nextJa !== post.title) {
+          post.titleJa = stripAndTruncate(nextJa, 180);
+          translated += 1;
+        }
+      }
+    }
+
+    // 摘要/预览：分别翻译（UI 会按需挑一个展示）
+    if (post.summary) {
+      attempted += 1;
+      const nextZh = await translateTextCached({
+        text: post.summary,
+        target: "zh",
+        cache,
+        cachePath,
+        timeoutMs,
+        verbose,
+        persistCache
+      });
+      if (nextZh && nextZh !== post.summary) {
+        post.summaryZh = stripAndTruncate(nextZh, 420);
+        translated += 1;
+      }
+
+      if (!hasJapaneseKana(post.summary)) {
+        attempted += 1;
+        const nextJa = await translateTextCached({
+          text: post.summary,
+          target: "ja",
+          cache,
+          cachePath,
+          timeoutMs,
+          verbose,
+          persistCache
+        });
+        if (nextJa && nextJa !== post.summary) {
+          post.summaryJa = stripAndTruncate(nextJa, 420);
+          translated += 1;
+        }
+      }
+    }
+
+    if (post.preview) {
+      attempted += 1;
+      const nextZh = await translateTextCached({
+        text: post.preview,
+        target: "zh",
+        cache,
+        cachePath,
+        timeoutMs,
+        verbose,
+        persistCache
+      });
+      if (nextZh && nextZh !== post.preview) {
+        post.previewZh = stripAndTruncate(nextZh, 520);
+        translated += 1;
+      }
+
+      if (!hasJapaneseKana(post.preview)) {
+        attempted += 1;
+        const nextJa = await translateTextCached({
+          text: post.preview,
+          target: "ja",
+          cache,
+          cachePath,
+          timeoutMs,
+          verbose,
+          persistCache
+        });
+        if (nextJa && nextJa !== post.preview) {
+          post.previewJa = stripAndTruncate(nextJa, 520);
+          translated += 1;
+        }
+      }
+    }
+  }
+
+  return { translated, attempted };
+}
 
 function groupBySource(posts: Post[]): Map<string, Post[]> {
   const map = new Map<string, Post[]>();
@@ -558,8 +699,10 @@ async function main() {
   const publicPostsPath = resolve(root, "public", "data", "posts.json");
   const publicStatusPath = resolve(root, "public", "data", "status.json");
   const cachePath = cacheFilePath(root);
+  const translateCachePath = resolve(root, ".cache", "translate.json");
 
   const cache = await readJsonFile<HttpCache>(cachePath, {});
+  const translateCache = await readTranslateCache(translateCachePath);
 
   // 历史数据策略：优先尝试从上一次 Pages 部署的 data/posts.json 读取（避免每小时提交刷屏）。
   // 若不存在（首次部署）则退回到仓库内的 src/data/generated/posts.json。
@@ -619,6 +762,16 @@ async function main() {
 
     const cacheRes = await cacheCoverThumbnails({ posts: pruned, root, verbose: args.verbose });
     console.log(`[COVER:CACHE] cached=${cacheRes.cached}/${cacheRes.attempted} max=${cacheRes.max}`);
+
+    // 语言转换：为 /zh 与 /ja 预生成标题/摘要翻译（避免用户在信息流里看不懂）
+    const translateRes = await translatePosts({
+      posts: pruned,
+      cache: translateCache,
+      cachePath: translateCachePath,
+      verbose: args.verbose,
+      persistCache: true
+    });
+    console.log(`[TRANSLATE] applied=${translateRes.translated}/${translateRes.attempted} maxPosts=${process.env.ACG_TRANSLATE_MAX_POSTS ?? "220"}`);
   } else {
     console.log(`[COVER] skipped (dry-run)`);
   }

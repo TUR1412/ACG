@@ -3,9 +3,17 @@ import type { Category } from "./categories";
 export type Post = {
   id: string;
   title: string;
+  /** 中文翻译标题（用于 /zh 路由显示） */
+  titleZh?: string;
+  /** 日文翻译标题（用于 /ja 路由显示） */
+  titleJa?: string;
   summary?: string;
   /** 文章预览（严格截断，不是全文） */
   preview?: string;
+  previewZh?: string;
+  previewJa?: string;
+  summaryZh?: string;
+  summaryJa?: string;
   url: string;
   publishedAt: string;
   cover?: string;

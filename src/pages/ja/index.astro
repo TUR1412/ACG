@@ -312,12 +312,13 @@ const spotlight = (() => {
               {brief.map((p) => {
                 const cover = resolveCover(p.cover, 520);
                 const coverOriginal = p.coverOriginal ?? cover?.original;
+                const title = p.titleJa ?? p.title;
                 return (
                   <li>
                     <a
                       class="group flex items-start gap-3 rounded-2xl border border-slate-900/10 bg-white/45 p-2.5 hover:bg-white/65 clickable"
                       href={href(`/ja/p/${p.id}/`)}
-                      data-brief-title={p.title}
+                      data-brief-title={title}
                     >
                       <span class="relative h-12 w-16 shrink-0 overflow-hidden rounded-xl border border-white/25">
                         <span class:list={["absolute inset-0 bg-gradient-to-br", CATEGORY_THEME[p.category].cover]}></span>
@@ -343,7 +344,7 @@ const spotlight = (() => {
 
                       <span class="min-w-0">
                         <span class="block text-sm font-semibold leading-snug text-slate-950 line-clamp-2">
-                          {p.title}
+                          {title}
                         </span>
                         <span class="mt-1 block text-[11px] text-slate-600">
                           {categoryLabel("ja", p.category)} · {p.sourceName}
@@ -393,7 +394,7 @@ const spotlight = (() => {
               ) : null}
               <div class="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-slate-950/10 to-transparent"></div>
               <div class="absolute bottom-3 left-3 right-3 text-sm font-semibold leading-snug text-white line-clamp-3">
-                {randomPick.title}
+                {randomPick.titleJa ?? randomPick.title}
               </div>
             </a>
 

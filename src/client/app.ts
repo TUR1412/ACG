@@ -642,6 +642,278 @@ function wirePrefsDrawer() {
   }
 }
 
+type FullTextLang = "zh" | "ja";
+
+type FullTextCacheEntry = {
+  url: string;
+  fetchedAt: string;
+  original: string;
+  zh?: string;
+  ja?: string;
+};
+
+const FULLTEXT_CACHE_PREFIX = "acg.fulltext.v1:";
+
+function fullTextCacheKey(postId: string): string {
+  return `${FULLTEXT_CACHE_PREFIX}${postId}`;
+}
+
+function readFullTextCache(postId: string): FullTextCacheEntry | null {
+  try {
+    const raw = localStorage.getItem(fullTextCacheKey(postId));
+    if (!raw) return null;
+    const json = JSON.parse(raw) as unknown;
+    if (!json || typeof json !== "object") return null;
+    const it = json as any;
+    if (typeof it.original !== "string" || typeof it.url !== "string") return null;
+    return {
+      url: it.url,
+      fetchedAt: typeof it.fetchedAt === "string" ? it.fetchedAt : "",
+      original: it.original,
+      zh: typeof it.zh === "string" ? it.zh : undefined,
+      ja: typeof it.ja === "string" ? it.ja : undefined
+    } satisfies FullTextCacheEntry;
+  } catch {
+    return null;
+  }
+}
+
+function writeFullTextCache(postId: string, entry: FullTextCacheEntry) {
+  try {
+    // 保护：避免 localStorage 被超大正文撑爆（不同浏览器配额不同）
+    const approx = entry.original.length + (entry.zh?.length ?? 0) + (entry.ja?.length ?? 0);
+    if (approx > 160_000) return;
+    localStorage.setItem(fullTextCacheKey(postId), JSON.stringify(entry));
+  } catch {
+    // ignore
+  }
+}
+
+function parseJinaMarkdown(raw: string): string {
+  const marker = "Markdown Content:";
+  const i = raw.indexOf(marker);
+  const md = i >= 0 ? raw.slice(i + marker.length) : raw;
+  return md.replace(/\r\n/g, "\n").trim();
+}
+
+async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { signal: controller.signal, headers: { accept: "text/plain,*/*" } });
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+async function loadFullTextMarkdown(params: { url: string; timeoutMs: number }): Promise<string> {
+  const { url, timeoutMs } = params;
+  const readerUrl = `https://r.jina.ai/${url}`;
+  const res = await fetchWithTimeout(readerUrl, timeoutMs);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = await res.text();
+  const md = parseJinaMarkdown(text);
+  if (!md) throw new Error("empty");
+  return md;
+}
+
+function chunkForTranslate(text: string, maxLen: number): string[] {
+  const normalized = text.replace(/\r\n/g, "\n").trim();
+  if (normalized.length <= maxLen) return [normalized];
+
+  const paras = normalized.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  const chunks: string[] = [];
+  let current = "";
+
+  const flush = () => {
+    const c = current.trim();
+    if (c) chunks.push(c);
+    current = "";
+  };
+
+  for (const p of paras) {
+    const next = current ? `${current}\n\n${p}` : p;
+    if (next.length <= maxLen) {
+      current = next;
+      continue;
+    }
+
+    flush();
+
+    // 单段过长：硬切（尽量保留换行）
+    if (p.length > maxLen) {
+      for (let i = 0; i < p.length; i += maxLen) {
+        chunks.push(p.slice(i, i + maxLen));
+      }
+      continue;
+    }
+
+    current = p;
+  }
+
+  flush();
+  return chunks.length > 0 ? chunks : [normalized.slice(0, maxLen)];
+}
+
+function parseGoogleGtx(json: unknown): string | null {
+  if (!Array.isArray(json)) return null;
+  const top0 = json[0];
+  if (!Array.isArray(top0)) return null;
+  const parts: string[] = [];
+  for (const seg of top0) {
+    if (!Array.isArray(seg)) continue;
+    const out = seg[0];
+    if (typeof out === "string" && out) parts.push(out);
+  }
+  const joined = parts.join("");
+  return joined.trim() ? joined : null;
+}
+
+async function translateViaGtx(params: { text: string; target: FullTextLang; timeoutMs: number; onProgress?: (done: number, total: number) => void }): Promise<string> {
+  const { text, target, timeoutMs, onProgress } = params;
+  const tl = target === "zh" ? "zh-CN" : "ja";
+
+  // URL 长度与服务稳定性：保守切块
+  const chunks = chunkForTranslate(text, 1200);
+  const outParts: string[] = [];
+
+  for (let i = 0; i < chunks.length; i += 1) {
+    onProgress?.(i, chunks.length);
+    const q = chunks[i] ?? "";
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(
+      tl
+    )}&dt=t&q=${encodeURIComponent(q)}`;
+    const res = await fetchWithTimeout(url, timeoutMs);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = (await res.json()) as unknown;
+    const translated = parseGoogleGtx(json);
+    outParts.push(translated ?? q);
+  }
+  onProgress?.(chunks.length, chunks.length);
+  return outParts.join("\n\n").trim();
+}
+
+function wireFullTextReader() {
+  const blocks = [...document.querySelectorAll<HTMLElement>("[data-fulltext]")];
+  if (blocks.length === 0) return;
+
+  for (const block of blocks) {
+    const lang = (block.dataset.fulltextLang as FullTextLang | undefined) ?? (isJapanese() ? "ja" : "zh");
+    const postId = block.dataset.fulltextPostId ?? "";
+    const url = block.dataset.fulltextUrl ?? "";
+    const autoload = block.dataset.fulltextAutoload === "true";
+
+    const statusEl = block.querySelector<HTMLElement>("[data-fulltext-status]");
+    const contentEl = block.querySelector<HTMLElement>("[data-fulltext-content]");
+    const btnReload = block.querySelector<HTMLButtonElement>("[data-fulltext-action=\"reload\"]");
+    const btnShowOriginal = block.querySelector<HTMLButtonElement>("[data-fulltext-action=\"show-original\"]");
+    const btnShowTranslated = block.querySelector<HTMLButtonElement>("[data-fulltext-action=\"show-translated\"]");
+
+    if (!postId || !url || !contentEl) continue;
+
+    let running = false;
+
+    const setStatus = (text: string) => {
+      if (!statusEl) return;
+      statusEl.textContent = text;
+      statusEl.classList.toggle("hidden", text.trim().length === 0);
+    };
+
+    const render = (text: string) => {
+      contentEl.textContent = text;
+    };
+
+    const showOriginal = (cache: FullTextCacheEntry) => {
+      render(cache.original);
+      if (btnShowOriginal) btnShowOriginal.hidden = true;
+      if (btnShowTranslated) btnShowTranslated.hidden = false;
+    };
+
+    const showTranslated = (cache: FullTextCacheEntry) => {
+      const t = lang === "zh" ? cache.zh : cache.ja;
+      if (t) render(t);
+      if (btnShowOriginal) btnShowOriginal.hidden = false;
+      if (btnShowTranslated) btnShowTranslated.hidden = true;
+    };
+
+    const ensureLoaded = async (force: boolean) => {
+      if (running) return;
+      running = true;
+      try {
+        setStatus(lang === "ja" ? "全文を読み込み中…" : "正在加载全文…");
+
+        let cache = force ? null : readFullTextCache(postId);
+        if (!cache || cache.url !== url || !cache.original) {
+          const md = await loadFullTextMarkdown({ url, timeoutMs: 22_000 });
+          cache = { url, fetchedAt: new Date().toISOString(), original: md };
+          writeFullTextCache(postId, cache);
+        }
+
+        // 先展示原文（马上有内容），再异步翻译
+        showOriginal(cache);
+
+        setStatus(lang === "ja" ? "翻訳中…" : "正在翻译…");
+        const translated = await translateViaGtx({
+          text: cache.original,
+          target: lang,
+          timeoutMs: 22_000,
+          onProgress: (done, total) => {
+            if (total <= 1) return;
+            const label = lang === "ja" ? `翻訳中… (${Math.min(done + 1, total)}/${total})` : `正在翻译… (${Math.min(done + 1, total)}/${total})`;
+            setStatus(label);
+          }
+        });
+
+        if (lang === "zh") cache.zh = translated;
+        else cache.ja = translated;
+        writeFullTextCache(postId, cache);
+
+        // 默认切到翻译（满足“选中文/日文就看懂”）
+        showTranslated(cache);
+        setStatus("");
+      } catch {
+        setStatus(lang === "ja" ? "読み込みに失敗しました。元記事を開いてください。" : "加载失败：建议点击「打开原文」。");
+      } finally {
+        running = false;
+      }
+    };
+
+    btnReload?.addEventListener("click", (e) => {
+      e.preventDefault();
+      ensureLoaded(true);
+    });
+
+    btnShowOriginal?.addEventListener("click", (e) => {
+      e.preventDefault();
+      const cache = readFullTextCache(postId);
+      if (cache) showOriginal(cache);
+    });
+
+    btnShowTranslated?.addEventListener("click", (e) => {
+      e.preventDefault();
+      const cache = readFullTextCache(postId);
+      if (cache) showTranslated(cache);
+    });
+
+    // 初始：如果已有缓存并包含翻译，直接展示翻译；否则按配置自动加载
+    const cached = readFullTextCache(postId);
+    if (cached && cached.url === url) {
+      const hasTranslated = lang === "zh" ? Boolean(cached.zh) : Boolean(cached.ja);
+      if (hasTranslated) {
+        showTranslated(cached);
+        setStatus("");
+      } else if (autoload) {
+        ensureLoaded(false);
+      } else {
+        showOriginal(cached);
+        setStatus("");
+      }
+    } else if (autoload) {
+      ensureLoaded(false);
+    }
+  }
+}
+
 function wireQuickToggles() {
   const buttons = [...document.querySelectorAll<HTMLButtonElement>("button[data-quick-toggle]")];
   if (buttons.length === 0) return;
@@ -821,8 +1093,14 @@ type BookmarkCategory = "anime" | "game" | "goods" | "seiyuu";
 type BookmarkPost = {
   id: string;
   title: string;
+  titleZh?: string;
+  titleJa?: string;
   summary?: string;
+  summaryZh?: string;
+  summaryJa?: string;
   preview?: string;
+  previewZh?: string;
+  previewJa?: string;
   url: string;
   publishedAt: string;
   cover?: string;
@@ -1102,8 +1380,14 @@ async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {
       const post: BookmarkPost = {
         id,
         title: typeof it.title === "string" ? it.title : "",
+        titleZh: typeof it.titleZh === "string" ? it.titleZh : undefined,
+        titleJa: typeof it.titleJa === "string" ? it.titleJa : undefined,
         summary: typeof it.summary === "string" ? it.summary : undefined,
+        summaryZh: typeof it.summaryZh === "string" ? it.summaryZh : undefined,
+        summaryJa: typeof it.summaryJa === "string" ? it.summaryJa : undefined,
         preview: typeof it.preview === "string" ? it.preview : undefined,
+        previewZh: typeof it.previewZh === "string" ? it.previewZh : undefined,
+        previewJa: typeof it.previewJa === "string" ? it.previewJa : undefined,
         url: typeof it.url === "string" ? it.url : "",
         publishedAt: typeof it.publishedAt === "string" ? it.publishedAt : "",
         cover: typeof it.cover === "string" ? it.cover : undefined,
@@ -1137,6 +1421,12 @@ function buildBookmarkCard(params: {
   const isFresh =
     Number.isFinite(publishedAtMs) && Date.now() - publishedAtMs >= 0 && Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
   const freshLabel = lang === "ja" ? "新着" : "NEW";
+
+  const displayTitle = lang === "zh" ? post.titleZh ?? post.title : post.titleJa ?? post.title;
+  const displaySnippet =
+    lang === "zh"
+      ? post.summaryZh ?? post.previewZh ?? post.summary ?? post.preview
+      : post.summaryJa ?? post.previewJa ?? post.summary ?? post.preview;
 
   const article = document.createElement("article");
   article.className = "glass-card acg-card clickable shine group relative overflow-hidden rounded-2xl";
@@ -1266,7 +1556,7 @@ function buildBookmarkCard(params: {
   titleLink.href = detailHref;
   titleLink.className =
     "block text-[15px] font-semibold leading-snug text-slate-950 hover:underline line-clamp-2 sm:text-base";
-  titleLink.textContent = post.title || (lang === "ja" ? "（無題）" : "（无标题）");
+  titleLink.textContent = displayTitle || (lang === "ja" ? "（無題）" : "（无标题）");
   left.appendChild(titleLink);
 
   const meta = document.createElement("div");
@@ -1313,11 +1603,10 @@ function buildBookmarkCard(params: {
   setBookmarkButtonState(star, true);
   head.appendChild(star);
 
-  const snippet = post.summary ?? post.preview;
-  if (snippet) {
+  if (displaySnippet) {
     const p = document.createElement("p");
     p.className = "mt-2 line-clamp-3 text-sm leading-relaxed text-slate-600";
-    p.textContent = snippet;
+    p.textContent = displaySnippet;
     body.appendChild(p);
   }
 
@@ -2093,6 +2382,7 @@ function main() {
   wireKeyboardShortcuts();
   wireSearchClear();
   wirePrefsDrawer();
+  wireFullTextReader();
   wireTagChips();
   wireDailyBriefCopy();
   wireSpotlightCarousel();

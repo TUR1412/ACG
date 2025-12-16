@@ -30,15 +30,19 @@ const theme = getCategoryTheme(post.category);
 const retryCoverLabel = "重试封面";
 const cover = resolveCover(post.cover, 1400);
 const coverOriginal = post.coverOriginal ?? cover?.original;
-const primaryText = post.summary ?? post.preview;
-const extraPreview = post.summary && post.preview && post.preview !== post.summary ? post.preview : undefined;
-const previewOpen = (post.summary?.length ?? 0) < 90;
+const title = post.titleZh ?? post.title;
+const summary = post.summaryZh ?? post.summary;
+const preview = post.previewZh ?? post.preview;
+const primaryText = summary ?? preview;
+const extraPreview = summary && preview && preview !== summary ? preview : undefined;
+const previewOpen = (summary?.length ?? 0) < 90;
 const publishedAtMs = new Date(post.publishedAt).getTime();
 const isFresh = Number.isFinite(publishedAtMs) && Date.now() - publishedAtMs >= 0 && Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
 const freshLabel = "NEW";
+const tt = (p: Post) => p.titleZh ?? p.title;
 ---
 
-<SiteLayout lang="zh" title={post.title} currentPath={`/p/${post.id}/`} currentPostId={post.id}>
+<SiteLayout lang="zh" title={title} currentPath={`/p/${post.id}/`} currentPostId={post.id}>
   <article class="glass overflow-hidden rounded-2xl">
     <div class="relative" data-has-cover={post.cover ? "true" : "false"}>
       <div class:list={["absolute inset-0 bg-gradient-to-br", theme.cover]}></div>
@@ -92,7 +96,7 @@ const freshLabel = "NEW";
           <span class="text-xs text-white/80">{t("zh", "post.publishedAt")}: {published}</span>
         </div>
         <h1 class="mt-3 text-2xl font-semibold leading-tight tracking-tight text-white md:text-3xl">
-          {post.title}
+          {title}
         </h1>
         <div class="mt-2">
           <SourceBadge name={`${t("zh", "post.source")}: ${post.sourceName}`} url={post.sourceUrl} tone="dark" dotClass={theme.dot} compact />
@@ -117,7 +121,7 @@ const freshLabel = "NEW";
         <p class="mt-4 text-sm text-slate-700">{t("zh", "common.noData")}</p>
       )}
 
-      {!post.summary && post.preview ? (
+      {!summary && preview ? (
         <p class="mt-2 text-xs text-slate-600">{t("zh", "post.previewHint")}</p>
       ) : null}
 
@@ -133,6 +137,50 @@ const freshLabel = "NEW";
           <p class="mt-2 text-xs text-slate-600">{t("zh", "post.previewHint")}</p>
         </details>
       ) : null}
+
+      <section
+        class="mt-6 rounded-2xl border border-slate-900/10 bg-white/55 p-4"
+        data-fulltext
+        data-fulltext-lang="zh"
+        data-fulltext-post-id={post.id}
+        data-fulltext-url={post.url}
+        data-fulltext-autoload="true"
+      >
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 class="m-0 text-sm font-semibold text-slate-950">{t("zh", "post.fullTextTitle")}</h2>
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              class="glass rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable"
+              data-fulltext-action="reload"
+            >
+              {t("zh", "post.fullTextReload")}
+            </button>
+            <button
+              type="button"
+              class="glass rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable"
+              data-fulltext-action="show-original"
+              hidden
+            >
+              {t("zh", "post.fullTextOriginal")}
+            </button>
+            <button
+              type="button"
+              class="glass rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable"
+              data-fulltext-action="show-translated"
+              hidden
+            >
+              {t("zh", "post.fullTextTranslated")}
+            </button>
+          </div>
+        </div>
+        <p class="mt-2 text-xs leading-relaxed text-slate-600">{t("zh", "post.fullTextHint")}</p>
+        <p class="mt-2 text-xs text-slate-600" data-fulltext-status></p>
+        <div
+          class="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-800"
+          data-fulltext-content
+        ></div>
+      </section>
 
       <div class="mt-6 flex flex-wrap gap-3">
         <a
@@ -163,7 +211,7 @@ const freshLabel = "NEW";
       {newer ? (
         <a class="glass clickable rounded-2xl p-4" href={href(`/zh/p/${newer.id}/`)}>
           <div class="text-xs font-semibold text-slate-600">较新</div>
-          <div class="mt-1 text-sm font-semibold text-slate-950 line-clamp-2">{newer.title}</div>
+          <div class="mt-1 text-sm font-semibold text-slate-950 line-clamp-2">{tt(newer)}</div>
         </a>
       ) : (
         <div class="glass rounded-2xl p-4 opacity-70">
@@ -175,7 +223,7 @@ const freshLabel = "NEW";
       {older ? (
         <a class="glass clickable rounded-2xl p-4" href={href(`/zh/p/${older.id}/`)}>
           <div class="text-xs font-semibold text-slate-600">较旧</div>
-          <div class="mt-1 text-sm font-semibold text-slate-950 line-clamp-2">{older.title}</div>
+          <div class="mt-1 text-sm font-semibold text-slate-950 line-clamp-2">{tt(older)}</div>
         </a>
       ) : (
         <div class="glass rounded-2xl p-4 opacity-70">
