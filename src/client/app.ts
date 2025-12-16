@@ -279,10 +279,10 @@ function isCoverProxyUrl(url: string): boolean {
   return /^https:\/\/(images\.weserv\.nl|wsrv\.nl)\//i.test(url);
 }
 
-function toCoverProxyUrl(url: string, width = 1200): string | null {
+function toCoverProxyUrl(url: string, width = 1200, host?: string): string | null {
   if (!isHttpUrl(url)) return null;
   if (isCoverProxyUrl(url)) return null;
-  return toWeservImageUrl({ url, width });
+  return toWeservImageUrl({ url, width, host });
 }
 
 function bestInitialCoverSrc(original: string, width = 1200): string {
@@ -326,19 +326,7 @@ function handleCoverError(img: HTMLImageElement) {
         return;
       }
 
-      // step 2：封面代理兜底（绕开混合内容/部分站点 hotlink 限制）
-      // 注意：不默认全站走代理，仅在失败后触发。
-      const proxy = toCoverProxyUrl(original, 1200);
-      if (proxy && !isCoverProxyUrl(attempted)) {
-        img.dataset.acgCoverRetry = String(retry + 1);
-        container?.classList.remove("cover-failed");
-        img.style.opacity = "";
-        img.style.pointerEvents = "";
-        img.src = withCacheBust(proxy, "acg_p");
-        return;
-      }
-
-      // step 3：有些图床对 referrer 更敏感，失败后放宽一次 + cache bust
+      // step 2：有些图床对 referrer 更敏感，失败后放宽一次 + cache bust
       if (img.referrerPolicy === "no-referrer" && !isCoverProxyUrl(attempted)) {
         img.dataset.acgCoverRetry = String(retry + 1);
         img.referrerPolicy = "strict-origin-when-cross-origin";
@@ -349,11 +337,33 @@ function handleCoverError(img: HTMLImageElement) {
         return;
       }
 
+      // step 3：封面代理兜底（绕开混合内容/部分站点 hotlink 限制）
+      // 注意：不默认全站走代理，仅在失败后触发。
+      const proxy = toCoverProxyUrl(original, 1200, "images.weserv.nl");
+      if (proxy && !isCoverProxyUrl(attempted)) {
+        img.dataset.acgCoverRetry = String(retry + 1);
+        container?.classList.remove("cover-failed");
+        img.style.opacity = "";
+        img.style.pointerEvents = "";
+        img.src = withCacheBust(proxy, "acg_p");
+        return;
+      }
+
       // step 4：常规 cache bust（网络抖动/中间缓存偶发）
       img.dataset.acgCoverRetry = String(retry + 1);
       container?.classList.remove("cover-failed");
       img.style.opacity = "";
       img.style.pointerEvents = "";
+      // proxy 已失败：切换 Weserv 域名再试一次（部分网络环境下可用性不同）
+      if (isCoverProxyUrl(attempted) && !img.dataset.acgCoverProxyAlt) {
+        const host = attempted.startsWith("https://wsrv.nl/") ? "images.weserv.nl" : "wsrv.nl";
+        const alt = toCoverProxyUrl(original, 1200, host);
+        if (alt) {
+          img.dataset.acgCoverProxyAlt = "1";
+          img.src = withCacheBust(alt, "acg_p2");
+          return;
+        }
+      }
       img.src = withCacheBust(attempted);
       return;
     }
@@ -405,6 +415,7 @@ function wireCoverRetry() {
     const original = img.dataset.acgCoverOriginalSrc ?? img.currentSrc ?? img.src;
     if (original) img.dataset.acgCoverOriginalSrc = original;
     img.dataset.acgCoverRetry = "0";
+    if (img.dataset.acgCoverProxyAlt) delete img.dataset.acgCoverProxyAlt;
     img.referrerPolicy = "no-referrer";
 
     scope.classList.remove("cover-failed");

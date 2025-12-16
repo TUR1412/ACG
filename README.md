@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/readme-banner.svg" alt="ACG Radar / ACGレーダー" />
+  <img src="docs/readme-banner.svg?raw=1" alt="ACG Radar / ACGレーダー" />
 </p>
 
 # ACG Radar / ACGレーダー
@@ -12,13 +12,13 @@
 
 **在线预览 / Demo**
 
-- `https://tur1412.github.io/ACG/`
+- https://tur1412.github.io/ACG/
 
 **快速入口 / Quick Links**
 
-- 中文：`/zh/`（`https://tur1412.github.io/ACG/zh/`）
-- 日本語：`/ja/`（`https://tur1412.github.io/ACG/ja/`）
-- 状态页：`/status/`（`/zh/status/`、`/ja/status/`）
+- 中文：`/zh/` → https://tur1412.github.io/ACG/zh/
+- 日本語：`/ja/` → https://tur1412.github.io/ACG/ja/
+- 状态页：`/status/` → https://tur1412.github.io/ACG/zh/status/（中文） / https://tur1412.github.io/ACG/ja/status/（日本語）
 
 ---
 

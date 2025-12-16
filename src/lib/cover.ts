@@ -2,6 +2,8 @@ type CoverParams = {
   url: string;
   /** 期望的最大宽度（Weserv 会按需缩放，避免过大浪费流量） */
   width?: number;
+  /** 可选：切换 Weserv 域名（某些网络环境下不同域名可用性不一致） */
+  host?: string;
 };
 
 export type CoverAsset = {
@@ -20,10 +22,10 @@ function isProxyUrl(url: string): boolean {
 }
 
 export function toWeservImageUrl(params: CoverParams): string {
-  const { url, width = 960 } = params;
+  const { url, width = 960, host = "images.weserv.nl" } = params;
   const encoded = encodeURIComponent(url);
   // fit=cover：卡片/头图统一“杂志封面”裁切；n=-1：允许 upscaling（在少数小图场景更好看）
-  return `https://images.weserv.nl/?url=${encoded}&w=${width}&fit=cover&n=-1`;
+  return `https://${host}/?url=${encoded}&w=${width}&fit=cover&n=-1`;
 }
 
 /**
@@ -42,4 +44,3 @@ export function resolveCover(url?: string | null, width?: number): CoverAsset | 
 
   return { src: original, original };
 }
-
