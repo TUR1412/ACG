@@ -990,6 +990,48 @@ function focusSearchFromHash() {
   }
 }
 
+function wireDeviceDebug() {
+  const details = document.querySelector<HTMLDetailsElement>("#acg-device-debug-details");
+  const pre = document.querySelector<HTMLElement>("#acg-device-debug");
+  if (!details || !pre) return;
+
+  let enabled = false;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    enabled = params.get("debug") === "1" || localStorage.getItem("acg.debug") === "1";
+  } catch {
+    enabled = false;
+  }
+
+  if (!enabled) return;
+  details.hidden = false;
+
+  const lines: string[] = [];
+  const el = document.documentElement;
+  const vw = window.visualViewport ? `${Math.round(window.visualViewport.width)}x${Math.round(window.visualViewport.height)}` : "-";
+  const inner = `${window.innerWidth}x${window.innerHeight}`;
+  const screen = window.screen ? `${window.screen.width}x${window.screen.height}` : "-";
+  const device = el.dataset.acgDevice ?? "-";
+
+  const mq = (q: string) => {
+    try {
+      return window.matchMedia(q).matches;
+    } catch {
+      return false;
+    }
+  };
+
+  lines.push(`acgDevice: ${device}`);
+  lines.push(`inner: ${inner}`);
+  lines.push(`visualViewport: ${vw}`);
+  lines.push(`screen: ${screen}`);
+  lines.push(`maxTouchPoints: ${navigator.maxTouchPoints || 0}`);
+  lines.push(`pointer: coarse=${mq("(pointer: coarse)")} fine=${mq("(pointer: fine)")}`);
+  lines.push(`hover: none=${mq("(hover: none)")} hover=${mq("(hover: hover)")}`);
+
+  pre.textContent = lines.join("\n");
+}
+
 function normalizeText(text: string): string {
   return text.toLowerCase().replace(/\s+/g, " ").trim();
 }
@@ -2398,6 +2440,7 @@ function main() {
   wireDailyBriefCopy();
   wireSpotlightCarousel();
   hydrateCoverStates();
+  wireDeviceDebug();
   focusSearchFromHash();
 }
 

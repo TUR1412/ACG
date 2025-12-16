@@ -1,4 +1,5 @@
 @tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -332,6 +333,27 @@ html[data-acg-device="phone"] .acg-nav-mobile {
 html[data-acg-device="phone"] .acg-main,
 html[data-acg-device="phone"] .acg-footer {
   padding-bottom: calc(32px + var(--acg-bottom-nav-h)) !important;
+}
+
+/* 平板适配：触控 + 中等屏幕优先“阅读”和“滑动”，避免落入纯桌面布局 */
+html[data-acg-device="tablet"] .acg-nav-desktop {
+  display: none !important;
+}
+
+html[data-acg-device="tablet"] .acg-nav-mobile {
+  display: flex !important;
+}
+
+html[data-acg-device="tablet"] .acg-layout-grid {
+  grid-template-columns: 1fr !important;
+}
+
+html[data-acg-device="tablet"] .acg-layout-grid > * {
+  grid-column: 1 / -1 !important;
+}
+
+html[data-acg-device="tablet"] .acg-post-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
 }
 
 /* Icon 基础：统一 SVG 图标风格（替换符号/emoji） */
