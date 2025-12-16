@@ -239,8 +239,19 @@ img {
 /* Icon 基础：统一 SVG 图标风格（替换符号/emoji） */
 .acg-icon {
   display: inline-block;
-  vertical-align: -0.12em;
+  vertical-align: -0.14em;
   flex: 0 0 auto;
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 180ms ease, opacity 180ms ease;
+}
+
+.acg-icon path {
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+a:hover .acg-icon[data-icon="external-link"] {
+  transform: translate(1px, -1px);
 }
 
 button[data-bookmark-id] [data-bookmark-icon],
@@ -252,6 +263,7 @@ button[data-source-follow-id] [data-source-follow-icon] {
 
 button[data-bookmark-id] [data-bookmark-icon] {
   color: rgba(15, 23, 42, 0.78);
+  transition: color 180ms ease;
 }
 
 button[data-bookmark-id][aria-pressed="true"] [data-bookmark-icon] {
@@ -263,12 +275,29 @@ button[data-bookmark-id] .acg-icon-star {
   transition: fill 160ms ease, transform 160ms ease;
 }
 
+button[data-bookmark-id] .acg-icon[data-icon="star"] {
+  transform-origin: 50% 55%;
+}
+
+button[data-bookmark-id]:hover .acg-icon[data-icon="star"] {
+  transform: rotate(-10deg) scale(1.06);
+}
+
+button[data-bookmark-id].pop .acg-icon[data-icon="star"] {
+  animation: acg-star-twinkle 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 button[data-bookmark-id][aria-pressed="true"] .acg-icon-star {
   fill: currentColor;
 }
 
+button[data-bookmark-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
+  filter: drop-shadow(0 10px 26px rgba(124, 58, 237, 0.22));
+}
+
 button[data-source-follow-id] [data-source-follow-icon] {
   color: rgba(15, 23, 42, 0.78);
+  transition: color 180ms ease;
 }
 
 button[data-source-follow-id][aria-pressed="true"] [data-source-follow-icon] {
@@ -280,8 +309,91 @@ button[data-source-follow-id] .acg-icon-star {
   transition: fill 160ms ease;
 }
 
+button[data-source-follow-id] .acg-icon[data-icon="star"] {
+  transform-origin: 50% 55%;
+}
+
+button[data-source-follow-id]:hover .acg-icon[data-icon="star"] {
+  transform: rotate(-9deg) scale(1.05);
+}
+
+button[data-source-follow-id].pop .acg-icon[data-icon="star"] {
+  animation: acg-star-twinkle 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 button[data-source-follow-id][aria-pressed="true"] .acg-icon-star {
   fill: currentColor;
+}
+
+button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
+  filter: drop-shadow(0 10px 26px rgba(245, 158, 11, 0.20));
+}
+
+.acg-cover-retry:hover .acg-icon[data-icon="refresh"] {
+  transform: rotate(22deg);
+}
+
+.acg-cover-retry.is-spinning .acg-icon[data-icon="refresh"] {
+  animation: acg-spin 650ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.acg-carousel-nav:hover .acg-icon[data-icon="arrow-left"] {
+  transform: translateX(-1.5px);
+}
+
+.acg-carousel-nav:hover .acg-icon[data-icon="arrow-right"] {
+  transform: translateX(1.5px);
+}
+
+.acg-word-chip-x {
+  opacity: 0.65;
+  transition: opacity 160ms ease;
+}
+
+.acg-word-chip:hover .acg-word-chip-x {
+  opacity: 1;
+}
+
+.acg-word-chip:hover .acg-icon[data-icon="x"] {
+  transform: rotate(90deg);
+}
+
+#acg-back-to-top:hover .acg-icon[data-icon="arrow-up"] {
+  transform: translateY(-1px);
+}
+
+@keyframes acg-spin {
+  from {
+    transform: rotate(0);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes acg-star-twinkle {
+  0% {
+    transform: rotate(0) scale(1);
+  }
+  45% {
+    transform: rotate(-16deg) scale(1.14);
+  }
+  100% {
+    transform: rotate(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acg-icon {
+    transition: none;
+  }
+  .acg-cover-retry.is-spinning .acg-icon[data-icon="refresh"] {
+    animation: none;
+  }
+  button[data-bookmark-id].pop .acg-icon[data-icon="star"],
+  button[data-source-follow-id].pop .acg-icon[data-icon="star"] {
+    animation: none;
+  }
 }
 
 /* 快捷筛选 Chip：移动端更好点 */

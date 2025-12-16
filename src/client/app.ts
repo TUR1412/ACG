@@ -404,6 +404,16 @@ function wireCoverRetry() {
     e.preventDefault();
     e.stopPropagation();
 
+    try {
+      btn.classList.remove("is-spinning");
+      window.requestAnimationFrame(() => {
+        btn.classList.add("is-spinning");
+        window.setTimeout(() => btn.classList.remove("is-spinning"), 650);
+      });
+    } catch {
+      // ignore
+    }
+
     const scope =
       btn.closest<HTMLElement>("[data-carousel-slide]") ??
       btn.closest<HTMLElement>("[data-has-cover]") ??
@@ -443,7 +453,7 @@ function wireBackToTop() {
 
     const icon = document.createElement("span");
     icon.className = "acg-fab-icon";
-    icon.textContent = "↑";
+    icon.appendChild(createUiIcon({ name: "arrow-up", size: 18 }));
 
     const label = document.createElement("span");
     label.className = "acg-fab-label";
@@ -808,7 +818,7 @@ function createCategoryIcon(params: { category: BookmarkCategory; size: number }
   return svg;
 }
 
-type UiIconName = "refresh" | "external-link" | "star";
+type UiIconName = "arrow-up" | "external-link" | "refresh" | "star" | "x";
 
 function createUiIcon(params: { name: UiIconName; size: number; filled?: boolean }): SVGSVGElement {
   const { name, size, filled = false } = params;
@@ -820,6 +830,7 @@ function createUiIcon(params: { name: UiIconName; size: number; filled?: boolean
   svg.setAttribute("fill", "none");
   svg.setAttribute("aria-hidden", "true");
   svg.setAttribute("focusable", "false");
+  svg.setAttribute("data-icon", name);
   svg.classList.add("acg-icon");
 
   const addPath = (attrs: Record<string, string>) => {
@@ -837,6 +848,22 @@ function createUiIcon(params: { name: UiIconName; size: number; filled?: boolean
     });
     addPath({
       d: "M20 4v4h-4",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round"
+    });
+  }
+
+  if (name === "arrow-up") {
+    addPath({
+      d: "M12 19V5",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round"
+    });
+    addPath({
+      d: "m6 11 6-6 6 6",
       stroke: "currentColor",
       "stroke-width": "2",
       "stroke-linecap": "round",
@@ -876,6 +903,21 @@ function createUiIcon(params: { name: UiIconName; size: number; filled?: boolean
       stroke: "currentColor",
       "stroke-width": "2",
       "stroke-linejoin": "round"
+    });
+  }
+
+  if (name === "x") {
+    addPath({
+      d: "M6 6l12 12",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round"
+    });
+    addPath({
+      d: "M18 6 6 18",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round"
     });
   }
 
@@ -1374,9 +1416,18 @@ function renderWordChips(params: {
     btn.type = "button";
     btn.className =
       color === "violet"
-        ? "rounded-full border border-slate-900/10 bg-white/50 px-3 py-1 text-xs text-slate-700 hover:bg-white/70 clickable"
-        : "rounded-full border border-rose-600/20 bg-rose-500/10 px-3 py-1 text-xs text-rose-800 hover:bg-rose-500/15 clickable";
-    btn.textContent = `${word} ×`;
+        ? "acg-word-chip inline-flex items-center gap-2 rounded-full border border-slate-900/10 bg-white/50 px-3 py-1 text-xs text-slate-700 hover:bg-white/70 clickable"
+        : "acg-word-chip inline-flex items-center gap-2 rounded-full border border-rose-600/20 bg-rose-500/10 px-3 py-1 text-xs text-rose-800 hover:bg-rose-500/15 clickable";
+
+    const text = document.createElement("span");
+    text.textContent = word;
+    btn.appendChild(text);
+
+    const x = document.createElement("span");
+    x.className = "acg-word-chip-x";
+    x.setAttribute("aria-hidden", "true");
+    x.appendChild(createUiIcon({ name: "x", size: 14 }));
+    btn.appendChild(x);
     btn.title = isJapanese() ? "クリックで削除" : "点击删除";
     btn.addEventListener("click", () => onRemove(word));
     container.appendChild(btn);
@@ -1632,12 +1683,14 @@ function wireSourceFollows(followedSources: Set<string>) {
       if (followedSources.has(id)) {
         followedSources.delete(id);
         persist();
+        pop(btn);
         toast({ title: isJapanese() ? `解除: ${name}` : `已取消关注：${name}`, variant: "info" });
         return;
       }
 
       followedSources.add(id);
       persist();
+      pop(btn);
       toast({ title: isJapanese() ? `フォロー: ${name}` : `已关注来源：${name}`, variant: "success" });
     });
   }

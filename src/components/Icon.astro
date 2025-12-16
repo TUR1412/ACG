@@ -1,5 +1,5 @@
 ---
-export type IconName = "arrow-left" | "arrow-right" | "chevron-right" | "external-link" | "refresh" | "star";
+export type IconName = "arrow-left" | "arrow-right" | "arrow-up" | "chevron-right" | "external-link" | "refresh" | "star" | "x";
 
 type Props = {
   name: IconName;
@@ -20,6 +20,7 @@ const cls = ["acg-icon", className].filter(Boolean).join(" ");
   fill="none"
   aria-hidden="true"
   focusable="false"
+  data-icon={name}
   class={cls}
 >
   {name === "arrow-left" ? (
@@ -45,6 +46,13 @@ const cls = ["acg-icon", className].filter(Boolean).join(" ");
         stroke-linecap="round"
         stroke-linejoin="round"
       />
+    </>
+  ) : null}
+
+  {name === "arrow-up" ? (
+    <>
+      <path d="M12 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="m6 11 6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
     </>
   ) : null}
 
@@ -83,5 +91,11 @@ const cls = ["acg-icon", className].filter(Boolean).join(" ");
       stroke-linejoin="round"
     />
   ) : null}
-</svg>
 
+  {name === "x" ? (
+    <>
+      <path d="M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </>
+  ) : null}
+</svg>
