@@ -41,6 +41,9 @@ const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
     <meta name="view-transition" content="same-origin" />
     <title>{pageTitle}</title>
     <meta name="description" content={pageDescription} />
+    <meta name="theme-color" content="#f2f4f8" />
+    <link rel="icon" type="image/svg+xml" href={href("/favicon.svg")} />
+    <link rel="preconnect" href="https://images.weserv.nl" crossorigin />
   </head>
   <body data-current-post-id={currentPostId}>
     <header

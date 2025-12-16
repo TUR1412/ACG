@@ -36,3 +36,6 @@
 - [x] 21. 移动端与交互：底部导航（含 safe-area）+ 搜索直达（/#search 聚焦）+ 快捷筛选 Chip
 - [x] 22. 缺图再增强：封面失败自愈重试（https 升级 / referrer 放宽 / cache bust）+ Bookmarks 占位统一
 - [x] 23. 文档美化：README 增加徽章/架构图/路线图，并同步封面补全参数说明
+- [x] 24. 缺图质变：封面占位“先出现后淡出”+ http 封面自动走 https 代理（避免混合内容）+ 失败兜底代理重试
+- [x] 25. 体验与性能：小屏阴影降级 + 触控设备禁用 hover 上浮（更顺滑）
+- [x] 26. 品牌与可读性：favicon/theme-color + README Banner + 缺图兜底策略说明 + Roadmap 对齐

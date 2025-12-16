@@ -16,6 +16,15 @@
   --acg-bottom-nav-h: 0px;
 }
 
+@media (max-width: 640px) {
+  :root {
+    /* 移动端性能优先：降低阴影开销，滚动更顺滑 */
+    --shadow-soft: 0 14px 40px rgba(2, 6, 23, 0.10);
+    --shadow-card: 0 8px 18px rgba(2, 6, 23, 0.08);
+    --shadow-card-hover: 0 16px 55px rgba(2, 6, 23, 0.12);
+  }
+}
+
 html,
 body {
   height: 100%;
@@ -161,7 +170,33 @@ img {
   color: rgba(255, 255, 255, 0.78);
 }
 
-[data-has-cover="true"] .acg-cover-fallback {
+/* 封面失败：提供可见的“重试”入口（不放进 <a> 内，避免嵌套交互元素） */
+.acg-cover-retry {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 8;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 16px;
+  color: rgba(15, 23, 42, 0.92);
+}
+
+.cover-failed .acg-cover-retry {
+  display: inline-flex;
+}
+
+/* Spotlight 顶部右侧已有收藏按钮，重试按钮向左错开 */
+.acg-carousel-slide .acg-cover-retry {
+  top: 14px;
+  right: 62px;
+}
+
+/* 有封面时：让占位“先出现”，等图片真正加载后再淡出（避免慢网下看起来像“缺图”） */
+.cover-loaded .acg-cover-fallback {
   opacity: 0;
   transform: translateY(4px) scale(0.98);
 }
@@ -190,6 +225,15 @@ img {
 }
 .clickable:active {
   transform: translateY(0) scale(0.98);
+}
+
+@media (pointer: coarse) {
+  /* 触控设备上禁用 hover “上浮”，减少误触与重绘 */
+  .clickable:hover {
+    transform: none;
+    border-color: rgba(15, 23, 42, 0.12);
+    box-shadow: var(--shadow-card);
+  }
 }
 
 /* 快捷筛选 Chip：移动端更好点 */

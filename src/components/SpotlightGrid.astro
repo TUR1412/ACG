@@ -5,7 +5,9 @@ import { categoryLabel } from "../lib/categories";
 import { getCategoryTheme } from "../lib/category-theme";
 import { formatDateTime, formatRelativeHours } from "../lib/format";
 import { href } from "../lib/href";
+import { resolveCover } from "../lib/cover";
 import CategoryIcon from "./CategoryIcon.astro";
+import SourceBadge from "./SourceBadge.astro";
 
 type Props = {
   posts: Post[];
@@ -25,6 +27,7 @@ const prevLabel = lang === "ja" ? "前へ" : "上一张";
 const nextLabel = lang === "ja" ? "次へ" : "下一张";
 const emptyText = lang === "ja" ? "データがありません" : "暂无数据";
 const helpId = "acg-spotlight-help";
+const retryCoverLabel = lang === "ja" ? "画像を再試行" : "重试封面";
 
 function postHref(post: Post): string {
   return href(`/${lang}/p/${post.id}/`);
@@ -58,6 +61,7 @@ function whenLabel(post: Post): string {
       <div class="acg-carousel-track" data-carousel-track>
         {items.map((post, i) => {
           const theme = getCategoryTheme(post.category);
+          const cover = resolveCover(post.cover, 1200);
           return (
             <article
               class="acg-carousel-slide"
@@ -80,15 +84,16 @@ function whenLabel(post: Post): string {
                   <div class="acg-cover-fallback-meta">{categoryLabel(lang, post.category)}</div>
                 </div>
               </div>
-              {post.cover ? (
+              {cover ? (
                 <img
-                  src={post.cover}
+                  src={cover.src}
                   alt=""
                   loading={i === 0 ? "eager" : "lazy"}
                   decoding="async"
                   fetchpriority={i === 0 ? "high" : undefined}
                   referrerpolicy="no-referrer"
                   data-acg-cover
+                  data-acg-cover-original-src={cover.original}
                   class="acg-carousel-img"
                   onload="window.__acgCoverLoad?.(this)"
                   onerror="this.closest('[data-carousel-slide]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
@@ -111,7 +116,9 @@ function whenLabel(post: Post): string {
                   <div class="text-xl font-semibold leading-tight tracking-tight md:text-2xl line-clamp-3">
                     {post.title}
                   </div>
-                  <div class="mt-2 text-xs text-white/80">{post.sourceName}</div>
+                  <div class="mt-2">
+                    <SourceBadge name={post.sourceName} tone="dark" dotClass={theme.dot} compact />
+                  </div>
                 </div>
               </div>
 
@@ -123,6 +130,16 @@ function whenLabel(post: Post): string {
                 title="Bookmark"
               >
                 <span data-bookmark-label>☆</span>
+              </button>
+
+              <button
+                type="button"
+                class="acg-cover-retry glass-card clickable"
+                data-cover-retry
+                aria-label={retryCoverLabel}
+                title={retryCoverLabel}
+              >
+                <span aria-hidden="true">↻</span>
               </button>
             </article>
           );

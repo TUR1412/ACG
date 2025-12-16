@@ -1,0 +1,36 @@
+---
+type Tone = "light" | "dark";
+
+type Props = {
+  name: string;
+  url?: string;
+  tone?: Tone;
+  dotClass?: string;
+  class?: string;
+  compact?: boolean;
+};
+
+const { name, url, tone = "light", dotClass, class: className, compact = false } = Astro.props;
+
+const base =
+  tone === "dark"
+    ? "inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 text-white/90"
+    : "inline-flex items-center gap-2 rounded-full border border-slate-900/10 bg-white/55 text-slate-700 hover:bg-white/75";
+
+const size = compact ? "px-2.5 py-1 text-[11px]" : "px-3 py-1 text-xs";
+const cls = [base, size, "clickable", className].filter(Boolean).join(" ");
+---
+
+{url ? (
+  <a class={cls} href={url} target="_blank" rel="noreferrer" title={name}>
+    {dotClass ? <span class:list={["size-1.5 rounded-full", dotClass]}></span> : null}
+    <span class="min-w-0 max-w-[20ch] truncate">{name}</span>
+    <span class={tone === "dark" ? "text-white/80" : "text-slate-500"} aria-hidden="true">↗</span>
+  </a>
+) : (
+  <span class={cls} title={name}>
+    {dotClass ? <span class:list={["size-1.5 rounded-full", dotClass]}></span> : null}
+    <span class="min-w-0 max-w-[20ch] truncate">{name}</span>
+  </span>
+)}
+

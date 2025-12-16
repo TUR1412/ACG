@@ -5,7 +5,9 @@ import { categoryLabel } from "../lib/categories";
 import { getCategoryTheme } from "../lib/category-theme";
 import { href } from "../lib/href";
 import { formatDateTime, formatRelativeHours } from "../lib/format";
+import { resolveCover } from "../lib/cover";
 import CategoryIcon from "./CategoryIcon.astro";
+import SourceBadge from "./SourceBadge.astro";
 
 type Props = {
   post: Post;
@@ -19,6 +21,8 @@ const when = formatRelativeHours(lang, post.publishedAt) ?? formatDateTime(lang,
 
 const theme = getCategoryTheme(post.category);
 const animateStyle = typeof animateIndex === "number" ? `--i: ${animateIndex};` : undefined;
+const retryCoverLabel = lang === "ja" ? "画像を再試行" : "重试封面";
+const cover = resolveCover(post.cover, 960);
 ---
 
 <article
@@ -43,14 +47,15 @@ const animateStyle = typeof animateIndex === "number" ? `--i: ${animateIndex};` 
         <div class="acg-cover-fallback-meta">{categoryLabel(lang, post.category)}</div>
       </div>
     </div>
-    {post.cover ? (
+    {cover ? (
       <img
-        src={post.cover}
+        src={cover.src}
         alt=""
         loading="lazy"
         decoding="async"
         referrerpolicy="no-referrer"
         data-acg-cover
+        data-acg-cover-original-src={cover.original}
         class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
         onload="window.__acgCoverLoad?.(this)"
         onerror="this.closest('[data-post-id]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
@@ -72,6 +77,16 @@ const animateStyle = typeof animateIndex === "number" ? `--i: ${animateIndex};` 
     </div>
   </a>
 
+  <button
+    type="button"
+    class="acg-cover-retry glass-card clickable"
+    data-cover-retry
+    aria-label={retryCoverLabel}
+    title={retryCoverLabel}
+  >
+    <span aria-hidden="true">↻</span>
+  </button>
+
   <div class="p-4 sm:p-5">
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
@@ -82,9 +97,7 @@ const animateStyle = typeof animateIndex === "number" ? `--i: ${animateIndex};` 
           {post.title}
         </a>
         <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-          <a class="text-slate-700 hover:underline" href={post.sourceUrl} target="_blank" rel="noreferrer">
-            {post.sourceName}
-          </a>
+          <SourceBadge name={post.sourceName} url={post.sourceUrl} dotClass={theme.dot} compact />
         </div>
       </div>
 

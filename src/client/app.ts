@@ -1,3 +1,5 @@
+import { toWeservImageUrl } from "../lib/cover";
+
 type BookmarkStore = {
   version: 1;
   ids: string[];
@@ -266,6 +268,28 @@ function withCacheBust(url: string, key = "acg"): string {
   }
 }
 
+function isHttpUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url);
+}
+
+function isCoverProxyUrl(url: string): boolean {
+  return /^https:\/\/(images\.weserv\.nl|wsrv\.nl)\//i.test(url);
+}
+
+function toCoverProxyUrl(url: string, width = 1200): string | null {
+  if (!isHttpUrl(url)) return null;
+  if (isCoverProxyUrl(url)) return null;
+  return toWeservImageUrl({ url, width });
+}
+
+function bestInitialCoverSrc(original: string, width = 1200): string {
+  // https 页面里加载 http 图片会被浏览器直接拦截；这里直接用 https 包装，减少“看起来像缺图”的时间。
+  if (window.location.protocol === "https:" && original.startsWith("http://")) {
+    return toWeservImageUrl({ url: original, width });
+  }
+  return original;
+}
+
 function handleCoverLoad(img: HTMLImageElement) {
   try {
     const container = getCoverContainer(img);
@@ -281,40 +305,53 @@ function handleCoverLoad(img: HTMLImageElement) {
 function handleCoverError(img: HTMLImageElement) {
   try {
     const container = getCoverContainer(img);
-    const current = img.dataset.acgCoverOriginalSrc ?? img.currentSrc ?? img.src;
-    if (!img.dataset.acgCoverOriginalSrc) img.dataset.acgCoverOriginalSrc = current;
+    const attempted = img.currentSrc ?? img.src;
+    const original = img.dataset.acgCoverOriginalSrc ?? attempted;
+    if (!img.dataset.acgCoverOriginalSrc) img.dataset.acgCoverOriginalSrc = original;
 
     const retry = Number(img.dataset.acgCoverRetry ?? "0");
-    const canRetry = retry < 2;
+    const canRetry = retry < 4;
 
     if (canRetry) {
-      // retry 1：https 页面里遇到 http 图片，优先尝试升级（部分站点两者都存在）
-      if (retry === 0 && current.startsWith("http://") && window.location.protocol === "https:") {
+      // step 1：https 页面里遇到 http 图片，优先尝试升级（部分站点两者都存在）
+      if (retry === 0 && attempted.startsWith("http://") && window.location.protocol === "https:") {
         img.dataset.acgCoverRetry = "1";
         container?.classList.remove("cover-failed");
         img.style.opacity = "";
         img.style.pointerEvents = "";
-        img.src = `https://${current.slice("http://".length)}`;
+        img.src = `https://${attempted.slice("http://".length)}`;
         return;
       }
 
-      // retry 2：有些图床对 referrer 策略更敏感，失败后放宽一次 + cache bust
-      if (img.referrerPolicy === "no-referrer") {
+      // step 2：封面代理兜底（绕开混合内容/部分站点 hotlink 限制）
+      // 注意：不默认全站走代理，仅在失败后触发。
+      const proxy = toCoverProxyUrl(original, 1200);
+      if (proxy && !isCoverProxyUrl(attempted)) {
+        img.dataset.acgCoverRetry = String(retry + 1);
+        container?.classList.remove("cover-failed");
+        img.style.opacity = "";
+        img.style.pointerEvents = "";
+        img.src = withCacheBust(proxy, "acg_p");
+        return;
+      }
+
+      // step 3：有些图床对 referrer 更敏感，失败后放宽一次 + cache bust
+      if (img.referrerPolicy === "no-referrer" && !isCoverProxyUrl(attempted)) {
         img.dataset.acgCoverRetry = String(retry + 1);
         img.referrerPolicy = "strict-origin-when-cross-origin";
         container?.classList.remove("cover-failed");
         img.style.opacity = "";
         img.style.pointerEvents = "";
-        img.src = withCacheBust(current);
+        img.src = withCacheBust(original);
         return;
       }
 
-      // retry 3：常规 cache bust（网络抖动/中间缓存偶发）
+      // step 4：常规 cache bust（网络抖动/中间缓存偶发）
       img.dataset.acgCoverRetry = String(retry + 1);
       container?.classList.remove("cover-failed");
       img.style.opacity = "";
       img.style.pointerEvents = "";
-      img.src = withCacheBust(current);
+      img.src = withCacheBust(attempted);
       return;
     }
 
@@ -338,6 +375,43 @@ function hydrateFailedCovers() {
   } catch {
     // ignore
   }
+}
+
+function wireCoverRetry() {
+  document.addEventListener("click", (e) => {
+    if (e.defaultPrevented) return;
+    if (!(e.target instanceof HTMLElement)) return;
+    const btn = e.target.closest("button[data-cover-retry]");
+    if (!(btn instanceof HTMLButtonElement)) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const scope =
+      btn.closest<HTMLElement>("[data-carousel-slide]") ??
+      btn.closest<HTMLElement>("[data-has-cover]") ??
+      btn.closest<HTMLElement>("[data-post-id]");
+    if (!scope) return;
+
+    const img = scope.querySelector<HTMLImageElement>("img[data-acg-cover]");
+    if (!img) {
+      toast({ title: isJapanese() ? "画像が見つかりません" : "未找到封面图", variant: "error" });
+      return;
+    }
+
+    const original = img.dataset.acgCoverOriginalSrc ?? img.currentSrc ?? img.src;
+    if (original) img.dataset.acgCoverOriginalSrc = original;
+    img.dataset.acgCoverRetry = "0";
+    img.referrerPolicy = "no-referrer";
+
+    scope.classList.remove("cover-failed");
+    scope.classList.remove("cover-loaded");
+    img.style.opacity = "";
+    img.style.pointerEvents = "";
+
+    img.src = withCacheBust(bestInitialCoverSrc(original), "acg_retry");
+    toast({ title: isJapanese() ? "画像を再試行中…" : "正在重试封面…", variant: "info", timeoutMs: 900 });
+  });
 }
 
 function wireBackToTop() {
@@ -772,6 +846,7 @@ function buildBookmarkCard(params: {
   const { post, lang, readIds } = params;
   const theme = BOOKMARK_CATEGORY_THEME[post.category];
   const label = BOOKMARK_CATEGORY_LABELS[lang][post.category];
+  const retryCoverLabel = lang === "ja" ? "画像を再試行" : "重试封面";
   const detailHref = hrefInBase(`/${lang}/p/${post.id}/`);
   const when = whenLabel(lang, post.publishedAt);
 
@@ -787,6 +862,15 @@ function buildBookmarkCard(params: {
   topLink.href = detailHref;
   topLink.className = "relative block aspect-[16/9]";
   article.appendChild(topLink);
+
+  const retryBtn = document.createElement("button");
+  retryBtn.type = "button";
+  retryBtn.className = "acg-cover-retry glass-card clickable";
+  retryBtn.dataset.coverRetry = "true";
+  retryBtn.setAttribute("aria-label", retryCoverLabel);
+  retryBtn.title = retryCoverLabel;
+  retryBtn.textContent = "↻";
+  article.appendChild(retryBtn);
 
   const coverGrad = document.createElement("div");
   coverGrad.className = `absolute inset-0 bg-gradient-to-br ${theme.cover}`;
@@ -818,12 +902,13 @@ function buildBookmarkCard(params: {
 
   if (post.cover) {
     const img = document.createElement("img");
-    img.src = post.cover;
+    img.src = bestInitialCoverSrc(post.cover, 960);
     img.alt = "";
     img.loading = "lazy";
     img.decoding = "async";
     img.referrerPolicy = "no-referrer";
     img.dataset.acgCover = "true";
+    img.dataset.acgCoverOriginalSrc = post.cover;
     img.className =
       "absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]";
     img.addEventListener("load", () => handleCoverLoad(img));
@@ -888,11 +973,26 @@ function buildBookmarkCard(params: {
 
   if (post.sourceUrl && post.sourceName) {
     const sourceLink = document.createElement("a");
-    sourceLink.className = "text-slate-700 hover:underline";
+    sourceLink.className =
+      "inline-flex items-center gap-2 rounded-full border border-slate-900/10 bg-white/55 px-2.5 py-1 text-[11px] text-slate-700 hover:bg-white/75 clickable";
     sourceLink.href = post.sourceUrl;
     sourceLink.target = "_blank";
     sourceLink.rel = "noreferrer";
-    sourceLink.textContent = post.sourceName;
+
+    const sourceDot = document.createElement("span");
+    sourceDot.className = `size-1.5 rounded-full ${theme.dot}`;
+    sourceLink.appendChild(sourceDot);
+
+    const sourceText = document.createElement("span");
+    sourceText.className = "min-w-0 max-w-[22ch] truncate";
+    sourceText.textContent = post.sourceName;
+    sourceLink.appendChild(sourceText);
+
+    const sourceIcon = document.createElement("span");
+    sourceIcon.className = "text-slate-500";
+    sourceIcon.textContent = "↗";
+    sourceLink.appendChild(sourceIcon);
+
     meta.appendChild(sourceLink);
   }
 
@@ -1539,6 +1639,7 @@ function main() {
   markCurrentPostRead(readIds);
   applyReadState(readIds);
   wireBackToTop();
+  wireCoverRetry();
   wireBookmarks(bookmarkIds);
   wireBookmarksPage(bookmarkIds, readIds);
   wireBookmarkTools(bookmarkIds);
