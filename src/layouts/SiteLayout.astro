@@ -3,7 +3,6 @@ import "../styles/global.css";
 import { t, type Lang } from "../i18n/i18n";
 import { CATEGORIES, categoryLabel, type Category } from "../lib/categories";
 import { href } from "../lib/href";
-import appUrl from "../client/app.ts?url";
 
 type Props = {
   lang: Lang;
@@ -264,6 +263,14 @@ const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
         <span class="acg-bottom-nav-label">{t(lang, "nav.about")}</span>
       </a>
     </nav>
-    <script type="module" src={appUrl} is:inline></script>
+
+    <!--
+      注意：不要用 `app.ts?url`。
+      `.ts` 在部分静态站点（如 GitHub Pages）会被当成 video/mp2t，导致 <script type="module"> 严格 MIME 校验失败。
+      这里用“可处理的内联 module script”，让 Astro/Vite 正确打包成 `.js` 并注入哈希路径。
+    -->
+    <script>
+      import "../client/app.ts";
+    </script>
   </body>
 </html>
