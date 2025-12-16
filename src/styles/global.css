@@ -166,12 +166,31 @@ html[data-acg-device="phone"] .acg-icon-fab {
   font-size: 14px;
   line-height: 1.75;
   color: rgba(15, 23, 42, 0.88);
+  max-width: 72ch;
+  margin-left: auto;
+  margin-right: auto;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.acg-prose[data-acg-prose-kind="index"] {
+  max-width: none;
 }
 
 @media (min-width: 640px) {
   .acg-prose {
     font-size: 15px;
   }
+}
+
+.acg-prose strong {
+  font-weight: 900;
+  color: rgba(15, 23, 42, 0.96);
+}
+
+.acg-prose em {
+  font-style: italic;
+  color: rgba(15, 23, 42, 0.92);
 }
 
 .acg-prose > * + * {
@@ -204,6 +223,27 @@ html[data-acg-device="phone"] .acg-icon-fab {
   font-size: 1.05em;
 }
 
+.acg-prose h4 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 12px 32px rgba(2, 6, 23, 0.08);
+}
+
+.acg-prose h4::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.92), rgba(59, 130, 246, 0.78));
+  box-shadow: 0 12px 30px rgba(124, 58, 237, 0.25);
+}
+
 .acg-prose a {
   color: rgba(124, 58, 237, 0.98);
   text-decoration: underline;
@@ -218,11 +258,105 @@ html[data-acg-device="phone"] .acg-icon-fab {
 
 .acg-prose ul,
 .acg-prose ol {
+  margin: 0.65em 0;
+}
+
+/* list item 内部结构：由 reader 渲染器注入（用于“时间/日期/编号”前缀） */
+.acg-prose-li-prefix {
+  align-self: start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.acg-prose-li-content {
+  min-width: 0;
+}
+
+.acg-prose-time,
+.acg-prose-date,
+.acg-prose-ol {
+  min-width: 58px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  background: rgba(255, 255, 255, 0.70);
+  color: rgba(15, 23, 42, 0.72);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.08);
+}
+
+.acg-prose-date {
+  min-width: 74px;
+}
+
+.acg-prose-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  margin-top: 0.52em;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.78), rgba(59, 130, 246, 0.55));
+  box-shadow: 0 10px 22px rgba(124, 58, 237, 0.20);
+}
+
+/* article：保留“传统列表”风格（不做卡片化） */
+.acg-prose[data-acg-prose-kind="article"] ul,
+.acg-prose[data-acg-prose-kind="article"] ol {
   padding-left: 1.25em;
 }
 
-.acg-prose li {
+.acg-prose[data-acg-prose-kind="article"] .acg-prose-li {
   margin: 0.35em 0;
+}
+
+.acg-prose[data-acg-prose-kind="article"] .acg-prose-li-prefix {
+  display: none;
+}
+
+.acg-prose[data-acg-prose-kind="article"] .acg-prose-li-content {
+  display: inline;
+}
+
+/* index：新闻目录/列表页卡片化（更像资讯 App） */
+.acg-prose[data-acg-prose-kind="index"] ul,
+.acg-prose[data-acg-prose-kind="index"] ol {
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.acg-prose[data-acg-prose-kind="index"] .acg-prose-li {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.56));
+  box-shadow: 0 18px 55px rgba(2, 6, 23, 0.10);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+html[data-acg-device="phone"] .acg-prose[data-acg-prose-kind="index"] .acg-prose-li {
+  padding: 11px 12px;
+  border-radius: 16px;
+  box-shadow: 0 16px 46px rgba(2, 6, 23, 0.10);
+}
+
+.acg-prose[data-acg-prose-kind="index"] .acg-prose-li-content a {
+  color: rgba(15, 23, 42, 0.94);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.acg-prose[data-acg-prose-kind="index"] .acg-prose-li-content a:hover {
+  text-decoration: underline;
+  text-decoration-color: rgba(124, 58, 237, 0.55);
 }
 
 .acg-prose hr {

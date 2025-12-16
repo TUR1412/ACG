@@ -708,6 +708,22 @@ function escapeHtml(input: string): string {
     .replace(/'/g, "&#39;");
 }
 
+function applyBasicEmphasis(escaped: string): string {
+  // 注意：这里输入必须是“已 escape”的字符串，保证安全。
+  let s = escaped;
+
+  // Bold: **text**
+  s = s.replace(/\*\*([^\n*][^*\n]*?)\*\*/g, "<strong>$1</strong>");
+
+  // Italic: _text_（多数抓取/翻译会用下划线包裹作品名）
+  s = s.replace(/_([^\n_][^_\n]*?)_/g, "<em>$1</em>");
+
+  // Italic: *text*（尽量保守，避免和列表/符号冲突）
+  s = s.replace(/(^|[^*])\*([^\n*][^*\n]*?)\*(?!\*)/g, "$1<em>$2</em>");
+
+  return s;
+}
+
 function safeHttpUrl(raw: string, baseUrl: string): string | null {
   const cleaned = raw.trim().replace(/\s+/g, "");
   try {
@@ -765,6 +781,7 @@ function renderInlineMarkdown(input: string, baseUrl: string): string {
 
   // 先整体 escape，再把 token 注入为 HTML
   text = escapeHtml(text);
+  text = applyBasicEmphasis(text);
 
   text = text.replace(/@@ACG_TOKEN_(\d+)@@/g, (_m, n) => {
     const idx = Number(n);
@@ -800,6 +817,7 @@ function renderMarkdownToHtml(md: string, baseUrl: string): string {
   const out: string[] = [];
   let para: string[] = [];
   let list: "ul" | "ol" | null = null;
+  let olCounter = 0;
   let inCode = false;
   let codeLines: string[] = [];
 
@@ -821,8 +839,48 @@ function renderMarkdownToHtml(md: string, baseUrl: string): string {
   const openList = (kind: "ul" | "ol") => {
     if (list === kind) return;
     closeList();
+    if (kind === "ol") olCounter = 0;
     out.push(`<${kind}>`);
     list = kind;
+  };
+
+  const normalizeDateLabel = (raw: string) => raw.replace(/\s+/g, "").replace(/日$/, "日");
+
+  const renderListItem = (raw: string, params: { orderedIndex?: number } = {}) => {
+    const orderedIndex = params.orderedIndex;
+    const value = raw.trim();
+
+    if (typeof orderedIndex === "number") {
+      return `<span class="acg-prose-li-prefix acg-prose-ol">${escapeHtml(String(orderedIndex))}</span><span class="acg-prose-li-content">${renderInlineMarkdown(
+        value,
+        baseUrl
+      )}</span>`;
+    }
+
+    const timeMatch = /^(\d{1,2}:\d{2})\s*(.*)$/.exec(value);
+    if (timeMatch) {
+      const t = timeMatch[1] ?? "";
+      const rest = (timeMatch[2] ?? "").trim();
+      return `<span class="acg-prose-li-prefix acg-prose-time">${escapeHtml(t)}</span><span class="acg-prose-li-content">${renderInlineMarkdown(
+        rest || value,
+        baseUrl
+      )}</span>`;
+    }
+
+    const dateMatch = /^(\d{1,2}\s*月\s*\d{1,2}\s*日)\s*(.*)$/.exec(value);
+    if (dateMatch) {
+      const d = normalizeDateLabel(dateMatch[1] ?? "");
+      const rest = (dateMatch[2] ?? "").trim();
+      return `<span class="acg-prose-li-prefix acg-prose-date">${escapeHtml(d)}</span><span class="acg-prose-li-content">${renderInlineMarkdown(
+        rest || value,
+        baseUrl
+      )}</span>`;
+    }
+
+    return `<span class="acg-prose-li-prefix acg-prose-dot" aria-hidden="true"></span><span class="acg-prose-li-content">${renderInlineMarkdown(
+      value,
+      baseUrl
+    )}</span>`;
   };
 
   const flushCode = () => {
@@ -903,7 +961,7 @@ function renderMarkdownToHtml(md: string, baseUrl: string): string {
     if (ul) {
       flushPara();
       openList("ul");
-      out.push(`<li>${renderInlineMarkdown(ul[1] ?? "", baseUrl)}</li>`);
+      out.push(`<li class="acg-prose-li">${renderListItem(ul[1] ?? "")}</li>`);
       continue;
     }
 
@@ -911,7 +969,8 @@ function renderMarkdownToHtml(md: string, baseUrl: string): string {
     if (ol) {
       flushPara();
       openList("ol");
-      out.push(`<li>${renderInlineMarkdown(ol[1] ?? "", baseUrl)}</li>`);
+      olCounter += 1;
+      out.push(`<li class="acg-prose-li">${renderListItem(ol[1] ?? "", { orderedIndex: olCounter })}</li>`);
       continue;
     }
 
@@ -923,6 +982,26 @@ function renderMarkdownToHtml(md: string, baseUrl: string): string {
   flushPara();
   closeList();
   return out.join("\n");
+}
+
+type ProseKind = "article" | "index";
+
+function detectProseKind(root: HTMLElement): ProseKind {
+  try {
+    const li = root.querySelectorAll("li").length;
+    const p = root.querySelectorAll("p").length;
+    const h = root.querySelectorAll("h2, h3, h4").length;
+    const textLen = (root.textContent ?? "").trim().length;
+
+    // “目录/新闻列表”特征：大量 list item，段落较少；或标题+列表组合；或整体很长但结构偏列表。
+    if (li >= 24) return "index";
+    if (li >= 12 && li >= Math.max(4, p * 2)) return "index";
+    if (h >= 4 && li >= 10 && p <= 8) return "index";
+    if (textLen >= 8000 && li >= 12 && p <= 12) return "index";
+    return "article";
+  } catch {
+    return "article";
+  }
 }
 
 async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
@@ -1053,6 +1132,11 @@ function wireFullTextReader() {
 
     const render = (text: string) => {
       contentEl.innerHTML = renderMarkdownToHtml(text, url);
+      try {
+        contentEl.dataset.acgProseKind = detectProseKind(contentEl);
+      } catch {
+        // ignore
+      }
     };
 
     const showOriginal = (cache: FullTextCacheEntry) => {
