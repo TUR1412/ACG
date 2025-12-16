@@ -180,25 +180,38 @@ function whenLabel(post: Post): string {
         })}
       </div>
 
-      <div class="acg-carousel-controls" aria-hidden="true">
-        <button type="button" class="acg-carousel-btn glass-card clickable" data-carousel-prev aria-label={prevLabel}>
+      <div class="acg-carousel-footer">
+        <button
+          type="button"
+          class="acg-carousel-nav glass-card clickable"
+          data-carousel-prev
+          aria-label={prevLabel}
+          title={prevLabel}
+        >
           <span aria-hidden="true">←</span>
         </button>
-        <button type="button" class="acg-carousel-btn glass-card clickable" data-carousel-next aria-label={nextLabel}>
+
+        <div class="acg-carousel-dots" role="tablist" aria-label="Spotlight slides">
+          {items.map((post, i) => (
+            <button
+              type="button"
+              class="acg-carousel-dot"
+              data-carousel-dot
+              data-index={i}
+              aria-label={`${i + 1}: ${post.title}`}
+            ></button>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          class="acg-carousel-nav glass-card clickable"
+          data-carousel-next
+          aria-label={nextLabel}
+          title={nextLabel}
+        >
           <span aria-hidden="true">→</span>
         </button>
-      </div>
-
-      <div class="acg-carousel-dots" role="tablist" aria-label="Spotlight slides">
-        {items.map((post, i) => (
-          <button
-            type="button"
-            class="acg-carousel-dot"
-            data-carousel-dot
-            data-index={i}
-            aria-label={`${i + 1}: ${post.title}`}
-          ></button>
-        ))}
       </div>
     </div>
   )}

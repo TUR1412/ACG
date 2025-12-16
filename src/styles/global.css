@@ -521,15 +521,19 @@ img {
 .acg-carousel-track {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 100%;
+  /* 小屏做“露出下一张”的 peeking，强提示“可滑动” */
+  grid-auto-columns: 92%;
   gap: 14px;
   padding: 14px;
   overflow-x: auto;
+  overflow-y: hidden;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
   scroll-padding-left: 14px;
   scroll-padding-right: 14px;
   -webkit-overflow-scrolling: touch;
+  /* 让移动端更容易“横向滑动”，减少被页面纵向滚动抢走手势 */
+  touch-action: pan-x;
   scrollbar-width: none;
 }
 
@@ -623,24 +627,21 @@ img {
   color: #0b0f14;
 }
 
-.acg-carousel-controls {
-  position: absolute;
-  left: 14px;
-  top: 14px;
-  z-index: 7;
+.acg-carousel-footer {
   display: flex;
-  gap: 10px;
-  pointer-events: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 14px 14px;
 }
 
-.acg-carousel-btn {
-  pointer-events: auto;
+.acg-carousel-nav {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 16px;
-  font-weight: 800;
+  font-weight: 900;
   color: rgba(15, 23, 42, 0.92);
 }
 
@@ -648,7 +649,6 @@ img {
   display: flex;
   justify-content: center;
   gap: 8px;
-  padding: 2px 14px 14px;
 }
 
 .acg-carousel-dot {
