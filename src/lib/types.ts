@@ -7,6 +7,8 @@ export type Post = {
   url: string;
   publishedAt: string;
   cover?: string;
+  /** 原始封面地址（当 cover 被替换为本地缓存时保留） */
+  coverOriginal?: string;
   category: Category;
   tags: string[];
   sourceId: string;
@@ -33,4 +35,3 @@ export type SyncStatus = {
   durationMs: number;
   sources: SourceStatus[];
 };
-

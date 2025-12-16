@@ -52,15 +52,9 @@
 
 ## 架构（Architecture）
 
-```mermaid
-flowchart TD
-  A[GitHub Actions (cron 每小时)] --> B[Node 同步脚本 scripts/sync.ts]
-  B --> C[生成 posts.json + status.json]
-  C --> D[Astro Build 静态站点]
-  D --> E[GitHub Pages 部署]
-  E --> F[浏览器访问]
-  F --> G[localStorage: 收藏/已读/过滤/来源开关]
-```
+<p align="center">
+  <img src="docs/architecture.svg?raw=1" alt="ACG Radar Architecture" />
+</p>
 
 ---
 
@@ -129,6 +123,17 @@ npm run sync -- --days 30 --limit 2000 --verbose
 
 部分来源的 RSS/Atom 本身不提供图片。为让页面更“杂志化”，同步脚本会额外抓取**少量文章页**，读取 `og:image` / `twitter:image` / JSON-LD 等来补全封面（有上限，避免过度请求）。
 
+## 封面本地缓存（解决“加载不出来”）
+
+即使补全了封面链接，仍可能遇到：热链限制（403）、混合内容（http 图片在 https 页被拦截）、偶发网络抖动等。
+为减少“图片加载不出来”的概率，`npm run sync` 会对**最新一段内容**执行“封面本地化”：
+
+- 下载缩略图到 `public/covers/`（构建时会进入 GitHub Pages 的 `dist/`）
+- 将 `posts.json` 的 `cover` 替换为 `/covers/<id>.<ext>`（更稳定）
+- 同时保留 `coverOriginal`，用于失败重试与回退
+
+> 说明：`public/covers/` 已加入 `.gitignore`，不会提交到仓库，但会随 Pages 部署产物一起发布。
+
 ## 封面加载策略（运行时兜底）
 
 即使补全了封面链接，仍可能遇到：混合内容（http 图片在 https 页被拦截）、热链限制、偶发网络抖动等。
@@ -146,6 +151,10 @@ npm run sync -- --days 30 --limit 2000 --verbose
 - `ACG_COVER_ENRICH_PER_SOURCE_MAX`：每次同步每个来源最多补全多少条（默认 `200`）
 - `ACG_COVER_ENRICH_DELAY_MS`：补全时每次请求前的延迟（毫秒，默认 `0`）
 - `ACG_COVER_ENRICH_MISS_TTL_HOURS`：对“确实解析不到封面”的文章页，暂时跳过多久再重试（小时，默认 `72`；设为 `0` 可关闭跳过）
+
+- `ACG_COVER_CACHE_MAX`：本地缓存封面数量（默认 `260`，设为 `0` 关闭）
+- `ACG_COVER_CACHE_WIDTH`：本地缓存封面宽度（默认 `960`）
+- `ACG_COVER_CACHE_CONCURRENCY`：并发下载数（默认 `6`）
 
 > GitHub Actions 工作流可能会覆盖这些默认值：见 `.github/workflows/hourly-sync-and-deploy.yml`。
 

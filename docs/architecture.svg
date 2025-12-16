@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-label="ACG Radar architecture diagram">
+  <defs>
+    <linearGradient id="aurora" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7c3aed" stop-opacity="0.92" />
+      <stop offset="0.5" stop-color="#3b82f6" stop-opacity="0.78" />
+      <stop offset="1" stop-color="#10b981" stop-opacity="0.75" />
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.16" />
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.06" />
+    </linearGradient>
+    <radialGradient id="glowA" cx="260" cy="140" r="520" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18" />
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="glowB" cx="980" cy="390" r="560" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.12" />
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M24 0H0V24" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1" />
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#ffffff" fill-opacity="0.65" />
+    </marker>
+    <style>
+      .title { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Arial, sans-serif; font-weight: 900; fill: #ffffff; fill-opacity: 0.95; letter-spacing: -0.2px; }
+      .label { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Arial, sans-serif; font-weight: 800; fill: #ffffff; fill-opacity: 0.92; }
+      .desc  { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Arial, sans-serif; font-weight: 600; fill: #ffffff; fill-opacity: 0.72; }
+      .chip  { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Arial, sans-serif; font-weight: 700; fill: #ffffff; fill-opacity: 0.85; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect x="18" y="18" width="1164" height="484" rx="28" fill="#0b0f14" />
+  <rect x="18" y="18" width="1164" height="484" rx="28" fill="url(#aurora)" opacity="0.32" />
+  <rect x="18" y="18" width="1164" height="484" rx="28" fill="url(#glowA)" />
+  <rect x="18" y="18" width="1164" height="484" rx="28" fill="url(#glowB)" />
+  <rect x="18" y="18" width="1164" height="484" rx="28" fill="url(#grid)" />
+  <rect x="18" y="18" width="1164" height="484" rx="28" fill="none" stroke="#ffffff" stroke-opacity="0.10" />
+
+  <!-- Header -->
+  <g transform="translate(60 68)">
+    <text class="title" x="0" y="0" font-size="34">Architecture / アーキテクチャ</text>
+    <text class="desc" x="0" y="28" font-size="14">抓取 → 本地缓存封面 → 静态构建 → GitHub Pages；个性化全部在浏览器本地</text>
+    <text class="desc" x="0" y="48" font-size="14">取得 → カバーをローカル化 → 静的ビルド → GitHub Pages；パーソナル状態は localStorage</text>
+  </g>
+
+  <!-- Boxes -->
+  <g>
+    <!-- row 1 -->
+    <g transform="translate(70 150)">
+      <rect width="250" height="110" rx="22" fill="url(#glass)" stroke="#ffffff" stroke-opacity="0.16" />
+      <text class="label" x="18" y="36" font-size="16">GitHub Actions</text>
+      <text class="desc" x="18" y="60" font-size="13">cron 每小时 / 毎時</text>
+      <g transform="translate(18 74)">
+        <rect width="98" height="24" rx="12" fill="#ffffff" fill-opacity="0.10" stroke="#ffffff" stroke-opacity="0.10" />
+        <text class="chip" x="12" y="17" font-size="11">schedule</text>
+      </g>
+    </g>
+
+    <g transform="translate(365 150)">
+      <rect width="250" height="110" rx="22" fill="url(#glass)" stroke="#ffffff" stroke-opacity="0.16" />
+      <text class="label" x="18" y="36" font-size="16">Sync Script</text>
+      <text class="desc" x="18" y="60" font-size="13">scripts/sync.ts</text>
+      <g transform="translate(18 74)">
+        <rect width="150" height="24" rx="12" fill="#ffffff" fill-opacity="0.10" stroke="#ffffff" stroke-opacity="0.10" />
+        <text class="chip" x="12" y="17" font-size="11">RSS/Atom + HTML</text>
+      </g>
+    </g>
+
+    <g transform="translate(660 150)">
+      <rect width="250" height="110" rx="22" fill="url(#glass)" stroke="#ffffff" stroke-opacity="0.16" />
+      <text class="label" x="18" y="36" font-size="16">Cover Enrich + Cache</text>
+      <text class="desc" x="18" y="60" font-size="13">og:image / local thumbnails</text>
+      <g transform="translate(18 74)">
+        <rect width="170" height="24" rx="12" fill="#ffffff" fill-opacity="0.10" stroke="#ffffff" stroke-opacity="0.10" />
+        <text class="chip" x="12" y="17" font-size="11">public/covers/*</text>
+      </g>
+    </g>
+
+    <!-- arrows row 1 -->
+    <path d="M320 205 H355" stroke="#ffffff" stroke-opacity="0.65" stroke-width="2.2" fill="none" marker-end="url(#arrow)" />
+    <path d="M615 205 H650" stroke="#ffffff" stroke-opacity="0.65" stroke-width="2.2" fill="none" marker-end="url(#arrow)" />
+  </g>
+
+  <g>
+    <!-- row 2 -->
+    <g transform="translate(230 310)">
+      <rect width="250" height="118" rx="22" fill="url(#glass)" stroke="#ffffff" stroke-opacity="0.16" />
+      <text class="label" x="18" y="38" font-size="16">Astro Build</text>
+      <text class="desc" x="18" y="62" font-size="13">静的サイト生成 / 静的ビルド</text>
+      <g transform="translate(18 76)">
+        <rect width="110" height="24" rx="12" fill="#ffffff" fill-opacity="0.10" stroke="#ffffff" stroke-opacity="0.10" />
+        <text class="chip" x="12" y="17" font-size="11">dist/</text>
+      </g>
+    </g>
+
+    <g transform="translate(520 310)">
+      <rect width="250" height="118" rx="22" fill="url(#glass)" stroke="#ffffff" stroke-opacity="0.16" />
+      <text class="label" x="18" y="38" font-size="16">GitHub Pages</text>
+      <text class="desc" x="18" y="62" font-size="13">项目站点 / プロジェクト</text>
+      <g transform="translate(18 76)">
+        <rect width="170" height="24" rx="12" fill="#ffffff" fill-opacity="0.10" stroke="#ffffff" stroke-opacity="0.10" />
+        <text class="chip" x="12" y="17" font-size="11">/ACG (base path)</text>
+      </g>
+    </g>
+
+    <g transform="translate(810 310)">
+      <rect width="320" height="118" rx="22" fill="url(#glass)" stroke="#ffffff" stroke-opacity="0.16" />
+      <text class="label" x="18" y="38" font-size="16">Browser</text>
+      <text class="desc" x="18" y="62" font-size="13">localStorage: 收藏/已读/过滤/来源</text>
+      <g transform="translate(18 76)">
+        <rect width="212" height="24" rx="12" fill="#ffffff" fill-opacity="0.10" stroke="#ffffff" stroke-opacity="0.10" />
+        <text class="chip" x="12" y="17" font-size="11">无需后端常驻</text>
+      </g>
+    </g>
+
+    <!-- arrows row 2 -->
+    <path d="M785 205 C785 245 430 245 430 300" stroke="#ffffff" stroke-opacity="0.45" stroke-width="2.1" fill="none" marker-end="url(#arrow)" />
+    <path d="M480 369 H510" stroke="#ffffff" stroke-opacity="0.65" stroke-width="2.2" fill="none" marker-end="url(#arrow)" />
+    <path d="M770 369 H800" stroke="#ffffff" stroke-opacity="0.65" stroke-width="2.2" fill="none" marker-end="url(#arrow)" />
+  </g>
+</svg>

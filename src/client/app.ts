@@ -286,6 +286,10 @@ function toCoverProxyUrl(url: string, width = 1200, host?: string): string | nul
 }
 
 function bestInitialCoverSrc(original: string, width = 1200): string {
+  // GitHub Pages 项目站点：需要 base path 前缀（/ACG/...）
+  if (original.startsWith("/")) {
+    return hrefInBase(original);
+  }
   // https 页面里加载 http 图片会被浏览器直接拦截；这里直接用 https 包装，减少“看起来像缺图”的时间。
   if (window.location.protocol === "https:" && original.startsWith("http://")) {
     return toWeservImageUrl({ url: original, width });
@@ -681,6 +685,7 @@ type BookmarkPost = {
   url: string;
   publishedAt: string;
   cover?: string;
+  coverOriginal?: string;
   category: BookmarkCategory;
   tags?: string[];
   sourceId: string;
@@ -854,6 +859,7 @@ async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {
         url: typeof it.url === "string" ? it.url : "",
         publishedAt: typeof it.publishedAt === "string" ? it.publishedAt : "",
         cover: typeof it.cover === "string" ? it.cover : undefined,
+        coverOriginal: typeof it.coverOriginal === "string" ? it.coverOriginal : undefined,
         category: normalizeCategory(it.category),
         tags: Array.isArray(it.tags) ? it.tags.filter((x: unknown) => typeof x === "string") : undefined,
         sourceId: typeof it.sourceId === "string" ? it.sourceId : "",
@@ -942,7 +948,7 @@ function buildBookmarkCard(params: {
     img.decoding = "async";
     img.referrerPolicy = "no-referrer";
     img.dataset.acgCover = "true";
-    img.dataset.acgCoverOriginalSrc = post.cover;
+    img.dataset.acgCoverOriginalSrc = post.coverOriginal ?? post.cover;
     img.className =
       "absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]";
     img.addEventListener("load", () => handleCoverLoad(img));

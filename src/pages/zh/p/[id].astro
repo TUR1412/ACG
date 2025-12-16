@@ -28,6 +28,7 @@ const published = formatDateTime("zh", post.publishedAt);
 const theme = getCategoryTheme(post.category);
 const retryCoverLabel = "重试封面";
 const cover = resolveCover(post.cover, 1400);
+const coverOriginal = post.coverOriginal ?? cover?.original;
 const publishedAtMs = new Date(post.publishedAt).getTime();
 const isFresh = Number.isFinite(publishedAtMs) && Date.now() - publishedAtMs >= 0 && Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
 const freshLabel = "NEW";
@@ -54,7 +55,7 @@ const freshLabel = "NEW";
           decoding="async"
           referrerpolicy="no-referrer"
           data-acg-cover
-          data-acg-cover-original-src={cover.original}
+          data-acg-cover-original-src={coverOriginal ?? ""}
           class="h-56 w-full object-cover"
           onload="window.__acgCoverLoad?.(this)"
           onerror="this.closest('[data-has-cover]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"

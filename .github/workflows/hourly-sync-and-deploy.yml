@@ -49,6 +49,11 @@ jobs:
           ACG_COVER_ENRICH_PER_SOURCE_MAX: "240"
           ACG_COVER_ENRICH_DELAY_MS: "100"
           ACG_COVER_ENRICH_MISS_TTL_HOURS: "24"
+          # 封面本地缓存：尽量减少热链失败（图片 403 / 混合内容 / 偶发网络抖动）
+          # 只缓存“最新一段”以控制体积；生成的文件会进入 Pages 的 dist，但不会提交到仓库（public/covers 已被 .gitignore）。
+          ACG_COVER_CACHE_MAX: "260"
+          ACG_COVER_CACHE_WIDTH: "960"
+          ACG_COVER_CACHE_CONCURRENCY: "6"
         run: npm run sync
 
       - name: Configure Pages

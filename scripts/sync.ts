@@ -1,4 +1,6 @@
 import { resolve } from "node:path";
+import { mkdir, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { SOURCES } from "./sources/index";
 import { parseArgs } from "./lib/args";
 import {
@@ -25,6 +27,8 @@ type Post = {
   url: string;
   publishedAt: string;
   cover?: string;
+  /** 原始封面地址（当 cover 被替换为本地缓存时保留，便于回退/调试） */
+  coverOriginal?: string;
   category: Category;
   tags: string[];
   sourceId: string;
@@ -217,6 +221,181 @@ function parseNonNegativeInt(value: string | undefined, fallback: number): numbe
   return Math.floor(parsed);
 }
 
+function isHttpUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url);
+}
+
+function contentTypeToExt(contentType: string | null): string | null {
+  if (!contentType) return null;
+  const ct = contentType.toLowerCase();
+  if (ct.includes("image/webp")) return "webp";
+  if (ct.includes("image/avif")) return "avif";
+  if (ct.includes("image/png")) return "png";
+  if (ct.includes("image/gif")) return "gif";
+  if (ct.includes("image/svg+xml")) return "svg";
+  if (ct.includes("image/jpeg")) return "jpg";
+  return null;
+}
+
+function toWeservThumbUrl(params: { url: string; width: number; host: string }): string {
+  const { url, width, host } = params;
+  const encoded = encodeURIComponent(url);
+  // output=webp：显著减小体积；fit=cover：保持“杂志封面”观感统一
+  return `https://${host}/?url=${encoded}&w=${width}&fit=cover&n=-1&output=webp`;
+}
+
+async function fetchBytes(params: {
+  url: string;
+  timeoutMs: number;
+  headers?: Record<string, string>;
+}): Promise<
+  | { ok: true; status: number; bytes: Buffer; contentType: string | null }
+  | { ok: false; status: number; error: string }
+> {
+  const { url, timeoutMs, headers } = params;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers
+    });
+    if (!res.ok) {
+      return { ok: false, status: res.status, error: `HTTP ${res.status}` };
+    }
+    const contentType = res.headers.get("content-type");
+    const ab = await res.arrayBuffer();
+    const bytes = Buffer.from(ab);
+    return { ok: true, status: res.status, bytes, contentType };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { ok: false, status: 0, error: message };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function pool<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>): Promise<void> {
+  const queue = items.slice();
+  const runners = Array.from({ length: Math.max(1, Math.min(concurrency, queue.length)) }, async () => {
+    while (queue.length > 0) {
+      const next = queue.shift();
+      if (!next) return;
+      await worker(next);
+    }
+  });
+  await Promise.all(runners);
+}
+
+async function cacheCoverThumbnails(params: {
+  posts: Post[];
+  root: string;
+  verbose: boolean;
+}): Promise<{ attempted: number; cached: number; max: number }> {
+  const { posts, root, verbose } = params;
+
+  // 目标：让“首页/最近”尽量都能稳定显示封面（不依赖热链），同时控制体积与抓取压力。
+  const max = parseNonNegativeInt(process.env.ACG_COVER_CACHE_MAX, 260);
+  const width = parseNonNegativeInt(process.env.ACG_COVER_CACHE_WIDTH, 960);
+  const timeoutMs = parseNonNegativeInt(process.env.ACG_COVER_CACHE_TIMEOUT_MS, 20_000);
+  const maxBytes = parseNonNegativeInt(process.env.ACG_COVER_CACHE_MAX_BYTES, 2_800_000);
+  const concurrency = parseNonNegativeInt(process.env.ACG_COVER_CACHE_CONCURRENCY, 6);
+
+  if (max <= 0) return { attempted: 0, cached: 0, max };
+
+  const outDir = resolve(root, "public", "covers");
+  await mkdir(outDir, { recursive: true });
+
+  // ⚠️ 关键：历史数据会从已部署站点回读并合并。
+  // 上一次部署里如果把 cover 写成了本地路径（/covers/...），本次 Actions 的工作目录里并没有这些文件。
+  // 为避免“posts.json 指向不存在的本地文件”，这里先把旧的本地 cover 还原回原图，再按本次缓存结果重新写回。
+  for (const p of posts) {
+    if (!p.cover || typeof p.cover !== "string") continue;
+    if (!p.cover.startsWith("/covers/")) continue;
+    if (p.coverOriginal && isHttpUrl(p.coverOriginal)) {
+      p.cover = p.coverOriginal;
+    } else {
+      p.cover = undefined;
+    }
+  }
+
+  const candidates = posts
+    .filter((p) => typeof p.cover === "string" && isHttpUrl(p.cover))
+    .slice()
+    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+    .slice(0, max);
+
+  let attempted = 0;
+  let cached = 0;
+
+  const commonHeaders = {
+    accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+    "user-agent": "Mozilla/5.0 (ACG-FeedBot/0.1; +https://github.com/TUR1412/ACG)"
+  };
+
+  const knownExts = ["webp", "avif", "jpg", "png", "gif", "svg"] as const;
+
+  await pool(candidates, concurrency, async (post) => {
+    const original = post.cover;
+    if (!original) return;
+    attempted += 1;
+
+    // 复用本地已有文件（本地开发多次 sync 时可省流量）
+    for (const ext of knownExts) {
+      const existingPath = resolve(outDir, `${post.id}.${ext}`);
+      if (!existsSync(existingPath)) continue;
+      post.coverOriginal = post.coverOriginal ?? original;
+      post.cover = `/covers/${post.id}.${ext}`;
+      cached += 1;
+      return;
+    }
+
+    const tries: { kind: "proxy" | "direct"; url: string }[] = [
+      { kind: "proxy", url: toWeservThumbUrl({ url: original, width, host: "images.weserv.nl" }) },
+      { kind: "proxy", url: toWeservThumbUrl({ url: original, width, host: "wsrv.nl" }) }
+    ];
+
+    if (original.startsWith("http://")) {
+      tries.push({ kind: "direct", url: `https://${original.slice("http://".length)}` });
+    }
+    tries.push({ kind: "direct", url: original });
+
+    for (const attempt of tries) {
+      const res = await fetchBytes({
+        url: attempt.url,
+        timeoutMs,
+        headers: attempt.kind === "direct" ? { ...commonHeaders, referer: post.url } : commonHeaders
+      });
+      if (!res.ok) {
+        if (verbose) console.log(`[COVER:CACHE:ERR] ${post.sourceId} ${post.id} ${attempt.kind} ${res.error}`);
+        continue;
+      }
+
+      const ext = contentTypeToExt(res.contentType);
+      if (!ext) {
+        if (verbose) console.log(`[COVER:CACHE:SKIP] ${post.sourceId} ${post.id} non-image ${res.contentType ?? "-"}`);
+        continue;
+      }
+      if (res.bytes.length <= 0 || res.bytes.length > maxBytes) {
+        if (verbose) console.log(`[COVER:CACHE:SKIP] ${post.sourceId} ${post.id} bytes=${res.bytes.length}`);
+        continue;
+      }
+
+      const outPath = resolve(outDir, `${post.id}.${ext}`);
+      await writeFile(outPath, res.bytes);
+      post.coverOriginal = post.coverOriginal ?? original;
+      post.cover = `/covers/${post.id}.${ext}`;
+      cached += 1;
+      if (verbose) console.log(`[COVER:CACHE:OK] ${post.sourceId} ${post.id} -> ${post.cover}`);
+      return;
+    }
+
+    if (verbose) console.log(`[COVER:CACHE:MISS] ${post.sourceId} ${post.id}`);
+  });
+
+  return { attempted, cached, max };
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -378,6 +557,9 @@ async function main() {
       persistCache: true
     });
     console.log(`[COVER] enriched=${enriched}/${attempted} max=${maxTotal}`);
+
+    const cacheRes = await cacheCoverThumbnails({ posts: pruned, root, verbose: args.verbose });
+    console.log(`[COVER:CACHE] cached=${cacheRes.cached}/${cacheRes.attempted} max=${cacheRes.max}`);
   } else {
     console.log(`[COVER] skipped (dry-run)`);
   }

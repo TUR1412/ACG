@@ -12,6 +12,7 @@ dist/
 # 生成数据（由 npm run sync 产生）
 src/data/generated/*.json
 public/data/*.json
+public/covers/
 
 # 编辑器
 .vscode/

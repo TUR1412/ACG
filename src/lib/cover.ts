@@ -21,6 +21,12 @@ function isProxyUrl(url: string): boolean {
   return /^https:\/\/(images\.weserv\.nl|wsrv\.nl)\//i.test(url);
 }
 
+function hrefInBase(pathname: string): string {
+  const base = import.meta.env.BASE_URL ?? "/";
+  const trimmed = pathname.startsWith("/") ? pathname.slice(1) : pathname;
+  return `${base}${trimmed}`;
+}
+
 export function toWeservImageUrl(params: CoverParams): string {
   const { url, width = 960, host = "images.weserv.nl" } = params;
   const encoded = encodeURIComponent(url);
@@ -37,6 +43,11 @@ export function resolveCover(url?: string | null, width?: number): CoverAsset | 
   if (!url) return null;
   const original = String(url);
   if (!original.trim()) return null;
+
+  // 本地缓存封面：用 base path 组装（GitHub Pages 项目站点需要 /<repo>/ 前缀）
+  if (!isHttpUrl(original) && original.startsWith("/")) {
+    return { src: hrefInBase(original), original };
+  }
 
   if (isHttpUrl(original) && !isProxyUrl(original) && original.startsWith("http://")) {
     return { src: toWeservImageUrl({ url: original, width }), original };

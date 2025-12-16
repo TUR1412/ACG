@@ -63,6 +63,7 @@ function whenLabel(post: Post): string {
         {items.map((post, i) => {
           const theme = getCategoryTheme(post.category);
           const cover = resolveCover(post.cover, 1200);
+          const coverOriginal = post.coverOriginal ?? cover?.original;
           const publishedAtMs = new Date(post.publishedAt).getTime();
           const isFresh =
             Number.isFinite(publishedAtMs) &&
@@ -99,7 +100,7 @@ function whenLabel(post: Post): string {
                   fetchpriority={i === 0 ? "high" : undefined}
                   referrerpolicy="no-referrer"
                   data-acg-cover
-                  data-acg-cover-original-src={cover.original}
+                  data-acg-cover-original-src={coverOriginal ?? ""}
                   class="acg-carousel-img"
                   onload="window.__acgCoverLoad?.(this)"
                   onerror="this.closest('[data-carousel-slide]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"

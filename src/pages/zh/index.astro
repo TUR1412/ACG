@@ -38,6 +38,7 @@ for (const p of recent24h) categoryCount.set(p.category, (categoryCount.get(p.ca
 const brief = recent24h.slice(0, 10);
 const randomPick = posts.length > 0 ? posts[Math.floor(Math.random() * Math.min(200, posts.length))] : null;
 const randomPickCover = resolveCover(randomPick?.cover, 960);
+const randomPickCoverOriginal = randomPick?.coverOriginal ?? randomPickCover?.original;
 
 const spotlight = (() => {
   const withCover = recent24h.filter((p) => Boolean(p.cover));
@@ -282,6 +283,7 @@ const spotlight = (() => {
             <ol id="acg-daily-brief" class="mt-3 grid gap-2">
               {brief.map((p) => {
                 const cover = resolveCover(p.cover, 520);
+                const coverOriginal = p.coverOriginal ?? cover?.original;
                 return (
                   <li>
                     <a
@@ -302,7 +304,7 @@ const spotlight = (() => {
                             decoding="async"
                             referrerpolicy="no-referrer"
                             data-acg-cover
-                            data-acg-cover-original-src={cover.original}
+                            data-acg-cover-original-src={coverOriginal ?? ""}
                             class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                             onload="window.__acgCoverLoad?.(this)"
                             onerror="this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
@@ -355,7 +357,7 @@ const spotlight = (() => {
                   decoding="async"
                   referrerpolicy="no-referrer"
                   data-acg-cover
-                  data-acg-cover-original-src={randomPickCover.original}
+                  data-acg-cover-original-src={randomPickCoverOriginal ?? ""}
                   class="h-40 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                   onload="window.__acgCoverLoad?.(this)"
                   onerror="this.closest('[data-has-cover]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
