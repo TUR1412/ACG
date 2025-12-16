@@ -11,7 +11,7 @@ type Props = {
 const { posts, lang } = Astro.props;
 ---
 
-<div class="grid gap-4 sm:grid-cols-2 lg:gap-5 xl:grid-cols-3 2xl:grid-cols-4">
+<div class="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:gap-5 xl:grid-cols-3 2xl:grid-cols-4">
   {posts.map((p, i) => (
     <PostCard post={p} lang={lang} animateIndex={i < 40 ? i : undefined} />
   ))}

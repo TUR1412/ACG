@@ -403,6 +403,15 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   color: rgba(15, 23, 42, 0.78);
 }
 
+.acg-hscroll {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.acg-hscroll::-webkit-scrollbar {
+  display: none;
+}
+
 .acg-chip[data-active="true"] {
   border-color: rgba(124, 58, 237, 0.25);
   background: rgba(124, 58, 237, 0.12);

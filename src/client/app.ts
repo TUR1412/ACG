@@ -512,6 +512,33 @@ function wireKeyboardShortcuts() {
   });
 }
 
+function wireSearchClear() {
+  const input = document.querySelector<HTMLInputElement>("#acg-search");
+  const btn = document.querySelector<HTMLButtonElement>("#acg-search-clear");
+  if (!input || !btn) return;
+
+  const apply = () => {
+    btn.hidden = input.value.trim().length === 0;
+  };
+
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    input.value = "";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    try {
+      input.focus();
+      input.select();
+    } catch {
+      // ignore
+    }
+    apply();
+    toast({ title: isJapanese() ? "検索をクリアしました" : "已清空搜索", variant: "info", timeoutMs: 900 });
+  });
+
+  input.addEventListener("input", apply);
+  apply();
+}
+
 function wireQuickToggles() {
   const buttons = [...document.querySelectorAll<HTMLButtonElement>("button[data-quick-toggle]")];
   if (buttons.length === 0) return;
@@ -1961,6 +1988,7 @@ function main() {
   createListFilter({ readIds, follows, blocklist, disabledSources, followedSources, filters });
   wireQuickToggles();
   wireKeyboardShortcuts();
+  wireSearchClear();
   wireTagChips();
   wireDailyBriefCopy();
   wireSpotlightCarousel();
