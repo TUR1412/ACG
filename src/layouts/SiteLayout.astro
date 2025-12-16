@@ -49,7 +49,10 @@ const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
           const screenShortSide = window.screen ? Math.min(window.screen.width, window.screen.height) : 0;
           const vvShortSide = window.visualViewport ? Math.min(window.visualViewport.width, window.visualViewport.height) : 0;
           const innerShortSide = Math.min(window.innerWidth || 0, window.innerHeight || 0);
-          const shortSide = screenShortSide || vvShortSide || innerShortSide || 0;
+          // 说明：有些浏览器/模式下 window.screen 可能给出“物理像素感”的大数值，
+          // 用最小的有效短边能显著降低误判概率（尤其是“手机渲染成 PC 布局”的场景）。
+          const candidates = [screenShortSide, vvShortSide, innerShortSide].filter((v) => v > 0);
+          const shortSide = candidates.length ? Math.min(...candidates) : 0;
 
           let coarse = false;
           let hoverNone = false;

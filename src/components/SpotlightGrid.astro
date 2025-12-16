@@ -21,7 +21,7 @@ const { posts, lang, title } = Astro.props;
 const items = posts.slice(0, 6);
 const metaLabel = lang === "ja" ? "カバーカルーセル" : "封面轮播";
 const hintMobile = lang === "ja" ? "左右にスワイプ" : "左右滑动";
-const hintDesktop = lang === "ja" ? "ドラッグ / スクロール" : "拖拽 / 滑动";
+const hintDesktop = lang === "ja" ? "ドラッグ / スクロール" : "拖拽 / 滚轮";
 const helpText =
   lang === "ja"
     ? "左右キーで切り替え、Enter で開きます。"
@@ -64,9 +64,8 @@ function whenLabel(post: Post): string {
       </span>
 
       <span class="hidden sm:inline-flex items-center gap-1 rounded-full border border-slate-900/10 bg-white/45 px-2.5 py-1 text-[11px] font-medium text-slate-600">
-        <Icon name="arrow-left" size={14} />
+        <Icon name="info" size={14} />
         <span>{hintDesktop}</span>
-        <Icon name="arrow-right" size={14} />
       </span>
       <span class="sm:hidden text-[11px] font-medium text-slate-600">{hintMobile}</span>
     </div>
@@ -164,7 +163,7 @@ function whenLabel(post: Post): string {
 
               <button
                 type="button"
-                class="acg-carousel-bookmark glass-card clickable"
+                class="acg-carousel-bookmark acg-icon-fab clickable"
                 data-bookmark-id={post.id}
                 aria-pressed="false"
                 title="Bookmark"
@@ -176,7 +175,7 @@ function whenLabel(post: Post): string {
 
               <button
                 type="button"
-                class="acg-cover-retry glass-card clickable"
+                class="acg-cover-retry acg-icon-fab clickable"
                 data-cover-retry
                 aria-label={retryCoverLabel}
                 title={retryCoverLabel}
@@ -188,38 +187,40 @@ function whenLabel(post: Post): string {
         })}
       </div>
 
-      <div class="acg-carousel-footer">
-        <button
-          type="button"
-          class="acg-carousel-nav glass-card clickable"
-          data-carousel-prev
-          aria-label={prevLabel}
-          title={prevLabel}
-        >
-          <Icon name="arrow-left" size={18} />
-        </button>
+      <div class="acg-carousel-controls" aria-label="Spotlight controls">
+        <div class="acg-carousel-controls-inner">
+          <button
+            type="button"
+            class="acg-carousel-nav clickable"
+            data-carousel-prev
+            aria-label={prevLabel}
+            title={prevLabel}
+          >
+            <Icon name="arrow-left" size={18} />
+          </button>
 
-        <div class="acg-carousel-dots" role="tablist" aria-label="Spotlight slides">
-          {items.map((post, i) => (
-            <button
-              type="button"
-              class="acg-carousel-dot"
-              data-carousel-dot
-              data-index={i}
-              aria-label={`${i + 1}: ${postTitle(post)}`}
-            ></button>
-          ))}
+          <div class="acg-carousel-dots" role="tablist" aria-label="Spotlight slides">
+            {items.map((post, i) => (
+              <button
+                type="button"
+                class="acg-carousel-dot"
+                data-carousel-dot
+                data-index={i}
+                aria-label={`${i + 1}: ${postTitle(post)}`}
+              ></button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            class="acg-carousel-nav clickable"
+            data-carousel-next
+            aria-label={nextLabel}
+            title={nextLabel}
+          >
+            <Icon name="arrow-right" size={18} />
+          </button>
         </div>
-
-        <button
-          type="button"
-          class="acg-carousel-nav glass-card clickable"
-          data-carousel-next
-          aria-label={nextLabel}
-          title={nextLabel}
-        >
-          <Icon name="arrow-right" size={18} />
-        </button>
       </div>
     </div>
   )}
