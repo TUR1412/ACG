@@ -1873,6 +1873,21 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
       ".box[data-topics]"
     );
   }
+  if (host.endsWith("inside-games.jp") || host.endsWith("animeanime.jp")) {
+    // 这两站常见“购物导流/社媒嵌入”会把正文污染成广告+链接堆
+    siteSelectors.push(
+      ".af_box",
+      ".af_list",
+      "[class^='af_']",
+      "[class*=' af_']",
+      "figure.ctms-editor-twitter",
+      ".ctms-editor-twitter",
+      "blockquote.twitter-tweet",
+      ".twitter-tweet",
+      "figure.ctms-editor-instagram",
+      ".instagram-media"
+    );
+  }
 
   // 2) 通用去噪：正文内部依然可能夹带“相关推荐/分享/面包屑/订阅”等块
   const genericSelectors = [
@@ -1898,7 +1913,10 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
     ".ad",
     ".ads",
     ".adsbygoogle",
-    ".advertisement"
+    ".advertisement",
+    // 更激进：一些站点用 af_* 做导购模块，不一定叫 ad/ads
+    ".af_box",
+    ".af_list"
   ];
 
   const mergedSelectors = [...siteSelectors, ...genericSelectors];
@@ -1966,6 +1984,18 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
       continue;
     }
 
+    // 更激进：标签/目录/推荐常是“少量文本 + 一堆链接”，li 不一定很多
+    if ((tag === "UL" || tag === "OL") && m.liCount >= 4 && m.linkDensity >= 0.74 && m.pCount <= 0 && m.imgCount <= 0 && m.textLen <= 420) {
+      el.remove();
+      continue;
+    }
+
+    // 更激进：如果一个块几乎全是链接，并且没有明显正文段落，就当作“导航/推荐”剥离
+    if (m.linkDensity >= 0.82 && m.aCount >= 4 && m.pCount <= 1 && m.imgCount <= 0 && m.textLen <= 1800) {
+      el.remove();
+      continue;
+    }
+
     // 目录型列表：li 多 + 链接多 + 正文段落少 => 移除
     if ((tag === "UL" || tag === "OL") && m.liCount >= 10 && m.linkDensity >= 0.62 && m.pCount <= 1 && m.imgCount <= 0) {
       el.remove();
@@ -1973,7 +2003,7 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
     }
 
     // 关键词命中：像“相关推荐/排行/标签/分享”等，又是链接为主的块 => 移除
-    if (m.keywordHit && m.aCount >= 8 && m.linkDensity >= 0.48 && m.pCount <= 1 && m.textLen <= 1600) {
+    if (m.keywordHit && m.aCount >= 6 && m.linkDensity >= 0.42 && m.pCount <= 2 && m.textLen <= 2200) {
       el.remove();
       continue;
     }
