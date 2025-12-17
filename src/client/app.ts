@@ -749,7 +749,7 @@ function normalizeFullTextMarkdown(md: string): string {
 type InlineToken =
   | { type: "code"; text: string }
   | { type: "link"; text: string; href: string }
-  | { type: "img"; alt: string; src: string; href: string }
+  | { type: "img"; alt: string; src: string; href: string; originalSrc?: string }
   | { type: "autolink"; href: string; host: string; path: string };
 
 function splitUrlForDisplay(href: string): { host: string; path: string } {
@@ -792,6 +792,26 @@ function trimUrlTrailingPunct(raw: string): { url: string; trailing: string } {
   return { url, trailing };
 }
 
+function tryDeriveImageUrlFromLink(href: string): string | null {
+  try {
+    const u = new URL(href);
+    const path = (u.pathname ?? "").toLowerCase();
+
+    // direct image link
+    if (/\.(png|jpe?g|webp|gif|avif)$/.test(path)) return u.toString();
+
+    // inside-games “图片页”：/article/img/YYYY/MM/DD/<articleId>/<imageId>.html
+    if (u.hostname.endsWith("inside-games.jp")) {
+      const m = /\/article\/img\/\d{4}\/\d{2}\/\d{2}\/\d+\/(\d+)\.html$/i.exec(u.pathname ?? "");
+      if (m?.[1]) return `https://www.inside-games.jp/imgs/ogp_f/${m[1]}.jpg`;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function renderInlineMarkdown(input: string, baseUrl: string): string {
   const tokens: InlineToken[] = [];
   const push = (t: InlineToken) => {
@@ -827,6 +847,14 @@ function renderInlineMarkdown(input: string, baseUrl: string): string {
     const { url, trailing } = trimUrlTrailingPunct(String(m));
     const abs = safeHttpUrl(url, baseUrl);
     if (!abs) return String(m);
+
+    // 图片增强：对“直链图片/图片页”直接渲染为图片（更有视觉信息）
+    const derivedImage = tryDeriveImageUrlFromLink(abs);
+    if (derivedImage) {
+      const src = bestInitialCoverSrc(derivedImage, 1200);
+      return `${push({ type: "img", alt: "", src, href: abs, originalSrc: derivedImage })}${trailing}`;
+    }
+
     const parts = splitUrlForDisplay(abs);
     return `${push({ type: "autolink", href: abs, host: parts.host, path: parts.path })}${trailing}`;
   });
@@ -850,9 +878,10 @@ function renderInlineMarkdown(input: string, baseUrl: string): string {
 
     if (t.type === "img") {
       const href = escapeHtml(t.href);
+      const original = escapeHtml(t.originalSrc ?? t.href);
       const src = escapeHtml(t.src);
       const alt = escapeHtml(t.alt);
-      return `<a class="acg-prose-img-link" href="${href}" target="_blank" rel="noreferrer noopener"><img src="${src}" alt="${alt}" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-acg-cover data-acg-cover-original-src="${href}" onload="window.__acgCoverLoad?.(this)" onerror="window.__acgCoverError?.(this)" /></a>`;
+      return `<a class="acg-prose-img-link" href="${href}" target="_blank" rel="noreferrer noopener"><img src="${src}" alt="${alt}" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-acg-cover data-acg-cover-original-src="${original}" onload="window.__acgCoverLoad?.(this)" onerror="window.__acgCoverError?.(this)" /></a>`;
     }
 
     if (t.type === "autolink") {
