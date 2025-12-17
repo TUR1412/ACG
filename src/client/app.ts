@@ -725,7 +725,9 @@ function applyBasicEmphasis(escaped: string): string {
 }
 
 function safeHttpUrl(raw: string, baseUrl: string): string | null {
-  const cleaned = raw.trim().replace(/\s+/g, "");
+  let cleaned = raw.trim().replace(/\s+/g, "");
+  // 兼容尾部粘连标点/编码标点（尤其是 `）` / `】` / `」` 这类全角符号）
+  cleaned = stripEncodedTrailingPunct(trimUrlTrailingPunct(cleaned).url);
   try {
     const u = new URL(cleaned, baseUrl);
     if (u.protocol !== "http:" && u.protocol !== "https:") return null;
@@ -743,6 +745,24 @@ function normalizeFullTextMarkdown(md: string): string {
   text = text.replace(/【([^\n\r]+?)】\((https?:\/\/[^)\s]+)\)/g, "[$1]($2)");
   // 修复“链接 URL 被换行/空白打断”的情况：把 `](` 到 `)` 之间的空白去掉
   text = text.replace(/\]\(([^)]+)\)/g, (_m, url) => `](${String(url).replace(/\s+/g, "")})`);
+
+  // 修复少数来源会把 URL 本体在换行处截断：`https://.../new\ns/...` -> `https://.../news/...`
+  // 只在“下一行开头很像 path continuation（短前缀 + /）”时拼接，避免误伤正常段落换行。
+  text = text.replace(/(https?:\/\/[^\s)\]]+)\n+([A-Za-z0-9._-]{0,16}\/[^\s)\]]+)/g, "$1$2");
+
+  // 兜底：如果内部占位符意外泄漏到 Markdown，直接清除（不应出现在用户内容里）
+  text = text.replace(/@@ACGTOKEN\d+@@/g, "");
+  text = text.replace(/＠＠ACGTOKEN\d+＠＠/g, "");
+
+  // 清理“孤立括号/标点”噪音行（常由链接换行或抽取器残留导致）
+  text = text.replace(/^\s*[)\]】」）]\s*$/gm, "");
+  text = text.replace(/^\s*[（(\[【「『]\s*$/gm, "");
+
+  // 清理“无意义的纯数字”项目符号（常见于脚注/引用残留，如 `- 1`）
+  text = text.replace(/^\s*[-*]\s+\d+\s*$/gm, "");
+
+  // 合并空行
+  text = text.replace(/\n{3,}/g, "\n\n");
   return text.trim();
 }
 
@@ -776,12 +796,18 @@ function trimUrlTrailingPunct(raw: string): { url: string; trailing: string } {
 
   while (url.length > 0) {
     const ch = url[url.length - 1] ?? "";
-    if (!/[)\].,!?:;}"'»」】]/.test(ch)) break;
+    // 同时覆盖英文与常见全角标点（避免 `...html）` 之类的粘连）
+    if (!/[)\]）］.,!?:;}"'»」】。，！？：；]/.test(ch)) break;
 
     if (ch === ")") {
       const open = count(url, /\(/g);
       const close = count(url, /\)/g);
       // 如果 close <= open，说明这个 ')' 可能是 URL 自身的一部分（例如 wikipedia 的括号页）
+      if (close <= open) break;
+    }
+    if (ch === "）") {
+      const open = count(url, /（/g);
+      const close = count(url, /）/g);
       if (close <= open) break;
     }
 
@@ -792,6 +818,45 @@ function trimUrlTrailingPunct(raw: string): { url: string; trailing: string } {
   return { url, trailing };
 }
 
+function stripEncodedTrailingPunct(input: string): string {
+  // 一些来源/翻译会把“句末括号/标点”带进 URL，且可能被百分号编码（例如 `%EF%BC%89`）。
+  // 这里做“只剥离尾部明显噪音”的保守处理，尽量不误伤 URL 本体。
+  let url = input;
+
+  // 1) 先处理常见全角标点（多为正文标点，不太可能是 URL 必需部分）
+  // - ） : %EF%BC%89
+  // - 】 : %E3%80%91
+  // - 」 : %E3%80%8D
+  // - 。 : %E3%80%82
+  // - ， : %EF%BC%8C
+  // - ： : %EF%BC%9A
+  // - ； : %EF%BC%9B
+  // - ！ : %EF%BC%81
+  // - ？ : %EF%BC%9F
+  const fullwidthTail = /(?:%EF%BC%89|%E3%80%91|%E3%80%8D|%E3%80%82|%EF%BC%8C|%EF%BC%9A|%EF%BC%9B|%EF%BC%81|%EF%BC%9F)+$/i;
+  url = url.replace(fullwidthTail, "");
+
+  // 2) 再处理 ASCII 的“闭合符号”编码：仅在没有对应 opener 时才剥离，避免误伤 wiki 等合法括号 URL
+  const pairs: Array<{ close: RegExp; open: RegExp }> = [
+    { close: /%29$/i, open: /%28/i }, // )
+    { close: /%5D$/i, open: /%5B/i }, // ]
+    { close: /%7D$/i, open: /%7B/i } // }
+  ];
+
+  while (true) {
+    let changed = false;
+    for (const p of pairs) {
+      if (p.close.test(url) && !p.open.test(url)) {
+        url = url.replace(p.close, "");
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+
+  return url;
+}
+
 function normalizeUrlForCompare(href: string): string {
   // 用于“去重/聚合”的稳定比较键：忽略 query/hash，并剥离常见尾部括号噪音。
   const raw = href.trim();
@@ -799,7 +864,7 @@ function normalizeUrlForCompare(href: string): string {
 
   // 先剥离可能粘连的“可见标点”
   const t = trimUrlTrailingPunct(raw);
-  let cleaned = t.url;
+  let cleaned = stripEncodedTrailingPunct(t.url);
 
   // 再剥离常见的“被百分号编码的标点”（例如文本里把 `）` 编成 `%EF%BC%89`）
   // 只在 URL 末尾出现时处理，避免误伤正文路径。
@@ -956,6 +1021,11 @@ function renderInlineMarkdown(input: string, baseUrl: string): string {
 
     return "";
   });
+
+  // 兜底：如果占位符因强调/杂质被打断，避免把内部实现细节渲染给用户
+  // 例：`@@ACG<em>TOKEN</em>0@@`、`＠＠ACGTOKEN0＠＠` 等
+  text = text.replace(/@@ACG(?:<[^>]+>)*TOKEN(?:<[^>]+>)*\d+(?:<[^>]+>)*@@/g, "");
+  text = text.replace(/＠＠ACG(?:<[^>]+>)*TOKEN(?:<[^>]+>)*\d+(?:<[^>]+>)*＠＠/g, "");
 
   return text;
 }
@@ -1153,15 +1223,21 @@ type ProseKind = "article" | "index";
 function detectProseKind(root: HTMLElement): ProseKind {
   try {
     const li = root.querySelectorAll("li").length;
-    const p = root.querySelectorAll("p").length;
+    const pNodes = [...root.querySelectorAll("p")];
+    const p = pNodes.length;
     const h = root.querySelectorAll("h2, h3, h4").length;
     const textLen = (root.textContent ?? "").trim().length;
 
+    // 文章信号：存在多段“较长段落”，优先判定为文章（避免 Inside 等文章页因“相关链接列表”而被误判为目录页）
+    const longP = pNodes.filter((el) => ((el.textContent ?? "").replace(/\s+/g, " ").trim().length >= 90)).length;
+    if (longP >= 3 || (longP >= 2 && p >= 6)) return "article";
+
     // “目录/新闻列表”特征：大量 list item，段落较少；或标题+列表组合；或整体很长但结构偏列表。
-    if (li >= 24) return "index";
-    if (li >= 12 && li >= Math.max(4, p * 2)) return "index";
+    if (li >= 36) return "index";
+    if (li >= 24 && p <= 6) return "index";
+    if (li >= 16 && li >= Math.max(6, p * 2) && p <= 8) return "index";
     if (h >= 4 && li >= 10 && p <= 8) return "index";
-    if (textLen >= 8000 && li >= 12 && p <= 12) return "index";
+    if (textLen >= 8000 && li >= 12 && p <= 12 && longP <= 1) return "index";
     return "article";
   } catch {
     return "article";
