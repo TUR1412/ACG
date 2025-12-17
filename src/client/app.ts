@@ -655,30 +655,39 @@ type FullTextCacheEntry = {
   ja?: string;
 };
 
-const FULLTEXT_CACHE_PREFIX = "acg.fulltext.v1:";
+// v2：当“全文预览”的抽取/清洗策略发生结构性变化时，升级缓存版本，避免用户长期被旧的错误正文污染。
+const FULLTEXT_CACHE_PREFIX = "acg.fulltext.v2:";
+const FULLTEXT_CACHE_PREFIX_LEGACY = "acg.fulltext.v1:";
 
 function fullTextCacheKey(postId: string): string {
   return `${FULLTEXT_CACHE_PREFIX}${postId}`;
 }
 
 function readFullTextCache(postId: string): FullTextCacheEntry | null {
-  try {
-    const raw = localStorage.getItem(fullTextCacheKey(postId));
+  const parse = (raw: string | null): FullTextCacheEntry | null => {
     if (!raw) return null;
-    const json = JSON.parse(raw) as unknown;
-    if (!json || typeof json !== "object") return null;
-    const it = json as any;
-    if (typeof it.original !== "string" || typeof it.url !== "string") return null;
-    return {
-      url: it.url,
-      fetchedAt: typeof it.fetchedAt === "string" ? it.fetchedAt : "",
-      original: it.original,
-      zh: typeof it.zh === "string" ? it.zh : undefined,
-      ja: typeof it.ja === "string" ? it.ja : undefined
-    } satisfies FullTextCacheEntry;
-  } catch {
-    return null;
-  }
+    try {
+      const json = JSON.parse(raw) as unknown;
+      if (!json || typeof json !== "object") return null;
+      const it = json as any;
+      if (typeof it.original !== "string" || typeof it.url !== "string") return null;
+      return {
+        url: it.url,
+        fetchedAt: typeof it.fetchedAt === "string" ? it.fetchedAt : "",
+        original: it.original,
+        zh: typeof it.zh === "string" ? it.zh : undefined,
+        ja: typeof it.ja === "string" ? it.ja : undefined
+      } satisfies FullTextCacheEntry;
+    } catch {
+      return null;
+    }
+  };
+
+  // 先读新版本；不存在则尝试读旧版本（平滑迁移）
+  const v2 = parse(localStorage.getItem(fullTextCacheKey(postId)));
+  if (v2) return v2;
+  const legacyKey = `${FULLTEXT_CACHE_PREFIX_LEGACY}${postId}`;
+  return parse(localStorage.getItem(legacyKey));
 }
 
 function writeFullTextCache(postId: string, entry: FullTextCacheEntry) {
@@ -1765,17 +1774,41 @@ function pickMainElement(doc: Document, baseUrl: string): HTMLElement {
 
   for (const el of candidates) {
     const text = (el.textContent ?? "").replace(/\s+/g, " ").trim();
-    if (text.length < 500) continue;
-    const aTextLen = [...el.querySelectorAll("a")].reduce((sum, a) => sum + ((a.textContent ?? "").trim().length || 0), 0);
+    const textLen = text.length;
+
+    const anchors = [...el.querySelectorAll("a")];
+    const aCount = anchors.length;
+    const aTextLen = anchors.reduce((sum, a) => sum + ((a.textContent ?? "").trim().length || 0), 0);
     const pCount = el.querySelectorAll("p").length;
-    const score = text.length + pCount * 120 - aTextLen * 0.35;
+    const liCount = el.querySelectorAll("li").length;
+    const hCount = el.querySelectorAll("h1,h2,h3,h4").length;
+    const imgCount = el.querySelectorAll("img").length;
+
+    // 过滤“太短/太空”的容器，避免误选导航残片
+    if (textLen < 120 && pCount < 2 && liCount < 6 && imgCount < 1) continue;
+
+    const linkDensity = aTextLen / Math.max(1, textLen);
+
+    // 评分：偏向“更像正文”的元素（段落/标题/少量图片），强力惩罚“链接密度过高”的导航页结构
+    let score = 0;
+    score += textLen;
+    score += pCount * 180;
+    score += Math.min(48, liCount) * 18;
+    score += Math.min(12, hCount) * 80;
+    score += Math.min(10, imgCount) * 55;
+    score -= aTextLen * 0.55;
+    score -= aCount * 10;
+    if (linkDensity > 0.55) score -= (linkDensity - 0.55) * textLen * 1.6;
+    if (textLen < 260) score -= 260 - textLen;
+
     if (score > bestScore) {
       best = el;
       bestScore = score;
     }
   }
 
-  return best ?? fallbackBody;
+  // 如果评分体系没有命中，按候选优先级返回（仍避免直接回退到 body）
+  return best ?? candidates[0] ?? fallbackBody;
 }
 
 function cleanupHtmlDocument(doc: Document) {
@@ -1920,6 +1953,34 @@ function looksLikeIndexMarkdown(md: string): boolean {
   return false;
 }
 
+function shouldRejectFullTextMarkdown(md: string, url: string): boolean {
+  const normalized = normalizeFullTextMarkdown(md);
+  if (!normalized) return true;
+
+  // 兜底：内部占位符不应暴露给用户，出现即视为异常
+  if (/@@ACG/i.test(normalized) || /＠＠ACG/i.test(normalized)) return true;
+
+  const lower = normalized.toLowerCase();
+  const blockedSignals = [
+    "attention required",
+    "cloudflare",
+    "enable javascript",
+    "enable cookies",
+    "captcha",
+    "access denied",
+    "temporarily unavailable",
+    "service unavailable",
+    "are you a human",
+    "robot check"
+  ];
+  if (blockedSignals.some((s) => lower.includes(s))) return true;
+
+  // 目录/导航 dump：对“文章页”直接拒绝
+  if (!isProbablyIndexUrl(url) && looksLikeIndexMarkdown(normalized)) return true;
+
+  return false;
+}
+
 async function loadFullTextMarkdown(params: { url: string; timeoutMs: number }): Promise<FullTextLoadResult> {
   const { url, timeoutMs } = params;
 
@@ -1928,15 +1989,9 @@ async function loadFullTextMarkdown(params: { url: string; timeoutMs: number }):
   try {
     primary = await loadFullTextViaJina({ url, timeoutMs });
     if (primary.md) {
-      // 兜底：Jina 偶发会返回“站点目录/导航 dump”（特别是某些站点的文章页）
-      // 这种内容看似很长，但实际上几乎全是时间/栏目列表，会把全文预览搞得又乱又没意义。
-      const normalized = normalizeFullTextMarkdown(primary.md);
-      if (!isProbablyIndexUrl(url) && looksLikeIndexMarkdown(normalized)) {
-        // 视为失败，强制走后备抽取
-        primary.md = "";
-      } else {
-        return primary;
-      }
+      // 兜底：Jina 偶发会返回“站点目录/导航 dump”或“拦截页文本”，这种内容必须判失败走后备抽取。
+      if (shouldRejectFullTextMarkdown(primary.md, url)) primary.md = "";
+      else return primary;
     }
   } catch {
     // ignore（走后备）
@@ -1947,7 +2002,10 @@ async function loadFullTextMarkdown(params: { url: string; timeoutMs: number }):
   let fallback: FullTextLoadResult | null = null;
   try {
     fallback = await loadFullTextViaAllOrigins({ url, timeoutMs });
-    if (fallback.md) return fallback;
+    if (fallback.md) {
+      if (!shouldRejectFullTextMarkdown(fallback.md, url)) return fallback;
+      fallback.md = "";
+    }
   } catch {
     // ignore（统一抛错）
   }
@@ -1956,7 +2014,10 @@ async function loadFullTextMarkdown(params: { url: string; timeoutMs: number }):
   let fallback2: FullTextLoadResult | null = null;
   try {
     fallback2 = await loadFullTextViaCodeTabs({ url, timeoutMs });
-    if (fallback2.md) return fallback2;
+    if (fallback2.md) {
+      if (!shouldRejectFullTextMarkdown(fallback2.md, url)) return fallback2;
+      fallback2.md = "";
+    }
   } catch {
     // ignore（统一抛错）
   }
@@ -2136,7 +2197,15 @@ function wireFullTextReader() {
 
         let cache = force ? null : readFullTextCache(postId);
         let loadResult: FullTextLoadResult | null = null;
-        if (!cache || cache.url !== url || !cache.original) {
+        if (cache && cache.url !== url) cache = null;
+        if (cache && shouldRejectFullTextMarkdown(cache.original, url)) cache = null;
+
+        // 平滑迁移：如果命中旧版本缓存（v1），这里会把它写回 v2 key，避免用户“所有页面都得手动重新加载”。
+        if (cache && localStorage.getItem(fullTextCacheKey(postId)) === null) {
+          writeFullTextCache(postId, cache);
+        }
+
+        if (!cache || !cache.original) {
           loadResult = await loadFullTextMarkdown({ url, timeoutMs: 22_000 });
           cache = {
             url,
