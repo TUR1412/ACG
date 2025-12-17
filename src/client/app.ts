@@ -655,9 +655,9 @@ type FullTextCacheEntry = {
   ja?: string;
 };
 
-// v2：当“全文预览”的抽取/清洗策略发生结构性变化时，升级缓存版本，避免用户长期被旧的错误正文污染。
-const FULLTEXT_CACHE_PREFIX = "acg.fulltext.v2:";
-const FULLTEXT_CACHE_PREFIX_LEGACY = "acg.fulltext.v1:";
+// v3：当“全文预览”的抽取/清洗策略发生结构性变化时，升级缓存版本，避免用户长期被旧的错误正文污染。
+// 说明：这里采用“硬失效”策略（不自动迁移旧缓存），确保修复能立刻在所有页面生效，而不需要用户手动点「重新加载」或清空缓存。
+const FULLTEXT_CACHE_PREFIX = "acg.fulltext.v3:";
 
 function fullTextCacheKey(postId: string): string {
   return `${FULLTEXT_CACHE_PREFIX}${postId}`;
@@ -683,11 +683,7 @@ function readFullTextCache(postId: string): FullTextCacheEntry | null {
     }
   };
 
-  // 先读新版本；不存在则尝试读旧版本（平滑迁移）
-  const v2 = parse(localStorage.getItem(fullTextCacheKey(postId)));
-  if (v2) return v2;
-  const legacyKey = `${FULLTEXT_CACHE_PREFIX_LEGACY}${postId}`;
-  return parse(localStorage.getItem(legacyKey));
+  return parse(localStorage.getItem(fullTextCacheKey(postId)));
 }
 
 function writeFullTextCache(postId: string, entry: FullTextCacheEntry) {
@@ -769,6 +765,43 @@ function normalizeFullTextMarkdown(md: string): string {
 
   // 清理“无意义的纯数字”项目符号（常见于脚注/引用残留，如 `- 1`）
   text = text.replace(/^\s*[-*]\s+\d+\s*$/gm, "");
+
+  // 更激进：移除常见的“站点尾部导航/讨论/档案”残留（尤其是 ANN）
+  // 这些内容属于页面壳，而非正文；如果混入全文预览，会显得非常杂乱。
+  const annHost = String.raw`(?:www\.)?animenewsnetwork\.com`;
+  // 例：`[News homepage](https://www.animenewsnetwork.com/news/) / [archives](https://www.animenewsnetwork.com/news/archive)`
+  text = text.replace(
+    new RegExp(
+      String.raw`^\s*(?:\[[^\]]+\]\(https?:\/\/${annHost}\/news\/\)\s*\/\s*)?\[[^\]]+\]\(https?:\/\/${annHost}\/news\/archive[^)]*\)\s*$`,
+      "gmi"
+    ),
+    ""
+  );
+  // 例：`[discuss this in the forum](https://www.animenewsnetwork.com/cms/discuss/232153)`
+  text = text.replace(new RegExp(String.raw`^\s*\[[^\]]+\]\(https?:\/\/${annHost}\/cms\/discuss\/[^)]*\)\s*$`, "gmi"), "");
+
+  // 更激进：清理“正文尾部的纯链接/孤立分隔符”噪音（常见于阅读模式/抽取器把页脚/推荐/图片页链接带进来）。
+  // 注：站点原文入口已经由页面底部「打开原文」提供，这里宁可删多一点，也不要把正文尾巴污染成链接堆。
+  const lines = text.split("\n");
+  const isTrailingJunkLine = (raw: string): boolean => {
+    const s = raw.trim();
+    if (!s) return true;
+    if (/^[|/\\]+$/.test(s)) return true;
+    if (looksLikeUrlText(s)) return true;
+    const m = /^\[([^\]]+)\]\((https?:\/\/[^)]+)\)\s*$/.exec(s);
+    if (m?.[2]) {
+      const label = (m[1] ?? "").trim();
+      const href = (m[2] ?? "").trim();
+      if (!label) return true;
+      if (looksLikeUrlText(label)) return true;
+      if (isMostlyUrlLabel(label, href)) return true;
+      if (label.length <= 2) return true;
+    }
+    return false;
+  };
+  let end = lines.length;
+  while (end > 0 && isTrailingJunkLine(lines[end - 1] ?? "")) end -= 1;
+  text = lines.slice(0, end).join("\n");
 
   // 合并空行
   text = text.replace(/\n{3,}/g, "\n\n");
@@ -956,6 +989,19 @@ function renderInlineMarkdown(input: string, baseUrl: string): string {
     const abs = safeHttpUrl(String(url), baseUrl);
     if (!abs) return String(label ?? "");
     const labelText = String(label ?? "").trim();
+
+    // 更激进：对特定站点（尤其 ANN）的“百科/人物/公司/作品词条”链接，默认只保留文本，避免正文里一屏全是蓝链。
+    // 这类链接属于站点内部增强信息，不是正文必要内容。
+    try {
+      const baseHost = new URL(baseUrl).hostname.toLowerCase();
+      const u = new URL(abs);
+      if (baseHost.endsWith("animenewsnetwork.com") && u.hostname.toLowerCase().endsWith("animenewsnetwork.com")) {
+        const p = (u.pathname || "/").toLowerCase();
+        if (p.startsWith("/encyclopedia/")) return labelText || abs;
+      }
+    } catch {
+      // ignore
+    }
 
     // 如果链接本质上是“图片/图片页”，就直接图文化（避免全文里出现一堆 [1](...) / [https://...](...)）
     const derivedImage = tryDeriveImageUrlFromLink(abs);
@@ -1461,6 +1507,16 @@ function enhanceProseImageGalleries(root: HTMLElement) {
     if (/^[)\]】」）"”'’]+$/.test(t)) return true;
     if (/^[（(\[【「『]+$/.test(t)) return true;
     if (/^[,，.。:：;；!?！？]+$/.test(t)) return true;
+    // 常见“图片提示/放大提示/来源提示”（短句且信息量低）：允许忽略，便于把图片序列收敛成画廊
+    if (t.length <= 24) {
+      if (/^(?:画像|写真|圖像|图片|圖片|image|photo)(?:[:：].*)?$/i.test(t)) return true;
+      if (/(クリック|タップ).*(拡大|拡大表示)/.test(t)) return true;
+      if (/画像.*(クリック|タップ).*(拡大|拡大表示)/.test(t)) return true;
+      if (/点击.*(查看|打开|放大).*(原图|原圖|大图|大圖|图片|圖片)/.test(t)) return true;
+      if (/點擊.*(查看|打開|放大).*(原圖|大圖|圖片)/.test(t)) return true;
+      if (/^source[:：]/i.test(t)) return true;
+      if (/^via[:：]/i.test(t)) return true;
+    }
     return false;
   };
 
@@ -1726,10 +1782,11 @@ function pickMainElement(doc: Document, baseUrl: string): HTMLElement {
   // 说明：我们不能让“全页 body”参与评分，否则极易把导航/侧栏/页脚一起吞进正文（导致全文预览变成一坨目录/链接）。
   if (host.endsWith("animenewsnetwork.com")) {
     const preferredSelectors = [
-      "#content-zone .KonaBody",
       "#content-zone .meat",
+      "#content-zone .KonaBody",
       "#content-zone",
       ".KonaBody",
+      ".meat",
       "#maincontent .KonaBody",
       "#maincontent"
     ];
@@ -1738,6 +1795,11 @@ function pickMainElement(doc: Document, baseUrl: string): HTMLElement {
       if (!el || !(el instanceof HTMLElement)) continue;
       const textLen = (el.textContent ?? "").replace(/\s+/g, " ").trim().length;
       const pCount = el.querySelectorAll("p").length;
+      const isMeat = sel.includes(".meat");
+      if (isMeat) {
+        if (textLen >= 120 || pCount >= 1) return el;
+        continue;
+      }
       if (textLen >= 420 || pCount >= 2) return el;
     }
   }
@@ -1863,6 +1925,41 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
     // ignore
   }
 
+  // 0) 站点特化（先截断再删除）：某些站点会把“文章结束后的讨论/导航/页脚”塞在主容器内部。
+  // 如果不先截断，后续的通用去噪/链接密度剪枝仍可能遗漏，导致正文尾部出现大量杂质。
+  if (host.endsWith("animenewsnetwork.com")) {
+    const hardCutAt = (sentinel: Element | null) => {
+      if (!sentinel) return;
+      const parent = sentinel.parentElement;
+      if (!parent) {
+        sentinel.remove();
+        return;
+      }
+      let cur: Element | null = sentinel;
+      while (cur) {
+        const next: Element | null = cur.nextElementSibling;
+        cur.remove();
+        cur = next;
+      }
+      // 如果 sentinel 父节点被删空，也顺带移除（避免残留空壳影响抽取）
+      if (parent !== main && parent.children.length === 0 && (parent.textContent ?? "").trim().length === 0) {
+        parent.remove();
+      }
+    };
+
+    // ANN：文章正文结束点通常在 “discuss this in the forum / social-bookmarks / footer” 附近
+    hardCutAt(main.querySelector("#social-bookmarks"));
+    hardCutAt(main.querySelector("#footer"));
+
+    // 讨论入口：直接把其所在的小容器移除（避免遗留 `|` 或孤立链接）
+    const discussAnchors = [...main.querySelectorAll<HTMLAnchorElement>("a[href^='/cms/discuss/'], a[href*='/cms/discuss/']")];
+    for (const a of discussAnchors) {
+      const container = (a.closest("div, p, li, section") as HTMLElement | null) ?? a;
+      if (container && container !== main) container.remove();
+      else a.remove();
+    }
+  }
+
   // 1) 站点特化：优先移除“已知非正文”的块（比纯 heuristics 更稳）
   const siteSelectors: string[] = [];
   if (host.endsWith("animenewsnetwork.com")) {
@@ -1870,6 +1967,8 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
       "instaread-player",
       "[data-user-preferences-action-open]",
       "#content-preferences",
+      "#social-bookmarks",
+      "#footer",
       ".box[data-topics]"
     );
   }
@@ -2356,11 +2455,6 @@ function wireFullTextReader() {
         let loadResult: FullTextLoadResult | null = null;
         if (cache && cache.url !== url) cache = null;
         if (cache && shouldRejectFullTextMarkdown(cache.original, url)) cache = null;
-
-        // 平滑迁移：如果命中旧版本缓存（v1），这里会把它写回 v2 key，避免用户“所有页面都得手动重新加载”。
-        if (cache && localStorage.getItem(fullTextCacheKey(postId)) === null) {
-          writeFullTextCache(postId, cache);
-        }
 
         if (!cache || !cache.original) {
           loadResult = await loadFullTextMarkdown({ url, timeoutMs: 22_000 });
@@ -3856,11 +3950,23 @@ function wireSpotlightCarousel() {
     let startY = 0;
     let startScrollLeft = 0;
 
-    const endDrag = () => {
+    const endDrag = (e?: PointerEvent) => {
       if (!dragging) return;
-      // 触控端可能直接触发原生滚动，pointermove 不一定可靠：用 scrollLeft 兜底判断是否发生拖拽
-      const scrollThreshold = pointerType === "mouse" ? 6 : 12;
-      if (Math.abs(track.scrollLeft - startScrollLeft) > scrollThreshold) dragged = true;
+      if (pointerType === "mouse") {
+        // mouse：脚本拖拽会直接改 scrollLeft，用它判断最稳
+        if (Math.abs(track.scrollLeft - startScrollLeft) > 6) dragged = true;
+      } else {
+        // touch/pen：有些浏览器会在“轻点时仍有惯性滚动”导致 scrollLeft 变化，
+        // 如果仅用 scrollLeft 差值会把“点封面打开”误判成拖拽，造成“点了没反应”。
+        // 因此优先用 pointerup 的位移来判定是否为“横向滑动”。
+        const dx = typeof e?.clientX === "number" ? e.clientX - startX : 0;
+        const dy = typeof e?.clientY === "number" ? e.clientY - startY : 0;
+        const move = Math.hypot(dx, dy);
+        const moveThreshold = pointerType === "pen" ? 12 : 16;
+        if (Math.abs(dx) >= moveThreshold && Math.abs(dx) >= Math.abs(dy) && move >= moveThreshold) dragged = true;
+        // 兜底：如果没有可靠坐标，再用更高阈值的 scrollLeft 判断（避免误伤点击）
+        else if (!e && Math.abs(track.scrollLeft - startScrollLeft) > 28) dragged = true;
+      }
       dragging = false;
       pointerId = null;
       pointerType = "mouse";
