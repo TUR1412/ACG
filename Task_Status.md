@@ -74,3 +74,4 @@
 - [x] 59. ANN 脏数据修复：清理 `[[label](url)]]` 这类多括号链接（图片 credit 不再出现 `]]` 杂质）
 - [x] 60. 全文预览缺图再修复：HTML 抽取优先 `data-src/srcset`，跳过 `/img/spacer.gif` 等占位图（正文图片可见）
 - [x] 61. 图注更完整：`figure` 同时提取多个 `figcaption`（credit + copyright）并以引用块展示
+- [x] 62. 缓存自愈：检测 ANN 正文含 `/img/spacer.gif` 占位图则判定缓存失效并自动重新抓取（避免用户手动重载）

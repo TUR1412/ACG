@@ -2510,6 +2510,13 @@ function shouldRejectFullTextMarkdown(md: string, url: string): boolean {
   // 兜底：内部占位符不应暴露给用户，出现即视为异常
   if (/@@ACG/i.test(normalized) || /＠＠ACG/i.test(normalized)) return true;
 
+  let host = "";
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    // ignore
+  }
+
   const lower = normalized.toLowerCase();
   const blockedSignals = [
     "attention required",
@@ -2524,6 +2531,12 @@ function shouldRejectFullTextMarkdown(md: string, url: string): boolean {
     "robot check"
   ];
   if (blockedSignals.some((s) => lower.includes(s))) return true;
+
+  // ANN 常见“懒加载占位图”污染：会导致全文预览出现空白大图（/img/spacer.gif）。
+  // 这类内容属于抽取质量问题，直接判失败以触发重新提取（或换源）。
+  if (host.endsWith("animenewsnetwork.com")) {
+    if (lower.includes("/img/spacer.gif") && /!\[[^\]]*\]\([^)]*spacer\.gif[^)]*\)/i.test(normalized)) return true;
+  }
 
   // 目录/导航 dump：对“文章页”直接拒绝
   if (!isProbablyIndexUrl(url) && looksLikeIndexMarkdown(normalized)) return true;
