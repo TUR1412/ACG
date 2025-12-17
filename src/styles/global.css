@@ -524,6 +524,15 @@ html[data-acg-device="phone"] .acg-prose .acg-prose-linkrow {
   align-items: start;
 }
 
+/* index 模式下，dot 前缀只是装饰，且会与“链接卡片/嵌入条”的 dot 重复：隐藏并让内容占满 */
+.acg-prose[data-acg-prose-kind="index"] .acg-prose-li-prefix.acg-prose-dot {
+  display: none;
+}
+
+.acg-prose[data-acg-prose-kind="index"] .acg-prose-li-prefix.acg-prose-dot + .acg-prose-li-content {
+  grid-column: 1 / -1;
+}
+
 html[data-acg-device="phone"] .acg-prose[data-acg-prose-kind="index"] .acg-prose-li {
   padding: 11px 12px;
   border-radius: 16px;

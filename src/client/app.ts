@@ -792,6 +792,30 @@ function trimUrlTrailingPunct(raw: string): { url: string; trailing: string } {
   return { url, trailing };
 }
 
+function normalizeUrlForCompare(href: string): string {
+  // 用于“去重/聚合”的稳定比较键：忽略 query/hash，并剥离常见尾部括号噪音。
+  const raw = href.trim();
+  if (!raw) return "";
+
+  // 先剥离可能粘连的“可见标点”
+  const t = trimUrlTrailingPunct(raw);
+  let cleaned = t.url;
+
+  // 再剥离常见的“被百分号编码的标点”（例如文本里把 `）` 编成 `%EF%BC%89`）
+  // 只在 URL 末尾出现时处理，避免误伤正文路径。
+  const encodedTailRe = /(?:%29|%5D|%7D|%2C|%2E|%3A|%3B|%22|%27|%EF%BC%89|%E3%80%91|%E3%80%8D)+$/i;
+  cleaned = cleaned.replace(encodedTailRe, "");
+
+  try {
+    const u = new URL(cleaned);
+    const host = u.hostname.replace(/^www\./, "").toLowerCase();
+    const pathname = (u.pathname || "/").replace(/\/+$/g, "/");
+    return `${host}${pathname}`;
+  } catch {
+    return cleaned;
+  }
+}
+
 function tryDeriveImageUrlFromLink(href: string): string | null {
   try {
     const u = new URL(href);
@@ -1232,30 +1256,50 @@ function enhanceLinkListItems(root: HTMLElement) {
     // 不处理含图片/代码块的段落（避免误伤正常文章内容）
     if (content.querySelector("img, pre, code")) continue;
 
-    const autolinks = content.querySelectorAll<HTMLAnchorElement>("a.acg-prose-autolink");
-    if (autolinks.length !== 1) continue;
+    const allLinks = [...content.querySelectorAll<HTMLAnchorElement>("a")].filter((a) => Boolean(a.getAttribute("href")));
+    if (allLinks.length === 0) continue;
 
-    const autolink = autolinks[0];
-    const href = autolink?.getAttribute("href") ?? "";
-    if (!href) continue;
+    const autolinks = allLinks.filter((a) => a.classList.contains("acg-prose-autolink"));
+    if (autolinks.length === 0) continue;
 
-    const allLinks = [...content.querySelectorAll<HTMLAnchorElement>("a")];
     const nonAutolinkLinks = allLinks.filter((a) => !a.classList.contains("acg-prose-autolink"));
 
-    // 如果存在其他链接，但不是同一个 href，则可能是正常段落里的引用，避免误伤
-    if (nonAutolinkLinks.some((a) => (a.getAttribute("href") ?? "") !== href)) continue;
+    // 只在“所有链接基本指向同一个目的地”时聚合，避免误伤正常段落里的多链接内容
+    const unique = new Map<string, string>(); // key -> href
+    for (const a of allLinks) {
+      const href = a.getAttribute("href") ?? "";
+      const key = normalizeUrlForCompare(href);
+      if (!key) continue;
+      if (!unique.has(key)) unique.set(key, href);
+    }
+
+    if (unique.size !== 1) continue;
+    const onlyKey = [...unique.keys()][0] ?? "";
+    if (!onlyKey) continue;
+
+    // 选择最终 href：优先用“标题链接”的 href（通常更干净），否则退回第一个出现的 href
+    let href = [...unique.values()][0] ?? "";
+    const bestTitleAnchor = nonAutolinkLinks
+      .map((a) => ({
+        href: a.getAttribute("href") ?? "",
+        text: cleanLinkRowTitle((a.textContent ?? "").trim())
+      }))
+      .filter((it) => it.href && normalizeUrlForCompare(it.href) === onlyKey && it.text.length >= 6 && !looksLikeUrlText(it.text))
+      .sort((a, b) => b.text.length - a.text.length)[0];
+    if (bestTitleAnchor?.href) href = bestTitleAnchor.href;
+    if (!href) continue;
 
     // 取标题：优先用“移除链接后剩余文本”
     const clone = content.cloneNode(true) as HTMLElement;
     clone.querySelectorAll("a").forEach((a) => {
-      if ((a.getAttribute("href") ?? "") === href) a.remove();
+      a.remove();
     });
     let titleText = cleanLinkRowTitle((clone.textContent ?? "").trim());
 
     // 兜底：如果正文只剩很短的碎片，但存在“标题链接文本”，则用它
-    if ((!titleText || titleText.length < 6) && nonAutolinkLinks.length === 1) {
-      const t = cleanLinkRowTitle((nonAutolinkLinks[0]?.textContent ?? "").trim());
-      if (t && t.length >= 6 && !looksLikeUrlText(t)) titleText = t;
+    if (!titleText || titleText.length < 6) {
+      const cand = bestTitleAnchor?.text;
+      if (cand) titleText = cand;
     }
 
     if (!titleText || titleText.length < 6) continue;
