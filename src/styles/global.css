@@ -1427,15 +1427,51 @@ html[data-acg-device="phone"] .acg-carousel-controls-inner {
 }
 
 .acg-carousel-nav {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  border: 1px solid rgba(15, 23, 42, 0.10);
-  background: rgba(255, 255, 255, 0.60);
-  font-weight: 900;
+  position: absolute;
+  top: 50%;
+  width: 46px;
+  height: 108px;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 22px 70px rgba(2, 6, 23, 0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: rgba(15, 23, 42, 0.92);
+  opacity: 0.72;
+  transform: translateY(-50%);
+  transition: opacity 160ms ease, transform 160ms ease, border-color 160ms ease;
+}
+
+.acg-carousel-nav-prev {
+  left: 14px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.08));
+}
+
+.acg-carousel-nav-next {
+  right: 14px;
+  background: linear-gradient(-90deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.08));
+}
+
+.acg-carousel:hover .acg-carousel-nav,
+.acg-carousel:focus-within .acg-carousel-nav {
+  opacity: 0.95;
+  border-color: rgba(124, 58, 237, 0.22);
+}
+
+.acg-carousel-nav:active {
+  transform: translateY(-50%) scale(0.98);
+}
+
+@media (pointer: coarse) {
+  /* 触控设备优先手势滑动，不摆“大按钮”遮画面 */
+  .acg-carousel-nav {
+    display: none;
+  }
 }
 
 html[data-acg-device="phone"] .acg-carousel-nav {

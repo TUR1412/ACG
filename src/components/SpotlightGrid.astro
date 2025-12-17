@@ -187,18 +187,28 @@ function whenLabel(post: Post): string {
         })}
       </div>
 
+      <button
+        type="button"
+        class="acg-carousel-nav acg-carousel-nav-prev clickable"
+        data-carousel-prev
+        aria-label={prevLabel}
+        title={prevLabel}
+      >
+        <Icon name="arrow-left" size={18} />
+      </button>
+
+      <button
+        type="button"
+        class="acg-carousel-nav acg-carousel-nav-next clickable"
+        data-carousel-next
+        aria-label={nextLabel}
+        title={nextLabel}
+      >
+        <Icon name="arrow-right" size={18} />
+      </button>
+
       <div class="acg-carousel-controls" aria-label="Spotlight controls">
         <div class="acg-carousel-controls-inner">
-          <button
-            type="button"
-            class="acg-carousel-nav clickable"
-            data-carousel-prev
-            aria-label={prevLabel}
-            title={prevLabel}
-          >
-            <Icon name="arrow-left" size={18} />
-          </button>
-
           <div class="acg-carousel-dots" role="tablist" aria-label="Spotlight slides">
             {items.map((post, i) => (
               <button
@@ -210,16 +220,6 @@ function whenLabel(post: Post): string {
               ></button>
             ))}
           </div>
-
-          <button
-            type="button"
-            class="acg-carousel-nav clickable"
-            data-carousel-next
-            aria-label={nextLabel}
-            title={nextLabel}
-          >
-            <Icon name="arrow-right" size={18} />
-          </button>
         </div>
       </div>
     </div>

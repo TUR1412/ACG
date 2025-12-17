@@ -3315,6 +3315,7 @@ function wireSpotlightCarousel() {
     let dragging = false;
     let dragged = false;
     let pointerId: number | null = null;
+    let pointerType: string = "mouse";
     let startX = 0;
     let startY = 0;
     let startScrollLeft = 0;
@@ -3322,9 +3323,11 @@ function wireSpotlightCarousel() {
     const endDrag = () => {
       if (!dragging) return;
       // 触控端可能直接触发原生滚动，pointermove 不一定可靠：用 scrollLeft 兜底判断是否发生拖拽
-      if (Math.abs(track.scrollLeft - startScrollLeft) > 6) dragged = true;
+      const scrollThreshold = pointerType === "mouse" ? 6 : 12;
+      if (Math.abs(track.scrollLeft - startScrollLeft) > scrollThreshold) dragged = true;
       dragging = false;
       pointerId = null;
+      pointerType = "mouse";
       track.classList.remove("is-dragging");
       // click 事件会在 pointerup 后触发，留一拍让捕获阶段能拦截
       window.setTimeout(() => {
@@ -3341,6 +3344,7 @@ function wireSpotlightCarousel() {
       dragging = true;
       dragged = false;
       pointerId = e.pointerId;
+      pointerType = e.pointerType || "mouse";
       startX = e.clientX;
       startY = e.clientY;
       startScrollLeft = track.scrollLeft;
@@ -3357,12 +3361,16 @@ function wireSpotlightCarousel() {
       if (pointerId != null && e.pointerId !== pointerId) return;
       const dx = startX - e.clientX;
       const dy = startY - e.clientY;
-      if (Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy)) dragged = true;
-
-      // mouse: 用脚本模拟“抓取拖拽”更顺手；touch: 交给原生滚动（性能更好）
-      if (e.pointerType === "mouse") {
+      // mouse: 用脚本模拟“抓取拖拽”更顺手
+      if (pointerType === "mouse") {
+        if (Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy)) dragged = true;
         track.scrollLeft = startScrollLeft + dx;
+        return;
       }
+
+      // touch/pen：交给原生滚动（性能更好）。
+      // 关键：不要用 pointermove 的 dx 阈值来判定 dragged，否则“轻微手指抖动”会把点击误判为拖拽，导致点封面打不开。
+      // 是否发生真实拖拽由 endDrag 里的 scrollLeft 差值兜底判断。
     });
 
     track.addEventListener("pointerup", endDrag);
