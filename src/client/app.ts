@@ -1207,6 +1207,65 @@ function enhanceProseIndex(root: HTMLElement) {
   }
 }
 
+function cleanLinkRowTitle(raw: string): string {
+  let s = raw.replace(/\s+/g, " ").trim();
+  // 去掉“URL 被抽走”后常见残留：行尾的 "(" / "（" / "【" 等开括号
+  s = s.replace(/[（(\[【「『]\s*$/g, "").trim();
+  // 去掉行尾孤立的冒号
+  s = s.replace(/[：:]\s*$/g, "").trim();
+  return s;
+}
+
+function enhanceLinkListItems(root: HTMLElement) {
+  // 把“标题 + 一坨 URL 卡片”的 list item 变成单个可点击条目（更像“嵌入预览”）
+  const contents = [...root.querySelectorAll<HTMLElement>(".acg-prose-li-content")];
+  if (contents.length === 0) return;
+
+  for (const content of contents) {
+    // 已处理过的不再处理
+    if (content.querySelector(".acg-prose-linkrow")) continue;
+
+    const autolinks = content.querySelectorAll<HTMLAnchorElement>("a.acg-prose-autolink");
+    if (autolinks.length !== 1) continue;
+
+    const allLinks = content.querySelectorAll("a");
+    // 如果本来就有多个正常链接，说明不是“重复 URL”场景，避免误伤
+    if (allLinks.length !== 1) continue;
+
+    const autolink = autolinks[0];
+    const href = autolink?.getAttribute("href") ?? "";
+    if (!href) continue;
+
+    const clone = content.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll("a.acg-prose-autolink").forEach((el) => el.remove());
+    const titleText = cleanLinkRowTitle((clone.textContent ?? "").trim());
+    if (!titleText || titleText.length < 8) continue;
+
+    const { host, path } = splitUrlForDisplay(href);
+
+    const a = document.createElement("a");
+    a.className = "acg-prose-linkrow";
+    a.href = href;
+    a.target = "_blank";
+    a.rel = "noreferrer noopener";
+    a.title = href;
+
+    const titleEl = document.createElement("div");
+    titleEl.className = "acg-prose-linkrow-title";
+    titleEl.textContent = titleText;
+
+    const metaEl = document.createElement("div");
+    metaEl.className = "acg-prose-linkrow-meta";
+    metaEl.textContent = path ? `${host} ${path}` : host;
+
+    a.appendChild(titleEl);
+    a.appendChild(metaEl);
+
+    content.innerHTML = "";
+    content.appendChild(a);
+  }
+}
+
 type FullTextSource = "jina" | "allorigins";
 type FullTextLoadResult = {
   md: string;
@@ -1588,6 +1647,12 @@ function wireFullTextReader() {
         } catch {
           // ignore
         }
+      }
+
+      try {
+        enhanceLinkListItems(contentEl);
+      } catch {
+        // ignore
       }
     };
 
