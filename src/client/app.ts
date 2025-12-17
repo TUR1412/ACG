@@ -812,6 +812,24 @@ function tryDeriveImageUrlFromLink(href: string): string | null {
   }
 }
 
+function looksLikeUrlText(text: string): boolean {
+  const s = text.trim();
+  if (!s) return false;
+  if (/^https?:\/\//i.test(s)) return true;
+  if (/^www\./i.test(s)) return true;
+  if (s.includes("://")) return true;
+  return false;
+}
+
+function isMostlyUrlLabel(label: string, href: string): boolean {
+  const a = label.trim();
+  const b = href.trim();
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (a.replace(/^https?:\/\//i, "") === b.replace(/^https?:\/\//i, "")) return true;
+  return false;
+}
+
 function renderInlineMarkdown(input: string, baseUrl: string): string {
   const tokens: InlineToken[] = [];
   const push = (t: InlineToken) => {
@@ -839,7 +857,27 @@ function renderInlineMarkdown(input: string, baseUrl: string): string {
   text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, url) => {
     const abs = safeHttpUrl(String(url), baseUrl);
     if (!abs) return String(label ?? "");
-    return push({ type: "link", text: String(label ?? ""), href: abs });
+    const labelText = String(label ?? "").trim();
+
+    // 如果链接本质上是“图片/图片页”，就直接图文化（避免全文里出现一堆 [1](...) / [https://...](...)）
+    const derivedImage = tryDeriveImageUrlFromLink(abs);
+    if (derivedImage) {
+      const numeric = /^\d+$/.test(labelText);
+      const urlLike = looksLikeUrlText(labelText) || isMostlyUrlLabel(labelText, abs);
+      const shortLabel = labelText.length <= 14;
+      if (numeric || urlLike || shortLabel) {
+        const src = bestInitialCoverSrc(derivedImage, 1200);
+        return push({ type: "img", alt: "", src, href: abs, originalSrc: derivedImage });
+      }
+    }
+
+    // 形如 [https://...](https://...)：渲染为链接卡片，而不是裸 URL 文本
+    if (looksLikeUrlText(labelText) || isMostlyUrlLabel(labelText, abs)) {
+      const parts = splitUrlForDisplay(abs);
+      return push({ type: "autolink", href: abs, host: parts.host, path: parts.path });
+    }
+
+    return push({ type: "link", text: labelText, href: abs });
   });
 
   // auto-linkify：把纯 URL 变成可点击的“链接卡片”（不联网预取元信息，避免拖慢）
