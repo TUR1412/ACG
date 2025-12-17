@@ -1855,6 +1855,131 @@ function cleanupHtmlDocument(doc: Document) {
   doc.querySelectorAll(selectors.join(",")).forEach((el) => el.remove());
 }
 
+function pruneMainElement(main: HTMLElement, baseUrl: string) {
+  let host = "";
+  try {
+    host = new URL(baseUrl).hostname.toLowerCase();
+  } catch {
+    // ignore
+  }
+
+  // 1) 站点特化：优先移除“已知非正文”的块（比纯 heuristics 更稳）
+  const siteSelectors: string[] = [];
+  if (host.endsWith("animenewsnetwork.com")) {
+    siteSelectors.push(
+      "instaread-player",
+      "[data-user-preferences-action-open]",
+      "#content-preferences",
+      ".box[data-topics]"
+    );
+  }
+
+  // 2) 通用去噪：正文内部依然可能夹带“相关推荐/分享/面包屑/订阅”等块
+  const genericSelectors = [
+    "nav",
+    "header",
+    "footer",
+    "aside",
+    ".share",
+    ".shares",
+    ".social",
+    ".sns",
+    ".comment",
+    ".comments",
+    ".related",
+    ".recommend",
+    ".recommended",
+    ".newsletter",
+    ".subscribe",
+    ".breadcrumb",
+    ".breadcrumbs",
+    ".pagination",
+    ".pager",
+    ".ad",
+    ".ads",
+    ".adsbygoogle",
+    ".advertisement"
+  ];
+
+  const mergedSelectors = [...siteSelectors, ...genericSelectors];
+  if (mergedSelectors.length > 0) {
+    main.querySelectorAll(mergedSelectors.join(",")).forEach((el) => el.remove());
+  }
+
+  // 3) 链接密度剪枝：把“几乎全是链接”的导航块/站点目录从正文里剥离
+  // 目标：减少“杂七杂八全进来”的情况；策略尽量保守，避免误删正文段落。
+  const noisyKeywords = [
+    "related",
+    "recommended",
+    "recommend",
+    "popular",
+    "ranking",
+    "archive",
+    "archives",
+    "newsletter",
+    "subscribe",
+    "follow",
+    "share",
+    "tag",
+    "tags",
+    "category",
+    "categories",
+    "関連記事",
+    "関連",
+    "おすすめ",
+    "人気",
+    "ランキング",
+    "タグ",
+    "カテゴリ",
+    "シェア"
+  ];
+
+  const normalizeText = (s: string) => s.replace(/\s+/g, " ").trim();
+  const linkMetrics = (el: HTMLElement) => {
+    const text = normalizeText(el.textContent ?? "");
+    const textLen = text.length;
+    const links = [...el.querySelectorAll<HTMLAnchorElement>("a")];
+    const aCount = links.length;
+    const aTextLen = links.reduce((sum, a) => sum + normalizeText(a.textContent ?? "").length, 0);
+    const pCount = el.querySelectorAll("p").length;
+    const liCount = el.querySelectorAll("li").length;
+    const imgCount = el.querySelectorAll("img").length;
+    const linkDensity = aTextLen / Math.max(1, textLen);
+    const lower = text.toLowerCase();
+    const keywordHit = noisyKeywords.some((k) => lower.includes(k.toLowerCase()));
+    return { text, textLen, aCount, aTextLen, pCount, liCount, imgCount, linkDensity, keywordHit };
+  };
+
+  const candidates = [...main.querySelectorAll<HTMLElement>("section, nav, aside, div, ul, ol, table, details")].reverse();
+  for (const el of candidates) {
+    if (el === main) continue;
+
+    const tag = el.tagName.toUpperCase();
+    if (tag === "P") continue;
+    if (tag === "H1" || tag === "H2" || tag === "H3" || tag === "H4" || tag === "H5" || tag === "H6") continue;
+
+    const m = linkMetrics(el);
+
+    // 极端链接块：短文本 + 高链接密度 + 几乎没有段落/图片 => 直接移除
+    if (m.textLen <= 260 && m.linkDensity >= 0.72 && m.pCount <= 0 && m.imgCount <= 0 && m.aCount >= 6) {
+      el.remove();
+      continue;
+    }
+
+    // 目录型列表：li 多 + 链接多 + 正文段落少 => 移除
+    if ((tag === "UL" || tag === "OL") && m.liCount >= 10 && m.linkDensity >= 0.62 && m.pCount <= 1 && m.imgCount <= 0) {
+      el.remove();
+      continue;
+    }
+
+    // 关键词命中：像“相关推荐/排行/标签/分享”等，又是链接为主的块 => 移除
+    if (m.keywordHit && m.aCount >= 8 && m.linkDensity >= 0.48 && m.pCount <= 1 && m.textLen <= 1600) {
+      el.remove();
+      continue;
+    }
+  }
+}
+
 async function loadFullTextViaJina(params: { url: string; timeoutMs: number }): Promise<FullTextLoadResult> {
   const { url, timeoutMs } = params;
   const readerUrl = `https://r.jina.ai/${url}`;
@@ -1874,6 +1999,7 @@ async function loadFullTextViaAllOrigins(params: { url: string; timeoutMs: numbe
   const doc = new DOMParser().parseFromString(html, "text/html");
   cleanupHtmlDocument(doc);
   const main = pickMainElement(doc, url);
+  pruneMainElement(main, url);
   const md = htmlElementToMarkdown(main, url);
   return { md, source: "allorigins", status: res.status };
 }
@@ -1887,6 +2013,7 @@ async function loadFullTextViaCodeTabs(params: { url: string; timeoutMs: number 
   const doc = new DOMParser().parseFromString(html, "text/html");
   cleanupHtmlDocument(doc);
   const main = pickMainElement(doc, url);
+  pruneMainElement(main, url);
   const md = htmlElementToMarkdown(main, url);
   return { md, source: "codetabs", status: res.status };
 }
