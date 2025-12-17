@@ -657,7 +657,7 @@ type FullTextCacheEntry = {
 
 // v3：当“全文预览”的抽取/清洗策略发生结构性变化时，升级缓存版本，避免用户长期被旧的错误正文污染。
 // 说明：这里采用“硬失效”策略（不自动迁移旧缓存），确保修复能立刻在所有页面生效，而不需要用户手动点「重新加载」或清空缓存。
-const FULLTEXT_CACHE_PREFIX = "acg.fulltext.v3:";
+const FULLTEXT_CACHE_PREFIX = "acg.fulltext.v4:";
 
 function fullTextCacheKey(postId: string): string {
   return `${FULLTEXT_CACHE_PREFIX}${postId}`;
