@@ -1838,6 +1838,18 @@ function pickMainElement(doc: Document, baseUrl: string): HTMLElement {
     }
   }
 
+  // 站点特化：Inside / アニメ！アニメ！（IID 系）正文容器命名稳定
+  if (host.endsWith("inside-games.jp") || host.endsWith("animeanime.jp")) {
+    const preferredSelectors = ["article.arti-body", ".arti-body"];
+    for (const sel of preferredSelectors) {
+      const el = doc.querySelector(sel);
+      if (!el || !(el instanceof HTMLElement)) continue;
+      const textLen = (el.textContent ?? "").replace(/\s+/g, " ").trim().length;
+      const pCount = el.querySelectorAll("p").length;
+      if (textLen >= 260 || pCount >= 2) return el;
+    }
+  }
+
   const candidates: HTMLElement[] = [];
   const seen = new Set<HTMLElement>();
   const push = (el: Element | null) => {
@@ -1959,28 +1971,28 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
     // ignore
   }
 
+  const hardCutAt = (sentinel: Element | null) => {
+    if (!sentinel) return;
+    const parent = sentinel.parentElement;
+    if (!parent) {
+      sentinel.remove();
+      return;
+    }
+    let cur: Element | null = sentinel;
+    while (cur) {
+      const next: Element | null = cur.nextElementSibling;
+      cur.remove();
+      cur = next;
+    }
+    // 如果 sentinel 父节点被删空，也顺带移除（避免残留空壳影响抽取）
+    if (parent !== main && parent.children.length === 0 && (parent.textContent ?? "").trim().length === 0) {
+      parent.remove();
+    }
+  };
+
   // 0) 站点特化（先截断再删除）：某些站点会把“文章结束后的讨论/导航/页脚”塞在主容器内部。
   // 如果不先截断，后续的通用去噪/链接密度剪枝仍可能遗漏，导致正文尾部出现大量杂质。
   if (host.endsWith("animenewsnetwork.com")) {
-    const hardCutAt = (sentinel: Element | null) => {
-      if (!sentinel) return;
-      const parent = sentinel.parentElement;
-      if (!parent) {
-        sentinel.remove();
-        return;
-      }
-      let cur: Element | null = sentinel;
-      while (cur) {
-        const next: Element | null = cur.nextElementSibling;
-        cur.remove();
-        cur = next;
-      }
-      // 如果 sentinel 父节点被删空，也顺带移除（避免残留空壳影响抽取）
-      if (parent !== main && parent.children.length === 0 && (parent.textContent ?? "").trim().length === 0) {
-        parent.remove();
-      }
-    };
-
     // ANN：文章正文结束点通常在 “discuss this in the forum / social-bookmarks / footer” 附近
     hardCutAt(main.querySelector("#social-bookmarks"));
     hardCutAt(main.querySelector("#footer"));
@@ -1992,6 +2004,14 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
       if (container && container !== main) container.remove();
       else a.remove();
     }
+  }
+
+  if (host.endsWith("inside-games.jp") || host.endsWith("animeanime.jp")) {
+    // 这两站的页脚/侧栏常作为普通 div/section 插在主容器里（不是 <footer>），必须硬截断。
+    hardCutAt(main.querySelector(".footer-common-link"));
+    hardCutAt(main.querySelector(".thm-footer"));
+    hardCutAt(main.querySelector(".footer-nav"));
+    hardCutAt(main.querySelector(".footer-sitemap"));
   }
 
   // 1) 站点特化：优先移除“已知非正文”的块（比纯 heuristics 更稳）
@@ -2018,7 +2038,16 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
       "blockquote.twitter-tweet",
       ".twitter-tweet",
       "figure.ctms-editor-instagram",
-      ".instagram-media"
+      ".instagram-media",
+      // 列表/侧栏/推荐/分享：属于页面壳内容
+      ".recommended-list",
+      ".recommended-ttl",
+      ".share-block",
+      ".sidebox",
+      "article.pickup-content",
+      "article.feature-content",
+      "article.ranking-content",
+      "article.side-content"
     );
   }
 
@@ -2413,7 +2442,9 @@ function wireFullTextReader() {
 
     if (!postId || !url || !contentEl) continue;
 
-    let running = false;
+    let viewMode: "auto" | "original" | "translated" = "auto";
+    let loadPromise: Promise<void> | null = null;
+    let translatePromise: Promise<void> | null = null;
     // 说明：全文可能很长，localStorage 写入会被配额/上限拦截（或被我们主动跳过）。
     // 但用户在“本次会话”里依然应该能用「查看原文/查看翻译」切换，所以保留内存态兜底。
     let memoryCache: FullTextCacheEntry | null = null;
@@ -2422,6 +2453,14 @@ function wireFullTextReader() {
       if (!statusEl) return;
       statusEl.textContent = text;
       statusEl.classList.toggle("hidden", text.trim().length === 0);
+    };
+
+    const flashStatus = (text: string, ms: number) => {
+      if (!text.trim()) return;
+      setStatus(text);
+      window.setTimeout(() => {
+        if ((statusEl?.textContent ?? "") === text) setStatus("");
+      }, ms);
     };
 
     const render = (text: string) => {
@@ -2456,6 +2495,20 @@ function wireFullTextReader() {
       }
     };
 
+    const hasTranslated = (cache: FullTextCacheEntry) => (lang === "zh" ? Boolean(cache.zh) : Boolean(cache.ja));
+    const applyTranslated = (cache: FullTextCacheEntry, translated: string) => {
+      if (lang === "zh") cache.zh = translated;
+      else cache.ja = translated;
+    };
+
+    const getCache = (): FullTextCacheEntry | null => {
+      const cache = memoryCache ?? readFullTextCache(postId);
+      if (!cache || cache.url !== url) return null;
+      if (!cache.original || cache.original.trim().length === 0) return null;
+      if (shouldRejectFullTextMarkdown(cache.original, url)) return null;
+      return cache;
+    };
+
     const showOriginal = (cache: FullTextCacheEntry) => {
       memoryCache = cache;
       render(cache.original);
@@ -2479,36 +2532,75 @@ function wireFullTextReader() {
       if (btnShowTranslated) btnShowTranslated.hidden = true;
     };
 
-    const ensureLoaded = async (force: boolean) => {
-      if (running) return;
-      running = true;
-      try {
-        setStatus(lang === "ja" ? "全文を読み込み中…" : "正在加载全文…");
+    const ensureLoaded = (force: boolean): Promise<void> => {
+      if (loadPromise) return loadPromise;
+      loadPromise = (async () => {
+        try {
+          setStatus(lang === "ja" ? "全文を読み込み中…" : "正在加载全文…");
 
-        let cache = force ? null : readFullTextCache(postId);
-        let loadResult: FullTextLoadResult | null = null;
-        if (cache && cache.url !== url) cache = null;
-        if (cache && shouldRejectFullTextMarkdown(cache.original, url)) cache = null;
+          let cache: FullTextCacheEntry | null = force ? null : memoryCache ?? readFullTextCache(postId);
+          let loadResult: FullTextLoadResult | null = null;
+          if (cache && cache.url !== url) cache = null;
+          if (cache && shouldRejectFullTextMarkdown(cache.original, url)) cache = null;
 
-        if (!cache || !cache.original) {
-          loadResult = await loadFullTextMarkdown({ url, timeoutMs: 22_000 });
-          cache = {
-            url,
-            fetchedAt: new Date().toISOString(),
-            original: normalizeFullTextMarkdown(loadResult.md)
-          };
-          writeFullTextCache(postId, cache);
+          if (!cache || !cache.original) {
+            loadResult = await loadFullTextMarkdown({ url, timeoutMs: 22_000 });
+            cache = {
+              url,
+              fetchedAt: new Date().toISOString(),
+              original: normalizeFullTextMarkdown(loadResult.md)
+            };
+            writeFullTextCache(postId, cache);
+          }
+          memoryCache = cache;
+          showOriginal(cache);
+          setStatus("");
+
+          if (loadResult && loadResult.source !== "jina") {
+            flashStatus(lang === "ja" ? "代替解析で抽出済み。" : "已使用备用解析提取全文。", 1600);
+          }
+        } catch (err) {
+          const status = typeof (err as any)?.status === "number" ? ((err as any).status as number) : undefined;
+          if (status === 451) {
+            setStatus(
+              lang === "ja"
+                ? "読み込みに失敗しました (HTTP 451)。このサイトは外部リーダーを拒否している可能性があります。元記事を開いてください。"
+                : "加载失败 (HTTP 451)：该来源可能拒绝第三方阅读模式。建议点击「打开原文」。"
+            );
+          } else if (status) {
+            setStatus(
+              lang === "ja"
+                ? `読み込みに失敗しました (HTTP ${status})。元記事を開いてください。`
+                : `加载失败 (HTTP ${status})：建议点击「打开原文」。`
+            );
+          } else {
+            setStatus(lang === "ja" ? "読み込みに失敗しました。元記事を開いてください。" : "加载失败：建议点击「打开原文」。");
+          }
         }
-        memoryCache = cache;
+      })().finally(() => {
+        loadPromise = null;
+      });
+      return loadPromise;
+    };
 
-        // 先展示原文（马上有内容），再异步翻译
-        showOriginal(cache);
-
-        if (loadResult && loadResult.source !== "jina") {
-          setStatus(lang === "ja" ? "代替解析で抽出済み。翻訳中…" : "已使用备用解析提取全文，正在翻译…");
-        } else {
-          setStatus(lang === "ja" ? "翻訳中…" : "正在翻译…");
+    const ensureTranslated = (): Promise<void> => {
+      if (translatePromise) return translatePromise;
+      translatePromise = (async () => {
+        await ensureLoaded(false);
+        const cache = getCache();
+        if (!cache) return;
+        if (hasTranslated(cache)) {
+          if (viewMode !== "original") showTranslated(cache);
+          return;
         }
+
+        const snapshotUrl = cache.url;
+        const snapshotOriginal = cache.original;
+
+        if (btnReload) btnReload.disabled = true;
+        if (btnShowTranslated) btnShowTranslated.disabled = true;
+
+        setStatus(lang === "ja" ? "翻訳中…" : "正在翻译…");
         const translated = await translateViaGtx({
           text: cache.original,
           target: lang,
@@ -2520,65 +2612,107 @@ function wireFullTextReader() {
           }
         });
 
-        if (lang === "zh") cache.zh = translated;
-        else cache.ja = translated;
-        memoryCache = cache;
-        writeFullTextCache(postId, cache);
+        // 若用户中途点了「重新加载」，原文可能已变化：此时不要把旧翻译写回（避免错配）
+        const current = memoryCache ?? readFullTextCache(postId);
+        if (!current || current.url !== snapshotUrl || current.original !== snapshotOriginal) return;
 
-        // 默认切到翻译（满足“选中文/日文就看懂”）
-        showTranslated(cache);
+        applyTranslated(current, translated);
+        memoryCache = current;
+        writeFullTextCache(postId, current);
+
+        // 默认切到翻译（满足“选中文/日文就看懂”）；若用户明确选择了原文，则只提示“翻译已就绪”
+        if (viewMode !== "original") showTranslated(current);
+        else flashStatus(lang === "ja" ? "翻訳が完了しました。必要なら「翻訳を見る」を押してください。" : "翻译已就绪，如需查看请点击「查看翻译」。", 2000);
         setStatus("");
-      } catch (err) {
-        const status = typeof (err as any)?.status === "number" ? ((err as any).status as number) : undefined;
-        if (status === 451) {
-          setStatus(
-            lang === "ja"
-              ? "読み込みに失敗しました (HTTP 451)。このサイトは外部リーダーを拒否している可能性があります。元記事を開いてください。"
-              : "加载失败 (HTTP 451)：该来源可能拒绝第三方阅读模式。建议点击「打开原文」。"
-          );
-        } else if (status) {
-          setStatus(lang === "ja" ? `読み込みに失敗しました (HTTP ${status})。元記事を開いてください。` : `加载失败 (HTTP ${status})：建议点击「打开原文」。`);
-        } else {
-          setStatus(lang === "ja" ? "読み込みに失敗しました。元記事を開いてください。" : "加载失败：建议点击「打开原文」。");
-        }
-      } finally {
-        running = false;
-      }
+      })()
+        .catch((err) => {
+          const msg = String((err as any)?.message ?? "");
+          const m = /HTTP\s+(\d+)/i.exec(msg);
+          if (m?.[1]) {
+            setStatus(lang === "ja" ? `翻訳に失敗しました (HTTP ${m[1]})。` : `翻译失败 (HTTP ${m[1]})。`);
+          } else {
+            setStatus(lang === "ja" ? "翻訳に失敗しました。" : "翻译失败。");
+          }
+        })
+        .finally(() => {
+          if (btnReload) btnReload.disabled = false;
+          if (btnShowTranslated) btnShowTranslated.disabled = false;
+          translatePromise = null;
+        });
+      return translatePromise;
     };
 
     btnReload?.addEventListener("click", (e) => {
       e.preventDefault();
-      ensureLoaded(true);
+      void ensureLoaded(true).then(() => {
+        if (viewMode !== "original") void ensureTranslated();
+      });
     });
 
     btnShowOriginal?.addEventListener("click", (e) => {
       e.preventDefault();
-      const cache = memoryCache ?? readFullTextCache(postId);
-      if (cache && cache.url === url) showOriginal(cache);
+      viewMode = "original";
+      const cache = getCache();
+      if (cache) showOriginal(cache);
+      setStatus("");
     });
 
     btnShowTranslated?.addEventListener("click", (e) => {
       e.preventDefault();
-      const cache = memoryCache ?? readFullTextCache(postId);
-      if (cache && cache.url === url) showTranslated(cache);
+      viewMode = "translated";
+      void ensureTranslated();
     });
 
-    // 初始：如果已有缓存并包含翻译，直接展示翻译；否则按配置自动加载
+    // 初始：命中缓存就立即展示（纯本地，不影响性能）；翻译按“进入视口再启动”
     const cached = readFullTextCache(postId);
-    if (cached && cached.url === url) {
+    if (cached && cached.url === url && cached.original && !shouldRejectFullTextMarkdown(cached.original, url)) {
       memoryCache = cached;
-      const hasTranslated = lang === "zh" ? Boolean(cached.zh) : Boolean(cached.ja);
-      if (hasTranslated) {
+      if (hasTranslated(cached)) {
+        viewMode = "translated";
         showTranslated(cached);
-        setStatus("");
-      } else if (autoload) {
-        ensureLoaded(false);
       } else {
+        viewMode = "auto";
         showOriginal(cached);
-        setStatus("");
       }
-    } else if (autoload) {
-      ensureLoaded(false);
+      setStatus("");
+    }
+
+    // 自动加载/翻译：进入视口再触发（显著降低“页面刚打开就卡卡的”）
+    if (autoload) {
+      const startTranslateIfWanted = () => {
+        if (viewMode === "original") return;
+        void ensureTranslated();
+      };
+
+      if (!("IntersectionObserver" in window)) {
+        // 无 IO：退化为立即加载（但仍不强制翻译；翻译仅在用户点击或视图需要时触发）
+        void ensureLoaded(false).then(startTranslateIfWanted);
+      } else {
+        // 1) 预取原文：接近视口时开始加载（降低“滚动到这里才开始转圈”的等待）
+        if (!getCache()) {
+          const ioLoad = new IntersectionObserver(
+            (entries) => {
+              if (!entries.some((e) => e.isIntersecting)) return;
+              ioLoad.disconnect();
+              void ensureLoaded(false);
+            },
+            { rootMargin: "0px 0px 900px 0px", threshold: 0 }
+          );
+          ioLoad.observe(block);
+        }
+
+        // 2) 启动翻译：真正进入视口后再翻译（避免在用户阅读上半部分时后台重活导致卡顿）
+        const ioTranslate = new IntersectionObserver(
+          (entries) => {
+            const hit = entries.some((e) => e.isIntersecting && (e.intersectionRatio ?? 0) > 0);
+            if (!hit) return;
+            ioTranslate.disconnect();
+            startTranslateIfWanted();
+          },
+          { threshold: 0.12 }
+        );
+        ioTranslate.observe(block);
+      }
     }
   }
 }
