@@ -823,10 +823,12 @@ function renderMarkdownToHtml(md: string, baseUrl: string): string {
 
   const flushPara = () => {
     if (para.length === 0) return;
-    const joined = para.join("\n").trim();
+    // Markdown 语义：段落内的单个换行通常应视为“空格”，否则会出现大量硬换行导致阅读灾难。
+    // （抓取/翻译的结果经常会把一段拆成多行；这里做“软换行合并”。）
+    const joined = para.join(" ").replace(/\s+/g, " ").trim();
     para = [];
     if (!joined) return;
-    const html = renderInlineMarkdown(joined, baseUrl).replace(/\n+/g, "<br />");
+    const html = renderInlineMarkdown(joined, baseUrl);
     out.push(`<p>${html}</p>`);
   };
 
@@ -974,6 +976,17 @@ function renderMarkdownToHtml(md: string, baseUrl: string): string {
       continue;
     }
 
+    // list continuation（下一行缩进）：把它并到上一条 li 里，避免“标题被换行断开”。
+    // 仅在存在缩进时触发，避免误伤正常段落。
+    if (list && /^\s{2,}\S/.test(rawLine)) {
+      const last = out[out.length - 1];
+      if (last && last.endsWith("</li>")) {
+        const extra = renderInlineMarkdown(trimmed, baseUrl);
+        out[out.length - 1] = last.replace(/<\/li>$/, `<br />${extra}</li>`);
+        continue;
+      }
+    }
+
     // normal paragraph
     para.push(trimmed);
   }
@@ -1004,6 +1017,76 @@ function detectProseKind(root: HTMLElement): ProseKind {
   }
 }
 
+function enhanceProseIndex(root: HTMLElement) {
+  // 只对“新闻目录/列表页”做折叠分区：让一大坨列表变得可浏览、可定位。
+  if (root.dataset.acgProseKind !== "index") return;
+
+  // 重复渲染（原文/翻译切换）会重建 innerHTML，因此这里不需要全局单例锁；
+  // 但同一次渲染里避免二次执行。
+  if (root.dataset.acgProseEnhanced === "1") return;
+  root.dataset.acgProseEnhanced = "1";
+
+  let sectionIndex = 0;
+  let el: Element | null = root.firstElementChild;
+
+  const shouldOpenByDefault = (title: string, idx: number) => {
+    if (idx <= 2) return true;
+    if (/news|ニュース|新闻动态|新闻|公告|press|feature/i.test(title)) return true;
+    return false;
+  };
+
+  while (el) {
+    if (el.tagName === "H4") {
+      sectionIndex += 1;
+      const h = el as HTMLElement;
+      const titleText = (h.textContent ?? "").trim();
+
+      const details = document.createElement("details");
+      details.className = "acg-prose-section";
+      if (shouldOpenByDefault(titleText, sectionIndex)) details.open = true;
+
+      const summary = document.createElement("summary");
+      summary.className = "acg-prose-section-summary";
+      summary.innerHTML = h.innerHTML;
+
+      const body = document.createElement("div");
+      body.className = "acg-prose-section-body";
+
+      details.appendChild(summary);
+      details.appendChild(body);
+
+      // 把 heading 之后的内容移入 section，直到下一个 H4
+      let sib = h.nextElementSibling;
+      while (sib && sib.tagName !== "H4") {
+        const next = sib.nextElementSibling;
+        body.appendChild(sib);
+        sib = next;
+      }
+
+      const itemCount = body.querySelectorAll("li").length;
+      if (itemCount > 0) {
+        const badge = document.createElement("span");
+        badge.className = "acg-prose-section-count";
+        badge.textContent = String(itemCount);
+        summary.appendChild(badge);
+      }
+
+      h.replaceWith(details);
+      el = sib;
+      continue;
+    }
+
+    el = el.nextElementSibling;
+  }
+}
+
+type FullTextSource = "jina" | "allorigins";
+type FullTextLoadResult = {
+  md: string;
+  source: FullTextSource;
+  status?: number;
+};
+
 async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), timeoutMs);
@@ -1014,15 +1097,246 @@ async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Respons
   }
 }
 
-async function loadFullTextMarkdown(params: { url: string; timeoutMs: number }): Promise<string> {
+function toAbsoluteUrlMaybe(raw: string, baseUrl: string): string | null {
+  try {
+    const u = new URL(raw, baseUrl);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
+function inlineHtmlToMarkdown(node: Node, baseUrl: string): string {
+  const t = (node.textContent ?? "").replace(/\s+/g, " ");
+
+  if (node.nodeType === Node.TEXT_NODE) return t;
+  if (node.nodeType !== Node.ELEMENT_NODE) return t;
+
+  const el = node as HTMLElement;
+  const tag = el.tagName.toUpperCase();
+
+  if (tag === "BR") return "\n";
+
+  if (tag === "A") {
+    const label = (el.textContent ?? "").trim().replace(/\s+/g, " ");
+    const hrefRaw = el.getAttribute("href") ?? "";
+    const hrefAbs = toAbsoluteUrlMaybe(hrefRaw, baseUrl);
+    if (!hrefAbs) return label || hrefRaw;
+    if (!label) return hrefAbs;
+    return `[${label}](${hrefAbs})`;
+  }
+
+  if (tag === "IMG") {
+    const alt = (el.getAttribute("alt") ?? "").trim();
+    const srcRaw = el.getAttribute("src") ?? "";
+    const srcAbs = toAbsoluteUrlMaybe(srcRaw, baseUrl);
+    if (!srcAbs) return alt ? `![${alt}]` : "";
+    return `![${alt}](${srcAbs})`;
+  }
+
+  if (tag === "CODE") {
+    const code = (el.textContent ?? "").trim();
+    if (!code) return "";
+    return `\`${code.replace(/`/g, "")}\``;
+  }
+
+  if (tag === "EM" || tag === "I") {
+    const inner = [...el.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("");
+    const s = inner.trim();
+    return s ? `_${s}_` : "";
+  }
+
+  if (tag === "STRONG" || tag === "B") {
+    const inner = [...el.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("");
+    const s = inner.trim();
+    return s ? `**${s}**` : "";
+  }
+
+  return [...el.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("");
+}
+
+function htmlElementToMarkdown(root: Element, baseUrl: string): string {
+  const blocks: string[] = [];
+
+  const push = (block: string) => {
+    const b = block.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+    if (b) blocks.push(b);
+  };
+
+  const walk = (node: Element) => {
+    const children = [...node.children] as HTMLElement[];
+    for (const child of children) {
+      const tag = child.tagName.toUpperCase();
+
+      if (/^H[1-6]$/.test(tag)) {
+        const level = Math.min(6, Math.max(1, Number(tag.slice(1))));
+        const text = [...child.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("").trim();
+        if (text) push(`${"#".repeat(level)} ${text}`);
+        continue;
+      }
+
+      if (tag === "P") {
+        const text = [...child.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("");
+        push(text);
+        continue;
+      }
+
+      if (tag === "BLOCKQUOTE") {
+        const text = (child.textContent ?? "").replace(/\r\n/g, "\n").trim();
+        if (text) {
+          const quoted = text
+            .split("\n")
+            .map((l) => `> ${l.trim()}`)
+            .join("\n");
+          push(quoted);
+        }
+        continue;
+      }
+
+      if (tag === "PRE") {
+        const text = (child.textContent ?? "").replace(/\r\n/g, "\n").trim();
+        if (text) push(`\`\`\`\n${text}\n\`\`\``);
+        continue;
+      }
+
+      if (tag === "UL") {
+        const items = [...child.querySelectorAll(":scope > li")];
+        const lines = items
+          .map((li) => {
+            const text = [...li.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("").replace(/\s+/g, " ").trim();
+            return text ? `- ${text}` : "";
+          })
+          .filter(Boolean);
+        push(lines.join("\n"));
+        continue;
+      }
+
+      if (tag === "OL") {
+        const items = [...child.querySelectorAll(":scope > li")];
+        let idx = 0;
+        const lines = items
+          .map((li) => {
+            idx += 1;
+            const text = [...li.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("").replace(/\s+/g, " ").trim();
+            return text ? `${idx}. ${text}` : "";
+          })
+          .filter(Boolean);
+        push(lines.join("\n"));
+        continue;
+      }
+
+      // 默认：继续深入（略过无意义容器）
+      walk(child);
+    }
+  };
+
+  walk(root);
+  return blocks.join("\n\n").trim();
+}
+
+function pickMainElement(doc: Document): HTMLElement {
+  const candidates: HTMLElement[] = [];
+  const push = (el: Element | null) => {
+    if (el && el instanceof HTMLElement) candidates.push(el);
+  };
+  push(doc.querySelector("article"));
+  push(doc.querySelector("main"));
+  push(doc.querySelector("#content"));
+  push(doc.querySelector("#main"));
+  push(doc.querySelector(".content"));
+  push(doc.body);
+
+  let best = doc.body;
+  let bestScore = 0;
+
+  for (const el of candidates) {
+    const text = (el.textContent ?? "").replace(/\s+/g, " ").trim();
+    if (text.length < 500) continue;
+    const aTextLen = [...el.querySelectorAll("a")].reduce((sum, a) => sum + ((a.textContent ?? "").trim().length || 0), 0);
+    const pCount = el.querySelectorAll("p").length;
+    const score = text.length + pCount * 120 - aTextLen * 0.35;
+    if (score > bestScore) {
+      best = el;
+      bestScore = score;
+    }
+  }
+
+  return best;
+}
+
+function cleanupHtmlDocument(doc: Document) {
+  // 删除明显的“壳/导航/脚本”，减少噪音与 XSS 面
+  const selectors = [
+    "script",
+    "style",
+    "noscript",
+    "iframe",
+    "svg",
+    "canvas",
+    "nav",
+    "header",
+    "footer",
+    "aside",
+    "form",
+    "[role='navigation']",
+    "[role='banner']",
+    "[role='contentinfo']",
+    "[aria-hidden='true']"
+  ];
+  doc.querySelectorAll(selectors.join(",")).forEach((el) => el.remove());
+}
+
+async function loadFullTextViaJina(params: { url: string; timeoutMs: number }): Promise<FullTextLoadResult> {
   const { url, timeoutMs } = params;
   const readerUrl = `https://r.jina.ai/${url}`;
   const res = await fetchWithTimeout(readerUrl, timeoutMs);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) return { md: "", source: "jina", status: res.status };
   const text = await res.text();
   const md = parseJinaMarkdown(text);
-  if (!md) throw new Error("empty");
-  return md;
+  return { md, source: "jina", status: res.status };
+}
+
+async function loadFullTextViaAllOrigins(params: { url: string; timeoutMs: number }): Promise<FullTextLoadResult> {
+  const { url, timeoutMs } = params;
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+  const res = await fetchWithTimeout(proxyUrl, timeoutMs);
+  if (!res.ok) return { md: "", source: "allorigins", status: res.status };
+  const html = await res.text();
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  cleanupHtmlDocument(doc);
+  const main = pickMainElement(doc);
+  const md = htmlElementToMarkdown(main, url);
+  return { md, source: "allorigins", status: res.status };
+}
+
+async function loadFullTextMarkdown(params: { url: string; timeoutMs: number }): Promise<FullTextLoadResult> {
+  const { url, timeoutMs } = params;
+
+  // 1) 首选：Jina Reader（质量高，输出 Markdown）
+  let primary: FullTextLoadResult | null = null;
+  try {
+    primary = await loadFullTextViaJina({ url, timeoutMs });
+    if (primary.md) return primary;
+  } catch {
+    // ignore（走后备）
+  }
+
+  // 2) 后备：AllOrigins（CORS proxy）+ 本地 HTML 抽取
+  // 注：此方案不一定能达到 Reader 的结构化质量，但能显著减少 451/403 导致的“完全不可用”。
+  let fallback: FullTextLoadResult | null = null;
+  try {
+    fallback = await loadFullTextViaAllOrigins({ url, timeoutMs });
+    if (fallback.md) return fallback;
+  } catch {
+    // ignore（统一抛错）
+  }
+
+  // 都失败：抛出更可诊断的错误（用于 UI 提示）
+  const status = primary?.status ?? fallback?.status;
+  const err = new Error(status ? `HTTP ${status}` : "load_failed") as Error & { status?: number };
+  err.status = status;
+  throw err;
 }
 
 function chunkForTranslate(text: string, maxLen: number): string[] {
@@ -1131,11 +1445,22 @@ function wireFullTextReader() {
     };
 
     const render = (text: string) => {
+      delete contentEl.dataset.acgProseEnhanced;
       contentEl.innerHTML = renderMarkdownToHtml(text, url);
+      let kind: ProseKind = "article";
       try {
-        contentEl.dataset.acgProseKind = detectProseKind(contentEl);
+        kind = detectProseKind(contentEl);
+        contentEl.dataset.acgProseKind = kind;
       } catch {
         // ignore
+      }
+
+      if (kind === "index") {
+        try {
+          enhanceProseIndex(contentEl);
+        } catch {
+          // ignore
+        }
       }
     };
 
@@ -1169,9 +1494,14 @@ function wireFullTextReader() {
         setStatus(lang === "ja" ? "全文を読み込み中…" : "正在加载全文…");
 
         let cache = force ? null : readFullTextCache(postId);
+        let loadResult: FullTextLoadResult | null = null;
         if (!cache || cache.url !== url || !cache.original) {
-          const md = await loadFullTextMarkdown({ url, timeoutMs: 22_000 });
-          cache = { url, fetchedAt: new Date().toISOString(), original: normalizeFullTextMarkdown(md) };
+          loadResult = await loadFullTextMarkdown({ url, timeoutMs: 22_000 });
+          cache = {
+            url,
+            fetchedAt: new Date().toISOString(),
+            original: normalizeFullTextMarkdown(loadResult.md)
+          };
           writeFullTextCache(postId, cache);
         }
         memoryCache = cache;
@@ -1179,7 +1509,11 @@ function wireFullTextReader() {
         // 先展示原文（马上有内容），再异步翻译
         showOriginal(cache);
 
-        setStatus(lang === "ja" ? "翻訳中…" : "正在翻译…");
+        if (loadResult?.source === "allorigins") {
+          setStatus(lang === "ja" ? "代替解析で抽出済み。翻訳中…" : "已使用备用解析提取全文，正在翻译…");
+        } else {
+          setStatus(lang === "ja" ? "翻訳中…" : "正在翻译…");
+        }
         const translated = await translateViaGtx({
           text: cache.original,
           target: lang,
@@ -1199,8 +1533,19 @@ function wireFullTextReader() {
         // 默认切到翻译（满足“选中文/日文就看懂”）
         showTranslated(cache);
         setStatus("");
-      } catch {
-        setStatus(lang === "ja" ? "読み込みに失敗しました。元記事を開いてください。" : "加载失败：建议点击「打开原文」。");
+      } catch (err) {
+        const status = typeof (err as any)?.status === "number" ? ((err as any).status as number) : undefined;
+        if (status === 451) {
+          setStatus(
+            lang === "ja"
+              ? "読み込みに失敗しました (HTTP 451)。このサイトは外部リーダーを拒否している可能性があります。元記事を開いてください。"
+              : "加载失败 (HTTP 451)：该来源可能拒绝第三方阅读模式。建议点击「打开原文」。"
+          );
+        } else if (status) {
+          setStatus(lang === "ja" ? `読み込みに失敗しました (HTTP ${status})。元記事を開いてください。` : `加载失败 (HTTP ${status})：建议点击「打开原文」。`);
+        } else {
+          setStatus(lang === "ja" ? "読み込みに失敗しました。元記事を開いてください。" : "加载失败：建议点击「打开原文」。");
+        }
       } finally {
         running = false;
       }
