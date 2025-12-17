@@ -756,7 +756,9 @@ function renderInlineMarkdown(input: string, baseUrl: string): string {
   const push = (t: InlineToken) => {
     const id = tokens.length;
     tokens.push(t);
-    return `@@ACG_TOKEN_${id}@@`;
+    // 注意：占位符里不要包含 "_" 或 "*"，否则会被 `applyBasicEmphasis()` 误判为 Markdown 强调语法，
+    // 导致替换失败并把占位符直接渲染到页面上（例如 `@@ACGTOKEN0@@`）。
+    return `@@ACGTOKEN${id}@@`;
   };
 
   let text = input;
@@ -783,7 +785,7 @@ function renderInlineMarkdown(input: string, baseUrl: string): string {
   text = escapeHtml(text);
   text = applyBasicEmphasis(text);
 
-  text = text.replace(/@@ACG_TOKEN_(\d+)@@/g, (_m, n) => {
+  text = text.replace(/@@ACGTOKEN(\d+)@@/g, (_m, n) => {
     const idx = Number(n);
     const t = tokens[idx];
     if (!t) return "";
