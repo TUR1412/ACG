@@ -749,7 +749,48 @@ function normalizeFullTextMarkdown(md: string): string {
 type InlineToken =
   | { type: "code"; text: string }
   | { type: "link"; text: string; href: string }
-  | { type: "img"; alt: string; src: string; href: string };
+  | { type: "img"; alt: string; src: string; href: string }
+  | { type: "autolink"; href: string; host: string; path: string };
+
+function splitUrlForDisplay(href: string): { host: string; path: string } {
+  try {
+    const u = new URL(href);
+    const host = u.hostname.replace(/^www\./, "");
+    const rawPath = `${u.pathname || ""}${u.search ? "?…" : ""}${u.hash ? "#…" : ""}`;
+    if (!rawPath || rawPath === "/") return { host, path: "" };
+
+    const maxLen = 52;
+    const path = rawPath.length > maxLen ? `…${rawPath.slice(Math.max(0, rawPath.length - (maxLen - 1)))}` : rawPath;
+    return { host, path };
+  } catch {
+    return { host: href, path: "" };
+  }
+}
+
+function trimUrlTrailingPunct(raw: string): { url: string; trailing: string } {
+  // 常见情况：句末标点/括号导致 URL “粘连”，需要拆开。
+  // 规则：尽量保守，只剥离明显的结束标点；括号要做简单配对判断。
+  let url = raw;
+  let trailing = "";
+  const count = (s: string, re: RegExp) => (s.match(re) ?? []).length;
+
+  while (url.length > 0) {
+    const ch = url[url.length - 1] ?? "";
+    if (!/[)\].,!?:;}"'»」】]/.test(ch)) break;
+
+    if (ch === ")") {
+      const open = count(url, /\(/g);
+      const close = count(url, /\)/g);
+      // 如果 close <= open，说明这个 ')' 可能是 URL 自身的一部分（例如 wikipedia 的括号页）
+      if (close <= open) break;
+    }
+
+    trailing = ch + trailing;
+    url = url.slice(0, -1);
+  }
+
+  return { url, trailing };
+}
 
 function renderInlineMarkdown(input: string, baseUrl: string): string {
   const tokens: InlineToken[] = [];
@@ -781,6 +822,15 @@ function renderInlineMarkdown(input: string, baseUrl: string): string {
     return push({ type: "link", text: String(label ?? ""), href: abs });
   });
 
+  // auto-linkify：把纯 URL 变成可点击的“链接卡片”（不联网预取元信息，避免拖慢）
+  text = text.replace(/https?:\/\/[^\s<>"']+/g, (m) => {
+    const { url, trailing } = trimUrlTrailingPunct(String(m));
+    const abs = safeHttpUrl(url, baseUrl);
+    if (!abs) return String(m);
+    const parts = splitUrlForDisplay(abs);
+    return `${push({ type: "autolink", href: abs, host: parts.host, path: parts.path })}${trailing}`;
+  });
+
   // 先整体 escape，再把 token 注入为 HTML
   text = escapeHtml(text);
   text = applyBasicEmphasis(text);
@@ -795,7 +845,7 @@ function renderInlineMarkdown(input: string, baseUrl: string): string {
     if (t.type === "link") {
       const href = escapeHtml(t.href);
       const label = escapeHtml(t.text);
-      return `<a href="${href}" target="_blank" rel="noreferrer noopener">${label}</a>`;
+      return `<a href="${href}" target="_blank" rel="noreferrer noopener" title="${href}">${label}</a>`;
     }
 
     if (t.type === "img") {
@@ -803,6 +853,14 @@ function renderInlineMarkdown(input: string, baseUrl: string): string {
       const src = escapeHtml(t.src);
       const alt = escapeHtml(t.alt);
       return `<a class="acg-prose-img-link" href="${href}" target="_blank" rel="noreferrer noopener"><img src="${src}" alt="${alt}" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-acg-cover data-acg-cover-original-src="${href}" onload="window.__acgCoverLoad?.(this)" onerror="window.__acgCoverError?.(this)" /></a>`;
+    }
+
+    if (t.type === "autolink") {
+      const href = escapeHtml(t.href);
+      const host = escapeHtml(t.host);
+      const path = escapeHtml(t.path);
+      const pathHtml = path ? `<span class="acg-prose-autolink-path">${path}</span>` : "";
+      return `<a class="acg-prose-autolink" href="${href}" target="_blank" rel="noreferrer noopener" title="${href}"><span class="acg-prose-autolink-text"><span class="acg-prose-autolink-host">${host}</span>${pathHtml}</span></a>`;
     }
 
     return "";

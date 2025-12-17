@@ -330,6 +330,62 @@ html[data-acg-device="phone"] .acg-prose-section-body {
   text-decoration-color: rgba(124, 58, 237, 0.55);
 }
 
+/* 纯链接：渲染成轻量“链接卡片”（不联网抓 title，避免拖慢） */
+.acg-prose .acg-prose-autolink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.52));
+  box-shadow: 0 16px 46px rgba(2, 6, 23, 0.10);
+  text-decoration: none;
+  color: rgba(15, 23, 42, 0.94);
+}
+
+.acg-prose .acg-prose-autolink::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.78), rgba(59, 130, 246, 0.55));
+  box-shadow: 0 10px 22px rgba(124, 58, 237, 0.20);
+  flex: 0 0 auto;
+}
+
+.acg-prose .acg-prose-autolink-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.acg-prose .acg-prose-autolink-host {
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.acg-prose .acg-prose-autolink-path {
+  color: rgba(15, 23, 42, 0.65);
+  font-size: 12px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.acg-prose .acg-prose-autolink:hover {
+  border-color: rgba(124, 58, 237, 0.22);
+  box-shadow: 0 18px 56px rgba(2, 6, 23, 0.12);
+}
+
+html[data-acg-device="phone"] .acg-prose .acg-prose-autolink {
+  padding: 9px 11px;
+  border-radius: 14px;
+}
+
 .acg-prose ul,
 .acg-prose ol {
   margin: 0.65em 0;
