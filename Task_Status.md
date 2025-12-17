@@ -71,3 +71,6 @@
 - [x] 56. 全文预览结构化：HTML 抽取补齐 `figure/figcaption` 转换（图注与图片关系更稳定）
 - [x] 57. 全文预览图墙治理：画廊合并支持“忽略/删除无意义段落”（如点击放大/空白占位），更容易收敛为网格
 - [x] 58. 设备识别再加固：touch 设备默认 phone（UA tablet 例外），修复手机仍显示 PC 视图与卡顿
+- [x] 59. ANN 脏数据修复：清理 `[[label](url)]]` 这类多括号链接（图片 credit 不再出现 `]]` 杂质）
+- [x] 60. 全文预览缺图再修复：HTML 抽取优先 `data-src/srcset`，跳过 `/img/spacer.gif` 等占位图（正文图片可见）
+- [x] 61. 图注更完整：`figure` 同时提取多个 `figcaption`（credit + copyright）并以引用块展示

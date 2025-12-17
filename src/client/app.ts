@@ -765,6 +765,11 @@ function normalizeFullTextMarkdown(md: string): string {
   // 只在“下一行开头很像 path continuation（短前缀 + /）”时拼接，避免误伤正常段落换行。
   text = text.replace(/(https?:\/\/[^\s)\]]+)\n+([A-Za-z0-9._-]{0,16}\/[^\s)\]]+)/g, "$1$2");
 
+  // 站点脏数据修复：少数来源（例如 ANN 的图片 credit）会输出形如 `[[label](url)]]` 的“多括号”。
+  // 这会破坏我们的 Markdown 渲染（并在 UI 中出现 `]]` 等杂质），因此在归一化阶段强行修正。
+  text = text.replace(/\[\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)\)\]\]/g, "[$1]($2)");
+  text = text.replace(/\[\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)\)\]/g, "[$1]($2)");
+
   // 兜底：如果内部占位符意外泄漏到 Markdown，直接清除（不应出现在用户内容里）
   text = text.replace(/@@ACGTOKEN\s*\d+\s*@@/g, "");
   text = text.replace(/＠＠ACGTOKEN\s*\d+\s*＠＠/g, "");
@@ -1857,9 +1862,26 @@ function inlineHtmlToMarkdown(node: Node, baseUrl: string): string {
     const alt = (el.getAttribute("alt") ?? "").trim();
     const pickSrc = (): string => {
       const keys = ["src", "data-src", "data-original", "data-lazy-src", "data-srcset", "srcset"];
+      const isPlaceholder = (raw: string) => {
+        const v = raw.trim();
+        if (!v) return true;
+        const lower = v.toLowerCase();
+        if (lower.startsWith("data:image/gif")) return true;
+        if (lower === "about:blank") return true;
+        // 常见懒加载占位：spacer/blank/transparent 之类的小 gif
+        if (/(?:^|\/)(?:spacer|blank|pixel|transparent)\.gif(?:$|[?#])/.test(lower)) return true;
+        return false;
+      };
+
+      let fallback = "";
       for (const k of keys) {
         const v = (el.getAttribute(k) ?? "").trim();
         if (!v) continue;
+        if (k === "src" && isPlaceholder(v)) {
+          // 记录一下，若完全找不到真实资源，才退回占位（避免“空白大图”污染排版）
+          fallback = v;
+          continue;
+        }
         // srcset: 取最后一个（通常是最大尺寸），然后截掉 `640w/2x` 这类描述符
         if (k.endsWith("srcset") && v.includes(",")) {
           const parts = v
@@ -1876,7 +1898,7 @@ function inlineHtmlToMarkdown(node: Node, baseUrl: string): string {
         }
         return v;
       }
-      return "";
+      return fallback;
     };
 
     const srcRaw = pickSrc();
@@ -1934,10 +1956,12 @@ function htmlElementToMarkdown(root: Element, baseUrl: string): string {
           if (md) parts.push(md);
         }
 
-        const captionEl = child.querySelector("figcaption");
-        const caption = captionEl
-          ? [...captionEl.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("").replace(/\s+/g, " ").trim()
-          : "";
+        const captionEls = [...child.querySelectorAll("figcaption")];
+        const captions = captionEls
+          .map((cap) => [...cap.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("").replace(/\s+/g, " ").trim())
+          .map((s) => s.trim())
+          .filter(Boolean);
+        const caption = captions.join("\n");
         if (caption) {
           const quoted = caption
             .split("\n")
