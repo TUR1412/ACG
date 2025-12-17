@@ -766,8 +766,8 @@ function normalizeFullTextMarkdown(md: string): string {
   text = text.replace(/(https?:\/\/[^\s)\]]+)\n+([A-Za-z0-9._-]{0,16}\/[^\s)\]]+)/g, "$1$2");
 
   // 兜底：如果内部占位符意外泄漏到 Markdown，直接清除（不应出现在用户内容里）
-  text = text.replace(/@@ACGTOKEN\d+@@/g, "");
-  text = text.replace(/＠＠ACGTOKEN\d+＠＠/g, "");
+  text = text.replace(/@@ACGTOKEN\s*\d+\s*@@/g, "");
+  text = text.replace(/＠＠ACGTOKEN\s*\d+\s*＠＠/g, "");
 
   // 清理“孤立括号/标点”噪音行（常由链接换行或抽取器残留导致）
   text = text.replace(/^\s*[)\]】」）]\s*$/gm, "");
@@ -816,6 +816,16 @@ function normalizeFullTextMarkdown(md: string): string {
   // 合并空行
   text = text.replace(/\n{3,}/g, "\n\n");
   return text.trim();
+}
+
+function stripInternalPlaceholdersFromHtml(html: string): string {
+  if (!html) return html;
+  return html
+    .replace(/@@ACGTOKEN\s*\d+\s*@@/g, "")
+    .replace(/＠＠ACGTOKEN\s*\d+\s*＠＠/g, "")
+    // 兜底：占位符被强调/杂质打断（例：`@@ACG<em>TOKEN</em>0@@`）
+    .replace(/@@ACG(?:<[^>]+>)*TOKEN(?:<[^>]+>)*\s*\d+\s*(?:<[^>]+>)*@@/g, "")
+    .replace(/＠＠ACG(?:<[^>]+>)*TOKEN(?:<[^>]+>)*\s*\d+\s*(?:<[^>]+>)*＠＠/g, "");
 }
 
 type InlineToken =
@@ -1418,6 +1428,9 @@ function cleanLinkRowTitle(raw: string): string {
 }
 
 function enhanceLinkListItems(root: HTMLElement) {
+  // 文章页：链接卡片化会让“杂质链接”更显眼。这里只服务于“目录/列表页”。
+  if (root.dataset.acgProseKind === "article") return;
+
   // 把“标题 + inside-games.jp URL 卡片”这类内容，压缩成单条可点击嵌入：
   // - 覆盖 list item 内部（.acg-prose-li-content）
   // - 覆盖部分来源会输出为段落的“标题 + URL”
@@ -1506,6 +1519,162 @@ function enhanceLinkListItems(root: HTMLElement) {
   }
 }
 
+function pruneProseArticleJunk(root: HTMLElement) {
+  // 目标：更激进地剥离“非正文内容”（相关推荐/社媒/导航/纯链接/免责声明等），避免全文预览变成“链接堆 + 大图墙”。
+  // 原则：宁可删多一点，也不要把页面壳/推荐区污染到正文里。
+  if (root.dataset.acgProseKind !== "article") return;
+
+  // 0) 兜底：内部占位符绝不允许泄漏到最终 UI
+  root.innerHTML = stripInternalPlaceholdersFromHtml(root.innerHTML);
+
+  const normalizeText = (s: string) => s.replace(/\s+/g, " ").trim();
+  const isTrivialText = (s: string) => {
+    const t = normalizeText(s);
+    if (!t) return true;
+    const compact = t.replace(/\s+/g, "");
+    if (!compact) return true;
+    if (/^[)\]】」）(（\[\[【「『"”'’《》<>.,，。:：;；!?！？·•、\-—–|]+$/.test(compact)) return true;
+    return false;
+  };
+
+  const isJunkLabel = (s: string) => {
+    const t = normalizeText(s).toLowerCase();
+    if (!t) return false;
+    // 常见“来源/引用/跳转提示”残留：只提供链接，不提供正文信息
+    if (/^(?:source|via|reference|references|read more|open|original|link|links)[:：]?$/.test(t)) return true;
+    if (/^(?:来源|來源|原文|引用元|参照|参考|參考|更多|查看原文|打开原文|查看|打开)[:：]?$/.test(t)) return true;
+    if (/^(?:続きを読む|リンク|リンク先|参照元)[:：]?$/.test(t)) return true;
+    return false;
+  };
+
+  const removeIfLinkOnly = (container: HTMLElement) => {
+    if (container.querySelector("img, pre, code")) return;
+    const links = [...container.querySelectorAll<HTMLAnchorElement>("a[href]")];
+    if (links.length === 0) return;
+
+    const clone = container.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll("a").forEach((a) => a.remove());
+    const rest = normalizeText(clone.textContent ?? "");
+
+    if (isTrivialText(rest) || isJunkLabel(rest)) {
+      container.remove();
+      return;
+    }
+
+    const full = normalizeText(container.textContent ?? "");
+    const aTextLen = links.reduce((sum, a) => sum + normalizeText(a.textContent ?? "").length, 0);
+    const linkDensity = aTextLen / Math.max(1, full.length);
+
+    // “几乎全是链接”的短段落：更像推荐/导航残留
+    if (full.length <= 280 && links.length >= 1 && linkDensity >= 0.78) {
+      container.remove();
+      return;
+    }
+
+    // 只有自动 URL 卡片，且正文残留很短：直接删
+    const nonAuto = links.filter((a) => !a.classList.contains("acg-prose-autolink") && !a.classList.contains("acg-prose-linkrow"));
+    if (nonAuto.length === 0 && rest.length <= 18) {
+      container.remove();
+      return;
+    }
+  };
+
+  // 1) 段落级：删除“纯链接/提示型”段落
+  for (const p of [...root.querySelectorAll<HTMLElement>("p")]) {
+    removeIfLinkOnly(p);
+  }
+
+  // 2) list item 级：删除“纯链接/提示型”条目（并清理空列表）
+  for (const li of [...root.querySelectorAll<HTMLElement>("li")]) {
+    const content = li.querySelector<HTMLElement>(":scope > .acg-prose-li-content") ?? li;
+    removeIfLinkOnly(content);
+    // 如果 content 被 remove 了，li 可能变空：一并处理
+    if ((li.textContent ?? "").trim().length === 0 && li.querySelectorAll("img").length === 0) li.remove();
+  }
+  for (const list of [...root.querySelectorAll<HTMLElement>("ul, ol")]) {
+    if (list.querySelectorAll(":scope > li").length === 0) list.remove();
+  }
+
+  // 3) 块级：更激进剥离“相关推荐/分享/标签/排行”等链接密度块（即使它夹在正文中间）
+  const noisyKeywords = [
+    "related",
+    "recommended",
+    "recommend",
+    "popular",
+    "ranking",
+    "archive",
+    "archives",
+    "subscribe",
+    "newsletter",
+    "follow",
+    "share",
+    "tag",
+    "tags",
+    "category",
+    "categories",
+    "sponsored",
+    "advertisement",
+    "read more",
+    "関連記事",
+    "関連",
+    "おすすめ",
+    "人気",
+    "ランキング",
+    "タグ",
+    "カテゴリ",
+    "シェア",
+    "フォロー",
+    "スポンサー",
+    "広告",
+    "続きを読む"
+  ];
+
+  const linkMetrics = (el: HTMLElement) => {
+    const text = normalizeText(el.textContent ?? "");
+    const textLen = text.length;
+    const links = [...el.querySelectorAll<HTMLAnchorElement>("a[href]")];
+    const aCount = links.length;
+    const aTextLen = links.reduce((sum, a) => sum + normalizeText(a.textContent ?? "").length, 0);
+    const pNodes = [...el.querySelectorAll<HTMLElement>("p")];
+    const longP = pNodes.filter((p) => normalizeText(p.textContent ?? "").length >= 120).length;
+    const liCount = el.querySelectorAll("li").length;
+    const imgCount = el.querySelectorAll("img").length;
+    const linkDensity = aTextLen / Math.max(1, textLen);
+    const lower = text.toLowerCase();
+    const keywordHit = noisyKeywords.some((k) => lower.includes(k.toLowerCase()));
+    return { textLen, aCount, longP, liCount, imgCount, linkDensity, keywordHit };
+  };
+
+  const candidates = [...root.querySelectorAll<HTMLElement>("section, div, ul, ol, table, details")].reverse();
+  for (const el of candidates) {
+    if (el === root) continue;
+    const m = linkMetrics(el);
+
+    // 明显正文块：有多段长段落 => 不动
+    if (m.longP >= 2) continue;
+
+    const tag = el.tagName.toUpperCase();
+
+    // 目录型/推荐型列表：li 多 + 链接密度高 + 无长段落
+    if ((tag === "UL" || tag === "OL") && m.liCount >= 6 && m.linkDensity >= 0.6 && m.longP === 0) {
+      el.remove();
+      continue;
+    }
+
+    // 关键词命中 + 链接为主：剥离
+    if (m.keywordHit && m.aCount >= 4 && m.linkDensity >= 0.35 && m.longP === 0 && m.textLen <= 2400) {
+      el.remove();
+      continue;
+    }
+
+    // 极端链接块：几乎全是链接，且没有图片/正文段落
+    if (m.linkDensity >= 0.88 && m.aCount >= 4 && m.longP === 0 && m.imgCount === 0 && m.textLen <= 2200) {
+      el.remove();
+      continue;
+    }
+  }
+}
+
 function enhanceProseImageGalleries(root: HTMLElement) {
   // 目标：全文预览中常见“多张图片链接/引用堆在一起”，会导致页面被大图淹没、排版极乱。
   // 策略：把连续的“纯图片段落”或“纯图片列表”收敛成一个网格画廊（缩略图），点击仍可打开原图/原页。
@@ -1528,6 +1697,14 @@ function enhanceProseImageGalleries(root: HTMLElement) {
       if (/^via[:：]/i.test(t)) return true;
     }
     return false;
+  };
+
+  const isIgnorableParagraph = (p: HTMLElement) => {
+    // 仅当段落不含可见结构（链接/图片/代码），且文本为“噪音/提示/空白”时，才移除
+    if (p.querySelector("img, a, pre, code")) return false;
+    const t = (p.textContent ?? "").trim();
+    if (!t) return true;
+    return isIgnorableJunkText(t);
   };
 
   const extractImageOnlyLink = (container: HTMLElement): HTMLAnchorElement | null => {
@@ -1588,6 +1765,12 @@ function enhanceProseImageGalleries(root: HTMLElement) {
   };
 
   for (const p of paras) {
+    if (isIgnorableParagraph(p)) {
+      // 这种段落常见于“点击放大/图片来源/空白占位”，删除后可让图片序列连续，从而被画廊收敛。
+      p.remove();
+      continue;
+    }
+
     const a = extractImageOnlyLink(p);
     if (a) {
       run.push({ p, a });
@@ -1740,6 +1923,30 @@ function htmlElementToMarkdown(root: Element, baseUrl: string): string {
         const level = Math.min(6, Math.max(1, Number(tag.slice(1))));
         const text = [...child.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("").trim();
         if (text) push(`${"#".repeat(level)} ${text}`);
+        continue;
+      }
+
+      if (tag === "FIGURE") {
+        const parts: string[] = [];
+        const imgs = [...child.querySelectorAll("img")];
+        for (const img of imgs) {
+          const md = inlineHtmlToMarkdown(img, baseUrl).trim();
+          if (md) parts.push(md);
+        }
+
+        const captionEl = child.querySelector("figcaption");
+        const caption = captionEl
+          ? [...captionEl.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("").replace(/\s+/g, " ").trim()
+          : "";
+        if (caption) {
+          const quoted = caption
+            .split("\n")
+            .map((l) => `> ${l.trim()}`)
+            .join("\n");
+          parts.push(quoted);
+        }
+
+        if (parts.length > 0) push(parts.join("\n\n"));
         continue;
       }
 
@@ -2465,13 +2672,21 @@ function wireFullTextReader() {
 
     const render = (text: string) => {
       delete contentEl.dataset.acgProseEnhanced;
-      contentEl.innerHTML = renderMarkdownToHtml(text, url);
+      contentEl.innerHTML = stripInternalPlaceholdersFromHtml(renderMarkdownToHtml(text, url));
       let kind: ProseKind = "article";
       try {
         kind = detectProseKind(contentEl);
         contentEl.dataset.acgProseKind = kind;
       } catch {
         // ignore
+      }
+
+      if (kind === "article") {
+        try {
+          pruneProseArticleJunk(contentEl);
+        } catch {
+          // ignore
+        }
       }
 
       if (kind === "index") {
