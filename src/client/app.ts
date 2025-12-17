@@ -1405,6 +1405,113 @@ function enhanceLinkListItems(root: HTMLElement) {
   }
 }
 
+function enhanceProseImageGalleries(root: HTMLElement) {
+  // 目标：全文预览中常见“多张图片链接/引用堆在一起”，会导致页面被大图淹没、排版极乱。
+  // 策略：把连续的“纯图片段落”或“纯图片列表”收敛成一个网格画廊（缩略图），点击仍可打开原图/原页。
+
+  const isIgnorableJunkText = (s: string) => {
+    const t = s.replace(/\s+/g, "").trim();
+    if (!t) return true;
+    // 常见残留：括号/引号/全角标点
+    if (/^[)\]】」）"”'’]+$/.test(t)) return true;
+    if (/^[（(\[【「『]+$/.test(t)) return true;
+    if (/^[,，.。:：;；!?！？]+$/.test(t)) return true;
+    return false;
+  };
+
+  const extractImageOnlyLink = (container: HTMLElement): HTMLAnchorElement | null => {
+    const a = container.querySelector<HTMLAnchorElement>(":scope > a.acg-prose-img-link");
+    if (!a) return null;
+
+    for (const node of [...container.childNodes]) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const t = node.textContent ?? "";
+        if (t.trim() === "") continue;
+        if (isIgnorableJunkText(t)) {
+          node.remove();
+          continue;
+        }
+        return null;
+      }
+
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        if (node === a) continue;
+        return null;
+      }
+    }
+
+    return a;
+  };
+
+  const mountGallery = (anchors: HTMLAnchorElement[], beforeEl: Element) => {
+    if (anchors.length < 2) return false;
+    const gallery = document.createElement("div");
+    gallery.className = "acg-prose-gallery";
+    for (const a of anchors) {
+      a.classList.add("acg-prose-gallery-item");
+      gallery.appendChild(a);
+    }
+    beforeEl.before(gallery);
+    return true;
+  };
+
+  // 1) 连续的“纯图片段落” -> 画廊
+  const paras = [...root.querySelectorAll<HTMLElement>("p")];
+  let run: { p: HTMLElement; a: HTMLAnchorElement }[] = [];
+  const flushRun = () => {
+    if (run.length < 2) {
+      run = [];
+      return;
+    }
+    const anchors = run.map((x) => x.a);
+    const first = run[0]?.p;
+    if (!first) {
+      run = [];
+      return;
+    }
+    const ok = mountGallery(anchors, first);
+    if (ok) {
+      for (const item of run) item.p.remove();
+    }
+    run = [];
+  };
+
+  for (const p of paras) {
+    const a = extractImageOnlyLink(p);
+    if (a) {
+      run.push({ p, a });
+      continue;
+    }
+    flushRun();
+  }
+  flushRun();
+
+  // 2) 纯图片列表（常见于“图片页 URL 列表”）-> 画廊
+  const lists = [...root.querySelectorAll<HTMLElement>("ul, ol")];
+  for (const list of lists) {
+    const li = [...list.querySelectorAll<HTMLElement>(":scope > li")];
+    if (li.length < 2) continue;
+
+    const anchors: HTMLAnchorElement[] = [];
+    let ok = true;
+    for (const item of li) {
+      const content = item.querySelector<HTMLElement>(":scope > .acg-prose-li-content") ?? item;
+      const a = extractImageOnlyLink(content);
+      if (!a) {
+        ok = false;
+        break;
+      }
+      anchors.push(a);
+    }
+    if (!ok || anchors.length < 2) continue;
+
+    const before = list;
+    const mounted = mountGallery(anchors, before);
+    if (!mounted) continue;
+    list.remove();
+  }
+}
+
 type FullTextSource = "jina" | "allorigins";
 type FullTextLoadResult = {
   md: string;
@@ -1786,6 +1893,12 @@ function wireFullTextReader() {
         } catch {
           // ignore
         }
+      }
+
+      try {
+        enhanceProseImageGalleries(contentEl);
+      } catch {
+        // ignore
       }
 
       try {
