@@ -1557,6 +1557,30 @@ function pruneProseArticleJunk(root: HTMLElement) {
     const links = [...container.querySelectorAll<HTMLAnchorElement>("a[href]")];
     if (links.length === 0) return;
 
+    // 媒体白名单：正文里的“预告片/视频”链接即使是纯链接，也属于内容，不应当作噪音删除。
+    const hasMediaLink = links.some((a) => {
+      const href = (a.getAttribute("href") ?? "").trim();
+      if (!href) return false;
+      try {
+        const u = new URL(href);
+        const host = u.hostname.replace(/^www\./, "").toLowerCase();
+        return (
+          host.endsWith("youtube.com") ||
+          host === "youtu.be" ||
+          host.endsWith("vimeo.com") ||
+          host === "player.vimeo.com" ||
+          host.endsWith("nicovideo.jp") ||
+          host.endsWith("nico.ms") ||
+          host.endsWith("bilibili.com") ||
+          host.endsWith("b23.tv") ||
+          host.endsWith("twitch.tv")
+        );
+      } catch {
+        return false;
+      }
+    });
+    if (hasMediaLink) return;
+
     const clone = container.cloneNode(true) as HTMLElement;
     clone.querySelectorAll("a").forEach((a) => a.remove());
     const rest = normalizeText(clone.textContent ?? "");
@@ -2150,7 +2174,78 @@ function pickMainElement(doc: Document, baseUrl: string): HTMLElement {
   return best ?? candidates[0] ?? fallbackBody;
 }
 
-function cleanupHtmlDocument(doc: Document) {
+function cleanupHtmlDocument(doc: Document, baseUrl: string) {
+  // 说明：全文抽取的目标不是“复刻网页”，而是拿到“可读正文”。
+  // 但某些站点会把“正文关键媒体（如 YouTube 预告片）”放在 iframe 里；
+  // 如果我们直接删除 iframe，会导致正文信息缺失。
+  // 处理：把可信媒体 iframe 转成“普通链接”后再统一清壳。
+
+  const pickIframeSrc = (iframe: HTMLIFrameElement): string => {
+    const keys = ["src", "data-src", "data-lazy-src", "data-original"];
+    for (const k of keys) {
+      const v = (iframe.getAttribute(k) ?? "").trim();
+      if (v) return v;
+    }
+    return "";
+  };
+
+  const normalizeMediaHref = (hrefAbs: string): { href: string; label: string } | null => {
+    try {
+      const u = new URL(hrefAbs);
+      const host = u.hostname.replace(/^www\./, "").toLowerCase();
+      const path = u.pathname || "/";
+
+      // YouTube: embed -> watch
+      if (host.endsWith("youtube.com") || host === "youtu.be") {
+        let id = "";
+        if (host === "youtu.be") {
+          id = (path || "/").replace(/^\/+/, "").split("/")[0] ?? "";
+        } else if (path.startsWith("/embed/")) {
+          id = path.slice("/embed/".length).split("/")[0] ?? "";
+        } else {
+          id = u.searchParams.get("v") ?? "";
+        }
+        if (!id) return { href: u.toString(), label: "Watch video (YouTube)" };
+        return { href: `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`, label: "Watch video (YouTube)" };
+      }
+
+      // Vimeo: player -> canonical
+      if (host === "player.vimeo.com" && path.startsWith("/video/")) {
+        const id = path.slice("/video/".length).split("/")[0] ?? "";
+        if (id) return { href: `https://vimeo.com/${encodeURIComponent(id)}`, label: "Watch video (Vimeo)" };
+        return { href: u.toString(), label: "Watch video (Vimeo)" };
+      }
+      if (host.endsWith("vimeo.com")) return { href: u.toString(), label: "Watch video (Vimeo)" };
+
+      // Nico / Bilibili / Twitch 等（常见 ACG 来源）
+      if (host.endsWith("nicovideo.jp") || host.endsWith("nico.ms")) return { href: u.toString(), label: "Watch video (Niconico)" };
+      if (host.endsWith("bilibili.com") || host.endsWith("b23.tv")) return { href: u.toString(), label: "Watch video (Bilibili)" };
+      if (host.endsWith("twitch.tv")) return { href: u.toString(), label: "Watch video (Twitch)" };
+
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  // 先把可信媒体 iframe 变成链接（保留信息，但避免 iframe 本身）
+  const iframes = [...doc.querySelectorAll<HTMLIFrameElement>("iframe")];
+  for (const iframe of iframes) {
+    const srcRaw = pickIframeSrc(iframe);
+    const abs = srcRaw ? toAbsoluteUrlMaybe(srcRaw, baseUrl) : null;
+    if (!abs) continue;
+    const media = normalizeMediaHref(abs);
+    if (!media) continue;
+
+    const p = doc.createElement("p");
+    const a = doc.createElement("a");
+    a.setAttribute("href", media.href);
+    a.textContent = media.label;
+    p.appendChild(a);
+
+    iframe.replaceWith(p);
+  }
+
   // 删除明显的“壳/导航/脚本”，减少噪音与 XSS 面
   const selectors = [
     "script",
@@ -2420,7 +2515,7 @@ async function loadFullTextViaAllOrigins(params: { url: string; timeoutMs: numbe
   if (!res.ok) return { md: "", source: "allorigins", status: res.status };
   const html = await res.text();
   const doc = new DOMParser().parseFromString(html, "text/html");
-  cleanupHtmlDocument(doc);
+  cleanupHtmlDocument(doc, url);
   const main = pickMainElement(doc, url);
   pruneMainElement(main, url);
   const md = htmlElementToMarkdown(main, url);
@@ -2434,7 +2529,7 @@ async function loadFullTextViaCodeTabs(params: { url: string; timeoutMs: number 
   if (!res.ok) return { md: "", source: "codetabs", status: res.status };
   const html = await res.text();
   const doc = new DOMParser().parseFromString(html, "text/html");
-  cleanupHtmlDocument(doc);
+  cleanupHtmlDocument(doc, url);
   const main = pickMainElement(doc, url);
   pruneMainElement(main, url);
   const md = htmlElementToMarkdown(main, url);
