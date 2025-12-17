@@ -1034,6 +1034,29 @@ function renderMarkdownToHtml(md: string, baseUrl: string): string {
   const text = normalizeFullTextMarkdown(md);
   if (!text) return "";
 
+  const baseKey = normalizeUrlForCompare(baseUrl);
+  const isSelfLinkLine = (raw: string): boolean => {
+    const s = raw.trim();
+    if (!s || !baseKey) return false;
+
+    // 纯 URL
+    if (looksLikeUrlText(s)) {
+      const abs = safeHttpUrl(s, baseUrl);
+      if (!abs) return false;
+      return normalizeUrlForCompare(abs) === baseKey;
+    }
+
+    // 单条 Markdown 链接（整行只有一个 link）：[text](url)
+    const m = /^\[([^\]]+)\]\(([^)]+)\)\s*$/.exec(s);
+    if (m?.[2]) {
+      const abs = safeHttpUrl(m[2], baseUrl);
+      if (!abs) return false;
+      return normalizeUrlForCompare(abs) === baseKey;
+    }
+
+    return false;
+  };
+
   const lines = text.split("\n");
   const out: string[] = [];
   let para: string[] = [];
@@ -1049,6 +1072,8 @@ function renderMarkdownToHtml(md: string, baseUrl: string): string {
     const joined = para.join(" ").replace(/\s+/g, " ").trim();
     para = [];
     if (!joined) return;
+    // 去掉“正文里重复出现的文章自身 URL”（常由阅读模式/抽取器残留造成，属于纯噪音）
+    if (isSelfLinkLine(joined)) return;
     const html = renderInlineMarkdown(joined, baseUrl);
     out.push(`<p>${html}</p>`);
   };
@@ -1183,17 +1208,28 @@ function renderMarkdownToHtml(md: string, baseUrl: string): string {
     const ul = /^[-*]\s+(.*)$/.exec(trimmed);
     if (ul) {
       flushPara();
-      openList("ul");
-      out.push(`<li class="acg-prose-li">${renderListItem(ul[1] ?? "")}</li>`);
+      const value = (ul[1] ?? "").trim();
+      if (isSelfLinkLine(value)) continue;
+      const liHtml = renderListItem(value);
+      if (liHtml.trim()) {
+        openList("ul");
+        out.push(`<li class="acg-prose-li">${liHtml}</li>`);
+      }
       continue;
     }
 
     const ol = /^\d+\.\s+(.*)$/.exec(trimmed);
     if (ol) {
       flushPara();
+      const value = (ol[1] ?? "").trim();
+      if (isSelfLinkLine(value)) continue;
       openList("ol");
-      olCounter += 1;
-      out.push(`<li class="acg-prose-li">${renderListItem(ol[1] ?? "", { orderedIndex: olCounter })}</li>`);
+      const nextIndex = olCounter + 1;
+      const liHtml = renderListItem(value, { orderedIndex: nextIndex });
+      if (liHtml.trim()) {
+        olCounter = nextIndex;
+        out.push(`<li class="acg-prose-li">${liHtml}</li>`);
+      }
       continue;
     }
 
@@ -1512,7 +1548,7 @@ function enhanceProseImageGalleries(root: HTMLElement) {
   }
 }
 
-type FullTextSource = "jina" | "allorigins";
+type FullTextSource = "jina" | "allorigins" | "codetabs";
 type FullTextLoadResult = {
   md: string;
   source: FullTextSource;
@@ -1667,12 +1703,44 @@ function htmlElementToMarkdown(root: Element, baseUrl: string): string {
   return blocks.join("\n\n").trim();
 }
 
-function pickMainElement(doc: Document): HTMLElement {
+function pickMainElement(doc: Document, baseUrl: string): HTMLElement {
+  let host = "";
+  try {
+    host = new URL(baseUrl).hostname.toLowerCase();
+  } catch {
+    // ignore
+  }
+
   const candidates: HTMLElement[] = [];
+  const seen = new Set<HTMLElement>();
   const push = (el: Element | null) => {
-    if (el && el instanceof HTMLElement) candidates.push(el);
+    if (!el || !(el instanceof HTMLElement)) return;
+    if (seen.has(el)) return;
+    seen.add(el);
+    candidates.push(el);
   };
+
+  // 站点特化：ANN（AnimeNewsNetwork）有很稳定的主容器命名
+  if (host.endsWith("animenewsnetwork.com")) {
+    push(doc.querySelector("#content-zone"));
+    push(doc.querySelector(".episode-review"));
+    push(doc.querySelector("#maincontent"));
+    push(doc.querySelector(".maincontent"));
+    push(doc.querySelector(".KonaBody"));
+  }
+
+  // 通用：常见文章容器
   push(doc.querySelector("article"));
+  push(doc.querySelector("[itemprop='articleBody']"));
+  push(doc.querySelector(".article-body"));
+  push(doc.querySelector(".article__body"));
+  push(doc.querySelector(".entry-content"));
+  push(doc.querySelector(".post-content"));
+  push(doc.querySelector(".post-body"));
+  push(doc.querySelector(".content__body"));
+  push(doc.querySelector(".c-article__body"));
+
+  // 通用：常见页面容器
   push(doc.querySelector("main"));
   push(doc.querySelector("#content"));
   push(doc.querySelector("#main"));
@@ -1714,7 +1782,29 @@ function cleanupHtmlDocument(doc: Document) {
     "[role='navigation']",
     "[role='banner']",
     "[role='contentinfo']",
-    "[aria-hidden='true']"
+    "[aria-hidden='true']",
+    // 常见“分享/评论/相关推荐/广告”等噪音块（尽量用“精确类名”，避免误删正文容器）
+    ".share",
+    ".shares",
+    ".social",
+    ".sns",
+    ".comment",
+    ".comments",
+    ".related",
+    ".recommend",
+    ".recommended",
+    ".newsletter",
+    ".subscribe",
+    ".breadcrumb",
+    ".breadcrumbs",
+    ".pagination",
+    ".pager",
+    ".adsbygoogle",
+    ".advertisement",
+    ".ad",
+    ".ads",
+    // ANN 常见噪音盒子（其脚本会尝试删除；我们在去掉 script 后手动清掉）
+    ".box[data-topics]"
   ];
   doc.querySelectorAll(selectors.join(",")).forEach((el) => el.remove());
 }
@@ -1737,9 +1827,84 @@ async function loadFullTextViaAllOrigins(params: { url: string; timeoutMs: numbe
   const html = await res.text();
   const doc = new DOMParser().parseFromString(html, "text/html");
   cleanupHtmlDocument(doc);
-  const main = pickMainElement(doc);
+  const main = pickMainElement(doc, url);
   const md = htmlElementToMarkdown(main, url);
   return { md, source: "allorigins", status: res.status };
+}
+
+async function loadFullTextViaCodeTabs(params: { url: string; timeoutMs: number }): Promise<FullTextLoadResult> {
+  const { url, timeoutMs } = params;
+  const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
+  const res = await fetchWithTimeout(proxyUrl, timeoutMs);
+  if (!res.ok) return { md: "", source: "codetabs", status: res.status };
+  const html = await res.text();
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  cleanupHtmlDocument(doc);
+  const main = pickMainElement(doc, url);
+  const md = htmlElementToMarkdown(main, url);
+  return { md, source: "codetabs", status: res.status };
+}
+
+function isProbablyIndexUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    const path = (u.pathname || "/").toLowerCase();
+    if (path === "/" || path === "") return true;
+    if (path.endsWith("/archive") || path.includes("/archive/")) return true;
+    if (/^\/(news|interest|feature|review|convention|column|press-release|newsfeed)\/?$/.test(path)) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+function looksLikeIndexMarkdown(md: string): boolean {
+  const text = md.replace(/\r\n/g, "\n").trim();
+  if (!text) return false;
+
+  const lower = text.toLowerCase();
+  const strongSignals = [
+    "chronological archives",
+    "alphabetical archives",
+    "time archives",
+    "按字母顺序排列的档案",
+    "时间档案"
+  ];
+  if (strongSignals.some((s) => lower.includes(s.toLowerCase()))) return true;
+
+  const lines = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  if (lines.length < 18) return false;
+
+  const listLine = (l: string) => /^(\*|-)\s+/.test(l) || /^\d+\.\s+/.test(l);
+  const headingLine = (l: string) => /^#{2,6}\s+/.test(l);
+  const timeLine = (l: string) => /^(\*|-)?\s*\d{1,2}:\d{2}\b/.test(l);
+  const dateLine = (l: string) =>
+    /^(\*|-)?\s*\d{1,2}\s*月\s*\d{1,2}\s*日\b/.test(l) ||
+    /^(\*|-)?\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i.test(l);
+
+  let listCount = 0;
+  let timeCount = 0;
+  let dateCount = 0;
+  let paragraphCount = 0;
+
+  for (const l of lines) {
+    if (timeLine(l)) timeCount += 1;
+    if (dateLine(l)) dateCount += 1;
+    if (listLine(l)) {
+      listCount += 1;
+      continue;
+    }
+    if (headingLine(l)) continue;
+    if (l.length >= 80) paragraphCount += 1;
+  }
+
+  const ratio = listCount / Math.max(1, lines.length);
+  if (ratio > 0.62 && (timeCount >= 8 || dateCount >= 8) && paragraphCount <= 4) return true;
+  if (ratio > 0.75 && paragraphCount <= 8) return true;
+  return false;
 }
 
 async function loadFullTextMarkdown(params: { url: string; timeoutMs: number }): Promise<FullTextLoadResult> {
@@ -1749,7 +1914,17 @@ async function loadFullTextMarkdown(params: { url: string; timeoutMs: number }):
   let primary: FullTextLoadResult | null = null;
   try {
     primary = await loadFullTextViaJina({ url, timeoutMs });
-    if (primary.md) return primary;
+    if (primary.md) {
+      // 兜底：Jina 偶发会返回“站点目录/导航 dump”（特别是某些站点的文章页）
+      // 这种内容看似很长，但实际上几乎全是时间/栏目列表，会把全文预览搞得又乱又没意义。
+      const normalized = normalizeFullTextMarkdown(primary.md);
+      if (!isProbablyIndexUrl(url) && looksLikeIndexMarkdown(normalized)) {
+        // 视为失败，强制走后备抽取
+        primary.md = "";
+      } else {
+        return primary;
+      }
+    }
   } catch {
     // ignore（走后备）
   }
@@ -1764,8 +1939,17 @@ async function loadFullTextMarkdown(params: { url: string; timeoutMs: number }):
     // ignore（统一抛错）
   }
 
+  // 3) 再后备：CodeTabs proxy + 本地 HTML 抽取（补 AllOrigins 偶发 5xx / 限流）
+  let fallback2: FullTextLoadResult | null = null;
+  try {
+    fallback2 = await loadFullTextViaCodeTabs({ url, timeoutMs });
+    if (fallback2.md) return fallback2;
+  } catch {
+    // ignore（统一抛错）
+  }
+
   // 都失败：抛出更可诊断的错误（用于 UI 提示）
-  const status = primary?.status ?? fallback?.status;
+  const status = primary?.status ?? fallback?.status ?? fallback2?.status;
   const err = new Error(status ? `HTTP ${status}` : "load_failed") as Error & { status?: number };
   err.status = status;
   throw err;
@@ -1953,7 +2137,7 @@ function wireFullTextReader() {
         // 先展示原文（马上有内容），再异步翻译
         showOriginal(cache);
 
-        if (loadResult?.source === "allorigins") {
+        if (loadResult && loadResult.source !== "jina") {
           setStatus(lang === "ja" ? "代替解析で抽出済み。翻訳中…" : "已使用备用解析提取全文，正在翻译…");
         } else {
           setStatus(lang === "ja" ? "翻訳中…" : "正在翻译…");
