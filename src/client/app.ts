@@ -1711,6 +1711,28 @@ function pickMainElement(doc: Document, baseUrl: string): HTMLElement {
     // ignore
   }
 
+  const fallbackBody = doc.body;
+
+  // 站点特化：ANN（AnimeNewsNetwork）有很稳定的主容器命名
+  // 说明：我们不能让“全页 body”参与评分，否则极易把导航/侧栏/页脚一起吞进正文（导致全文预览变成一坨目录/链接）。
+  if (host.endsWith("animenewsnetwork.com")) {
+    const preferredSelectors = [
+      "#content-zone .KonaBody",
+      "#content-zone .meat",
+      "#content-zone",
+      ".KonaBody",
+      "#maincontent .KonaBody",
+      "#maincontent"
+    ];
+    for (const sel of preferredSelectors) {
+      const el = doc.querySelector(sel);
+      if (!el || !(el instanceof HTMLElement)) continue;
+      const textLen = (el.textContent ?? "").replace(/\s+/g, " ").trim().length;
+      const pCount = el.querySelectorAll("p").length;
+      if (textLen >= 420 || pCount >= 2) return el;
+    }
+  }
+
   const candidates: HTMLElement[] = [];
   const seen = new Set<HTMLElement>();
   const push = (el: Element | null) => {
@@ -1719,15 +1741,6 @@ function pickMainElement(doc: Document, baseUrl: string): HTMLElement {
     seen.add(el);
     candidates.push(el);
   };
-
-  // 站点特化：ANN（AnimeNewsNetwork）有很稳定的主容器命名
-  if (host.endsWith("animenewsnetwork.com")) {
-    push(doc.querySelector("#content-zone"));
-    push(doc.querySelector(".episode-review"));
-    push(doc.querySelector("#maincontent"));
-    push(doc.querySelector(".maincontent"));
-    push(doc.querySelector(".KonaBody"));
-  }
 
   // 通用：常见文章容器
   push(doc.querySelector("article"));
@@ -1745,10 +1758,10 @@ function pickMainElement(doc: Document, baseUrl: string): HTMLElement {
   push(doc.querySelector("#content"));
   push(doc.querySelector("#main"));
   push(doc.querySelector(".content"));
-  push(doc.body);
 
-  let best = doc.body;
-  let bestScore = 0;
+  // 关键：不要让 body 参与评分（几乎总是“更长”），只作为最后兜底。
+  let best: HTMLElement | null = null;
+  let bestScore = -Infinity;
 
   for (const el of candidates) {
     const text = (el.textContent ?? "").replace(/\s+/g, " ").trim();
@@ -1762,7 +1775,7 @@ function pickMainElement(doc: Document, baseUrl: string): HTMLElement {
     }
   }
 
-  return best;
+  return best ?? fallbackBody;
 }
 
 function cleanupHtmlDocument(doc: Document) {
