@@ -689,9 +689,19 @@ function readFullTextCache(postId: string): FullTextCacheEntry | null {
 function writeFullTextCache(postId: string, entry: FullTextCacheEntry) {
   try {
     // 保护：避免 localStorage 被超大正文撑爆（不同浏览器配额不同）
-    const approx = entry.original.length + (entry.zh?.length ?? 0) + (entry.ja?.length ?? 0);
-    if (approx > 160_000) return;
-    localStorage.setItem(fullTextCacheKey(postId), JSON.stringify(entry));
+    // 策略：优先保证“原文”可缓存；若总体过大，则丢弃翻译缓存（翻译可重新生成）。
+    const MAX = 160_000;
+    const sizeOf = (it: FullTextCacheEntry) => it.original.length + (it.zh?.length ?? 0) + (it.ja?.length ?? 0);
+
+    const base: FullTextCacheEntry = {
+      url: entry.url,
+      fetchedAt: entry.fetchedAt,
+      original: entry.original
+    };
+    if (sizeOf(base) > MAX) return;
+
+    const toWrite = sizeOf(entry) <= MAX ? entry : base;
+    localStorage.setItem(fullTextCacheKey(postId), JSON.stringify(toWrite));
   } catch {
     // ignore
   }
@@ -1662,7 +1672,31 @@ function inlineHtmlToMarkdown(node: Node, baseUrl: string): string {
 
   if (tag === "IMG") {
     const alt = (el.getAttribute("alt") ?? "").trim();
-    const srcRaw = el.getAttribute("src") ?? "";
+    const pickSrc = (): string => {
+      const keys = ["src", "data-src", "data-original", "data-lazy-src", "data-srcset", "srcset"];
+      for (const k of keys) {
+        const v = (el.getAttribute(k) ?? "").trim();
+        if (!v) continue;
+        // srcset: 取最后一个（通常是最大尺寸），然后截掉 `640w/2x` 这类描述符
+        if (k.endsWith("srcset") && v.includes(",")) {
+          const parts = v
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean);
+          const last = parts[parts.length - 1] ?? "";
+          const url = last.split(/\s+/)[0] ?? "";
+          if (url) return url;
+        }
+        if (k.endsWith("srcset")) {
+          const url = v.split(/\s+/)[0] ?? "";
+          if (url) return url;
+        }
+        return v;
+      }
+      return "";
+    };
+
+    const srcRaw = pickSrc();
     const srcAbs = toAbsoluteUrlMaybe(srcRaw, baseUrl);
     if (!srcAbs) return alt ? `![${alt}]` : "";
     return `![${alt}](${srcAbs})`;
