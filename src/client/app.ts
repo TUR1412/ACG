@@ -1217,29 +1217,48 @@ function cleanLinkRowTitle(raw: string): string {
 }
 
 function enhanceLinkListItems(root: HTMLElement) {
-  // 把“标题 + 一坨 URL 卡片”的 list item 变成单个可点击条目（更像“嵌入预览”）
-  const contents = [...root.querySelectorAll<HTMLElement>(".acg-prose-li-content")];
-  if (contents.length === 0) return;
+  // 把“标题 + inside-games.jp URL 卡片”这类内容，压缩成单条可点击嵌入：
+  // - 覆盖 list item 内部（.acg-prose-li-content）
+  // - 覆盖部分来源会输出为段落的“标题 + URL”
+  const containers = [
+    ...root.querySelectorAll<HTMLElement>(".acg-prose-li-content"),
+    ...root.querySelectorAll<HTMLElement>("p")
+  ];
+  if (containers.length === 0) return;
 
-  for (const content of contents) {
+  for (const content of containers) {
     // 已处理过的不再处理
     if (content.querySelector(".acg-prose-linkrow")) continue;
+    // 不处理含图片/代码块的段落（避免误伤正常文章内容）
+    if (content.querySelector("img, pre, code")) continue;
 
     const autolinks = content.querySelectorAll<HTMLAnchorElement>("a.acg-prose-autolink");
     if (autolinks.length !== 1) continue;
-
-    const allLinks = content.querySelectorAll("a");
-    // 如果本来就有多个正常链接，说明不是“重复 URL”场景，避免误伤
-    if (allLinks.length !== 1) continue;
 
     const autolink = autolinks[0];
     const href = autolink?.getAttribute("href") ?? "";
     if (!href) continue;
 
+    const allLinks = [...content.querySelectorAll<HTMLAnchorElement>("a")];
+    const nonAutolinkLinks = allLinks.filter((a) => !a.classList.contains("acg-prose-autolink"));
+
+    // 如果存在其他链接，但不是同一个 href，则可能是正常段落里的引用，避免误伤
+    if (nonAutolinkLinks.some((a) => (a.getAttribute("href") ?? "") !== href)) continue;
+
+    // 取标题：优先用“移除链接后剩余文本”
     const clone = content.cloneNode(true) as HTMLElement;
-    clone.querySelectorAll("a.acg-prose-autolink").forEach((el) => el.remove());
-    const titleText = cleanLinkRowTitle((clone.textContent ?? "").trim());
-    if (!titleText || titleText.length < 8) continue;
+    clone.querySelectorAll("a").forEach((a) => {
+      if ((a.getAttribute("href") ?? "") === href) a.remove();
+    });
+    let titleText = cleanLinkRowTitle((clone.textContent ?? "").trim());
+
+    // 兜底：如果正文只剩很短的碎片，但存在“标题链接文本”，则用它
+    if ((!titleText || titleText.length < 6) && nonAutolinkLinks.length === 1) {
+      const t = cleanLinkRowTitle((nonAutolinkLinks[0]?.textContent ?? "").trim());
+      if (t && t.length >= 6 && !looksLikeUrlText(t)) titleText = t;
+    }
+
+    if (!titleText || titleText.length < 6) continue;
 
     const { host, path } = splitUrlForDisplay(href);
 
