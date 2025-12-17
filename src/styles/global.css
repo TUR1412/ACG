@@ -502,6 +502,33 @@ html[data-acg-device="phone"] .acg-prose .acg-prose-linkrow {
   display: inline;
 }
 
+/* article：纯 URL 不做“卡片化”，保持轻量（否则正文里会出现一堆大块链接卡片，显得杂） */
+.acg-prose[data-acg-prose-kind="article"] .acg-prose-autolink {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  text-decoration: underline;
+  text-decoration-color: rgba(124, 58, 237, 0.32);
+  text-underline-offset: 3px;
+  color: rgba(124, 58, 237, 0.98);
+}
+
+.acg-prose[data-acg-prose-kind="article"] .acg-prose-autolink::before {
+  display: none;
+}
+
+.acg-prose[data-acg-prose-kind="article"] .acg-prose-autolink-text {
+  display: inline;
+  flex-direction: row;
+  gap: 0;
+}
+
+.acg-prose[data-acg-prose-kind="article"] .acg-prose-autolink-path {
+  display: none;
+}
+
 /* index：新闻目录/列表页卡片化（更像资讯 App） */
 .acg-prose[data-acg-prose-kind="index"] ul,
 .acg-prose[data-acg-prose-kind="index"] ol {

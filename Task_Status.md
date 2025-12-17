@@ -75,3 +75,9 @@
 - [x] 60. 全文预览缺图再修复：HTML 抽取优先 `data-src/srcset`，跳过 `/img/spacer.gif` 等占位图（正文图片可见）
 - [x] 61. 图注更完整：`figure` 同时提取多个 `figcaption`（credit + copyright）并以引用块展示
 - [x] 62. 缓存自愈：检测 ANN 正文含 `/img/spacer.gif` 占位图则判定缓存失效并自动重新抓取（避免用户手动重载）
+- [x] 63. 全文预览再净化：ANN 图注默认忽略（credit/copyright/多括号杂质不再污染正文）+ 文章页短“Source/Via/©”段落自动剥离
+- [x] 64. 全文预览阅读体验：文章模式下纯 URL 不再卡片化（降噪且更像文章）
+- [x] 65. 抽取稳定性：媒体 iframe 替换避免 `<p>` 嵌套（降低 DOM 结构变形风险）
+- [x] 66. IID 系（Inside/AnimeAnime）清壳补强：移除 `.pickup-text-list/.main-pickup/.main-ranking/#_popIn_recommend` 等导流模块
+- [x] 67. Spotlight 轮播业务修复：桌面端点击封面兜底跳转（避免滚动容器吞掉 click 导致“点了没反应”）
+- [x] 68. 缓存穿透：全文缓存版本升级至 `acg.fulltext.v5`（线上用户无需手动重载即可获得新规则）

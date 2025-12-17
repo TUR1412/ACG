@@ -657,7 +657,7 @@ type FullTextCacheEntry = {
 
 // v3：当“全文预览”的抽取/清洗策略发生结构性变化时，升级缓存版本，避免用户长期被旧的错误正文污染。
 // 说明：这里采用“硬失效”策略（不自动迁移旧缓存），确保修复能立刻在所有页面生效，而不需要用户手动点「重新加载」或清空缓存。
-const FULLTEXT_CACHE_PREFIX = "acg.fulltext.v4:";
+const FULLTEXT_CACHE_PREFIX = "acg.fulltext.v5:";
 
 function fullTextCacheKey(postId: string): string {
   return `${FULLTEXT_CACHE_PREFIX}${postId}`;
@@ -771,8 +771,9 @@ function normalizeFullTextMarkdown(md: string): string {
   text = text.replace(/\[\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)\)\]/g, "[$1]($2)");
 
   // 兜底：如果内部占位符意外泄漏到 Markdown，直接清除（不应出现在用户内容里）
-  text = text.replace(/@@ACGTOKEN\s*\d+\s*@@/g, "");
-  text = text.replace(/＠＠ACGTOKEN\s*\d+\s*＠＠/g, "");
+  // 兼容：大小写变化 / 中间被插入空白 / 全角 @ 等异常形态
+  text = text.replace(/@@\s*ACG\s*TOKEN\s*\d+\s*@@/gi, "");
+  text = text.replace(/＠＠\s*ACG\s*TOKEN\s*\d+\s*＠＠/gi, "");
 
   // 清理“孤立括号/标点”噪音行（常由链接换行或抽取器残留导致）
   text = text.replace(/^\s*[)\]】」）]\s*$/gm, "");
@@ -826,11 +827,11 @@ function normalizeFullTextMarkdown(md: string): string {
 function stripInternalPlaceholdersFromHtml(html: string): string {
   if (!html) return html;
   return html
-    .replace(/@@ACGTOKEN\s*\d+\s*@@/g, "")
-    .replace(/＠＠ACGTOKEN\s*\d+\s*＠＠/g, "")
+    .replace(/@@\s*ACG\s*TOKEN\s*\d+\s*@@/gi, "")
+    .replace(/＠＠\s*ACG\s*TOKEN\s*\d+\s*＠＠/gi, "")
     // 兜底：占位符被强调/杂质打断（例：`@@ACG<em>TOKEN</em>0@@`）
-    .replace(/@@ACG(?:<[^>]+>)*TOKEN(?:<[^>]+>)*\s*\d+\s*(?:<[^>]+>)*@@/g, "")
-    .replace(/＠＠ACG(?:<[^>]+>)*TOKEN(?:<[^>]+>)*\s*\d+\s*(?:<[^>]+>)*＠＠/g, "");
+    .replace(/@@ACG(?:<[^>]+>)*TOKEN(?:<[^>]+>)*\s*\d+\s*(?:<[^>]+>)*@@/gi, "")
+    .replace(/＠＠ACG(?:<[^>]+>)*TOKEN(?:<[^>]+>)*\s*\d+\s*(?:<[^>]+>)*＠＠/gi, "");
 }
 
 type InlineToken =
@@ -1104,8 +1105,8 @@ function renderInlineMarkdown(input: string, baseUrl: string): string {
 
   // 兜底：如果占位符因强调/杂质被打断，避免把内部实现细节渲染给用户
   // 例：`@@ACG<em>TOKEN</em>0@@`、`＠＠ACGTOKEN0＠＠` 等
-  text = text.replace(/@@ACG(?:<[^>]+>)*TOKEN(?:<[^>]+>)*\d+(?:<[^>]+>)*@@/g, "");
-  text = text.replace(/＠＠ACG(?:<[^>]+>)*TOKEN(?:<[^>]+>)*\d+(?:<[^>]+>)*＠＠/g, "");
+  text = text.replace(/@@ACG(?:<[^>]+>)*TOKEN(?:<[^>]+>)*\d+(?:<[^>]+>)*@@/gi, "");
+  text = text.replace(/＠＠ACG(?:<[^>]+>)*TOKEN(?:<[^>]+>)*\d+(?:<[^>]+>)*＠＠/gi, "");
 
   return text;
 }
@@ -1552,6 +1553,33 @@ function pruneProseArticleJunk(root: HTMLElement) {
     return false;
   };
 
+  const isSourceLikeText = (raw: string) => {
+    const t = normalizeText(raw);
+    if (!t) return false;
+    const lower = t.toLowerCase();
+
+    // “来源/原文/跳转”类提示（通常带链接，信息量低）
+    if (/^(?:source|via|original|read more|open|link|links|credit|credits)[:：\s]/i.test(t)) return true;
+    if (/^(?:image|photo)(?:\s+via|\s*:)/i.test(t)) return true;
+    if (/^(?:来源|來源|原文|查看原文|打开原文|引用元|参照|参考|參考|出典)[:：\s]/.test(t)) return true;
+    if (/^(?:出典|参照元|続きを読む|リンク)[:：\s]/.test(t)) return true;
+
+    // 版权/署名类（短行）：更像页面壳残留
+    if (/^©/.test(t) || lower.includes("copyright") || lower.includes("all rights reserved")) return true;
+    return false;
+  };
+
+  const removeIfSourceLike = (container: HTMLElement) => {
+    if (container.querySelector("img, pre, code")) return;
+    const links = [...container.querySelectorAll<HTMLAnchorElement>("a[href]")];
+    if (links.length === 0) return;
+    const full = normalizeText(container.textContent ?? "");
+    if (!full) return;
+    // 太长的“引用/脚注”可能是正文的一部分，不动
+    if (full.length > 280) return;
+    if (isSourceLikeText(full)) container.remove();
+  };
+
   const removeIfLinkOnly = (container: HTMLElement) => {
     if (container.querySelector("img, pre, code")) return;
     const links = [...container.querySelectorAll<HTMLAnchorElement>("a[href]")];
@@ -1611,17 +1639,32 @@ function pruneProseArticleJunk(root: HTMLElement) {
   // 1) 段落级：删除“纯链接/提示型”段落
   for (const p of [...root.querySelectorAll<HTMLElement>("p")]) {
     removeIfLinkOnly(p);
+    removeIfSourceLike(p);
   }
 
   // 2) list item 级：删除“纯链接/提示型”条目（并清理空列表）
   for (const li of [...root.querySelectorAll<HTMLElement>("li")]) {
     const content = li.querySelector<HTMLElement>(":scope > .acg-prose-li-content") ?? li;
     removeIfLinkOnly(content);
+    removeIfSourceLike(content);
     // 如果 content 被 remove 了，li 可能变空：一并处理
     if ((li.textContent ?? "").trim().length === 0 && li.querySelectorAll("img").length === 0) li.remove();
   }
   for (const list of [...root.querySelectorAll<HTMLElement>("ul, ol")]) {
     if (list.querySelectorAll(":scope > li").length === 0) list.remove();
+  }
+
+  // 2.5) 引用块：图片来源/版权/原文入口这类“短引用”直接剥离（避免把正文变成 credit 墙）
+  for (const q of [...root.querySelectorAll<HTMLElement>("blockquote")]) {
+    const text = normalizeText(q.textContent ?? "");
+    if (!text) {
+      q.remove();
+      continue;
+    }
+    const links = q.querySelectorAll("a[href]").length;
+    if (text.length <= 260 && (links >= 1 || /^©/.test(text)) && isSourceLikeText(text)) {
+      q.remove();
+    }
   }
 
   // 3) 块级：更激进剥离“相关推荐/分享/标签/排行”等链接密度块（即使它夹在正文中间）
@@ -1954,6 +1997,33 @@ function inlineHtmlToMarkdown(node: Node, baseUrl: string): string {
 
 function htmlElementToMarkdown(root: Element, baseUrl: string): string {
   const blocks: string[] = [];
+  let host = "";
+  try {
+    host = new URL(baseUrl).hostname.toLowerCase();
+  } catch {
+    // ignore
+  }
+
+  const isLowValueCaption = (raw: string): boolean => {
+    const t = raw.replace(/\s+/g, " ").trim();
+    if (!t) return true;
+    const lower = t.toLowerCase();
+
+    // 典型“版权/来源/社媒 credit”类：信息价值低，且极易把正文污染成链接堆
+    if (/^(?:image|photo)(?:\s+via|\s*:)/i.test(t)) return true;
+    if (/^(?:source|via|credit|credits)[:：\s]/i.test(t)) return true;
+    if (/^(?:来源|來源|原文|引用元|参照|参考|參考|出典)[:：\s]/.test(t)) return true;
+    if (/^(?:画像|写真|出典|参照元|リンク)[:：\s]/.test(t)) return true;
+    if (t.startsWith("©") || lower.includes("copyright") || lower.includes("all rights reserved")) return true;
+
+    // 纯链接/几乎是链接：直接丢弃（正文已提供“打开原文”入口）
+    if (/^https?:\/\//i.test(t)) return true;
+    if (/^\[[^\]]+\]\(https?:\/\/[^)]+\)$/.test(t)) return true;
+
+    // 太短：通常是无意义标注
+    if (t.length <= 8) return true;
+    return false;
+  };
 
   const push = (block: string) => {
     const b = block.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
@@ -1980,18 +2050,18 @@ function htmlElementToMarkdown(root: Element, baseUrl: string): string {
           if (md) parts.push(md);
         }
 
-        const captionEls = [...child.querySelectorAll("figcaption")];
-        const captions = captionEls
-          .map((cap) => [...cap.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("").replace(/\s+/g, " ").trim())
-          .map((s) => s.trim())
-          .filter(Boolean);
-        const caption = captions.join("\n");
-        if (caption) {
-          const quoted = caption
-            .split("\n")
-            .map((l) => `> ${l.trim()}`)
-            .join("\n");
-          parts.push(quoted);
+        // figcaption 往往是“图片来源/版权声明/站点壳 credit”，对阅读价值不大，且常产生 `]]`/纯链接/杂质。
+        // 更激进：对 ANN 直接忽略；其他站点只保留“看起来像正文描述”的 caption，并用轻量 italic 呈现。
+        if (!host.endsWith("animenewsnetwork.com")) {
+          const captionEls = [...child.querySelectorAll("figcaption")];
+          const captions = captionEls
+            .map((cap) => [...cap.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("").replace(/\s+/g, " ").trim())
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .filter((s) => !isLowValueCaption(s))
+            .slice(0, 2);
+          const caption = captions.join(" / ").trim();
+          if (caption) parts.push(`_${caption}_`);
         }
 
         if (parts.length > 0) push(parts.join("\n\n"));
@@ -2237,13 +2307,18 @@ function cleanupHtmlDocument(doc: Document, baseUrl: string) {
     const media = normalizeMediaHref(abs);
     if (!media) continue;
 
-    const p = doc.createElement("p");
     const a = doc.createElement("a");
     a.setAttribute("href", media.href);
     a.textContent = media.label;
-    p.appendChild(a);
-
-    iframe.replaceWith(p);
+    // 避免把 <p> 嵌进 <p>（某些站点会把 iframe 放在段落内，嵌套会导致抽取/排版变形）
+    const parentTag = (iframe.parentElement?.tagName ?? "").toUpperCase();
+    if (parentTag === "P") {
+      iframe.replaceWith(a);
+    } else {
+      const p = doc.createElement("p");
+      p.appendChild(a);
+      iframe.replaceWith(p);
+    }
   }
 
   // 删除明显的“壳/导航/脚本”，减少噪音与 XSS 面
@@ -2355,6 +2430,11 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
   if (host.endsWith("inside-games.jp") || host.endsWith("animeanime.jp")) {
     // 这两站常见“购物导流/社媒嵌入”会把正文污染成广告+链接堆
     siteSelectors.push(
+      // 顶部“推荐/导流”列表（正文无关）
+      ".pickup-text-list",
+      ".main-pickup",
+      ".main-ranking",
+      "#_popIn_recommend",
       ".af_box",
       ".af_list",
       "[class^='af_']",
@@ -2569,7 +2649,8 @@ function looksLikeIndexMarkdown(md: string): boolean {
     .filter((l) => l.length > 0);
   if (lines.length < 18) return false;
 
-  const listLine = (l: string) => /^(\*|-)\s+/.test(l) || /^\d+\.\s+/.test(l);
+  // 列表行：有些站点会输出 `*04:00...`（无空格），因此这里允许 `\s*`
+  const listLine = (l: string) => /^(\*|-)\s*\S+/.test(l) || /^\d+\.\s*\S+/.test(l);
   const headingLine = (l: string) => /^#{2,6}\s+/.test(l);
   const timeLine = (l: string) => /^(\*|-)?\s*\d{1,2}:\d{2}\b/.test(l);
   const dateLine = (l: string) =>
@@ -4464,9 +4545,12 @@ function wireSpotlightCarousel() {
     let startX = 0;
     let startY = 0;
     let startScrollLeft = 0;
+    let downHref: string | null = null;
+    let downOpenInNewTab = false;
 
     const endDrag = (e?: PointerEvent) => {
       if (!dragging) return;
+      const shouldMaybeOpen = pointerType === "mouse" && Boolean(downHref) && downHref;
       if (pointerType === "mouse") {
         // mouse：脚本拖拽会直接改 scrollLeft，用它判断最稳
         if (Math.abs(track.scrollLeft - startScrollLeft) > 6) dragged = true;
@@ -4486,6 +4570,19 @@ function wireSpotlightCarousel() {
       pointerId = null;
       pointerType = "mouse";
       track.classList.remove("is-dragging");
+
+      // 重要：某些浏览器在滚动容器 + pointer 事件组合下，a[href] 的 click 可能会被吞掉（尤其是桌面端）。
+      // 这里在“确定不是拖拽”的情况下，补一个显式跳转，保证“点封面能进详情页”。
+      if (shouldMaybeOpen && !dragged) {
+        try {
+          if (downOpenInNewTab) window.open(String(downHref), "_blank", "noopener");
+          else window.location.href = String(downHref);
+        } catch {
+          // ignore
+        }
+      }
+      downHref = null;
+      downOpenInNewTab = false;
       // click 事件会在 pointerup 后触发，留一拍让捕获阶段能拦截
       window.setTimeout(() => {
         dragged = false;
@@ -4502,15 +4599,12 @@ function wireSpotlightCarousel() {
       dragged = false;
       pointerId = e.pointerId;
       pointerType = e.pointerType || "mouse";
+      downHref = (e.target as HTMLElement).closest<HTMLAnchorElement>("a[href]")?.href ?? null;
+      downOpenInNewTab = Boolean((e as PointerEvent).ctrlKey || (e as PointerEvent).metaKey);
       startX = e.clientX;
       startY = e.clientY;
       startScrollLeft = track.scrollLeft;
       track.classList.add("is-dragging");
-      try {
-        if (e.pointerType === "mouse") track.setPointerCapture(pointerId);
-      } catch {
-        // ignore
-      }
     });
 
     track.addEventListener("pointermove", (e) => {
