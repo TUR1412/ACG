@@ -1630,6 +1630,7 @@ function pruneProseArticleJunk(root: HTMLElement) {
 
     // “来源/原文/跳转”类提示（通常带链接，信息量低）
     if (/^(?:source|via|original|read more|open|link|links|credit|credits)[:：\s]/i.test(t)) return true;
+    if (/^disclosure[:：\s]/i.test(t)) return true;
     if (/^(?:image|photo)(?:\s+via|\s*:)/i.test(t)) return true;
     if (/^(?:来源|來源|原文|查看原文|打开原文|引用元|参照|参考|參考|出典)[:：\s]/.test(t)) return true;
     if (/^(?:出典|参照元|続きを読む|リンク)[:：\s]/.test(t)) return true;
