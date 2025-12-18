@@ -4821,7 +4821,7 @@ function wireSpotlightCarousel() {
 
     const endDrag = (e?: PointerEvent) => {
       if (!dragging) return;
-      const shouldMaybeOpen = pointerType === "mouse" && Boolean(downHref) && downHref;
+      const shouldMaybeOpen = Boolean(downHref) && downHref;
       if (pointerType === "mouse") {
         // mouse：脚本拖拽会直接改 scrollLeft，用它判断最稳
         if (Math.abs(track.scrollLeft - startScrollLeft) > 6) dragged = true;
