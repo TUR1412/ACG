@@ -893,6 +893,56 @@ html[data-acg-device="tablet"] .acg-post-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
 }
 
+/* 纯 CSS 兜底：
+   即使 data-acg-device 未能注入（或浏览器启用“桌面站点”导致宽度断点失真），
+   触控设备也必须走移动端节奏，避免“手机渲染成 PC 布局”与卡顿。 */
+@media (hover: none), (pointer: coarse) {
+  .acg-layout-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .acg-layout-grid > * {
+    grid-column: 1 / -1 !important;
+  }
+
+  .acg-post-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .acg-nav-desktop {
+    display: none !important;
+  }
+
+  .acg-nav-mobile {
+    display: flex !important;
+  }
+
+  .acg-home-cats-mobile {
+    display: flex !important;
+  }
+
+  .acg-home-cats-desktop {
+    display: none !important;
+  }
+
+  .acg-hscroll {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+
+  .acg-main,
+  .acg-footer {
+    padding-bottom: calc(32px + var(--acg-bottom-nav-h)) !important;
+  }
+
+  .glass {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
 /* Icon 基础：统一 SVG 图标风格（替换符号/emoji） */
 .acg-icon {
   display: inline-block;

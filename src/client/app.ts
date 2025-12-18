@@ -249,6 +249,37 @@ function prefersReducedMotion(): boolean {
   }
 }
 
+function runWhenIdle(task: () => void, timeoutMs = 1400) {
+  try {
+    const ric = (window as any).requestIdleCallback as
+      | ((cb: (deadline?: unknown) => void, opts?: { timeout?: number }) => number)
+      | undefined;
+    if (typeof ric === "function") {
+      ric(
+        () => {
+          try {
+            task();
+          } catch {
+            // ignore
+          }
+        },
+        { timeout: timeoutMs }
+      );
+      return;
+    }
+  } catch {
+    // ignore
+  }
+
+  window.setTimeout(() => {
+    try {
+      task();
+    } catch {
+      // ignore
+    }
+  }, Math.min(64, Math.max(0, timeoutMs)));
+}
+
 function getCoverContainer(img: HTMLElement): HTMLElement | null {
   return (
     img.closest<HTMLElement>("[data-has-cover]") ??
@@ -3551,14 +3582,25 @@ function createListFilter(params: {
   const clear = document.querySelector<HTMLButtonElement>("#acg-clear-search");
   if (!input) return;
 
-  const cards = [...document.querySelectorAll<HTMLElement>("[data-post-id]")];
-  const haystacks = cards.map((card) => {
-    const title = card.querySelector("a")?.textContent ?? "";
-    const summary = card.querySelector("p")?.textContent ?? "";
-    const tags = [...card.querySelectorAll("button[data-tag]")].map((b) => b.textContent ?? "").join(" ");
-    return normalizeText(`${title} ${summary} ${tags}`);
-  });
-  const hiddenState = cards.map((c) => c.classList.contains("hidden"));
+  // 性能：首页/分类页卡片较多时，DOMContentLoaded 里全量 query + textContent 拼接会造成“首屏卡一下”。
+  // 这里做“惰性初始化”：如果没有任何筛选条件，就延后到 idle；用户一交互则立即初始化并生效。
+  let cards: HTMLElement[] = [];
+  let haystacks: string[] = [];
+  let hiddenState: boolean[] = [];
+  let initialized = false;
+
+  const initIfNeeded = () => {
+    if (initialized) return;
+    cards = [...document.querySelectorAll<HTMLElement>("[data-post-id]")];
+    haystacks = cards.map((card) => {
+      const title = card.querySelector("a")?.textContent ?? "";
+      const summary = card.querySelector("p")?.textContent ?? "";
+      const tags = [...card.querySelectorAll("button[data-tag]")].map((b) => b.textContent ?? "").join(" ");
+      return normalizeText(`${title} ${summary} ${tags}`);
+    });
+    hiddenState = cards.map((c) => c.classList.contains("hidden"));
+    initialized = true;
+  };
 
   clear?.addEventListener("click", () => {
     input.value = "";
@@ -3568,6 +3610,9 @@ function createListFilter(params: {
   });
 
   const applyNow = () => {
+    initIfNeeded();
+    if (!initialized) return;
+
     const q = normalizeText(input.value);
     const followOnlyEnabled = filters.onlyFollowed;
     const followSourcesOnlyEnabled = filters.onlyFollowedSources;
@@ -3628,7 +3673,17 @@ function createListFilter(params: {
 
   input.addEventListener("input", schedule);
   document.addEventListener("acg:filters-changed", schedule);
-  applyNow();
+
+  const shouldInitImmediately =
+    input.value.trim().length > 0 ||
+    filters.onlyFollowed ||
+    filters.onlyFollowedSources ||
+    filters.hideRead ||
+    blocklist.size > 0 ||
+    disabledSources.size > 0;
+
+  if (shouldInitImmediately) applyNow();
+  else runWhenIdle(() => applyNow(), 1500);
 }
 
 type BookmarkLang = "zh" | "ja";
@@ -4971,7 +5026,7 @@ function main() {
   wireTagChips();
   wireDailyBriefCopy();
   wireSpotlightCarousel();
-  hydrateCoverStates();
+  runWhenIdle(() => hydrateCoverStates(), 700);
   wireDeviceDebug();
   focusSearchFromHash();
 }
