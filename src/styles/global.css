@@ -223,7 +223,7 @@ html[data-acg-device="phone"] .acg-icon-fab {
   font-size: 1.05em;
 }
 
-.acg-prose h4 {
+.acg-prose[data-acg-prose-kind="index"] h4 {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -235,7 +235,7 @@ html[data-acg-device="phone"] .acg-icon-fab {
   box-shadow: 0 12px 32px rgba(2, 6, 23, 0.08);
 }
 
-.acg-prose h4::before {
+.acg-prose[data-acg-prose-kind="index"] h4::before {
   content: "";
   width: 10px;
   height: 10px;
