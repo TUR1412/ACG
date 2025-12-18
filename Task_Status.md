@@ -81,3 +81,6 @@
 - [x] 66. IID 系（Inside/AnimeAnime）清壳补强：移除 `.pickup-text-list/.main-pickup/.main-ranking/#_popIn_recommend` 等导流模块
 - [x] 67. Spotlight 轮播业务修复：桌面端点击封面兜底跳转（避免滚动容器吞掉 click 导致“点了没反应”）
 - [x] 68. 缓存穿透：全文缓存版本升级至 `acg.fulltext.v5`（线上用户无需手动重载即可获得新规则）
+- [x] 69. 来源覆盖扩展：为 `natalie.mu` 添加正文容器优先级（`.NA_article_body`），避免吞掉“相关人物/标签”图墙
+- [x] 70. 缺图治理再增强：HTML→Markdown 支持 block-level `<img>`（修复 natalie 等站点正文图不在 `figure/p` 内导致的缺图）
+- [x] 71. ナタリー去壳：移除“関連記事/タグ/大图查看提示/评分信息”等非正文模块

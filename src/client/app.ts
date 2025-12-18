@@ -2035,6 +2035,14 @@ function htmlElementToMarkdown(root: Element, baseUrl: string): string {
     for (const child of children) {
       const tag = child.tagName.toUpperCase();
 
+      // block images：有些站点（例如 natalie）会把正文图放在 div/a 里而不是 figure/p，
+      // 如果不显式处理 IMG，会导致全文预览“看起来缺图”。
+      if (tag === "IMG") {
+        const md = inlineHtmlToMarkdown(child, baseUrl).trim();
+        if (md) push(md);
+        continue;
+      }
+
       if (/^H[1-6]$/.test(tag)) {
         const level = Math.min(6, Math.max(1, Number(tag.slice(1))));
         const text = [...child.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("").trim();
@@ -2136,6 +2144,23 @@ function pickMainElement(doc: Document, baseUrl: string): HTMLElement {
   }
 
   const fallbackBody = doc.body;
+
+  // 站点特化：ナタリー（natalie.mu）正文结构稳定：`.NA_article_body` 是最干净的正文容器。
+  // 如果误选整个 article，会把“标签/相关人物/推荐”一并吞进来，导致全文预览再次变成“目录 + 图墙 + 链接堆”。
+  if (host.endsWith("natalie.mu")) {
+    const preferredSelectors = ["article.NA_article .NA_article_body", ".NA_article_body", "article.NA_article"];
+    for (const sel of preferredSelectors) {
+      const el = doc.querySelector(sel);
+      if (!el || !(el instanceof HTMLElement)) continue;
+      const textLen = (el.textContent ?? "").replace(/\s+/g, " ").trim().length;
+      const pCount = el.querySelectorAll("p").length;
+      if (sel.includes("_body")) {
+        if (textLen >= 120 || pCount >= 1) return el;
+        continue;
+      }
+      if (textLen >= 420 || pCount >= 2) return el;
+    }
+  }
 
   // 站点特化：ANN（AnimeNewsNetwork）有很稳定的主容器命名
   // 说明：我们不能让“全页 body”参与评分，否则极易把导航/侧栏/页脚一起吞进正文（导致全文预览变成一坨目录/链接）。
@@ -2415,6 +2440,15 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
     hardCutAt(main.querySelector(".footer-sitemap"));
   }
 
+  if (host.endsWith("natalie.mu")) {
+    // ナタリー：正文后会拼接“タグ / 関連人物 / 推荐卡片”等大块内容（含大量缩略图与链接）
+    // 如果主容器不是 `.NA_article_body`，这里必须硬截断，避免全文预览变成“图墙”。
+    hardCutAt(main.querySelector(".NA_article_tag"));
+    // 正文中部/尾部的“関連記事”也属于壳内容
+    const embeds = [...main.querySelectorAll<HTMLElement>(".NA_article_embed_article")];
+    for (const el of embeds) el.remove();
+  }
+
   // 1) 站点特化：优先移除“已知非正文”的块（比纯 heuristics 更稳）
   const siteSelectors: string[] = [];
   if (host.endsWith("animenewsnetwork.com")) {
@@ -2454,6 +2488,16 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
       "article.feature-content",
       "article.ranking-content",
       "article.side-content"
+    );
+  }
+  if (host.endsWith("natalie.mu")) {
+    siteSelectors.push(
+      ".NA_article_embed_article",
+      ".NA_article_tag",
+      ".NA_article_img_link",
+      ".NA_article_data",
+      ".NA_article_score",
+      ".NA_article_score-comment"
     );
   }
 
