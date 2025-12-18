@@ -881,6 +881,12 @@ html[data-acg-device="tablet"] .acg-nav-mobile {
   display: flex !important;
 }
 
+/* 兜底：即使启用了“桌面站点”导致 lg 断点触发，触控设备也必须保留底部导航（否则会显得像 PC 站点） */
+html[data-acg-device="phone"] .acg-bottom-nav,
+html[data-acg-device="tablet"] .acg-bottom-nav {
+  display: flex !important;
+}
+
 html[data-acg-device="tablet"] .acg-layout-grid {
   grid-template-columns: 1fr !important;
 }
@@ -896,7 +902,7 @@ html[data-acg-device="tablet"] .acg-post-grid {
 /* 纯 CSS 兜底：
    即使 data-acg-device 未能注入（或浏览器启用“桌面站点”导致宽度断点失真），
    触控设备也必须走移动端节奏，避免“手机渲染成 PC 布局”与卡顿。 */
-@media (hover: none), (pointer: coarse) {
+@media (hover: none), (pointer: coarse), (any-pointer: coarse), (any-hover: none) {
   .acg-layout-grid {
     grid-template-columns: 1fr !important;
   }
@@ -914,6 +920,10 @@ html[data-acg-device="tablet"] .acg-post-grid {
   }
 
   .acg-nav-mobile {
+    display: flex !important;
+  }
+
+  .acg-bottom-nav {
     display: flex !important;
   }
 
