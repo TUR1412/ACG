@@ -618,17 +618,19 @@ html[data-acg-device="phone"] .acg-prose[data-acg-prose-kind="index"] .acg-prose
 .acg-prose img {
   max-width: 100%;
   height: auto;
-  max-height: 520px;
+  /* 文章页常会有多张配图：限制高度 + 降低阴影存在感，避免“整页大图墙”压过正文阅读 */
+  max-height: 480px;
   margin-left: auto;
   margin-right: auto;
   border-radius: 18px;
   border: 1px solid rgba(15, 23, 42, 0.10);
-  box-shadow: 0 18px 60px rgba(2, 6, 23, 0.10);
+  box-shadow: 0 14px 42px rgba(2, 6, 23, 0.08);
 }
 
 html[data-acg-device="phone"] .acg-prose img {
-  max-height: 420px;
+  max-height: 340px;
   border-radius: 16px;
+  box-shadow: none;
 }
 
 .acg-prose .acg-prose-img-link {
