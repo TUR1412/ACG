@@ -138,7 +138,7 @@ const spotlight = (() => {
         </button>
       </div>
 
-      <div class="acg-hscroll relative mt-5 -mx-1 flex gap-3 overflow-x-auto px-1 pb-1 sm:hidden snap-x snap-mandatory">
+      <div class="acg-home-cats-mobile acg-hscroll relative mt-5 -mx-1 flex gap-3 overflow-x-auto px-1 pb-1 sm:hidden snap-x snap-mandatory">
         {CATEGORIES.map((c) => (
           <a
             href={href(`/ja/c/${c}/`)}
@@ -163,7 +163,7 @@ const spotlight = (() => {
         ))}
       </div>
 
-      <div class="relative mt-5 hidden grid-cols-2 gap-3 sm:grid sm:grid-cols-4">
+      <div class="acg-home-cats-desktop relative mt-5 hidden grid-cols-2 gap-3 sm:grid sm:grid-cols-4">
         {CATEGORIES.map((c) => (
           <a
             href={href(`/ja/c/${c}/`)}

@@ -822,6 +822,17 @@ html[data-acg-device="tablet"] .acg-hscroll {
   overflow-y: hidden !important;
 }
 
+/* 首页专项：手机/平板即使启用了“桌面站点”导致 sm 断点生效，也必须保持移动端的分类横滑（而不是桌面网格）。 */
+html[data-acg-device="phone"] .acg-home-cats-mobile,
+html[data-acg-device="tablet"] .acg-home-cats-mobile {
+  display: flex !important;
+}
+
+html[data-acg-device="phone"] .acg-home-cats-desktop,
+html[data-acg-device="tablet"] .acg-home-cats-desktop {
+  display: none !important;
+}
+
 /* 列表卡片：手机端始终用“移动端媒体卡片”布局（避免 sm/md 触发桌面版） */
 html[data-acg-device="phone"] .acg-post-card-body {
   display: flex !important;
