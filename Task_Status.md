@@ -84,3 +84,12 @@
 - [x] 69. 来源覆盖扩展：为 `natalie.mu` 添加正文容器优先级（`.NA_article_body`），避免吞掉“相关人物/标签”图墙
 - [x] 70. 缺图治理再增强：HTML→Markdown 支持 block-level `<img>`（修复 natalie 等站点正文图不在 `figure/p` 内导致的缺图）
 - [x] 71. ナタリー去壳：移除“関連記事/タグ/大图查看提示/评分信息”等非正文模块
+- [x] 72. 全文预览根因再修：识别 Jina/代理返回的 JSON 拦截体（如 `code:451/SecurityCompromiseError`），拒绝当正文渲染并自动走后备解析
+- [x] 73. 全文预览更激进：识别“整页壳 dump”（导航/页脚/Logo 菜单混入）并判失败，避免满屏杂链/大图
+- [x] 74. 站点策略：对 `inside-games.jp / animeanime.jp / otakumode.com` 跳过 Jina 优先走 HTML 抽取（减少卡顿与噪音）
+- [x] 75. TOM（otakumode.com）适配：正文容器优先 `.p-article__text/.p-article__body` + 评论/工具栏硬截断 + 去壳选择器
+- [x] 76. 追踪像素治理：HTML 抽取阶段删除 1x1/2x2 像素与已知 user-sync 域名；Markdown 归一化阶段清理追踪图行
+- [x] 77. 缓存穿透：全文缓存版本升级至 `acg.fulltext.v6`（保证线上立即吃到新净化规则）
+- [x] 78. 移动端紧急修复：设备识别增加 `matchMedia(pointer/hover)` 兜底，降低“手机在桌面站点下被渲染成 PC”概率
+- [x] 79. 横滑体验补强：`acg-hscroll` 在 tablet/phone 设备分级下强制横向可滑（避免断点导致换行不可滑）
+- [x] 80. Spotlight 控件再收敛：左右切换改为更弱干扰的侧边竖条（减少遮挡与突兀感）

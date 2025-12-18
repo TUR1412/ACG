@@ -657,7 +657,7 @@ type FullTextCacheEntry = {
 
 // v3：当“全文预览”的抽取/清洗策略发生结构性变化时，升级缓存版本，避免用户长期被旧的错误正文污染。
 // 说明：这里采用“硬失效”策略（不自动迁移旧缓存），确保修复能立刻在所有页面生效，而不需要用户手动点「重新加载」或清空缓存。
-const FULLTEXT_CACHE_PREFIX = "acg.fulltext.v5:";
+const FULLTEXT_CACHE_PREFIX = "acg.fulltext.v6:";
 
 function fullTextCacheKey(postId: string): string {
   return `${FULLTEXT_CACHE_PREFIX}${postId}`;
@@ -818,6 +818,34 @@ function normalizeFullTextMarkdown(md: string): string {
   let end = lines.length;
   while (end > 0 && isTrailingJunkLine(lines[end - 1] ?? "")) end -= 1;
   text = lines.slice(0, end).join("\n");
+
+  // 删除明显的“追踪像素/用户同步”图片（常见于部分站点页脚/广告脚本残留）。
+  // 这些图片对阅读价值为 0，且会把全文预览变成一串大图/破图，极其影响观感。
+  const isTrackingImageLine = (raw: string): boolean => {
+    const s = raw.trim();
+    if (!s) return false;
+    const m = /^!\[[^\]]*\]\(([^)]+)\)\s*$/.exec(s);
+    if (!m?.[1]) return false;
+    const href = String(m[1]).trim().toLowerCase();
+    if (!href) return false;
+    if (href.startsWith("data:image/gif")) return true;
+    const bad = [
+      "imgvc.com/i/bf.png",
+      "sync.intentiq.com/profiles_engine",
+      "intentiq.com/profiles_engine",
+      "sync.adkernel.com/user-sync",
+      "creativecdn.com/cm-notify",
+      "u.4dex.io/setuid",
+      "doubleclick.net",
+      "adservice.google.com",
+      "adsystem.com"
+    ];
+    return bad.some((x) => href.includes(x));
+  };
+  text = text
+    .split("\n")
+    .filter((l) => !isTrackingImageLine(l))
+    .join("\n");
 
   // 合并空行
   text = text.replace(/\n{3,}/g, "\n\n");
@@ -1926,7 +1954,8 @@ function inlineHtmlToMarkdown(node: Node, baseUrl: string): string {
   }
 
   if (tag === "IMG") {
-    const alt = (el.getAttribute("alt") ?? "").trim();
+    let alt = (el.getAttribute("alt") ?? "").trim();
+    if (/^(?:undefined|null)$/i.test(alt)) alt = "";
     const pickSrc = (): string => {
       const keys = ["src", "data-src", "data-original", "data-lazy-src", "data-srcset", "srcset"];
       const isPlaceholder = (raw: string) => {
@@ -2008,6 +2037,7 @@ function htmlElementToMarkdown(root: Element, baseUrl: string): string {
     const t = raw.replace(/\s+/g, " ").trim();
     if (!t) return true;
     const lower = t.toLowerCase();
+    if (lower === "undefined" || lower === "null") return true;
 
     // 典型“版权/来源/社媒 credit”类：信息价值低，且极易把正文污染成链接堆
     if (/^(?:image|photo)(?:\s+via|\s*:)/i.test(t)) return true;
@@ -2200,6 +2230,27 @@ function pickMainElement(doc: Document, baseUrl: string): HTMLElement {
     }
   }
 
+  // 站点特化：Tokyo Otaku Mode（otakumode.com）正文容器较深，且主 article 内含工具栏/评论等杂质。
+  // 优先选择“纯正文”子容器，避免全文预览出现导航/工具按钮/评论区等噪音。
+  if (host.endsWith("otakumode.com")) {
+    const preferredSelectors = ["article.p-article .p-article__text", "article.p-article .p-article__body", "article.p-article", "article"];
+    for (const sel of preferredSelectors) {
+      const el = doc.querySelector(sel);
+      if (!el || !(el instanceof HTMLElement)) continue;
+      const textLen = (el.textContent ?? "").replace(/\s+/g, " ").trim().length;
+      const pCount = el.querySelectorAll("p").length;
+      if (sel.includes("__text")) {
+        if (textLen >= 140 || pCount >= 1) return el;
+        continue;
+      }
+      if (sel.includes("__body")) {
+        if (textLen >= 260 || pCount >= 2) return el;
+        continue;
+      }
+      if (textLen >= 520 || pCount >= 3) return el;
+    }
+  }
+
   const candidates: HTMLElement[] = [];
   const seen = new Set<HTMLElement>();
   const push = (el: Element | null) => {
@@ -2387,6 +2438,46 @@ function cleanupHtmlDocument(doc: Document, baseUrl: string) {
     ".box[data-topics]"
   ];
   doc.querySelectorAll(selectors.join(",")).forEach((el) => el.remove());
+
+  // 追踪像素/用户同步图片：在 HTML fallback 里也很常见（而且经常会变成破图/大空白）。
+  // 策略：只删除“高度可疑”的小图与已知 tracker 域名，避免误伤正文图片。
+  const imgs = [...doc.querySelectorAll<HTMLImageElement>("img")];
+  for (const img of imgs) {
+    const src = (img.getAttribute("src") ?? "").trim();
+    const lower = src.toLowerCase();
+    const wRaw = (img.getAttribute("width") ?? "").trim();
+    const hRaw = (img.getAttribute("height") ?? "").trim();
+    const w = wRaw ? Number.parseInt(wRaw, 10) : 0;
+    const h = hRaw ? Number.parseInt(hRaw, 10) : 0;
+
+    // 1x1 / 2x2 像素：几乎确定是 tracker
+    if ((w > 0 && w <= 2) || (h > 0 && h <= 2)) {
+      img.remove();
+      continue;
+    }
+
+    // data gif：常见透明占位/追踪
+    if (lower.startsWith("data:image/gif")) {
+      img.remove();
+      continue;
+    }
+
+    const bad = [
+      "imgvc.com/i/bf.png",
+      "sync.intentiq.com/profiles_engine",
+      "intentiq.com/profiles_engine",
+      "sync.adkernel.com/user-sync",
+      "creativecdn.com/cm-notify",
+      "u.4dex.io/setuid",
+      "doubleclick.net",
+      "adservice.google.com",
+      "adsystem.com"
+    ];
+    if (bad.some((x) => lower.includes(x))) {
+      img.remove();
+      continue;
+    }
+  }
 }
 
 function pruneMainElement(main: HTMLElement, baseUrl: string) {
@@ -2438,6 +2529,12 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
     hardCutAt(main.querySelector(".thm-footer"));
     hardCutAt(main.querySelector(".footer-nav"));
     hardCutAt(main.querySelector(".footer-sitemap"));
+  }
+
+  if (host.endsWith("otakumode.com")) {
+    // TOM：正文后常接评论/工具栏/推荐等大块；先硬截断，避免尾部污染成“链接+大图墙”。
+    hardCutAt(main.querySelector(".p-article__comments"));
+    hardCutAt(main.querySelector(".p-article__toolbox"));
   }
 
   if (host.endsWith("natalie.mu")) {
@@ -2498,6 +2595,22 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
       ".NA_article_data",
       ".NA_article_score",
       ".NA_article_score-comment"
+    );
+  }
+  if (host.endsWith("otakumode.com")) {
+    siteSelectors.push(
+      // 全局导航（有时会被塞进 article 内）
+      ".p-global-header-wrapper",
+      ".p-global-header",
+      ".p-global-nav",
+      ".p-news-nav",
+      ".p-news-categories-nav",
+      // 正文之外的工具/评论/导流
+      ".p-article__toolbox",
+      ".p-article__tool-btn",
+      ".p-article__comments",
+      // 部分页面会把这些 meta 段落当作正文的一部分输出，直接剥离以减少噪音
+      ".p-article__meta"
     );
   }
 
@@ -2738,6 +2851,29 @@ function shouldRejectFullTextMarkdown(md: string, url: string): boolean {
   }
 
   const lower = normalized.toLowerCase();
+
+  // 1) Jina / Proxy 偶发会返回 JSON 错误体（HTTP 仍可能是 200），如果不拒绝会被当作正文渲染成“乱码一坨”。
+  const head = normalized.trim().slice(0, 2200);
+  const headLower = head.toLowerCase();
+  if (head.startsWith("{") || head.startsWith("[")) {
+    const jsonSignals = [
+      "securitycompromiseerror",
+      "\"code\":451",
+      "\"status\":451",
+      "blocked until",
+      "anonymous access",
+      "readablemessage",
+      "\"name\":\"security",
+      "\"name\": \"security",
+      "\"message\":",
+      "\"code\":"
+    ];
+    if (jsonSignals.some((s) => headLower.includes(s))) return true;
+  }
+
+  // 2) 明显 HTML/XML：说明抽取器没正常输出 markdown
+  if (/^<!doctype\s+html/i.test(head) || /^<html/i.test(head) || /^<\?xml/i.test(head)) return true;
+
   const blockedSignals = [
     "attention required",
     "cloudflare",
@@ -2758,6 +2894,65 @@ function shouldRejectFullTextMarkdown(md: string, url: string): boolean {
     if (lower.includes("/img/spacer.gif") && /!\[[^\]]*\]\([^)]*spacer\.gif[^)]*\)/i.test(normalized)) return true;
   }
 
+  // 3) 站点“整页壳”dump（导航/页脚/追踪图混入）：对文章页直接拒绝，走 HTML 抽取更干净。
+  // 说明：这是导致“全文预览满屏杂乱链接/大图/无意义菜单”的核心根因之一。
+  const headLines = normalized
+    .split("\n")
+    .slice(0, 140)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const headBlob = headLines.join(" ").toLowerCase();
+  const bulletLinkCount = headLines.filter((l) => /^[-*]\s+\[[^\]]+\]\(https?:\/\/[^)]+\)/.test(l)).length;
+  const longLineCount = headLines.filter((l) => l.length >= 140).length;
+  const navKeywords = [
+    "home",
+    "about",
+    "privacy",
+    "contact",
+    "rss",
+    "login",
+    "log in",
+    "sign up",
+    "subscribe",
+    "newsletter",
+    "category",
+    "categories",
+    "ranking",
+    "search",
+    "twitter",
+    "facebook",
+    "youtube",
+    "ホーム",
+    "アクセスランキング",
+    "特集",
+    "ランキング",
+    "お問い合わせ",
+    "ログイン",
+    "会員登録",
+    "カテゴリ",
+    "タグ"
+  ];
+  const navHit = navKeywords.some((k) => headBlob.includes(k.toLowerCase()));
+  const logoHit = headLines.some((l) => /\[!\[[^\]]*\]\((https?:\/\/|\/\/)[^)]+\)\]\(https?:\/\/[^)]+\/\)/.test(l));
+  if (!isProbablyIndexUrl(url) && bulletLinkCount >= 10 && navHit && longLineCount === 0 && (logoHit || bulletLinkCount >= 14)) return true;
+
+  // inside/animeanime：Jina 输出经常包含站点壳文本 + 菜单，必须拒绝。
+  if (host.endsWith("inside-games.jp") || host.endsWith("animeanime.jp")) {
+    if (
+      bulletLinkCount >= 10 &&
+      (headBlob.includes("人生にゲームをプラスするメディア") || headBlob.includes("インサイド") || headBlob.includes("animeanime"))
+    ) {
+      return true;
+    }
+  }
+
+  // TOM：开头常是全站导航（Shop/News/Gallery/Otapedia…），拒绝走 HTML 抽取。
+  if (host.endsWith("otakumode.com")) {
+    const tomSignals = ["tokyo otaku mode", "otapedia", "shop", "gallery", "news", "log in", "sign up", "shopping guide"];
+    const hits = tomSignals.filter((s) => headBlob.includes(s)).length;
+    if (bulletLinkCount >= 8 && hits >= 3) return true;
+  }
+
   // 目录/导航 dump：对“文章页”直接拒绝
   if (!isProbablyIndexUrl(url) && looksLikeIndexMarkdown(normalized)) return true;
 
@@ -2767,17 +2962,32 @@ function shouldRejectFullTextMarkdown(md: string, url: string): boolean {
 async function loadFullTextMarkdown(params: { url: string; timeoutMs: number }): Promise<FullTextLoadResult> {
   const { url, timeoutMs } = params;
 
+  let host = "";
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    // ignore
+  }
+
+  const skipJina =
+    host.endsWith("inside-games.jp") ||
+    host.endsWith("animeanime.jp") ||
+    // TOM 的 Jina 输出经常夹带全站导航/工具栏，且容易把“图片墙”放大成噪音，直接跳过
+    host.endsWith("otakumode.com");
+
   // 1) 首选：Jina Reader（质量高，输出 Markdown）
   let primary: FullTextLoadResult | null = null;
-  try {
-    primary = await loadFullTextViaJina({ url, timeoutMs });
-    if (primary.md) {
-      // 兜底：Jina 偶发会返回“站点目录/导航 dump”或“拦截页文本”，这种内容必须判失败走后备抽取。
-      if (shouldRejectFullTextMarkdown(primary.md, url)) primary.md = "";
-      else return primary;
+  if (!skipJina) {
+    try {
+      primary = await loadFullTextViaJina({ url, timeoutMs });
+      if (primary.md) {
+        // 兜底：Jina 偶发会返回“站点目录/导航 dump”或“拦截页文本”，这种内容必须判失败走后备抽取。
+        if (shouldRejectFullTextMarkdown(primary.md, url)) primary.md = "";
+        else return primary;
+      }
+    } catch {
+      // ignore（走后备）
     }
-  } catch {
-    // ignore（走后备）
   }
 
   // 2) 后备：AllOrigins（CORS proxy）+ 本地 HTML 抽取

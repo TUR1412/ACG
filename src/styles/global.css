@@ -814,6 +814,14 @@ html[data-acg-device="phone"] .acg-hscroll {
   overflow-y: hidden !important;
 }
 
+/* 平板同理：即使启用了桌面站点，也要保持“可滑动”的资讯节奏 */
+html[data-acg-device="tablet"] .acg-hscroll {
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
 /* 列表卡片：手机端始终用“移动端媒体卡片”布局（避免 sm/md 触发桌面版） */
 html[data-acg-device="phone"] .acg-post-card-body {
   display: flex !important;
@@ -1491,33 +1499,33 @@ html[data-acg-device="phone"] .acg-carousel-controls-inner {
 
 .acg-carousel-nav {
   position: absolute;
-  top: 50%;
-  width: 46px;
-  height: 108px;
+  top: 12px;
+  bottom: 12px;
+  width: 44px;
+  height: auto;
   z-index: 8;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  background: rgba(255, 255, 255, 0.18);
-  box-shadow: 0 22px 70px rgba(2, 6, 23, 0.18);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.30);
+  box-shadow: 0 22px 70px rgba(2, 6, 23, 0.16);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: rgba(15, 23, 42, 0.92);
-  opacity: 0.72;
-  transform: translateY(-50%);
+  opacity: 0.46;
+  transform: none;
   transition: opacity 160ms ease, transform 160ms ease, border-color 160ms ease;
 }
 
 .acg-carousel-nav-prev {
   left: 14px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.08));
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.02));
 }
 
 .acg-carousel-nav-next {
   right: 14px;
-  background: linear-gradient(-90deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.08));
+  background: linear-gradient(-90deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.02));
 }
 
 .acg-carousel:hover .acg-carousel-nav,
@@ -1527,7 +1535,7 @@ html[data-acg-device="phone"] .acg-carousel-controls-inner {
 }
 
 .acg-carousel-nav:active {
-  transform: translateY(-50%) scale(0.98);
+  transform: scale(0.98);
 }
 
 @media (pointer: coarse) {

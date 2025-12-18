@@ -52,16 +52,31 @@ const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
           const candidates = [screenShortSide, vvShortSide, innerShortSide].filter((v) => v > 0);
           const shortSide = candidates.length ? Math.min(...candidates) : 0;
 
+          const mq = (q) => {
+            try {
+              return typeof window.matchMedia === "function" ? window.matchMedia(q).matches : false;
+            } catch {
+              return false;
+            }
+          };
+          const pointerCoarse = mq("(pointer: coarse)");
+          const hoverNone = mq("(hover: none)");
+          const hoverHover = mq("(hover: hover)");
+
           const ua = navigator.userAgent || "";
           const uaTablet = /iPad|Tablet|Android(?!.*Mobile)/i.test(ua);
           const uaMobile =
             /iPhone|iPod|Android.*Mobile|Windows Phone/i.test(ua) || (navigator.userAgentData ? navigator.userAgentData.mobile : false);
           const hasTouch = (navigator.maxTouchPoints || 0) > 0 || "ontouchstart" in window;
+          const touchLike = hasTouch || pointerCoarse || hoverNone;
 
           let device = "desktop";
           if (uaTablet) device = "tablet";
+          else if (uaMobile) device = "phone";
+          else if (pointerCoarse && !hoverHover) device = shortSide > 0 && shortSide >= 900 ? "tablet" : "phone";
           // 关键：手机在“桌面站点/大视口”下也必须走移动端节奏，否则会出现“手机渲染成 PC 布局”与卡顿
-          else if (uaMobile || (hasTouch && shortSide > 0 && shortSide <= 1280) || (shortSide > 0 && shortSide <= 740)) device = "phone";
+          else if (touchLike && shortSide > 0 && shortSide < 900) device = "phone";
+          else if (touchLike && shortSide > 0 && shortSide <= 1180) device = "tablet";
           el.dataset.acgDevice = device;
         } catch {
           // ignore
