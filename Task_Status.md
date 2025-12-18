@@ -93,3 +93,6 @@
 - [x] 78. 移动端紧急修复：设备识别增加 `matchMedia(pointer/hover)` 兜底，降低“手机在桌面站点下被渲染成 PC”概率
 - [x] 79. 横滑体验补强：`acg-hscroll` 在 tablet/phone 设备分级下强制横向可滑（避免断点导致换行不可滑）
 - [x] 80. Spotlight 控件再收敛：左右切换改为更弱干扰的侧边竖条（减少遮挡与突兀感）
+- [x] 81. 移动端终极兜底：加入纯 CSS 触控媒体特征覆盖（即使 JS/断点失真也强制走移动端单栏与可滑节奏）
+- [x] 82. 首屏性能：列表搜索/筛选改为“惰性初始化 + idle 构建索引”，避免首页/分类页 DOMContentLoaded 卡一下
+- [x] 83. 滚动性能：移除底部导航固定层的 `backdrop-filter`，并把 NEW 脉冲从 box-shadow 改为 transform/opacity（显著减少重绘）
