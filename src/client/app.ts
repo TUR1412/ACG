@@ -5085,7 +5085,9 @@ function main() {
   const disabledSources = loadIds(DISABLED_SOURCES_KEY);
   const followedSources = loadIds(FOLLOWED_SOURCES_KEY);
   markCurrentPostRead(readIds);
-  applyReadState(readIds);
+  // 性能：首页/分类页卡片较多时，立即遍历全量 DOM 打标会造成“首屏卡一下”。
+  // 已读逻辑不影响关键可用性（筛选逻辑直接读 readIds），因此延后到 idle 更稳更顺。
+  runWhenIdle(() => applyReadState(readIds), 420);
   wireBackToTop();
   wireCoverRetry();
   wireBookmarks(bookmarkIds);
