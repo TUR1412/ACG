@@ -3494,6 +3494,16 @@ function wireDeviceDebug() {
   const inner = `${window.innerWidth}x${window.innerHeight}`;
   const screen = window.screen ? `${window.screen.width}x${window.screen.height}` : "-";
   const device = el.dataset.acgDevice ?? "-";
+  const ua = (navigator.userAgent ?? "").replace(/\s+/g, " ").trim();
+  const uaData = (navigator as any).userAgentData as { platform?: string; mobile?: boolean } | undefined;
+  const uaDataPlatform = uaData?.platform ?? "-";
+  const uaDataMobile = uaData?.mobile != null ? String(Boolean(uaData.mobile)) : "-";
+
+  const screenShortSide = window.screen ? Math.min(window.screen.width, window.screen.height) : 0;
+  const vvShortSide = window.visualViewport ? Math.min(window.visualViewport.width, window.visualViewport.height) : 0;
+  const innerShortSide = Math.min(window.innerWidth || 0, window.innerHeight || 0);
+  const candidates = [screenShortSide, vvShortSide, innerShortSide].filter((v) => v > 0);
+  const shortSide = candidates.length ? Math.min(...candidates) : 0;
 
   const mq = (q: string) => {
     try {
@@ -3507,9 +3517,16 @@ function wireDeviceDebug() {
   lines.push(`inner: ${inner}`);
   lines.push(`visualViewport: ${vw}`);
   lines.push(`screen: ${screen}`);
+  lines.push(`shortSide: ${shortSide} (screen=${screenShortSide}, vv=${vvShortSide}, inner=${innerShortSide})`);
+  lines.push(`devicePixelRatio: ${window.devicePixelRatio || 1}`);
+  lines.push(`uaData.platform: ${uaDataPlatform}`);
+  lines.push(`uaData.mobile: ${uaDataMobile}`);
   lines.push(`maxTouchPoints: ${navigator.maxTouchPoints || 0}`);
   lines.push(`pointer: coarse=${mq("(pointer: coarse)")} fine=${mq("(pointer: fine)")}`);
+  lines.push(`any-pointer: coarse=${mq("(any-pointer: coarse)")} fine=${mq("(any-pointer: fine)")}`);
   lines.push(`hover: none=${mq("(hover: none)")} hover=${mq("(hover: hover)")}`);
+  lines.push(`any-hover: none=${mq("(any-hover: none)")} hover=${mq("(any-hover: hover)")}`);
+  lines.push(`ua: ${ua}`);
 
   pre.textContent = lines.join("\n");
 }
