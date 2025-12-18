@@ -1706,16 +1706,77 @@ function pruneProseArticleJunk(root: HTMLElement) {
     }
   };
 
+  const removeIfRawUrlHeavy = (container: HTMLElement) => {
+    // 兜底：有些抽取器会把 URL 当作纯文本塞进正文（甚至紧贴中文/日文），导致“纯链接行”绕过 <a> 检测。
+    // 原则：宁可删多一点，也不要让正文被 URL 噪音污染（原文入口由页面下方按钮提供）。
+    if (container.querySelector("img, a, pre, code")) return;
+
+    const full = normalizeText(container.textContent ?? "");
+    if (!full) return;
+    const urls = full.match(/https?:\/\/\S+|www\.\S+/gi) ?? [];
+    if (urls.length === 0) return;
+
+    // 媒体白名单：如果是视频/直播链接文本，保留（它属于内容）。
+    const hasMediaUrl = urls.some((raw) => {
+      const abs = raw.startsWith("www.") ? `https://${raw}` : raw;
+      try {
+        const u = new URL(abs);
+        const host = u.hostname.replace(/^www\./, "").toLowerCase();
+        return (
+          host.endsWith("youtube.com") ||
+          host === "youtu.be" ||
+          host.endsWith("vimeo.com") ||
+          host === "player.vimeo.com" ||
+          host.endsWith("nicovideo.jp") ||
+          host.endsWith("nico.ms") ||
+          host.endsWith("bilibili.com") ||
+          host.endsWith("b23.tv") ||
+          host.endsWith("twitch.tv")
+        );
+      } catch {
+        return false;
+      }
+    });
+    if (hasMediaUrl) return;
+
+    const urlLen = urls.reduce((sum, u) => sum + u.length, 0);
+    const rest = normalizeText(full.replace(/https?:\/\/\S+|www\.\S+/gi, " "));
+
+    if (isTrivialText(rest) || isJunkLabel(rest)) {
+      container.remove();
+      return;
+    }
+
+    const ratio = urlLen / Math.max(1, full.length);
+    // 短段落里 URL 密度极高：几乎确定是推荐/导航/页脚残留
+    if (full.length <= 240 && ratio >= 0.55) {
+      container.remove();
+      return;
+    }
+
+    // 单纯“URL + 少量无意义尾巴”也删（例如多了个短括号/分隔符/编号）
+    if (full.length <= 320 && rest.length <= 14) {
+      container.remove();
+      return;
+    }
+  };
+
   // 1) 段落级：删除“纯链接/提示型”段落
   for (const p of [...root.querySelectorAll<HTMLElement>("p")]) {
+    removeIfRawUrlHeavy(p);
+    if (!p.isConnected) continue;
     removeIfLinkOnly(p);
+    if (!p.isConnected) continue;
     removeIfSourceLike(p);
   }
 
   // 2) list item 级：删除“纯链接/提示型”条目（并清理空列表）
   for (const li of [...root.querySelectorAll<HTMLElement>("li")]) {
     const content = li.querySelector<HTMLElement>(":scope > .acg-prose-li-content") ?? li;
+    removeIfRawUrlHeavy(content);
+    if (!content.isConnected) continue;
     removeIfLinkOnly(content);
+    if (!content.isConnected) continue;
     removeIfSourceLike(content);
     // 如果 content 被 remove 了，li 可能变空：一并处理
     if ((li.textContent ?? "").trim().length === 0 && li.querySelectorAll("img").length === 0) li.remove();
