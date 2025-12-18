@@ -97,3 +97,4 @@
 - [x] 82. 首屏性能：列表搜索/筛选改为“惰性初始化 + idle 构建索引”，避免首页/分类页 DOMContentLoaded 卡一下
 - [x] 83. 滚动性能：移除底部导航固定层的 `backdrop-filter`，并把 NEW 脉冲从 box-shadow 改为 transform/opacity（显著减少重绘）
 - [x] 84. 移动端再加固：纯 CSS 兜底覆盖扩展到 `any-pointer/any-hover` + 触控设备强制显示底部导航（避免“手机像 PC”）
+- [x] 85. Spotlight 轮播手势修复：`pointercancel` 不再触发“自动打开链接”，避免滑动时误跳转导致“不能滑动”

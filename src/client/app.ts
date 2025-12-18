@@ -4876,7 +4876,8 @@ function wireSpotlightCarousel() {
 
     const endDrag = (e?: PointerEvent) => {
       if (!dragging) return;
-      const shouldMaybeOpen = Boolean(downHref) && downHref;
+      const canceled = e?.type === "pointercancel";
+      const shouldMaybeOpen = !canceled && Boolean(downHref) && downHref;
       if (pointerType === "mouse") {
         // mouse：脚本拖拽会直接改 scrollLeft，用它判断最稳
         if (Math.abs(track.scrollLeft - startScrollLeft) > 6) dragged = true;
@@ -4896,6 +4897,9 @@ function wireSpotlightCarousel() {
       pointerId = null;
       pointerType = "mouse";
       track.classList.remove("is-dragging");
+
+      // pointercancel 通常意味着浏览器接管了滚动/手势：此时绝不应“自动打开链接”，否则会造成“无法滑动”的灾难体验。
+      if (canceled) dragged = true;
 
       // 重要：某些浏览器在滚动容器 + pointer 事件组合下，a[href] 的 click 可能会被吞掉（尤其是桌面端）。
       // 这里在“确定不是拖拽”的情况下，补一个显式跳转，保证“点封面能进详情页”。
