@@ -98,3 +98,4 @@
 - [x] 83. 滚动性能：移除底部导航固定层的 `backdrop-filter`，并把 NEW 脉冲从 box-shadow 改为 transform/opacity（显著减少重绘）
 - [x] 84. 移动端再加固：纯 CSS 兜底覆盖扩展到 `any-pointer/any-hover` + 触控设备强制显示底部导航（避免“手机像 PC”）
 - [x] 85. Spotlight 轮播手势修复：`pointercancel` 不再触发“自动打开链接”，避免滑动时误跳转导致“不能滑动”
+- [x] 86. 全文预览净化兜底：`@@ACGTOKEN` 清理覆盖零宽空白与 `&#64;` 转义形态（彻底杜绝占位符泄漏）

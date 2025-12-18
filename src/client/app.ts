@@ -803,8 +803,9 @@ function normalizeFullTextMarkdown(md: string): string {
 
   // 兜底：如果内部占位符意外泄漏到 Markdown，直接清除（不应出现在用户内容里）
   // 兼容：大小写变化 / 中间被插入空白 / 全角 @ 等异常形态
-  text = text.replace(/@@\s*ACG\s*TOKEN\s*\d+\s*@@/gi, "");
-  text = text.replace(/＠＠\s*ACG\s*TOKEN\s*\d+\s*＠＠/gi, "");
+  // 注：部分抽取器/翻译会插入零宽空白（U+200B/U+FEFF），导致 `\s` 匹配不稳定，这里显式覆盖。
+  text = text.replace(/@@[\s\u200B\uFEFF]*ACG[\s\u200B\uFEFF]*TOKEN[\s\u200B\uFEFF]*\d+[\s\u200B\uFEFF]*@@/gi, "");
+  text = text.replace(/＠＠[\s\u200B\uFEFF]*ACG[\s\u200B\uFEFF]*TOKEN[\s\u200B\uFEFF]*\d+[\s\u200B\uFEFF]*＠＠/gi, "");
 
   // 清理“孤立括号/标点”噪音行（常由链接换行或抽取器残留导致）
   text = text.replace(/^\s*[)\]】」）]\s*$/gm, "");
@@ -885,12 +886,22 @@ function normalizeFullTextMarkdown(md: string): string {
 
 function stripInternalPlaceholdersFromHtml(html: string): string {
   if (!html) return html;
-  return html
-    .replace(/@@\s*ACG\s*TOKEN\s*\d+\s*@@/gi, "")
-    .replace(/＠＠\s*ACG\s*TOKEN\s*\d+\s*＠＠/gi, "")
-    // 兜底：占位符被强调/杂质打断（例：`@@ACG<em>TOKEN</em>0@@`）
-    .replace(/@@ACG(?:<[^>]+>)*TOKEN(?:<[^>]+>)*\s*\d+\s*(?:<[^>]+>)*@@/gi, "")
-    .replace(/＠＠ACG(?:<[^>]+>)*TOKEN(?:<[^>]+>)*\s*\d+\s*(?:<[^>]+>)*＠＠/gi, "");
+  const zw = String.raw`[\s\u200B\uFEFF]*`;
+  const num = String.raw`\d+`;
+  const broken = String.raw`(?:<[^>]+>)*`;
+  const atEntity = String.raw`(?:&#64;|&#x40;)`;
+  return (
+    html
+      // 基础：@@ACGTOKEN0@@（允许空白/零宽空白）
+      .replace(new RegExp(String.raw`@@${zw}ACG${zw}TOKEN${zw}${num}${zw}@@`, "gi"), "")
+      .replace(new RegExp(String.raw`＠＠${zw}ACG${zw}TOKEN${zw}${num}${zw}＠＠`, "gi"), "")
+      // entity 形态：&#64;&#64;ACGTOKEN0&#64;&#64;（某些 HTML->text 流程会转义 @）
+      .replace(new RegExp(String.raw`${atEntity}{2}${zw}ACG${zw}TOKEN${zw}${num}${zw}${atEntity}{2}`, "gi"), "")
+      // 兜底：占位符被强调/杂质打断（例：`@@ACG<em>TOKEN</em>0@@`）
+      .replace(new RegExp(String.raw`@@ACG${broken}TOKEN${broken}${zw}${num}${zw}${broken}@@`, "gi"), "")
+      .replace(new RegExp(String.raw`＠＠ACG${broken}TOKEN${broken}${zw}${num}${zw}${broken}＠＠`, "gi"), "")
+      .replace(new RegExp(String.raw`${atEntity}{2}ACG${broken}TOKEN${broken}${zw}${num}${zw}${broken}${atEntity}{2}`, "gi"), "")
+  );
 }
 
 type InlineToken =
