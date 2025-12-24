@@ -1,6 +1,7 @@
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { gzipSync } from "node:zlib";
 import { SOURCES } from "./sources/index";
 import { parseArgs } from "./lib/args";
 import {
@@ -784,10 +785,18 @@ async function main() {
     return;
   }
 
+  const writePublicJsonAndGzip = async (filePath: string, data: unknown) => {
+    await mkdir(dirname(filePath), { recursive: true });
+    const raw = JSON.stringify(data) + "\n";
+    await writeFile(filePath, raw, "utf-8");
+    const gz = gzipSync(Buffer.from(raw, "utf-8"), { level: 9 });
+    await writeFile(`${filePath}.gz`, gz);
+  };
+
   await writeJsonFile(outPostsPath, pruned);
   await writeJsonFile(outStatusPath, status);
-  await writeJsonFile(publicPostsPath, pruned);
-  await writeJsonFile(publicStatusPath, status);
+  await writePublicJsonAndGzip(publicPostsPath, pruned);
+  await writePublicJsonAndGzip(publicStatusPath, status);
   console.log(`[DONE] posts=${pruned.length} generatedAt=${generatedAt}`);
 }
 

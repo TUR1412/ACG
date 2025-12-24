@@ -108,6 +108,7 @@ flowchart TB
 - **RSS**：`/zh/feed.xml`（中文）· `/ja/feed.xml`（日本語）
 - **状态页**：`/zh/status/` · `/ja/status/`（抓取健康度与错误提示）
 - **设备调试面板**：任意页面加 `?debug=1`，或设置 `localStorage["acg.debug"]="1"`（用于排查“手机被渲染成桌面布局”等问题）
+- **健康全景图（控制台）**：任意页面加 `?health=1`，或设置 `localStorage["acg.health"]="1"`（实时输出 FPS/LongTask/内存/请求状态等）
 - **慢网体验**：请求期间顶部会出现一条细进度条（并在慢网时提示色更暖），用于降低“无响应”的心理落差
 
 ---
@@ -125,6 +126,8 @@ flowchart TB
 
 - **首包 JS 更轻**：把“全文预览（抽取/清洗/渲染/翻译）”拆成 lazy chunk，只有在详情页存在全文区块时才会加载。
 - **依赖更干净**：移除未使用的 React/React DOM 与 Astro React 集成（本项目当前无 `.tsx/.jsx` 组件）。
+- **数据更省流**：`npm run sync` 会生成 `public/data/posts.json.gz`（gzip），浏览器支持 `DecompressionStream` 时优先拉取压缩版本并自动回退到 `.json`。
+- **超大列表可用**：收藏列表达到一定规模会自动启用“虚拟滚动”渲染（windowing），滚动仅渲染视口附近卡片，避免 DOM 爆炸。
 
 ---
 

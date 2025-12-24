@@ -3,7 +3,9 @@ import { href } from "../lib/href";
 import { NETWORK, STORAGE_KEYS, UI, MS } from "./constants";
 import { bestInitialCoverSrc } from "./utils/cover";
 import { isJapanese } from "./utils/lang";
-import { fetchJson } from "./utils/http";
+import { fetchJsonPreferGzip } from "./utils/http";
+import { createVirtualGrid, type VirtualGridController } from "./utils/virtual-grid";
+import { maybeStartHealthMonitor } from "./utils/health";
 
 type BookmarkStore = {
   version: 1;
@@ -1200,11 +1202,15 @@ async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {
   if (bookmarkPostsByIdPromise) return bookmarkPostsByIdPromise;
   bookmarkPostsByIdPromise = (async () => {
     const url = href(NETWORK.POSTS_JSON_PATH);
-    const json = await fetchJson<unknown>(url, {
+    const json = await fetchJsonPreferGzip<unknown>({
+      url,
+      gzUrl: href(NETWORK.POSTS_JSON_GZ_PATH),
+      options: {
       label: "posts.json",
       timeoutMs: NETWORK.DEFAULT_TIMEOUT_MS,
       retries: 1,
-      cache: "no-cache"
+        cache: "force-cache"
+      }
     });
     if (!Array.isArray(json)) throw new Error("posts.json 格式错误");
     const map = new Map<string, BookmarkPost>();
@@ -1561,6 +1567,7 @@ function wireBookmarksPage(bookmarkIds: Set<string>, readIds: Set<string>) {
 
   let renderedIds = new Set<string>();
   let applyRunning = false;
+  let virtual: VirtualGridController<BookmarkPost> | null = null;
 
   const apply = async () => {
     if (applyRunning) return;
@@ -1572,6 +1579,12 @@ function wireBookmarksPage(bookmarkIds: Set<string>, readIds: Set<string>) {
         renderedIds = new Set();
         container.hidden = true;
         clearBookmarksMessage();
+        try {
+          virtual?.destroy();
+        } catch {
+          // ignore
+        }
+        virtual = null;
         if (count) count.textContent = "0";
         if (empty) empty.classList.remove("hidden");
         return;
@@ -1618,45 +1631,54 @@ function wireBookmarksPage(bookmarkIds: Set<string>, readIds: Set<string>) {
 
       const byId = await getBookmarkPostsById();
 
-      // 只处理“删除”场景，避免每次点击都全量重排；新增（导入/其它页新增）则全量重绘一次。
-      const hasAdd = bookmarkIds.size > renderedIds.size;
-      if (!hasAdd && !usedOptimistic) {
-        let removed = 0;
-        for (const id of [...renderedIds]) {
-          if (bookmarkIds.has(id)) continue;
-          grid.querySelector(`[data-post-id="${id}"]`)?.remove();
-          renderedIds.delete(id);
-          removed += 1;
-        }
-        if (removed > 0) applyReadState(readIds);
-      } else {
-        const list: BookmarkPost[] = [];
-        const missing: string[] = [];
-        for (const id of bookmarkIds) {
-          const post = byId.get(id);
-          if (post) list.push(post);
-          else missing.push(id);
-        }
-        list.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+      const list: BookmarkPost[] = [];
+      const missing: string[] = [];
+      for (const id of bookmarkIds) {
+        const post = byId.get(id);
+        if (post) list.push(post);
+        else missing.push(id);
+      }
+      list.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+      renderedIds = new Set(list.map((p) => p.id));
+      writeBookmarkMetaCache(list);
 
-        const frag = document.createDocumentFragment();
-        for (const post of list) {
-          frag.appendChild(buildBookmarkCard({ post, lang, readIds }));
+      const useVirtual = list.length >= UI.BOOKMARKS_VIRTUALIZE_THRESHOLD;
+      if (useVirtual) {
+        if (!virtual) {
+          grid.innerHTML = "";
+          virtual = createVirtualGrid<BookmarkPost>({
+            container: grid,
+            items: list,
+            overscanRows: 6,
+            estimateRowHeight: UI.BOOKMARK_CARD_ESTIMATE_ROW_HEIGHT,
+            renderItem: (post) => buildBookmarkCard({ post, lang, readIds })
+          });
+        } else {
+          virtual.setItems(list);
         }
+      } else {
+        if (virtual) {
+          try {
+            virtual.destroy();
+          } catch {
+            // ignore
+          }
+          virtual = null;
+        }
+        const frag = document.createDocumentFragment();
+        for (const post of list) frag.appendChild(buildBookmarkCard({ post, lang, readIds }));
         grid.innerHTML = "";
         grid.appendChild(frag);
-        renderedIds = new Set(list.map((p) => p.id));
-        writeBookmarkMetaCache(list);
+      }
 
-        if (missing.length > 0) {
-          setBookmarksMessage(
-            lang === "ja"
-              ? `一部のブックマークは期間外のため表示できません（${missing.length}件）。`
-              : `部分收藏因超出数据保留期而无法展示（${missing.length} 条）。`
-          );
-        } else {
-          clearBookmarksMessage();
-        }
+      if (missing.length > 0) {
+        setBookmarksMessage(
+          lang === "ja"
+            ? `一部のブックマークは期間外のため表示できません（${missing.length}件）。`
+            : `部分收藏因超出数据保留期而无法展示（${missing.length} 条）。`
+        );
+      } else if (!usedOptimistic) {
+        clearBookmarksMessage();
       }
 
       container.hidden = false;
@@ -2397,6 +2419,7 @@ function main() {
   wireSpotlightCarousel();
   runWhenIdle(() => hydrateCoverStates(), UI.HYDRATE_COVER_IDLE_DELAY_MS);
   wireDeviceDebug();
+  maybeStartHealthMonitor();
   focusSearchFromHash();
 }
 

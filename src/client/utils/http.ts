@@ -176,3 +176,48 @@ export async function fetchJson<T>(
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return (await res.json()) as T;
 }
+
+function supportsGzipDecompression(): boolean {
+  try {
+    return typeof (globalThis as any).DecompressionStream === "function";
+  } catch {
+    return false;
+  }
+}
+
+async function gunzipToText(res: Response): Promise<string> {
+  if (!res.body) throw new Error("empty body");
+  const DS = (globalThis as any).DecompressionStream as unknown;
+  if (typeof DS !== "function") throw new Error("DecompressionStream unsupported");
+
+  // `DecompressionStream` 是浏览器原生能力（零依赖）；不支持的环境将回退到 JSON。
+  const ds = new (DS as any)("gzip");
+  const stream = (res.body as ReadableStream).pipeThrough(ds);
+  return await new Response(stream).text();
+}
+
+export async function fetchJsonPreferGzip<T>(params: {
+  url: string;
+  gzUrl?: string;
+  options?: Omit<HttpRequestOptions, "headers"> & { headers?: HeadersInit };
+}): Promise<T> {
+  const { url, gzUrl } = params;
+  const options = params.options;
+
+  if (gzUrl && supportsGzipDecompression()) {
+    try {
+      const res = await httpFetch(gzUrl, undefined, {
+        ...options,
+        headers: mergeHeaders({ accept: "application/gzip" }, options?.headers)
+      });
+      if (res.ok) {
+        const text = await gunzipToText(res);
+        return JSON.parse(text) as T;
+      }
+    } catch {
+      // ignore, fallback to JSON
+    }
+  }
+
+  return fetchJson<T>(url, options);
+}
