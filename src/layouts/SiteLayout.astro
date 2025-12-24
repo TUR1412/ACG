@@ -41,6 +41,7 @@ const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
     <meta name="view-transition" content="same-origin" />
     <title>{pageTitle}</title>
     <meta name="description" content={pageDescription} />
+    <link rel="alternate" type="application/rss+xml" title={lang === "ja" ? "ACGレーダー RSS" : "ACG Radar RSS"} href={withLang("/feed.xml")} />
     <meta name="theme-color" content="#f2f4f8" />
     <script is:inline>
       (() => {

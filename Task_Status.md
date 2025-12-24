@@ -11,7 +11,7 @@
 - [!] 为避免每小时自动提交刷屏：历史数据默认从已部署站点的 `data/posts.json` 回读并合并。
 
 ## 3. 执行清单 (Execution)
-- [x] 1. 初始化 Astro + Tailwind + React 集成
+- [x] 1. 初始化 Astro + Tailwind（当前无 React 组件，已移除 React 集成）
 - [x] 2. 完成中日双语路由与文案
 - [x] 3. 编写抓取脚本与来源适配（RSS/Atom/RDF + HTML）
 - [x] 4. 实现首页/分类/详情/收藏/状态页 + 本地状态（收藏/已读/搜索）

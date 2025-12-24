@@ -1,5 +1,4 @@
 import { defineConfig } from "astro/config";
-import react from "@astrojs/react";
 import tailwind from "@astrojs/tailwind";
 
 const base = process.env.ACG_BASE ?? "/";
@@ -10,7 +9,6 @@ export default defineConfig({
   output: "static",
   trailingSlash: "always",
   integrations: [
-    react(),
     tailwind({
       applyBaseStyles: false
     })

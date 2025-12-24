@@ -4,6 +4,7 @@ import { readGeneratedStatus } from "../../lib/generated-data";
 import { t } from "../../i18n/i18n";
 import { categoryLabel, isCategory, type Category } from "../../lib/categories";
 import { formatDateTime } from "../../lib/format";
+import { href } from "../../lib/href";
 import { SOURCES } from "../../../scripts/sources/index";
 
 const status = await readGeneratedStatus();
@@ -32,6 +33,9 @@ const sources = SOURCES.map((s) => {
     </p>
     <ul class="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-700">
       <li>更新：毎時（UTCの00分）</li>
+      <li>
+        RSS：<a class="text-slate-950 hover:underline" href={href("/ja/feed.xml")}>/ja/feed.xml</a>
+      </li>
       <li>表示：タイトル/要約/日時/リンクのみ（全文転載しません）</li>
       <li>個人機能：ブックマーク/既読/検索はブラウザ内（localStorage）</li>
       <li>購読：星マークでソースをフォロー → 「フォローしたソースのみ」で一括フィルター</li>

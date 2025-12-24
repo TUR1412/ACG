@@ -4,6 +4,7 @@ import { readGeneratedStatus } from "../../lib/generated-data";
 import { t } from "../../i18n/i18n";
 import { categoryLabel, isCategory, type Category } from "../../lib/categories";
 import { formatDateTime } from "../../lib/format";
+import { href } from "../../lib/href";
 import { SOURCES } from "../../../scripts/sources/index";
 
 const status = await readGeneratedStatus();
@@ -32,6 +33,9 @@ const sources = SOURCES.map((s) => {
     </p>
     <ul class="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-700">
       <li>更新频率：每小时（UTC 整点）</li>
+      <li>
+        RSS 订阅：<a class="text-slate-950 hover:underline" href={href("/zh/feed.xml")}>/zh/feed.xml</a>
+      </li>
       <li>展示策略：仅聚合标题/摘要/时间/来源链接，详情页优先引导跳转原文</li>
       <li>个性化：收藏/已读/搜索等功能都保存在你的浏览器（localStorage）</li>
       <li>订阅流：星标关注来源 + “只看关注源”一键过滤</li>

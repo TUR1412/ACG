@@ -19,6 +19,7 @@
 - 中文：`/zh/` → https://tur1412.github.io/ACG/zh/
 - 日本語：`/ja/` → https://tur1412.github.io/ACG/ja/
 - 状态页：`/status/` → https://tur1412.github.io/ACG/zh/status/（中文） / https://tur1412.github.io/ACG/ja/status/（日本語）
+- RSS：`/zh/feed.xml`（中文） / `/ja/feed.xml`（日本語）
 
 ---
 
@@ -64,9 +65,16 @@
 ## 技术栈（Tech）
 
 - Astro + Tailwind CSS（静态输出，首屏可见）
-- 少量前端脚本：`src/client/app.ts`（收藏/已读/过滤/交互增强）
+- 少量前端脚本：`src/client/app.ts`（收藏/已读/过滤/交互增强；全文预览为按需加载 chunk）
 - 抓取脚本：`scripts/sync.ts`（RSS/Atom/RDF + HTML 示例）
 - GitHub Actions + GitHub Pages 自动部署
+
+---
+
+## 性能（Performance）
+
+- **首包 JS 更轻**：把“全文预览（抽取/清洗/渲染/翻译）”拆成 lazy chunk，只有在详情页存在全文区块时才会加载。
+- **依赖更干净**：移除未使用的 React/React DOM 与 Astro React 集成（本项目当前无 `.tsx/.jsx` 组件）。
 
 ---
 
