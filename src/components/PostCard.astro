@@ -1,6 +1,6 @@
 ---
 import type { Post } from "../lib/types";
-import type { Lang } from "../i18n/i18n";
+import { t, type Lang } from "../i18n/i18n";
 import { categoryLabel } from "../lib/categories";
 import { getCategoryTheme } from "../lib/category-theme";
 import { href } from "../lib/href";
@@ -33,6 +33,7 @@ const snippet =
 const publishedAtMs = new Date(post.publishedAt).getTime();
 const isFresh = Number.isFinite(publishedAtMs) && Date.now() - publishedAtMs >= 0 && Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
 const freshLabel = lang === "ja" ? "新着" : "NEW";
+const bookmarkLabel = t(lang, "nav.bookmarks");
 ---
 
 <article
@@ -145,7 +146,8 @@ const freshLabel = lang === "ja" ? "新着" : "NEW";
           class="glass-card rounded-full p-2 text-xs font-medium text-slate-950 clickable sm:rounded-xl sm:px-3 sm:py-2"
           data-bookmark-id={post.id}
           aria-pressed="false"
-          title="Bookmark"
+          aria-label={bookmarkLabel}
+          title={bookmarkLabel}
         >
           <span data-bookmark-icon aria-hidden="true">
             <Icon name="star" size={18} />

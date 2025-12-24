@@ -24,6 +24,7 @@ const BLOCKLIST_KEY = STORAGE_KEYS.BLOCKLIST;
 const FILTERS_KEY = STORAGE_KEYS.FILTERS;
 const DISABLED_SOURCES_KEY = STORAGE_KEYS.DISABLED_SOURCES;
 const FOLLOWED_SOURCES_KEY = STORAGE_KEYS.FOLLOWED_SOURCES;
+const THEME_KEY = STORAGE_KEYS.THEME;
 
 type WordStore = {
   version: 1;
@@ -36,6 +37,13 @@ type FilterStore = {
   onlyFollowedSources: boolean;
   hideRead: boolean;
 };
+
+type ThemeMode = "auto" | "light" | "dark";
+
+const THEME_COLOR = {
+  LIGHT: "#f2f4f8",
+  DARK: "#05070b"
+} as const;
 
 declare global {
   interface Window {
@@ -253,6 +261,140 @@ function prefersReducedMotion(): boolean {
     return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
   } catch {
     return false;
+  }
+}
+
+function prefersColorSchemeDark(): boolean {
+  try {
+    return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
+  } catch {
+    return false;
+  }
+}
+
+function loadThemeMode(): ThemeMode {
+  try {
+    const raw = localStorage.getItem(THEME_KEY);
+    return raw === "light" || raw === "dark" || raw === "auto" ? raw : "auto";
+  } catch {
+    return "auto";
+  }
+}
+
+function saveThemeMode(mode: ThemeMode) {
+  try {
+    localStorage.setItem(THEME_KEY, mode);
+  } catch {
+    // ignore
+  }
+}
+
+function resolveThemeIsDark(mode: ThemeMode): boolean {
+  if (mode === "dark") return true;
+  if (mode === "light") return false;
+  return prefersColorSchemeDark();
+}
+
+function syncThemeColor(isDark: boolean) {
+  try {
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (!meta) return;
+    meta.content = isDark ? THEME_COLOR.DARK : THEME_COLOR.LIGHT;
+  } catch {
+    // ignore
+  }
+}
+
+function applyThemeMode(mode: ThemeMode) {
+  try {
+    document.documentElement.dataset.acgTheme = mode;
+  } catch {
+    // ignore
+  }
+  syncThemeColor(resolveThemeIsDark(mode));
+}
+
+function wireThemeMode() {
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>("[data-theme-mode]")];
+  const toggles = [...document.querySelectorAll<HTMLButtonElement>("[data-theme-toggle]")];
+
+  const labelFor = (el: HTMLElement, mode: ThemeMode): string => {
+    const name = el.dataset.themeLabelName ?? "Theme";
+    const auto = el.dataset.themeLabelAuto ?? "Auto";
+    const light = el.dataset.themeLabelLight ?? "Light";
+    const dark = el.dataset.themeLabelDark ?? "Dark";
+    const modeLabel = mode === "dark" ? dark : mode === "light" ? light : auto;
+    return `${name}: ${modeLabel}`;
+  };
+
+  const apply = (mode: ThemeMode) => {
+    applyThemeMode(mode);
+    for (const btn of buttons) {
+      const active = (btn.dataset.themeMode ?? "") === mode;
+      btn.dataset.active = active ? "true" : "false";
+      btn.setAttribute("aria-checked", active ? "true" : "false");
+    }
+    for (const el of toggles) {
+      const title = labelFor(el, mode);
+      el.title = title;
+      const text = el.querySelector<HTMLElement>("[data-theme-toggle-text]");
+      if (text) {
+        const auto = el.dataset.themeLabelAuto ?? "Auto";
+        const light = el.dataset.themeLabelLight ?? "Light";
+        const dark = el.dataset.themeLabelDark ?? "Dark";
+        text.textContent = mode === "dark" ? dark : mode === "light" ? light : auto;
+      }
+    }
+  };
+
+  const mode = loadThemeMode();
+  apply(mode);
+
+  if (buttons.length > 0) {
+    document.addEventListener("click", (e) => {
+      if (e.defaultPrevented) return;
+      if (!(e.target instanceof HTMLElement)) return;
+      const el = e.target.closest<HTMLButtonElement>("[data-theme-mode]");
+      if (!el) return;
+      const next = el.dataset.themeMode;
+      if (next !== "auto" && next !== "light" && next !== "dark") return;
+      e.preventDefault();
+      saveThemeMode(next);
+      apply(next);
+    });
+  }
+
+  for (const el of toggles) {
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      const current = loadThemeMode();
+      const next: ThemeMode = current === "auto" ? "light" : current === "light" ? "dark" : "auto";
+      saveThemeMode(next);
+      apply(next);
+    });
+  }
+
+  const mq = (() => {
+    try {
+      return window.matchMedia("(prefers-color-scheme: dark)");
+    } catch {
+      return null;
+    }
+  })();
+  if (!mq) return;
+
+  const onChange = () => {
+    const current = loadThemeMode();
+    if (current !== "auto") return;
+    syncThemeColor(resolveThemeIsDark(current));
+  };
+
+  if (typeof mq.addEventListener === "function") {
+    mq.addEventListener("change", onChange);
+  } else {
+    // Safari（legacy API）
+    const legacy = (mq as unknown as { addListener?: (cb: () => void) => void }).addListener;
+    if (typeof legacy === "function") legacy.call(mq, onChange);
   }
 }
 
@@ -1490,7 +1632,7 @@ function buildBookmarkCard(params: {
       "inline-flex items-center gap-2 rounded-full border border-slate-900/10 bg-white/55 px-2.5 py-1 text-[11px] text-slate-700 hover:bg-white/75 clickable";
     sourceLink.href = post.sourceUrl;
     sourceLink.target = "_blank";
-    sourceLink.rel = "noreferrer";
+    sourceLink.rel = "noreferrer noopener";
 
     const sourceDot = document.createElement("span");
     sourceDot.className = `size-1.5 rounded-full ${theme.dot}`;
@@ -1515,7 +1657,9 @@ function buildBookmarkCard(params: {
   star.className = "glass-card rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable";
   star.dataset.bookmarkId = post.id;
   star.setAttribute("aria-pressed", "true");
-  star.title = "Bookmark";
+  const bookmarkLabel = lang === "ja" ? "ブックマーク" : "收藏";
+  star.title = bookmarkLabel;
+  star.setAttribute("aria-label", bookmarkLabel);
   const starIcon = document.createElement("span");
   starIcon.setAttribute("data-bookmark-icon", "");
   starIcon.setAttribute("aria-hidden", "true");
@@ -2394,6 +2538,7 @@ function main() {
   const filters = loadFilters();
   const disabledSources = loadIds(DISABLED_SOURCES_KEY);
   const followedSources = loadIds(FOLLOWED_SOURCES_KEY);
+  wireThemeMode();
   markCurrentPostRead(readIds);
   // 性能：首页/分类页卡片较多时，立即遍历全量 DOM 打标会造成“首屏卡一下”。
   // 已读逻辑不影响关键可用性（筛选逻辑直接读 readIds），因此延后到 idle 更稳更顺。

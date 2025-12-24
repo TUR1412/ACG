@@ -7,13 +7,272 @@
   color-scheme: light;
   --text: #0b0f14;
   --muted: rgba(15, 23, 42, 0.62);
-  --glass-bg: rgba(255, 255, 255, 0.70);
   --glass-border: rgba(15, 23, 42, 0.10);
+  --glass-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.58));
+  --glass-card-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.90), rgba(255, 255, 255, 0.62));
+  --fab-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.56));
+  --toast-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.62));
+  --bottom-nav-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.62));
+  --bottom-nav-surface-phone: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.84));
+  --chip-surface: rgba(255, 255, 255, 0.55);
+  --nav-icon-bg: rgba(15, 23, 42, 0.06);
+  --nav-icon-fg: rgba(15, 23, 42, 0.92);
+  --carousel-dot-bg: rgba(15, 23, 42, 0.18);
   --shadow-soft: 0 18px 55px rgba(2, 6, 23, 0.12);
   --shadow-card: 0 10px 28px rgba(2, 6, 23, 0.08);
   --shadow-card-hover: 0 22px 70px rgba(2, 6, 23, 0.14);
   --ring: rgba(124, 58, 237, 0.55);
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-quick: 120ms;
+  --dur-fast: 160ms;
+  --dur: 220ms;
+  --dur-slow: 700ms;
   --acg-bottom-nav-h: 0px;
+}
+
+/* 暗黑模式：
+  - data-acg-theme="dark"：强制暗黑
+  - data-acg-theme="light"：强制浅色
+  - data-acg-theme="auto" / 未设置：跟随系统 prefers-color-scheme
+*/
+:root[data-acg-theme="dark"] {
+  color-scheme: dark;
+  --text: rgba(248, 250, 252, 0.92);
+  --muted: rgba(226, 232, 240, 0.68);
+  --glass-border: rgba(148, 163, 184, 0.18);
+  --glass-surface: linear-gradient(180deg, rgba(15, 23, 42, 0.78), rgba(2, 6, 23, 0.62));
+  --glass-card-surface: linear-gradient(180deg, rgba(30, 41, 59, 0.72), rgba(2, 6, 23, 0.60));
+  --fab-surface: linear-gradient(180deg, rgba(30, 41, 59, 0.78), rgba(2, 6, 23, 0.66));
+  --toast-surface: linear-gradient(180deg, rgba(30, 41, 59, 0.78), rgba(2, 6, 23, 0.66));
+  --bottom-nav-surface: linear-gradient(180deg, rgba(2, 6, 23, 0.78), rgba(2, 6, 23, 0.58));
+  --bottom-nav-surface-phone: linear-gradient(180deg, rgba(2, 6, 23, 0.88), rgba(2, 6, 23, 0.72));
+  --chip-surface: rgba(15, 23, 42, 0.58);
+  --nav-icon-bg: rgba(148, 163, 184, 0.14);
+  --nav-icon-fg: rgba(248, 250, 252, 0.92);
+  --carousel-dot-bg: rgba(148, 163, 184, 0.24);
+  --shadow-soft: 0 20px 70px rgba(0, 0, 0, 0.42);
+  --shadow-card: 0 14px 44px rgba(0, 0, 0, 0.32);
+  --shadow-card-hover: 0 28px 90px rgba(0, 0, 0, 0.46);
+  --ring: rgba(129, 140, 248, 0.65);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-acg-theme]),
+  :root[data-acg-theme="auto"] {
+    color-scheme: dark;
+    --text: rgba(248, 250, 252, 0.92);
+    --muted: rgba(226, 232, 240, 0.68);
+    --glass-border: rgba(148, 163, 184, 0.18);
+    --glass-surface: linear-gradient(180deg, rgba(15, 23, 42, 0.78), rgba(2, 6, 23, 0.62));
+    --glass-card-surface: linear-gradient(180deg, rgba(30, 41, 59, 0.72), rgba(2, 6, 23, 0.60));
+    --fab-surface: linear-gradient(180deg, rgba(30, 41, 59, 0.78), rgba(2, 6, 23, 0.66));
+    --toast-surface: linear-gradient(180deg, rgba(30, 41, 59, 0.78), rgba(2, 6, 23, 0.66));
+    --bottom-nav-surface: linear-gradient(180deg, rgba(2, 6, 23, 0.78), rgba(2, 6, 23, 0.58));
+    --bottom-nav-surface-phone: linear-gradient(180deg, rgba(2, 6, 23, 0.88), rgba(2, 6, 23, 0.72));
+    --chip-surface: rgba(15, 23, 42, 0.58);
+    --nav-icon-bg: rgba(148, 163, 184, 0.14);
+    --nav-icon-fg: rgba(248, 250, 252, 0.92);
+    --carousel-dot-bg: rgba(148, 163, 184, 0.24);
+    --shadow-soft: 0 20px 70px rgba(0, 0, 0, 0.42);
+    --shadow-card: 0 14px 44px rgba(0, 0, 0, 0.32);
+    --shadow-card-hover: 0 28px 90px rgba(0, 0, 0, 0.46);
+    --ring: rgba(129, 140, 248, 0.65);
+  }
+}
+
+/* 暗黑模式：对 Tailwind 常用色阶做轻量覆写（避免大面积重写模板） */
+:root[data-acg-theme="dark"] .text-slate-950 {
+  color: rgba(248, 250, 252, 0.92);
+}
+:root[data-acg-theme="dark"] .text-slate-800 {
+  color: rgba(241, 245, 249, 0.92);
+}
+:root[data-acg-theme="dark"] .text-slate-700 {
+  color: rgba(226, 232, 240, 0.84);
+}
+:root[data-acg-theme="dark"] .text-slate-600 {
+  color: rgba(226, 232, 240, 0.68);
+}
+:root[data-acg-theme="dark"] .text-slate-500 {
+  color: rgba(148, 163, 184, 0.82);
+}
+:root[data-acg-theme="dark"] .text-slate-400 {
+  color: rgba(148, 163, 184, 0.74);
+}
+:root[data-acg-theme="dark"] .text-emerald-800 {
+  color: rgba(167, 243, 208, 0.92);
+}
+:root[data-acg-theme="dark"] .text-rose-800 {
+  color: rgba(254, 202, 202, 0.92);
+}
+
+:root[data-acg-theme="dark"] .border-slate-900\/10 {
+  border-color: rgba(148, 163, 184, 0.18);
+}
+:root[data-acg-theme="dark"] .border-slate-900\/20 {
+  border-color: rgba(148, 163, 184, 0.26);
+}
+:root[data-acg-theme="dark"] .border-rose-600\/20 {
+  border-color: rgba(251, 113, 133, 0.28);
+}
+
+:root[data-acg-theme="dark"] .bg-white\/35 {
+  background-color: rgba(2, 6, 23, 0.35);
+}
+:root[data-acg-theme="dark"] .bg-white\/45 {
+  background-color: rgba(15, 23, 42, 0.52);
+}
+:root[data-acg-theme="dark"] .bg-white\/50 {
+  background-color: rgba(15, 23, 42, 0.56);
+}
+:root[data-acg-theme="dark"] .bg-white\/55 {
+  background-color: rgba(15, 23, 42, 0.60);
+}
+:root[data-acg-theme="dark"] .bg-white\/60 {
+  background-color: rgba(15, 23, 42, 0.64);
+}
+:root[data-acg-theme="dark"] .bg-white\/65 {
+  background-color: rgba(30, 41, 59, 0.62);
+}
+:root[data-acg-theme="dark"] .bg-white\/70 {
+  background-color: rgba(30, 41, 59, 0.66);
+}
+:root[data-acg-theme="dark"] .bg-white\/75 {
+  background-color: rgba(30, 41, 59, 0.70);
+}
+:root[data-acg-theme="dark"] .bg-white\/80 {
+  background-color: rgba(30, 41, 59, 0.74);
+}
+:root[data-acg-theme="dark"] .bg-rose-500\/10 {
+  background-color: rgba(244, 63, 94, 0.14);
+}
+
+:root[data-acg-theme="dark"] .hover\:bg-white\/60:hover {
+  background-color: rgba(30, 41, 59, 0.68);
+}
+:root[data-acg-theme="dark"] .hover\:bg-white\/65:hover {
+  background-color: rgba(30, 41, 59, 0.72);
+}
+:root[data-acg-theme="dark"] .hover\:bg-white\/70:hover {
+  background-color: rgba(30, 41, 59, 0.74);
+}
+:root[data-acg-theme="dark"] .hover\:bg-white\/75:hover {
+  background-color: rgba(30, 41, 59, 0.78);
+}
+:root[data-acg-theme="dark"] .hover\:bg-white\/80:hover {
+  background-color: rgba(30, 41, 59, 0.82);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-acg-theme]) .text-slate-950,
+  :root[data-acg-theme="auto"] .text-slate-950 {
+    color: rgba(248, 250, 252, 0.92);
+  }
+  :root:not([data-acg-theme]) .text-slate-800,
+  :root[data-acg-theme="auto"] .text-slate-800 {
+    color: rgba(241, 245, 249, 0.92);
+  }
+  :root:not([data-acg-theme]) .text-slate-700,
+  :root[data-acg-theme="auto"] .text-slate-700 {
+    color: rgba(226, 232, 240, 0.84);
+  }
+  :root:not([data-acg-theme]) .text-slate-600,
+  :root[data-acg-theme="auto"] .text-slate-600 {
+    color: rgba(226, 232, 240, 0.68);
+  }
+  :root:not([data-acg-theme]) .text-slate-500,
+  :root[data-acg-theme="auto"] .text-slate-500 {
+    color: rgba(148, 163, 184, 0.82);
+  }
+  :root:not([data-acg-theme]) .text-slate-400,
+  :root[data-acg-theme="auto"] .text-slate-400 {
+    color: rgba(148, 163, 184, 0.74);
+  }
+  :root:not([data-acg-theme]) .text-emerald-800,
+  :root[data-acg-theme="auto"] .text-emerald-800 {
+    color: rgba(167, 243, 208, 0.92);
+  }
+  :root:not([data-acg-theme]) .text-rose-800,
+  :root[data-acg-theme="auto"] .text-rose-800 {
+    color: rgba(254, 202, 202, 0.92);
+  }
+
+  :root:not([data-acg-theme]) .border-slate-900\/10,
+  :root[data-acg-theme="auto"] .border-slate-900\/10 {
+    border-color: rgba(148, 163, 184, 0.18);
+  }
+  :root:not([data-acg-theme]) .border-slate-900\/20,
+  :root[data-acg-theme="auto"] .border-slate-900\/20 {
+    border-color: rgba(148, 163, 184, 0.26);
+  }
+  :root:not([data-acg-theme]) .border-rose-600\/20,
+  :root[data-acg-theme="auto"] .border-rose-600\/20 {
+    border-color: rgba(251, 113, 133, 0.28);
+  }
+
+  :root:not([data-acg-theme]) .bg-white\/35,
+  :root[data-acg-theme="auto"] .bg-white\/35 {
+    background-color: rgba(2, 6, 23, 0.35);
+  }
+  :root:not([data-acg-theme]) .bg-white\/45,
+  :root[data-acg-theme="auto"] .bg-white\/45 {
+    background-color: rgba(15, 23, 42, 0.52);
+  }
+  :root:not([data-acg-theme]) .bg-white\/50,
+  :root[data-acg-theme="auto"] .bg-white\/50 {
+    background-color: rgba(15, 23, 42, 0.56);
+  }
+  :root:not([data-acg-theme]) .bg-white\/55,
+  :root[data-acg-theme="auto"] .bg-white\/55 {
+    background-color: rgba(15, 23, 42, 0.60);
+  }
+  :root:not([data-acg-theme]) .bg-white\/60,
+  :root[data-acg-theme="auto"] .bg-white\/60 {
+    background-color: rgba(15, 23, 42, 0.64);
+  }
+  :root:not([data-acg-theme]) .bg-white\/65,
+  :root[data-acg-theme="auto"] .bg-white\/65 {
+    background-color: rgba(30, 41, 59, 0.62);
+  }
+  :root:not([data-acg-theme]) .bg-white\/70,
+  :root[data-acg-theme="auto"] .bg-white\/70 {
+    background-color: rgba(30, 41, 59, 0.66);
+  }
+  :root:not([data-acg-theme]) .bg-white\/75,
+  :root[data-acg-theme="auto"] .bg-white\/75 {
+    background-color: rgba(30, 41, 59, 0.70);
+  }
+  :root:not([data-acg-theme]) .bg-white\/80,
+  :root[data-acg-theme="auto"] .bg-white\/80 {
+    background-color: rgba(30, 41, 59, 0.74);
+  }
+  :root:not([data-acg-theme]) .bg-rose-500\/10,
+  :root[data-acg-theme="auto"] .bg-rose-500\/10 {
+    background-color: rgba(244, 63, 94, 0.14);
+  }
+
+  :root:not([data-acg-theme]) .hover\:bg-white\/60:hover,
+  :root[data-acg-theme="auto"] .hover\:bg-white\/60:hover {
+    background-color: rgba(30, 41, 59, 0.68);
+  }
+  :root:not([data-acg-theme]) .hover\:bg-white\/65:hover,
+  :root[data-acg-theme="auto"] .hover\:bg-white\/65:hover {
+    background-color: rgba(30, 41, 59, 0.72);
+  }
+  :root:not([data-acg-theme]) .hover\:bg-white\/70:hover,
+  :root[data-acg-theme="auto"] .hover\:bg-white\/70:hover {
+    background-color: rgba(30, 41, 59, 0.74);
+  }
+  :root:not([data-acg-theme]) .hover\:bg-white\/75:hover,
+  :root[data-acg-theme="auto"] .hover\:bg-white\/75:hover {
+    background-color: rgba(30, 41, 59, 0.78);
+  }
+  :root:not([data-acg-theme]) .hover\:bg-white\/80:hover,
+  :root[data-acg-theme="auto"] .hover\:bg-white\/80:hover {
+    background-color: rgba(30, 41, 59, 0.82);
+  }
 }
 
 @media (max-width: 640px) {
@@ -22,6 +281,23 @@
     --shadow-soft: 0 14px 40px rgba(2, 6, 23, 0.10);
     --shadow-card: 0 8px 18px rgba(2, 6, 23, 0.08);
     --shadow-card-hover: 0 16px 55px rgba(2, 6, 23, 0.12);
+  }
+}
+
+@media (max-width: 640px) {
+  :root[data-acg-theme="dark"] {
+    --shadow-soft: 0 18px 60px rgba(0, 0, 0, 0.36);
+    --shadow-card: 0 12px 40px rgba(0, 0, 0, 0.30);
+    --shadow-card-hover: 0 24px 85px rgba(0, 0, 0, 0.42);
+  }
+}
+
+@media (prefers-color-scheme: dark) and (max-width: 640px) {
+  :root:not([data-acg-theme]),
+  :root[data-acg-theme="auto"] {
+    --shadow-soft: 0 18px 60px rgba(0, 0, 0, 0.36);
+    --shadow-card: 0 12px 40px rgba(0, 0, 0, 0.30);
+    --shadow-card-hover: 0 24px 85px rgba(0, 0, 0, 0.42);
   }
 }
 
@@ -45,6 +321,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   line-height: 1.55;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans",
     "Noto Sans JP", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   background:
@@ -52,6 +330,25 @@ body {
     radial-gradient(1000px 700px at 90% 20%, rgba(59, 130, 246, 0.16), transparent 55%),
     radial-gradient(1100px 900px at 30% 100%, rgba(16, 185, 129, 0.12), transparent 60%),
     linear-gradient(180deg, #f7f8fb 0%, #f2f4f8 100%);
+}
+
+:root[data-acg-theme="dark"] body {
+  background:
+    radial-gradient(1200px 800px at 12% 12%, rgba(124, 58, 237, 0.22), transparent 60%),
+    radial-gradient(1000px 700px at 90% 18%, rgba(59, 130, 246, 0.18), transparent 60%),
+    radial-gradient(1100px 900px at 30% 100%, rgba(16, 185, 129, 0.14), transparent 65%),
+    linear-gradient(180deg, #05070b 0%, #0b1020 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-acg-theme]) body,
+  :root[data-acg-theme="auto"] body {
+    background:
+      radial-gradient(1200px 800px at 12% 12%, rgba(124, 58, 237, 0.22), transparent 60%),
+      radial-gradient(1000px 700px at 90% 18%, rgba(59, 130, 246, 0.18), transparent 60%),
+      radial-gradient(1100px 900px at 30% 100%, rgba(16, 185, 129, 0.14), transparent 65%),
+      linear-gradient(180deg, #05070b 0%, #0b1020 100%);
+  }
 }
 
 /* 噪点纹理层（纯 CSS/SVG data url，不引入外部资源） */
@@ -70,12 +367,48 @@ body::before {
   background-position: 0 0, 1px 1px, 2px 2px;
 }
 
+:root[data-acg-theme="dark"] body::before {
+  opacity: 0.065;
+  background-image:
+    radial-gradient(rgba(226, 232, 240, 0.18) 0.6px, transparent 0.7px),
+    radial-gradient(rgba(226, 232, 240, 0.12) 0.8px, transparent 0.9px),
+    radial-gradient(rgba(226, 232, 240, 0.08) 0.5px, transparent 0.6px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-acg-theme]) body::before,
+  :root[data-acg-theme="auto"] body::before {
+    opacity: 0.065;
+    background-image:
+      radial-gradient(rgba(226, 232, 240, 0.18) 0.6px, transparent 0.7px),
+      radial-gradient(rgba(226, 232, 240, 0.12) 0.8px, transparent 0.9px),
+      radial-gradient(rgba(226, 232, 240, 0.08) 0.5px, transparent 0.6px);
+  }
+}
+
 html[data-acg-device="phone"] body::before {
   /* 手机端进一步降噪：减少层数与透明度，降低滚动/合成压力 */
   opacity: 0.045;
   background-image: radial-gradient(rgba(15, 23, 42, 0.22) 0.7px, transparent 0.8px);
   background-size: 4px 4px;
   background-position: 0 0;
+}
+
+html[data-acg-device="phone"][data-acg-theme="dark"] body::before {
+  opacity: 0.052;
+  background-image: radial-gradient(rgba(226, 232, 240, 0.14) 0.7px, transparent 0.8px);
+  background-size: 4px 4px;
+  background-position: 0 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-acg-device="phone"]:not([data-acg-theme]) body::before,
+  html[data-acg-device="phone"][data-acg-theme="auto"] body::before {
+    opacity: 0.052;
+    background-image: radial-gradient(rgba(226, 232, 240, 0.14) 0.7px, transparent 0.8px);
+    background-size: 4px 4px;
+    background-position: 0 0;
+  }
 }
 
 /* 网络状态指示（轻量）：请求进行中显示细进度条；慢网时用偏暖色提示。 */
@@ -141,8 +474,8 @@ html[data-acg-net="slow"] body::after {
 
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 200ms;
-  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-duration: var(--dur);
+  animation-timing-function: var(--ease-smooth);
 }
 
 /* 标题断行：更“杂志感”，避免单词/短语孤悬 */
@@ -167,9 +500,67 @@ img {
   max-width: 100%;
 }
 
+/* 超长文本：柔和截断（支持 mask 的浏览器会使用渐变遮罩） */
+.acg-fade-truncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@supports (-webkit-mask-image: linear-gradient(90deg, #000, transparent)) or (mask-image: linear-gradient(90deg, #000, transparent)) {
+  .acg-fade-truncate {
+    text-overflow: clip;
+    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 14px), transparent 100%);
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 14px), transparent 100%);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+}
+
+/* 顶部导航背景：大屏允许 blur，小屏性能优先 */
+.acg-header-surface {
+  background: rgba(255, 255, 255, 0.70);
+}
+
+@media (min-width: 1024px) {
+  .acg-header-surface {
+    background: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+  }
+}
+
+:root[data-acg-theme="dark"] .acg-header-surface {
+  background: rgba(2, 6, 23, 0.74);
+}
+
+@media (min-width: 1024px) {
+  :root[data-acg-theme="dark"] .acg-header-surface {
+    background: rgba(2, 6, 23, 0.42);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-acg-theme]) .acg-header-surface,
+  :root[data-acg-theme="auto"] .acg-header-surface {
+    background: rgba(2, 6, 23, 0.74);
+  }
+}
+
+@media (prefers-color-scheme: dark) and (min-width: 1024px) {
+  :root:not([data-acg-theme]) .acg-header-surface,
+  :root[data-acg-theme="auto"] .acg-header-surface {
+    background: rgba(2, 6, 23, 0.42);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+  }
+}
+
 /* 玻璃卡片基础 */
 .glass {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.58));
+  background: var(--glass-surface);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -184,7 +575,7 @@ html[data-acg-device="phone"] .glass {
 
 /* 列表卡片：保留“玻璃感”，但不使用昂贵的 backdrop-filter（大列表更顺滑） */
 .glass-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.90), rgba(255, 255, 255, 0.62));
+  background: var(--glass-card-surface);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-card);
   backdrop-filter: none;
@@ -194,7 +585,7 @@ html[data-acg-device="phone"] .glass {
 /* 少量“悬浮操作”按钮：允许更精致的玻璃质感（数量很少，不会拖慢大列表） */
 .acg-icon-fab {
   border: 1px solid rgba(255, 255, 255, 0.38);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.56));
+  background: var(--fab-surface);
   box-shadow: 0 18px 60px rgba(2, 6, 23, 0.18);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -210,7 +601,7 @@ html[data-acg-device="phone"] .acg-icon-fab {
 .acg-prose {
   font-size: 14px;
   line-height: 1.75;
-  color: rgba(15, 23, 42, 0.88);
+  color: var(--text);
   max-width: 72ch;
   margin-left: auto;
   margin-right: auto;
@@ -230,12 +621,12 @@ html[data-acg-device="phone"] .acg-icon-fab {
 
 .acg-prose strong {
   font-weight: 900;
-  color: rgba(15, 23, 42, 0.96);
+  color: var(--text);
 }
 
 .acg-prose em {
   font-style: italic;
-  color: rgba(15, 23, 42, 0.92);
+  color: var(--text);
 }
 
 .acg-prose > * + * {
@@ -819,8 +1210,14 @@ html[data-acg-device="phone"] .acg-card {
 
 /* 可点击触感 */
 .clickable {
-  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 160ms ease,
-    border-color 160ms ease, background-color 160ms ease;
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    background-color var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    filter var(--dur-fast) ease;
 }
 .clickable:hover {
   transform: translateY(-2px);
@@ -837,6 +1234,23 @@ html[data-acg-device="phone"] .acg-card {
     transform: none;
     border-color: rgba(15, 23, 42, 0.12);
     box-shadow: var(--shadow-card);
+  }
+}
+
+:root[data-acg-theme="dark"] .clickable:hover {
+  border-color: rgba(148, 163, 184, 0.24);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-acg-theme]) .clickable:hover,
+  :root[data-acg-theme="auto"] .clickable:hover {
+    border-color: rgba(148, 163, 184, 0.24);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clickable {
+    transition: none;
   }
 }
 
@@ -1003,9 +1417,12 @@ html[data-acg-device="tablet"] .acg-post-grid {
 /* Icon 基础：统一 SVG 图标风格（替换符号/emoji） */
 .acg-icon {
   display: inline-block;
-  vertical-align: -0.14em;
+  vertical-align: -0.125em;
   flex: 0 0 auto;
-  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 180ms ease, opacity 180ms ease;
+  transition:
+    transform var(--dur-fast) var(--ease-standard),
+    filter var(--dur-fast) ease,
+    opacity var(--dur-fast) ease;
 }
 
 .acg-icon path,
@@ -1052,7 +1469,7 @@ button[data-bookmark-id]:hover .acg-icon[data-icon="star"] {
 }
 
 button[data-bookmark-id].pop .acg-icon[data-icon="star"] {
-  animation: acg-star-twinkle 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: acg-star-twinkle 320ms var(--ease-spring);
 }
 
 button[data-bookmark-id][aria-pressed="true"] .acg-icon-star {
@@ -1086,7 +1503,7 @@ button[data-source-follow-id]:hover .acg-icon[data-icon="star"] {
 }
 
 button[data-source-follow-id].pop .acg-icon[data-icon="star"] {
-  animation: acg-star-twinkle 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: acg-star-twinkle 320ms var(--ease-spring);
 }
 
 button[data-source-follow-id][aria-pressed="true"] .acg-icon-star {
@@ -1102,7 +1519,7 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 }
 
 .acg-cover-retry.is-spinning .acg-icon[data-icon="refresh"] {
-  animation: acg-spin 650ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: acg-spin 650ms var(--ease-smooth);
 }
 
 .acg-carousel-nav:hover .acg-icon[data-icon="arrow-left"] {
@@ -1166,9 +1583,10 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 
 /* 快捷筛选 Chip：移动端更好点 */
 .acg-chip {
-  border: 1px solid rgba(15, 23, 42, 0.10);
-  background: rgba(255, 255, 255, 0.55);
-  color: rgba(15, 23, 42, 0.78);
+  border: 1px solid var(--glass-border);
+  background: var(--chip-surface);
+  color: var(--text);
+  opacity: 0.88;
 }
 
 .acg-hscroll {
@@ -1184,9 +1602,61 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 }
 
 .acg-chip[data-active="true"] {
-  border-color: rgba(124, 58, 237, 0.25);
-  background: rgba(124, 58, 237, 0.12);
-  color: rgba(15, 23, 42, 0.92);
+  border-color: rgba(124, 58, 237, 0.35);
+  background: rgba(124, 58, 237, 0.16);
+  color: var(--text);
+  opacity: 1;
+}
+
+/* 主题切换（偏好设置）：三段式 Segmented Control */
+.acg-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--chip-surface);
+}
+
+.acg-seg-item {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  line-height: 1;
+  transition:
+    transform var(--dur-fast) var(--ease-standard),
+    background-color var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease;
+}
+
+.acg-seg-item:hover {
+  background: rgba(124, 58, 237, 0.10);
+  color: var(--text);
+}
+
+.acg-seg-item[data-active="true"] {
+  background: rgba(124, 58, 237, 0.18);
+  color: var(--text);
+  box-shadow: 0 16px 45px rgba(124, 58, 237, 0.16);
+}
+
+.acg-seg-item:active {
+  transform: scale(0.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acg-seg-item {
+    transition: none;
+  }
 }
 
 /* 高级“扫光”质感：只在 hover 时出现，不影响首帧可见性 */
@@ -1210,7 +1680,7 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
     rgba(255, 255, 255, 0.35) 50%,
     rgba(255, 255, 255, 0) 100%
   );
-  transition: opacity 180ms ease, transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity var(--dur-fast) ease, transform var(--dur-slow) var(--ease-smooth);
 }
 .shine:hover::after {
   opacity: 0.9;
@@ -1244,15 +1714,15 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 .acg-toast {
   padding: 12px 14px;
   border-radius: 16px;
-  border: 1px solid rgba(15, 23, 42, 0.10);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.62));
+  border: 1px solid var(--glass-border);
+  background: var(--toast-surface);
   box-shadow: 0 18px 60px rgba(2, 6, 23, 0.14);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   color: var(--text);
   font-size: 12px;
   line-height: 1.4;
-  animation: toast-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: toast-in 260ms var(--ease-spring) both;
 }
 
 .acg-toast[data-variant="success"] {
@@ -1266,12 +1736,12 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 .acg-toast-title {
   font-weight: 700;
   font-size: 12px;
-  color: #0b0f14;
+  color: var(--text);
 }
 
 .acg-toast-desc {
   margin-top: 4px;
-  color: rgba(15, 23, 42, 0.62);
+  color: var(--muted);
 }
 
 @keyframes toast-in {
@@ -1300,7 +1770,7 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   gap: 10px;
   padding: 10px 12px;
   border-radius: 16px;
-  color: #0b0f14;
+  color: var(--text);
 }
 
 .acg-fab-icon {
@@ -1309,14 +1779,14 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   width: 26px;
   height: 26px;
   border-radius: 12px;
-  background: rgba(15, 23, 42, 0.06);
+  background: var(--nav-icon-bg);
   font-weight: 800;
 }
 
 .acg-fab-label {
   font-size: 12px;
   font-weight: 700;
-  color: rgba(15, 23, 42, 0.72);
+  color: var(--muted);
 }
 
 /* Tailwind v3 未内置 line-clamp，这里提供轻量替代 */
@@ -1393,7 +1863,7 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 
 /* 列表“交错入场”（不使用 opacity=0，避免空白屏） */
 .stagger-item {
-  animation: rise-in 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: rise-in 650ms var(--ease-smooth) both;
   animation-delay: calc(var(--i, 0) * 26ms);
 }
 
@@ -1414,7 +1884,7 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 
 /* 轻微“弹一下”的强调动效（用于收藏等即时反馈） */
 .pop {
-  animation: pop 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: pop 320ms var(--ease-spring);
 }
 
 @keyframes pop {
@@ -1561,7 +2031,7 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   height: 100%;
   object-fit: cover;
   transform: scale(1.02);
-  transition: transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 520ms var(--ease-smooth);
 }
 
 .acg-carousel-slide:hover .acg-carousel-img {
@@ -1696,8 +2166,8 @@ html[data-acg-device="phone"] .acg-carousel-nav {
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.18);
-  border: 1px solid rgba(15, 23, 42, 0.10);
+  background: var(--carousel-dot-bg);
+  border: 1px solid var(--glass-border);
   transition: width 180ms ease, background-color 180ms ease, transform 180ms ease;
 }
 
@@ -1739,8 +2209,8 @@ html[data-acg-device="phone"] .acg-carousel-dot.is-active {
   gap: 10px;
   padding: 10px 12px;
   border-radius: 22px;
-  border: 1px solid rgba(15, 23, 42, 0.10);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.62));
+  border: 1px solid var(--glass-border);
+  background: var(--bottom-nav-surface);
   box-shadow: 0 22px 70px rgba(2, 6, 23, 0.16);
   /* 性能：固定层的 backdrop-filter 在移动端滚动时非常容易掉帧；这里默认禁用。 */
   backdrop-filter: none;
@@ -1750,7 +2220,7 @@ html[data-acg-device="phone"] .acg-carousel-dot.is-active {
 html[data-acg-device="phone"] .acg-bottom-nav {
   /* 手机端：固定层的 blur/阴影更容易拖慢滚动，适度降级更“稳” */
   box-shadow: 0 18px 55px rgba(2, 6, 23, 0.14);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.84));
+  background: var(--bottom-nav-surface-phone);
 }
 
 @media (min-width: 1024px) {
@@ -1772,9 +2242,12 @@ html[data-acg-device="phone"] .acg-bottom-nav {
   gap: 4px;
   padding: 8px 10px;
   border-radius: 18px;
-  color: rgba(15, 23, 42, 0.72);
+  color: var(--muted);
   text-decoration: none;
-  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1), background-color 160ms ease, color 160ms ease;
+  transition:
+    transform var(--dur-fast) var(--ease-standard),
+    background-color var(--dur-fast) ease,
+    color var(--dur-fast) ease;
 }
 
 .acg-bottom-nav-item:active {
@@ -1783,7 +2256,7 @@ html[data-acg-device="phone"] .acg-bottom-nav {
 
 .acg-bottom-nav-item[data-active="true"] {
   background: linear-gradient(180deg, rgba(124, 58, 237, 0.16), rgba(124, 58, 237, 0.08));
-  color: rgba(15, 23, 42, 0.92);
+  color: var(--text);
   transform: translateY(-1px);
 }
 
@@ -1793,8 +2266,8 @@ html[data-acg-device="phone"] .acg-bottom-nav {
   width: 30px;
   height: 30px;
   border-radius: 14px;
-  background: rgba(15, 23, 42, 0.06);
-  color: rgba(15, 23, 42, 0.92);
+  background: var(--nav-icon-bg);
+  color: var(--nav-icon-fg);
 }
 
 .acg-bottom-nav-item[data-active="true"] .acg-bottom-nav-icon {
@@ -1810,6 +2283,16 @@ html[data-acg-device="phone"] .acg-bottom-nav {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+@supports (-webkit-mask-image: linear-gradient(90deg, #000, transparent)) or (mask-image: linear-gradient(90deg, #000, transparent)) {
+  .acg-bottom-nav-label {
+    text-overflow: clip;
+    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 12px), transparent 100%);
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 12px), transparent 100%);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
 }
 
 /* 移动端：偏好设置抽屉（避免 prefs 把页面拖得很长，也更像 App） */
@@ -1833,7 +2316,7 @@ body.acg-no-scroll {
     background: rgba(2, 6, 23, 0.38);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 180ms ease;
+    transition: opacity var(--dur) ease;
   }
 
   .acg-prefs-drawer.is-open {
@@ -1849,7 +2332,7 @@ body.acg-no-scroll {
     background: rgba(255, 255, 255, 0.01);
     box-shadow: 0 40px 120px rgba(2, 6, 23, 0.28);
     transform: translateY(20px);
-    transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: transform var(--dur) var(--ease-spring);
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
@@ -1920,7 +2403,7 @@ html[data-acg-device="phone"] .acg-prefs-drawer {
   background: rgba(2, 6, 23, 0.38);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 180ms ease;
+  transition: opacity var(--dur) ease;
 }
 
 html[data-acg-device="phone"] .acg-prefs-drawer.is-open {
@@ -1936,7 +2419,7 @@ html[data-acg-device="phone"] .acg-prefs-drawer-panel {
   background: rgba(255, 255, 255, 0.01);
   box-shadow: 0 40px 120px rgba(2, 6, 23, 0.28);
   transform: translateY(20px);
-  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform var(--dur) var(--ease-spring);
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }

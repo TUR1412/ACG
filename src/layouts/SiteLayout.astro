@@ -46,6 +46,42 @@ const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
     <script is:inline>
       (() => {
         const el = document.documentElement;
+        const LIGHT = "#f2f4f8";
+        const DARK = "#05070b";
+        let mode = "auto";
+        try {
+          const raw = localStorage.getItem("acg.theme.v1");
+          if (raw === "light" || raw === "dark" || raw === "auto") mode = raw;
+        } catch {
+          // ignore
+        }
+
+        try {
+          el.dataset.acgTheme = mode;
+        } catch {
+          // ignore
+        }
+
+        let isDark = false;
+        try {
+          if (mode === "dark") isDark = true;
+          else if (mode === "light") isDark = false;
+          else isDark = typeof window.matchMedia === "function" ? window.matchMedia("(prefers-color-scheme: dark)").matches : false;
+        } catch {
+          // ignore
+        }
+
+        try {
+          const meta = document.querySelector('meta[name="theme-color"]');
+          meta?.setAttribute("content", isDark ? DARK : LIGHT);
+        } catch {
+          // ignore
+        }
+      })();
+    </script>
+    <script is:inline>
+      (() => {
+        const el = document.documentElement;
         let device = "desktop";
 
         try {
@@ -108,7 +144,7 @@ const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
   </head>
   <body data-current-post-id={currentPostId}>
     <header
-      class="sticky top-0 z-20 border-b border-slate-900/10 bg-white/70 lg:bg-white/35 lg:backdrop-blur-xl"
+      class="sticky top-0 z-20 border-b border-slate-900/10 acg-header-surface"
       style="view-transition-name: acg-header;"
     >
       <div class="mx-auto max-w-7xl px-4 py-2 sm:py-3">
@@ -141,6 +177,22 @@ const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
           </nav>
 
           <div class="flex items-center gap-1 sm:gap-2">
+            <button
+              type="button"
+              class="glass rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable shadow-sm sm:text-sm"
+              data-theme-toggle
+              data-theme-label-name={t(lang, "prefs.theme")}
+              data-theme-label-auto={t(lang, "prefs.themeAuto")}
+              data-theme-label-light={t(lang, "prefs.themeLight")}
+              data-theme-label-dark={t(lang, "prefs.themeDark")}
+              aria-label={t(lang, "prefs.theme")}
+              title={t(lang, "prefs.theme")}
+            >
+              <span class="inline-flex items-center gap-1.5">
+                <Icon name="moon" size={18} />
+                <span class="hidden sm:inline" data-theme-toggle-text>{t(lang, "prefs.theme")}</span>
+              </span>
+            </button>
             <a
               href={withLang("/bookmarks/")}
               aria-current={isBookmarks ? "page" : undefined}

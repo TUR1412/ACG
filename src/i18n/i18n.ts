@@ -25,6 +25,11 @@ export type I18nKey =
   | "search.emptyHint"
   | "search.clear"
   | "prefs.title"
+  | "prefs.theme"
+  | "prefs.themeAuto"
+  | "prefs.themeLight"
+  | "prefs.themeDark"
+  | "prefs.themeHint"
   | "prefs.followOnly"
   | "prefs.followedSourcesOnly"
   | "prefs.hideRead"
@@ -89,6 +94,11 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "search.emptyHint": "试试清空搜索词，或关闭“只看关注 / 只看关注源 / 隐藏已读 / 来源过滤”。",
     "search.clear": "清空搜索",
     "prefs.title": "偏好",
+    "prefs.theme": "主题",
+    "prefs.themeAuto": "自动",
+    "prefs.themeLight": "浅色",
+    "prefs.themeDark": "深色",
+    "prefs.themeHint": "自动 = 跟随系统外观（可在系统设置中切换深色/浅色）。",
     "prefs.followOnly": "只看关注",
     "prefs.followedSourcesOnly": "只看关注源",
     "prefs.hideRead": "隐藏已读",
@@ -152,6 +162,11 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "search.emptyHint": "検索語をクリアするか、「フォローのみ / フォローしたソースのみ / 既読を隠す / ソース無効化」を見直してください。",
     "search.clear": "クリア",
     "prefs.title": "設定",
+    "prefs.theme": "テーマ",
+    "prefs.themeAuto": "自動",
+    "prefs.themeLight": "ライト",
+    "prefs.themeDark": "ダーク",
+    "prefs.themeHint": "自動 = OSの外観設定（ライト/ダーク）に追従します。",
     "prefs.followOnly": "フォローのみ",
     "prefs.followedSourcesOnly": "フォローしたソースのみ",
     "prefs.hideRead": "既読を隠す",

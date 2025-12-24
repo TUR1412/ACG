@@ -24,9 +24,9 @@ const cls = [base, size, "clickable", className].filter(Boolean).join(" ");
 ---
 
 {url ? (
-  <a class={cls} href={url} target="_blank" rel="noreferrer" title={name}>
+  <a class={cls} href={url} target="_blank" rel="noreferrer noopener" title={name}>
     {dotClass ? <span class:list={["size-1.5 rounded-full", dotClass]}></span> : null}
-    <span class="min-w-0 max-w-[20ch] truncate">{name}</span>
+    <span class="min-w-0 max-w-[20ch] acg-fade-truncate">{name}</span>
     <span class={tone === "dark" ? "text-white/80" : "text-slate-500"} aria-hidden="true">
       <Icon name="external-link" size={14} />
     </span>
@@ -34,6 +34,6 @@ const cls = [base, size, "clickable", className].filter(Boolean).join(" ");
 ) : (
   <span class={cls} title={name}>
     {dotClass ? <span class:list={["size-1.5 rounded-full", dotClass]}></span> : null}
-    <span class="min-w-0 max-w-[20ch] truncate">{name}</span>
+    <span class="min-w-0 max-w-[20ch] acg-fade-truncate">{name}</span>
   </span>
 )}

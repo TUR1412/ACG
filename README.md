@@ -109,6 +109,7 @@ flowchart TB
 - **状态页**：`/zh/status/` · `/ja/status/`（抓取健康度与错误提示）
 - **设备调试面板**：任意页面加 `?debug=1`，或设置 `localStorage["acg.debug"]="1"`（用于排查“手机被渲染成桌面布局”等问题）
 - **健康全景图（控制台）**：任意页面加 `?health=1`，或设置 `localStorage["acg.health"]="1"`（实时输出 FPS/LongTask/内存/请求状态等）
+- **主题（暗黑模式）**：右上角“主题”可在 `自动/浅色/深色` 间切换；亦可在偏好面板中选择（持久化键：`localStorage["acg.theme.v1"]="auto|light|dark"`）
 - **慢网体验**：请求期间顶部会出现一条细进度条（并在慢网时提示色更暖），用于降低“无响应”的心理落差
 
 ---

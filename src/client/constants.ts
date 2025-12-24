@@ -13,7 +13,8 @@ export const STORAGE_KEYS = {
   FILTERS: "acg.filters.v1",
   DISABLED_SOURCES: "acg.sourcesDisabled.v1",
   FOLLOWED_SOURCES: "acg.sourcesFollowed.v1",
-  BOOKMARK_META: "acg.bookmarks.meta.v1"
+  BOOKMARK_META: "acg.bookmarks.meta.v1",
+  THEME: "acg.theme.v1"
 } as const;
 
 export const NETWORK = {

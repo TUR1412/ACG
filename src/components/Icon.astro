@@ -1,5 +1,5 @@
 ---
-export type IconName = "arrow-left" | "arrow-right" | "arrow-up" | "chart" | "chevron-right" | "clock" | "external-link" | "info" | "refresh" | "search" | "sliders" | "star" | "x";
+export type IconName = "arrow-left" | "arrow-right" | "arrow-up" | "chart" | "chevron-right" | "clock" | "external-link" | "info" | "moon" | "refresh" | "search" | "sliders" | "star" | "sun" | "x";
 
 type Props = {
   name: IconName;
@@ -89,6 +89,30 @@ const cls = ["acg-icon", className].filter(Boolean).join(" ");
       <path d="M12 22a10 10 0 1 0-10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
       <path d="M12 10.7v5.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
       <path d="M12 7.2h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+    </>
+  ) : null}
+
+  {name === "moon" ? (
+    <path
+      d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  ) : null}
+
+  {name === "sun" ? (
+    <>
+      <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2" />
+      <path d="M12 2v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M12 20v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M4.93 4.93l1.41 1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M17.66 17.66l1.41 1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M2 12h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M20 12h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M4.93 19.07l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
     </>
   ) : null}
 

@@ -8,6 +8,7 @@ type Props = {
 };
 
 const { category, size = 22, class: className } = Astro.props;
+const cls = ["acg-icon", className].filter(Boolean).join(" ");
 ---
 
 <svg
@@ -17,7 +18,8 @@ const { category, size = 22, class: className } = Astro.props;
   fill="none"
   aria-hidden="true"
   focusable="false"
-  class={className}
+  data-icon={`category-${category}`}
+  class={cls}
 >
   {category === "anime" ? (
     <>
