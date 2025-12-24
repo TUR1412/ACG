@@ -60,6 +60,56 @@
   <img src="docs/architecture.svg?raw=1" alt="ACG Radar Architecture" />
 </p>
 
+<details>
+  <summary><b>Mermaid 架构图（可复制/可编辑）</b></summary>
+
+```mermaid
+flowchart TB
+  %% ─────────────────────────────────────────────────────────────
+  %%  Data Pipeline (CI) : Sync → Build → Deploy
+  %% ─────────────────────────────────────────────────────────────
+  subgraph CI[GitHub Actions · Hourly Sync & Deploy]
+    direction TB
+    Checkout[actions/checkout] --> Install[npm ci]
+    Install --> Sync[scripts/sync.ts\n抓取/清洗/补图/翻译字段]
+    Sync --> Gen[src/data/generated/*.json]
+    Sync --> Public[public/data/posts.json\n+ public/covers/*（部署产物）]
+    Gen --> Build[astro build]
+    Public --> Build
+    Build --> Dist[dist/（静态站点产物）]
+    Dist --> Deploy[actions/deploy-pages\nGitHub Pages]
+  end
+
+  %% ─────────────────────────────────────────────────────────────
+  %%  Runtime (Browser) : Static HTML + Local State + On-demand Fulltext
+  %% ─────────────────────────────────────────────────────────────
+  subgraph RT[浏览器 Runtime（无后端常驻）]
+    direction TB
+    Deploy --> HTML[静态 HTML（/zh /ja）]
+    HTML --> App[src/client/app.ts\n收藏/已读/过滤/交互增强]
+    App --> LS[(localStorage)\n用户偏好/已读/收藏]
+    App --> Feed[/zh/feed.xml\n/ja/feed.xml]
+    App -->|按需加载| Fulltext[src/client/features/fulltext.ts\n全文预览 chunk]
+    Fulltext --> Reader[r.jina.ai\n阅读模式]
+    Fulltext --> Translate[translate.googleapis.com\nclient=gtx]
+  end
+```
+
+</details>
+
+---
+
+## 交互式文档入口（Interactive Docs）
+
+> 说明：本项目是“静态站点 + 浏览器本地状态”，因此很多“文档”本身就是可交互的页面（可直接点开验证）。
+
+- **在线 Demo**：https://tur1412.github.io/ACG/
+- **语言入口**：`/zh/`（中文）· `/ja/`（日本語）
+- **RSS**：`/zh/feed.xml`（中文）· `/ja/feed.xml`（日本語）
+- **状态页**：`/zh/status/` · `/ja/status/`（抓取健康度与错误提示）
+- **设备调试面板**：任意页面加 `?debug=1`，或设置 `localStorage["acg.debug"]="1"`（用于排查“手机被渲染成桌面布局”等问题）
+- **慢网体验**：请求期间顶部会出现一条细进度条（并在慢网时提示色更暖），用于降低“无响应”的心理落差
+
 ---
 
 ## 技术栈（Tech）

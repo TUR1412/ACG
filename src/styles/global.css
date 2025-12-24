@@ -78,6 +78,51 @@ html[data-acg-device="phone"] body::before {
   background-position: 0 0;
 }
 
+/* 网络状态指示（轻量）：请求进行中显示细进度条；慢网时用偏暖色提示。 */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.45), transparent);
+}
+
+html[data-acg-busy="true"] body::after {
+  opacity: 0.9;
+  animation: acg-net-progress 1.15s ease-in-out infinite;
+}
+
+html[data-acg-net="slow"] body::after {
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.55), transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-acg-busy="true"] body::after {
+    animation: none;
+    opacity: 0.65;
+    transform: translateX(0);
+  }
+}
+
+@keyframes acg-net-progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 @media (max-width: 1023px) {
   :root {
     /* 移动端底部导航默认高度（含 safe-area）。用于把 FAB/Toast 顶上去 */

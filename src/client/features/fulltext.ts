@@ -6,8 +6,14 @@
  */
 import { bestInitialCoverSrc } from "../utils/cover";
 import { isJapanese } from "../utils/lang";
+import { NETWORK } from "../constants";
+import { httpFetch } from "../utils/http";
 
 type FullTextLang = "zh" | "ja";
+
+const FULLTEXT_CACHE_MAX_CHARS = 160_000;
+const FULLTEXT_REQUEST_TIMEOUT_MS = 22_000;
+const FULLTEXT_STATUS_FLASH_MS = 1600;
 
 type FullTextCacheEntry = {
   url: string;
@@ -52,7 +58,6 @@ function writeFullTextCache(postId: string, entry: FullTextCacheEntry) {
   try {
     // 保护：避免 localStorage 被超大正文撑爆（不同浏览器配额不同）
     // 策略：优先保证“原文”可缓存；若总体过大，则丢弃翻译缓存（翻译可重新生成）。
-    const MAX = 160_000;
     const sizeOf = (it: FullTextCacheEntry) => it.original.length + (it.zh?.length ?? 0) + (it.ja?.length ?? 0);
 
     const base: FullTextCacheEntry = {
@@ -60,9 +65,9 @@ function writeFullTextCache(postId: string, entry: FullTextCacheEntry) {
       fetchedAt: entry.fetchedAt,
       original: entry.original
     };
-    if (sizeOf(base) > MAX) return;
+    if (sizeOf(base) > FULLTEXT_CACHE_MAX_CHARS) return;
 
-    const toWrite = sizeOf(entry) <= MAX ? entry : base;
+    const toWrite = sizeOf(entry) <= FULLTEXT_CACHE_MAX_CHARS ? entry : base;
     localStorage.setItem(fullTextCacheKey(postId), JSON.stringify(toWrite));
   } catch {
     // ignore
@@ -1349,13 +1354,14 @@ type FullTextLoadResult = {
 };
 
 async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
-  const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, { signal: controller.signal, headers: { accept: "text/plain,*/*" } });
-  } finally {
-    window.clearTimeout(timer);
-  }
+  return httpFetch(url, undefined, {
+    label: "fulltext",
+    timeoutMs,
+    retries: 0,
+    headers: {
+      accept: NETWORK.TEXT_ACCEPT
+    }
+  });
 }
 
 function toAbsoluteUrlMaybe(raw: string, baseUrl: string): string | null {
@@ -2661,7 +2667,7 @@ export function wireFullTextReader() {
           if (cache && shouldRejectFullTextMarkdown(cache.original, url)) cache = null;
 
           if (!cache || !cache.original) {
-            loadResult = await loadFullTextMarkdown({ url, timeoutMs: 22_000 });
+            loadResult = await loadFullTextMarkdown({ url, timeoutMs: FULLTEXT_REQUEST_TIMEOUT_MS });
             cache = {
               url,
               fetchedAt: new Date().toISOString(),
@@ -2674,7 +2680,7 @@ export function wireFullTextReader() {
           setStatus("");
 
           if (loadResult && loadResult.source !== "jina") {
-            flashStatus(lang === "ja" ? "代替解析で抽出済み。" : "已使用备用解析提取全文。", 1600);
+            flashStatus(lang === "ja" ? "代替解析で抽出済み。" : "已使用备用解析提取全文。", FULLTEXT_STATUS_FLASH_MS);
           }
         } catch (err) {
           const status = typeof (err as any)?.status === "number" ? ((err as any).status as number) : undefined;
@@ -2721,7 +2727,7 @@ export function wireFullTextReader() {
         const translated = await translateViaGtx({
           text: cache.original,
           target: lang,
-          timeoutMs: 22_000,
+          timeoutMs: FULLTEXT_REQUEST_TIMEOUT_MS,
           onProgress: (done, total) => {
             if (total <= 1) return;
             const label = lang === "ja" ? `翻訳中… (${Math.min(done + 1, total)}/${total})` : `正在翻译… (${Math.min(done + 1, total)}/${total})`;

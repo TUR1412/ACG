@@ -1,7 +1,9 @@
 import { toWeservImageUrl } from "../lib/cover";
 import { href } from "../lib/href";
+import { NETWORK, STORAGE_KEYS, UI, MS } from "./constants";
 import { bestInitialCoverSrc } from "./utils/cover";
 import { isJapanese } from "./utils/lang";
+import { fetchJson } from "./utils/http";
 
 type BookmarkStore = {
   version: 1;
@@ -13,13 +15,13 @@ type ReadStore = {
   ids: string[];
 };
 
-const BOOKMARK_KEY = "acg.bookmarks.v1";
-const READ_KEY = "acg.read.v1";
-const FOLLOWS_KEY = "acg.follows.v1";
-const BLOCKLIST_KEY = "acg.blocklist.v1";
-const FILTERS_KEY = "acg.filters.v1";
-const DISABLED_SOURCES_KEY = "acg.sourcesDisabled.v1";
-const FOLLOWED_SOURCES_KEY = "acg.sourcesFollowed.v1";
+const BOOKMARK_KEY = STORAGE_KEYS.BOOKMARKS;
+const READ_KEY = STORAGE_KEYS.READ;
+const FOLLOWS_KEY = STORAGE_KEYS.FOLLOWS;
+const BLOCKLIST_KEY = STORAGE_KEYS.BLOCKLIST;
+const FILTERS_KEY = STORAGE_KEYS.FILTERS;
+const DISABLED_SOURCES_KEY = STORAGE_KEYS.DISABLED_SOURCES;
+const FOLLOWED_SOURCES_KEY = STORAGE_KEYS.FOLLOWED_SOURCES;
 
 type WordStore = {
   version: 1;
@@ -252,7 +254,7 @@ function prefersReducedMotion(): boolean {
   }
 }
 
-function runWhenIdle(task: () => void, timeoutMs = 1400) {
+function runWhenIdle(task: () => void, timeoutMs: number = UI.IDLE_DEFAULT_TIMEOUT_MS) {
   try {
     const ric = (window as any).requestIdleCallback as
       | ((cb: (deadline?: unknown) => void, opts?: { timeout?: number }) => number)
@@ -280,7 +282,7 @@ function runWhenIdle(task: () => void, timeoutMs = 1400) {
     } catch {
       // ignore
     }
-  }, Math.min(64, Math.max(0, timeoutMs)));
+  }, Math.min(UI.IDLE_FALLBACK_DELAY_MS, Math.max(0, timeoutMs)));
 }
 
 function getCoverContainer(img: HTMLElement): HTMLElement | null {
@@ -460,7 +462,7 @@ function wireCoverRetry() {
     img.style.pointerEvents = "";
 
     img.src = withCacheBust(bestInitialCoverSrc(original), "acg_retry");
-    toast({ title: isJapanese() ? "画像を再試行中…" : "正在重试封面…", variant: "info", timeoutMs: 900 });
+    toast({ title: isJapanese() ? "画像を再試行中…" : "正在重试封面…", variant: "info", timeoutMs: UI.TOAST_HINT_TIMEOUT_MS });
   });
 }
 
@@ -496,7 +498,7 @@ function wireBackToTop() {
       ticking = true;
       window.requestAnimationFrame(() => {
         ticking = false;
-        button.hidden = window.scrollY < 700;
+        button.hidden = window.scrollY < UI.BACK_TO_TOP_SHOW_SCROLL_Y;
       });
     };
 
@@ -519,7 +521,7 @@ function wireKeyboardShortcuts() {
       e.preventDefault();
       input.focus();
       input.select();
-      toast({ title: isJapanese() ? "検索へフォーカス" : "已聚焦搜索", variant: "info", timeoutMs: 900 });
+      toast({ title: isJapanese() ? "検索へフォーカス" : "已聚焦搜索", variant: "info", timeoutMs: UI.TOAST_HINT_TIMEOUT_MS });
       return;
     }
 
@@ -554,7 +556,7 @@ function wireSearchClear() {
       // ignore
     }
     apply();
-    toast({ title: isJapanese() ? "検索をクリアしました" : "已清空搜索", variant: "info", timeoutMs: 900 });
+    toast({ title: isJapanese() ? "検索をクリアしました" : "已清空搜索", variant: "info", timeoutMs: UI.TOAST_HINT_TIMEOUT_MS });
   });
 
   input.addEventListener("input", apply);
@@ -921,7 +923,7 @@ function createListFilter(params: {
     disabledSources.size > 0;
 
   if (shouldInitImmediately) applyNow();
-  else runWhenIdle(() => applyNow(), 1500);
+  else runWhenIdle(() => applyNow(), UI.LIST_FILTER_IDLE_DELAY_MS);
 }
 
 type BookmarkLang = "zh" | "ja";
@@ -1185,7 +1187,7 @@ function whenLabel(lang: BookmarkLang, publishedAt: string): string {
   if (!Number.isFinite(diffMs) || diffMs < 0) {
     return new Date(t).toLocaleDateString(lang === "ja" ? "ja-JP" : "zh-CN");
   }
-  const hours = Math.floor(diffMs / (60 * 60 * 1000));
+  const hours = Math.floor(diffMs / MS.HOUR);
   if (hours < 1) return lang === "ja" ? "たった今" : "刚刚";
   if (hours < 24) return lang === "ja" ? `${hours}時間前` : `${hours} 小时前`;
   const days = Math.floor(hours / 24);
@@ -1197,10 +1199,13 @@ let bookmarkPostsByIdPromise: Promise<Map<string, BookmarkPost>> | null = null;
 async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {
   if (bookmarkPostsByIdPromise) return bookmarkPostsByIdPromise;
   bookmarkPostsByIdPromise = (async () => {
-    const url = href("/data/posts.json");
-    const res = await fetch(url, { headers: { accept: "application/json" } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = (await res.json()) as unknown;
+    const url = href(NETWORK.POSTS_JSON_PATH);
+    const json = await fetchJson<unknown>(url, {
+      label: "posts.json",
+      timeoutMs: NETWORK.DEFAULT_TIMEOUT_MS,
+      retries: 1,
+      cache: "no-cache"
+    });
     if (!Array.isArray(json)) throw new Error("posts.json 格式错误");
     const map = new Map<string, BookmarkPost>();
     for (const item of json) {
@@ -1237,6 +1242,85 @@ async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {
   return bookmarkPostsByIdPromise;
 }
 
+type BookmarkMetaStore = {
+  version: 1;
+  savedAt: string;
+  posts: BookmarkPost[];
+};
+
+function readBookmarkMetaCache(): Map<string, BookmarkPost> {
+  try {
+    const parsed = safeJsonParse<{ version?: unknown; posts?: unknown }>(localStorage.getItem(STORAGE_KEYS.BOOKMARK_META));
+    const version = typeof parsed?.version === "number" ? parsed?.version : 0;
+    if (version !== 1) return new Map();
+
+    const postsRaw = (parsed as any)?.posts;
+    if (!Array.isArray(postsRaw)) return new Map();
+
+    const map = new Map<string, BookmarkPost>();
+    for (const item of postsRaw) {
+      if (!item || typeof item !== "object") continue;
+      const it = item as any;
+      const id = typeof it.id === "string" ? it.id : "";
+      if (!id) continue;
+      const post: BookmarkPost = {
+        id,
+        title: typeof it.title === "string" ? it.title : "",
+        titleZh: typeof it.titleZh === "string" ? it.titleZh : undefined,
+        titleJa: typeof it.titleJa === "string" ? it.titleJa : undefined,
+        summary: typeof it.summary === "string" ? it.summary : undefined,
+        summaryZh: typeof it.summaryZh === "string" ? it.summaryZh : undefined,
+        summaryJa: typeof it.summaryJa === "string" ? it.summaryJa : undefined,
+        preview: typeof it.preview === "string" ? it.preview : undefined,
+        previewZh: typeof it.previewZh === "string" ? it.previewZh : undefined,
+        previewJa: typeof it.previewJa === "string" ? it.previewJa : undefined,
+        url: typeof it.url === "string" ? it.url : "",
+        publishedAt: typeof it.publishedAt === "string" ? it.publishedAt : "",
+        cover: typeof it.cover === "string" ? it.cover : undefined,
+        coverOriginal: typeof it.coverOriginal === "string" ? it.coverOriginal : undefined,
+        category: normalizeCategory(it.category),
+        tags: Array.isArray(it.tags) ? it.tags.filter((x: unknown) => typeof x === "string") : undefined,
+        sourceId: typeof it.sourceId === "string" ? it.sourceId : "",
+        sourceName: typeof it.sourceName === "string" ? it.sourceName : "",
+        sourceUrl: typeof it.sourceUrl === "string" ? it.sourceUrl : ""
+      };
+      map.set(id, post);
+    }
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+
+function writeBookmarkMetaCache(posts: BookmarkPost[]) {
+  try {
+    const sliced = posts.slice(0, UI.BOOKMARK_META_MAX_ITEMS);
+    const payload: BookmarkMetaStore = { version: 1, savedAt: new Date().toISOString(), posts: sliced };
+    localStorage.setItem(STORAGE_KEYS.BOOKMARK_META, JSON.stringify(payload));
+  } catch {
+    // ignore
+  }
+}
+
+function renderBookmarksSkeleton(grid: HTMLElement) {
+  const count = Math.max(1, UI.BOOKMARKS_SKELETON_CARDS);
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < count; i += 1) {
+    const card = document.createElement("article");
+    card.className = "glass-card rounded-2xl p-4 animate-pulse";
+    card.setAttribute("aria-hidden", "true");
+    card.innerHTML = `
+      <div class="aspect-[16/9] rounded-xl bg-slate-900/5"></div>
+      <div class="mt-4 h-4 w-2/3 rounded bg-slate-900/5"></div>
+      <div class="mt-2 h-3 w-5/6 rounded bg-slate-900/5"></div>
+      <div class="mt-2 h-3 w-4/6 rounded bg-slate-900/5"></div>
+    `;
+    frag.appendChild(card);
+  }
+  grid.innerHTML = "";
+  grid.appendChild(frag);
+}
+
 function buildBookmarkCard(params: {
   post: BookmarkPost;
   lang: BookmarkLang;
@@ -1250,7 +1334,7 @@ function buildBookmarkCard(params: {
   const when = whenLabel(lang, post.publishedAt);
   const publishedAtMs = new Date(post.publishedAt).getTime();
   const isFresh =
-    Number.isFinite(publishedAtMs) && Date.now() - publishedAtMs >= 0 && Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
+    Number.isFinite(publishedAtMs) && Date.now() - publishedAtMs >= 0 && Date.now() - publishedAtMs < UI.FRESH_WINDOW_MS;
   const freshLabel = lang === "ja" ? "新着" : "NEW";
 
   const displayTitle = lang === "zh" ? post.titleZh ?? post.title : post.titleJa ?? post.title;
@@ -1487,16 +1571,56 @@ function wireBookmarksPage(bookmarkIds: Set<string>, readIds: Set<string>) {
         grid.innerHTML = "";
         renderedIds = new Set();
         container.hidden = true;
+        clearBookmarksMessage();
         if (count) count.textContent = "0";
         if (empty) empty.classList.remove("hidden");
         return;
+      }
+
+      clearBookmarksMessage();
+      let usedOptimistic = false;
+
+      // 慢网体验：若用户确实有收藏，但 posts.json 还在路上，先展示骨架/缓存，避免页面长时间“看起来是空的”。
+      if (renderedIds.size === 0) {
+        try {
+          if (count) count.textContent = String(bookmarkIds.size);
+          container.hidden = false;
+          empty?.classList.add("hidden");
+
+          const metaById = readBookmarkMetaCache();
+          const optimistic: BookmarkPost[] = [];
+          const optimisticMissing: string[] = [];
+          for (const id of bookmarkIds) {
+            const post = metaById.get(id);
+            if (post) optimistic.push(post);
+            else optimisticMissing.push(id);
+          }
+
+          if (optimistic.length > 0) {
+            optimistic.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+            const frag = document.createDocumentFragment();
+            for (const post of optimistic) frag.appendChild(buildBookmarkCard({ post, lang, readIds }));
+            grid.innerHTML = "";
+            grid.appendChild(frag);
+            renderedIds = new Set(optimistic.map((p) => p.id));
+            usedOptimistic = true;
+
+            if (optimisticMissing.length > 0) {
+              setBookmarksMessage(lang === "ja" ? "ローカルキャッシュを表示中…同期しています。" : "已显示本地缓存…正在同步更新。");
+            }
+          } else {
+            renderBookmarksSkeleton(grid);
+          }
+        } catch {
+          // ignore
+        }
       }
 
       const byId = await getBookmarkPostsById();
 
       // 只处理“删除”场景，避免每次点击都全量重排；新增（导入/其它页新增）则全量重绘一次。
       const hasAdd = bookmarkIds.size > renderedIds.size;
-      if (!hasAdd) {
+      if (!hasAdd && !usedOptimistic) {
         let removed = 0;
         for (const id of [...renderedIds]) {
           if (bookmarkIds.has(id)) continue;
@@ -1522,6 +1646,7 @@ function wireBookmarksPage(bookmarkIds: Set<string>, readIds: Set<string>) {
         grid.innerHTML = "";
         grid.appendChild(frag);
         renderedIds = new Set(list.map((p) => p.id));
+        writeBookmarkMetaCache(list);
 
         if (missing.length > 0) {
           setBookmarksMessage(
@@ -1529,6 +1654,8 @@ function wireBookmarksPage(bookmarkIds: Set<string>, readIds: Set<string>) {
               ? `一部のブックマークは期間外のため表示できません（${missing.length}件）。`
               : `部分收藏因超出数据保留期而无法展示（${missing.length} 条）。`
           );
+        } else {
+          clearBookmarksMessage();
         }
       }
 
@@ -1556,6 +1683,13 @@ function setBookmarksMessage(text: string) {
   if (!el) return;
   el.textContent = text;
   el.classList.remove("hidden");
+}
+
+function clearBookmarksMessage() {
+  const el = document.querySelector<HTMLElement>("#acg-bookmarks-message");
+  if (!el) return;
+  el.textContent = "";
+  el.classList.add("hidden");
 }
 
 function wireBookmarkTools(bookmarkIds: Set<string>) {
@@ -2241,7 +2375,7 @@ function main() {
   markCurrentPostRead(readIds);
   // 性能：首页/分类页卡片较多时，立即遍历全量 DOM 打标会造成“首屏卡一下”。
   // 已读逻辑不影响关键可用性（筛选逻辑直接读 readIds），因此延后到 idle 更稳更顺。
-  runWhenIdle(() => applyReadState(readIds), 420);
+  runWhenIdle(() => applyReadState(readIds), UI.APPLY_READ_IDLE_DELAY_MS);
   wireBackToTop();
   wireCoverRetry();
   wireBookmarks(bookmarkIds);
@@ -2261,7 +2395,7 @@ function main() {
   wireTagChips();
   wireDailyBriefCopy();
   wireSpotlightCarousel();
-  runWhenIdle(() => hydrateCoverStates(), 700);
+  runWhenIdle(() => hydrateCoverStates(), UI.HYDRATE_COVER_IDLE_DELAY_MS);
   wireDeviceDebug();
   focusSearchFromHash();
 }

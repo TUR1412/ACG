@@ -1,0 +1,39 @@
+export const MS = {
+  SECOND: 1000,
+  MINUTE: 60 * 1000,
+  HOUR: 60 * 60 * 1000,
+  DAY: 24 * 60 * 60 * 1000
+} as const;
+
+export const STORAGE_KEYS = {
+  BOOKMARKS: "acg.bookmarks.v1",
+  READ: "acg.read.v1",
+  FOLLOWS: "acg.follows.v1",
+  BLOCKLIST: "acg.blocklist.v1",
+  FILTERS: "acg.filters.v1",
+  DISABLED_SOURCES: "acg.sourcesDisabled.v1",
+  FOLLOWED_SOURCES: "acg.sourcesFollowed.v1",
+  BOOKMARK_META: "acg.bookmarks.meta.v1"
+} as const;
+
+export const NETWORK = {
+  POSTS_JSON_PATH: "/data/posts.json",
+  DEFAULT_TIMEOUT_MS: 12_000,
+  DEFAULT_RETRY_DELAY_MS: 180,
+  SLOW_REQUEST_THRESHOLD_MS: 1800,
+  SLOW_STATE_HOLD_MS: 4500,
+  TEXT_ACCEPT: "text/plain,*/*"
+} as const;
+
+export const UI = {
+  TOAST_HINT_TIMEOUT_MS: 900,
+  BACK_TO_TOP_SHOW_SCROLL_Y: 700,
+  IDLE_DEFAULT_TIMEOUT_MS: 1400,
+  IDLE_FALLBACK_DELAY_MS: 64,
+  LIST_FILTER_IDLE_DELAY_MS: 1500,
+  APPLY_READ_IDLE_DELAY_MS: 420,
+  HYDRATE_COVER_IDLE_DELAY_MS: 700,
+  BOOKMARKS_SKELETON_CARDS: 6,
+  BOOKMARK_META_MAX_ITEMS: 600,
+  FRESH_WINDOW_MS: 6 * MS.HOUR
+} as const;
