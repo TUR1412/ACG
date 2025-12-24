@@ -8,6 +8,16 @@ export default defineConfig({
   base,
   output: "static",
   trailingSlash: "always",
+  vite: {
+    build: {
+      sourcemap: false,
+      minify: "esbuild",
+      reportCompressedSize: false
+    },
+    esbuild: {
+      drop: ["debugger", "console"]
+    }
+  },
   integrations: [
     tailwind({
       applyBaseStyles: false

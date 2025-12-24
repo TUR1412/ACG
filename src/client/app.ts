@@ -1,4 +1,7 @@
 import { toWeservImageUrl } from "../lib/cover";
+import { href } from "../lib/href";
+import { bestInitialCoverSrc } from "./utils/cover";
+import { isJapanese } from "./utils/lang";
 
 type BookmarkStore = {
   version: 1;
@@ -312,18 +315,6 @@ function toCoverProxyUrl(url: string, width = 1200, host?: string): string | nul
   if (!isHttpUrl(url)) return null;
   if (isCoverProxyUrl(url)) return null;
   return toWeservImageUrl({ url, width, host });
-}
-
-function bestInitialCoverSrc(original: string, width = 1200): string {
-  // GitHub Pages 项目站点：需要 base path 前缀（/ACG/...）
-  if (original.startsWith("/")) {
-    return hrefInBase(original);
-  }
-  // https 页面里加载 http 图片会被浏览器直接拦截；这里直接用 https 包装，减少“看起来像缺图”的时间。
-  if (window.location.protocol === "https:" && original.startsWith("http://")) {
-    return toWeservImageUrl({ url: original, width });
-  }
-  return original;
 }
 
 function handleCoverLoad(img: HTMLImageElement) {
@@ -1178,12 +1169,6 @@ function createUiIcon(params: { name: UiIconName; size: number; filled?: boolean
   return svg;
 }
 
-function hrefInBase(pathname: string): string {
-  const base = import.meta.env.BASE_URL ?? "/";
-  const trimmed = pathname.startsWith("/") ? pathname.slice(1) : pathname;
-  return `${base}${trimmed}`;
-}
-
 function getBookmarkLang(): BookmarkLang {
   return isJapanese() ? "ja" : "zh";
 }
@@ -1212,7 +1197,7 @@ let bookmarkPostsByIdPromise: Promise<Map<string, BookmarkPost>> | null = null;
 async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {
   if (bookmarkPostsByIdPromise) return bookmarkPostsByIdPromise;
   bookmarkPostsByIdPromise = (async () => {
-    const url = hrefInBase("/data/posts.json");
+    const url = href("/data/posts.json");
     const res = await fetch(url, { headers: { accept: "application/json" } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = (await res.json()) as unknown;
@@ -1261,7 +1246,7 @@ function buildBookmarkCard(params: {
   const theme = BOOKMARK_CATEGORY_THEME[post.category];
   const label = BOOKMARK_CATEGORY_LABELS[lang][post.category];
   const retryCoverLabel = lang === "ja" ? "画像を再試行" : "重试封面";
-  const detailHref = hrefInBase(`/${lang}/p/${post.id}/`);
+  const detailHref = href(`/${lang}/p/${post.id}/`);
   const when = whenLabel(lang, post.publishedAt);
   const publishedAtMs = new Date(post.publishedAt).getTime();
   const isFresh =
@@ -1564,11 +1549,6 @@ function wireBookmarksPage(bookmarkIds: Set<string>, readIds: Set<string>) {
 
   void apply();
   document.addEventListener("acg:bookmarks-changed", () => void apply());
-}
-
-function isJapanese(): boolean {
-  const lang = document.documentElement.lang || "";
-  return lang.toLowerCase().startsWith("ja");
 }
 
 function setBookmarksMessage(text: string) {

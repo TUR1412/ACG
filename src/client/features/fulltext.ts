@@ -4,32 +4,10 @@
  * 目标：把“全文抽取/清洗/渲染/翻译”这一大块逻辑从主包中拆出来，
  * 仅在页面存在 `[data-fulltext]` 时按需加载，降低首页/分类页首包体积与解析成本。
  */
-import { toWeservImageUrl } from "../../lib/cover";
+import { bestInitialCoverSrc } from "../utils/cover";
+import { isJapanese } from "../utils/lang";
 
 type FullTextLang = "zh" | "ja";
-
-function isJapanese(): boolean {
-  const lang = document.documentElement.lang || "";
-  return lang.toLowerCase().startsWith("ja");
-}
-
-function hrefInBase(pathname: string): string {
-  const base = import.meta.env.BASE_URL ?? "/";
-  const trimmed = pathname.startsWith("/") ? pathname.slice(1) : pathname;
-  return `${base}${trimmed}`;
-}
-
-function bestInitialCoverSrc(original: string, width = 1200): string {
-  // GitHub Pages 项目站点：需要 base path 前缀（/ACG/...）
-  if (original.startsWith("/")) {
-    return hrefInBase(original);
-  }
-  // https 页面里加载 http 图片会被浏览器直接拦截；这里直接用 https 包装，减少“看起来像缺图”的时间。
-  if (window.location.protocol === "https:" && original.startsWith("http://")) {
-    return toWeservImageUrl({ url: original, width });
-  }
-  return original;
-}
 
 type FullTextCacheEntry = {
   url: string;
