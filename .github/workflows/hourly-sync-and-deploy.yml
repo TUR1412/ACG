@@ -59,6 +59,9 @@ jobs:
           ACG_TRANSLATE_TIMEOUT_MS: "18000"
         run: npm run sync
 
+      - name: Validate Generated Data
+        run: npm run validate
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
@@ -66,6 +69,9 @@ jobs:
         env:
           ACG_BASE: /ACG
         run: npm run build
+
+      - name: Perf Budget (dist size gate)
+        run: npm run budget
 
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3

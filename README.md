@@ -20,6 +20,8 @@
 - 日本語：`/ja/` → https://tur1412.github.io/ACG/ja/
 - 状态页：`/status/` → https://tur1412.github.io/ACG/zh/status/（中文） / https://tur1412.github.io/ACG/ja/status/（日本語）
 - RSS：`/zh/feed.xml`（中文） / `/ja/feed.xml`（日本語）
+- JSON Feed：`/zh/feed.json`（中文） / `/ja/feed.json`（日本語）
+- OPML：`/zh/opml.xml`（中文） / `/ja/opml.xml`（日本語）
 
 ---
 
@@ -51,6 +53,8 @@
 - **来源开关**：按来源启用/禁用（本地设置）
 - **抓取状态页**：`/zh/status/`、`/ja/status/` 查看健康度与错误提示
 - **移动端体验**：底部导航 + 搜索直达（更像 App）
+- **订阅导出**：OPML 一键导入来源；JSON Feed 方便程序化消费
+- **PWA / 离线兜底**：Manifest + Service Worker（弱网/离线时可回退到最近缓存页面）
 
 ---
 
@@ -74,9 +78,11 @@ flowchart TB
     Install --> Sync[scripts/sync.ts\n抓取/清洗/补图/翻译字段]
     Sync --> Gen[src/data/generated/*.json]
     Sync --> Public[public/data/posts.json\n+ public/covers/*（部署产物）]
-    Gen --> Build[astro build]
-    Public --> Build
-    Build --> Dist[dist/（静态站点产物）]
+    Gen --> Validate[scripts/validate-generated-data.ts\n结构校验/不变量校验]
+    Public --> Validate
+    Validate --> Build[astro build]
+    Build --> Budget[scripts/perf-budget.ts\ndist 体积预算门禁]
+    Budget --> Dist[dist/（静态站点产物）]
     Dist --> Deploy[actions/deploy-pages\nGitHub Pages]
   end
 
@@ -106,6 +112,8 @@ flowchart TB
 - **在线 Demo**：https://tur1412.github.io/ACG/
 - **语言入口**：`/zh/`（中文）· `/ja/`（日本語）
 - **RSS**：`/zh/feed.xml`（中文）· `/ja/feed.xml`（日本語）
+- **JSON Feed**：`/zh/feed.json`（中文）· `/ja/feed.json`（日本語）
+- **OPML**：`/zh/opml.xml`（中文）· `/ja/opml.xml`（日本語）
 - **状态页**：`/zh/status/` · `/ja/status/`（抓取健康度与错误提示）
 - **设备调试面板**：任意页面加 `?debug=1`，或设置 `localStorage["acg.debug"]="1"`（用于排查“手机被渲染成桌面布局”等问题）
 - **健康全景图（控制台）**：任意页面加 `?health=1`，或设置 `localStorage["acg.health"]="1"`（实时输出 FPS/LongTask/内存/请求状态等）
@@ -134,7 +142,7 @@ flowchart TB
 
 ## 数据来源（Sources）
 
-默认来源在 `scripts/sources/index.ts`。
+默认来源在 `src/lib/source-config.ts`（单一事实来源，脚本与页面共用）。
 
 本站聚合 **标题 / 摘要 / 时间 / 来源链接** 并导流至原文。  
 详情页的「全文预览（实验）」为**实时解析/翻译**，不在仓库内持久化存储全文；版权归原站/原作者。  
@@ -168,6 +176,13 @@ npm run dev
 
 ```bash
 npm run build
+```
+
+5)（可选）运行质量门禁（数据校验 + 产物体积预算）
+
+```bash
+npm run validate
+npm run budget
 ```
 
 ---
@@ -276,10 +291,10 @@ GitHub Pages 项目站点的 base path 通常是 `/<repo>`。本仓库名为 `AC
 
 > 目标：在保持“静态站点 + Actions 定时同步”的低运维优势前提下，继续提升 **可用性 / 可观测性 / 数据质量 / 体验**。
 
-### v0.2（近程）：可靠性 + 可访问性 + 观测面板
+### v0.2（已落地）：可靠性 + 可访问性 + 观测面板
 
-- **PWA + 离线兜底**：最近浏览/收藏/已读在离线时可用（本地优先，零后端）
-- **性能预算与自检**：Actions 中加入产物体积与关键页面性能阈值（超标则报警或阻断）
+- [x] **PWA + 离线兜底**：Manifest + Service Worker，弱网/离线可回退到最近缓存页面
+- [x] **性能预算与自检**：Actions 中加入 dist 体积预算门禁（超标则阻断）
 - **更强的状态诊断**：在 `/status/` 增加“常见错误修复建议”和“来源波动趋势”（基于历史状态聚合）
 - **无障碍增强**：键盘导航、对比度、减少动态效果的系统级适配（更像商业级产品）
 
@@ -295,7 +310,7 @@ GitHub Pages 项目站点的 base path 通常是 `/<repo>`。本仓库名为 `AC
 - **本地全文检索**：在浏览器内构建轻量索引（不依赖后端），支持标签/来源/时间/关键词组合查询
 - **个性化推荐**：基于收藏/已读/关注词/来源偏好生成“你的雷达”（完全本地，不上传隐私）
 - **主题系统**：深色模式 + 多主题皮肤 + 字号/排版自定义（统一设计令牌）
-- **更开放的订阅接口**：提供 JSON Feed / OPML 导出，便于对接其他阅读器工作流
+- [x] **更开放的订阅接口**：已提供 JSON Feed / OPML 导出；后续可补充更多订阅格式与分组策略
 
 ---
 

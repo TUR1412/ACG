@@ -31,6 +31,9 @@ const isBookmarks = currentPath === "/bookmarks/";
 const isStatus = currentPath === "/status/";
 const isAbout = currentPath === "/about/";
 const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
+
+const manifestHref = href("/manifest.webmanifest");
+const swHref = href("/sw.js");
 ---
 
 <!doctype html>
@@ -43,6 +46,7 @@ const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
     <meta name="description" content={pageDescription} />
     <link rel="alternate" type="application/rss+xml" title={lang === "ja" ? "ACGレーダー RSS" : "ACG Radar RSS"} href={withLang("/feed.xml")} />
     <meta name="theme-color" content="#f2f4f8" />
+    <link rel="manifest" href={manifestHref} />
     <script is:inline>
       (() => {
         const el = document.documentElement;
@@ -345,6 +349,22 @@ const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
         <span class="acg-bottom-nav-label">{t(lang, "nav.about")}</span>
       </a>
     </nav>
+
+    <script is:inline define:vars={{ swHref }}>
+      (() => {
+        try {
+          if (!("serviceWorker" in navigator)) return;
+          const swUrl = swHref;
+          window.addEventListener("load", () => {
+            navigator.serviceWorker.register(swUrl).catch(() => {
+              // ignore
+            });
+          });
+        } catch {
+          // ignore
+        }
+      })();
+    </script>
 
     <!--
       注意：不要用 `app.ts?url`。

@@ -2,13 +2,15 @@
   "name": "acg",
   "private": true,
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
     "sync": "tsx scripts/sync.ts",
     "sync:dry": "tsx scripts/sync.ts --dry-run",
+    "validate": "tsx scripts/validate-generated-data.ts",
+    "budget": "tsx scripts/perf-budget.ts",
     "check": "astro check"
   },
   "dependencies": {

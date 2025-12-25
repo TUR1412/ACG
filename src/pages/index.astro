@@ -2,6 +2,8 @@
 import "../styles/global.css";
 import { href } from "../lib/href";
 import Icon from "../components/Icon.astro";
+
+const swHref = href("/sw.js");
 ---
 
 <!doctype html>
@@ -12,6 +14,7 @@ import Icon from "../components/Icon.astro";
     <title>ACG Radar</title>
     <meta name="description" content="一个每小时自动更新的 ACG 资讯聚合小站（中日双语 UI）。" />
     <meta name="theme-color" content="#f2f4f8" />
+    <link rel="manifest" href={href("/manifest.webmanifest")} />
     <link rel="icon" type="image/svg+xml" href={href("/favicon.svg")} />
     <link rel="preconnect" href="https://images.weserv.nl" crossorigin />
     <link rel="preconnect" href="https://wsrv.nl" crossorigin />
@@ -72,5 +75,21 @@ import Icon from "../components/Icon.astro";
         </p>
       </div>
     </main>
+
+    <script is:inline define:vars={{ swHref }}>
+      (() => {
+        try {
+          if (!("serviceWorker" in navigator)) return;
+          const swUrl = swHref;
+          window.addEventListener("load", () => {
+            navigator.serviceWorker.register(swUrl).catch(() => {
+              // ignore
+            });
+          });
+        } catch {
+          // ignore
+        }
+      })();
+    </script>
   </body>
 </html>

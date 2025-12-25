@@ -2,25 +2,22 @@
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import { readGeneratedStatus } from "../../lib/generated-data";
 import { t } from "../../i18n/i18n";
-import { categoryLabel, isCategory, type Category } from "../../lib/categories";
+import { categoryLabel } from "../../lib/categories";
 import { formatDateTime } from "../../lib/format";
 import { href } from "../../lib/href";
-import { SOURCES } from "../../../scripts/sources/index";
+import { SOURCE_CONFIGS } from "../../lib/source-config";
 
 const status = await readGeneratedStatus();
 const updatedAt = status.generatedAt ? formatDateTime("zh", status.generatedAt) : "-";
 
-const sources = SOURCES.map((s) => {
-  const category = isCategory(s.category) ? (s.category as Category) : "anime";
-  return {
-    id: s.id,
-    name: s.name,
-    kind: s.kind,
-    category,
-    url: s.url,
-    homepage: s.homepage ?? s.url
-  };
-});
+const sources = SOURCE_CONFIGS.map((s) => ({
+  id: s.id,
+  name: s.name,
+  kind: s.kind,
+  category: s.category,
+  url: s.url,
+  homepage: s.homepage ?? s.url
+}));
 ---
 
 <SiteLayout lang="zh" title={t("zh", "nav.about")} currentPath="/about/">
@@ -35,6 +32,12 @@ const sources = SOURCES.map((s) => {
       <li>更新频率：每小时（UTC 整点）</li>
       <li>
         RSS 订阅：<a class="text-slate-950 hover:underline" href={href("/zh/feed.xml")}>/zh/feed.xml</a>
+      </li>
+      <li>
+        JSON Feed：<a class="text-slate-950 hover:underline" href={href("/zh/feed.json")}>/zh/feed.json</a>
+      </li>
+      <li>
+        OPML 导出：<a class="text-slate-950 hover:underline" href={href("/zh/opml.xml")}>/zh/opml.xml</a>
       </li>
       <li>展示策略：仅聚合标题/摘要/时间/来源链接，详情页优先引导跳转原文</li>
       <li>个性化：收藏/已读/搜索等功能都保存在你的浏览器（localStorage）</li>
@@ -51,7 +54,7 @@ const sources = SOURCES.map((s) => {
   <section class="mt-6 glass rounded-2xl p-6">
     <h2 class="m-0 text-sm font-semibold text-slate-950">来源列表</h2>
     <p class="mt-2 text-sm text-slate-700">
-      如需增加/移除来源，编辑 <code class="rounded bg-slate-900/5 px-1 py-0.5">scripts/sources/index.ts</code>。
+      如需增加/移除来源，编辑 <code class="rounded bg-slate-900/5 px-1 py-0.5">src/lib/source-config.ts</code>。
     </p>
 
     <div class="mt-3 overflow-x-auto">
