@@ -151,10 +151,10 @@ const swHref = href("/sw.js");
       class="sticky top-0 z-20 border-b border-slate-900/10 acg-header-surface"
       style="view-transition-name: acg-header;"
     >
-      <div class="mx-auto max-w-7xl px-4 py-2 sm:py-3">
+      <div class="mx-auto max-w-7xl px-gutter py-2 sm:py-3">
         <div class="flex items-center justify-between gap-3">
           <a href={withLang("/")} class="flex items-center gap-3">
-            <span class="radar grid size-10 place-items-center shadow-sm">
+            <span class="radar grid size-10 place-items-center shadow-e3">
               <span class="text-[10px] font-bold text-white/90">ACG</span>
             </span>
             <div class="leading-tight">
@@ -269,11 +269,11 @@ const swHref = href("/sw.js");
       </div>
     </header>
 
-    <main class="acg-main mx-auto max-w-7xl px-4 pt-8 pb-28 lg:py-8" style="view-transition-name: acg-main;">
+    <main class="acg-main mx-auto max-w-7xl px-gutter pt-8 pb-28 lg:py-8" style="view-transition-name: acg-main;">
       <slot />
     </main>
 
-    <footer class="acg-footer mx-auto max-w-7xl px-4 pb-28 pt-4 text-xs text-slate-600 lg:pb-10">
+    <footer class="acg-footer mx-auto max-w-7xl px-gutter pb-28 pt-4 text-xs text-slate-600 lg:pb-10">
       <div class="glass rounded-2xl px-4 py-3">
         <p class="m-0 leading-relaxed">{t(lang, "site.disclaimer")}</p>
 

@@ -6,6 +6,7 @@ import { isJapanese } from "./utils/lang";
 import { fetchJsonPreferGzip } from "./utils/http";
 import { createVirtualGrid, type VirtualGridController } from "./utils/virtual-grid";
 import { maybeStartHealthMonitor } from "./utils/health";
+import { track, wireTelemetry } from "./utils/telemetry";
 
 type BookmarkStore = {
   version: 1;
@@ -221,6 +222,7 @@ function wireBookmarks(bookmarkIds: Set<string>) {
     const on = bookmarkIds.has(id);
     setBookmarkButtonState(el, on);
     pop(el);
+    track({ type: "bookmark_toggle", data: { id, on } });
     toast({
       title: on ? (isJapanese() ? "ブックマークしました" : "已收藏") : isJapanese() ? "已取消ブックマーク" : "已取消收藏",
       variant: on ? "success" : "info"
@@ -246,6 +248,7 @@ function wireTagChips() {
     input.value = tag;
     input.dispatchEvent(new Event("input", { bubbles: true }));
     input.focus();
+    track({ type: "tag_filter", data: { tag } });
   });
 }
 
@@ -587,6 +590,8 @@ function wireCoverRetry() {
       btn.closest<HTMLElement>("[data-has-cover]") ??
       btn.closest<HTMLElement>("[data-post-id]");
     if (!scope) return;
+    const postId = scope.dataset.postId ?? "";
+    if (postId) track({ type: "cover_retry", data: { id: postId } });
 
     const img = scope.querySelector<HTMLImageElement>("img[data-acg-cover]");
     if (!img) {
@@ -865,6 +870,13 @@ function wireQuickToggles() {
     if (kind !== "only-followed" && kind !== "only-followed-sources" && kind !== "hide-read") return;
     toggle(kind);
     apply();
+    const enabled =
+      kind === "only-followed"
+        ? Boolean(onlyFollowed?.checked)
+        : kind === "only-followed-sources"
+          ? Boolean(onlyFollowedSources?.checked)
+          : Boolean(hideRead?.checked);
+    track({ type: "quick_toggle", data: { kind, enabled } });
   });
 
   document.addEventListener("acg:filters-changed", apply);
@@ -947,7 +959,147 @@ function wireDeviceDebug() {
 }
 
 function normalizeText(text: string): string {
-  return text.toLowerCase().replace(/\s+/g, " ").trim();
+  return text
+    .toLowerCase()
+    .replace(/\u3000/g, " ")
+    .replace(/[\u200b-\u200d\uFEFF]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+type ParsedQuery = {
+  text: string[];
+  notText: string[];
+  tags: string[];
+  notTags: string[];
+  sources: string[];
+  notSources: string[];
+  categories: string[];
+  notCategories: string[];
+  afterMs: number | null;
+  beforeMs: number | null;
+  isRead: boolean | null;
+  isUnread: boolean | null;
+  isFresh: boolean | null;
+};
+
+const QUERY_CATEGORY_ALIASES: Record<string, string> = {
+  anime: "anime",
+  动画: "anime",
+  アニメ: "anime",
+  game: "game",
+  游戏: "game",
+  ゲーム: "game",
+  goods: "goods",
+  周边: "goods",
+  周邊: "goods",
+  グッズ: "goods",
+  seiyuu: "seiyuu",
+  声优: "seiyuu",
+  声優: "seiyuu"
+};
+
+function tokenizeQuery(raw: string): string[] {
+  const out: string[] = [];
+  const s = raw.trim();
+  if (!s) return out;
+
+  const re = /"([^"]+)"|'([^']+)'|(\S+)/g;
+  for (const m of s.matchAll(re)) {
+    const token = (m[1] ?? m[2] ?? m[3] ?? "").trim();
+    if (token) out.push(token);
+  }
+  return out;
+}
+
+function parseDateToMs(raw: string): number | null {
+  const s = raw.trim();
+  if (!s) return null;
+  const t = Date.parse(s);
+  return Number.isFinite(t) ? t : null;
+}
+
+function parseQuery(raw: string): ParsedQuery {
+  const out: ParsedQuery = {
+    text: [],
+    notText: [],
+    tags: [],
+    notTags: [],
+    sources: [],
+    notSources: [],
+    categories: [],
+    notCategories: [],
+    afterMs: null,
+    beforeMs: null,
+    isRead: null,
+    isUnread: null,
+    isFresh: null
+  };
+
+  const tokens = tokenizeQuery(raw);
+  for (const tokenRaw of tokens) {
+    const negative = tokenRaw.startsWith("-");
+    const token = (negative ? tokenRaw.slice(1) : tokenRaw).trim();
+    if (!token) continue;
+
+    const parts = token.split(":");
+    const keyRaw = parts.length >= 2 ? parts[0] : "";
+    const valueRaw = parts.length >= 2 ? parts.slice(1).join(":") : token;
+    const key = normalizeText(keyRaw);
+    const value = normalizeText(valueRaw);
+    if (!value) continue;
+
+    const push = (arr: string[]) => arr.push(value);
+
+    if (key === "tag" || key === "t") {
+      if (negative) push(out.notTags);
+      else push(out.tags);
+      continue;
+    }
+
+    if (key === "source" || key === "s") {
+      if (negative) push(out.notSources);
+      else push(out.sources);
+      continue;
+    }
+
+    if (key === "cat" || key === "c" || key === "category") {
+      const mapped = QUERY_CATEGORY_ALIASES[value] ?? value;
+      if (negative) out.notCategories.push(mapped);
+      else out.categories.push(mapped);
+      continue;
+    }
+
+    if (key === "after" || key === "since") {
+      const t = parseDateToMs(valueRaw);
+      if (t != null) out.afterMs = t;
+      continue;
+    }
+
+    if (key === "before" || key === "until") {
+      const t = parseDateToMs(valueRaw);
+      if (t != null) out.beforeMs = t;
+      continue;
+    }
+
+    if (key === "is") {
+      if (value === "read") {
+        out.isRead = !negative;
+        out.isUnread = negative ? true : null;
+      } else if (value === "unread" || value === "new") {
+        out.isUnread = !negative;
+        out.isRead = negative ? true : null;
+      } else if (value === "fresh") {
+        out.isFresh = !negative;
+      }
+      continue;
+    }
+
+    if (negative) out.notText.push(value);
+    else out.text.push(value);
+  }
+
+  return out;
 }
 
 function createListFilter(params: {
@@ -970,17 +1122,49 @@ function createListFilter(params: {
   // 这里做“惰性初始化”：如果没有任何筛选条件，就延后到 idle；用户一交互则立即初始化并生效。
   let cards: HTMLElement[] = [];
   let haystacks: string[] = [];
+  let tagsByCard: string[][] = [];
+  let sourceNames: string[] = [];
+  let categories: string[] = [];
+  let publishedAtMs: (number | null)[] = [];
   let hiddenState: boolean[] = [];
   let initialized = false;
+
+  const bestTitleText = (card: HTMLElement): string => {
+    const candidates = [...card.querySelectorAll<HTMLAnchorElement>("a[href]:not([target])")]
+      .map((a) => (a.textContent ?? "").trim())
+      .filter(Boolean);
+    if (candidates.length === 0) return "";
+    return candidates.sort((a, b) => b.length - a.length)[0] ?? "";
+  };
 
   const initIfNeeded = () => {
     if (initialized) return;
     cards = [...document.querySelectorAll<HTMLElement>("[data-post-id]")];
     haystacks = cards.map((card) => {
-      const title = card.querySelector("a")?.textContent ?? "";
+      const title = bestTitleText(card);
       const summary = card.querySelector("p")?.textContent ?? "";
-      const tags = [...card.querySelectorAll("button[data-tag]")].map((b) => b.textContent ?? "").join(" ");
-      return normalizeText(`${title} ${summary} ${tags}`);
+
+      const tags = [...card.querySelectorAll<HTMLButtonElement>("button[data-tag]")]
+        .map((b) => b.dataset.tag ?? b.textContent ?? "")
+        .map((t) => normalizeText(t))
+        .filter(Boolean);
+
+      const sourceEl = card.querySelector<HTMLElement>("[data-source-badge]");
+      const sourceNameRaw =
+        sourceEl?.dataset.sourceName ?? sourceEl?.getAttribute("title") ?? sourceEl?.textContent ?? "";
+      const sourceName = normalizeText(sourceNameRaw);
+
+      const category = normalizeText(card.dataset.category ?? "");
+      const publishedAtRaw = card.dataset.publishedAt ?? "";
+      const ts = publishedAtRaw ? Date.parse(publishedAtRaw) : NaN;
+      const published = Number.isFinite(ts) ? ts : null;
+
+      tagsByCard.push(tags);
+      sourceNames.push(sourceName);
+      categories.push(category);
+      publishedAtMs.push(published);
+
+      return normalizeText(`${title} ${summary} ${tags.join(" ")} ${sourceName}`);
     });
     hiddenState = cards.map((c) => c.classList.contains("hidden"));
     initialized = true;
@@ -997,12 +1181,12 @@ function createListFilter(params: {
     initIfNeeded();
     if (!initialized) return;
 
-    const q = normalizeText(input.value);
+    const parsed = parseQuery(input.value);
     const followOnlyEnabled = filters.onlyFollowed;
     const followSourcesOnlyEnabled = filters.onlyFollowedSources;
     const hideReadEnabled = filters.hideRead;
-    const followWords = followOnlyEnabled ? [...follows] : [];
-    const blockWords = blocklist.size > 0 ? [...blocklist] : [];
+    const followWords = followOnlyEnabled ? [...follows].map((w) => normalizeText(w)).filter(Boolean) : [];
+    const blockWords = blocklist.size > 0 ? [...blocklist].map((w) => normalizeText(w)).filter(Boolean) : [];
 
     let shown = 0;
     let unreadShown = 0;
@@ -1010,20 +1194,68 @@ function createListFilter(params: {
       const id = cards[i].dataset.postId ?? "";
       const sourceId = cards[i].dataset.sourceId ?? "";
       const hay = haystacks[i];
+      const tags = tagsByCard[i] ?? [];
+      const sourceName = sourceNames[i] ?? "";
+      const category = categories[i] ?? "";
+      const published = publishedAtMs[i] ?? null;
 
-      const matchSearch = q.length === 0 ? true : hay.includes(q);
+      const matchText = parsed.text.length === 0 ? true : parsed.text.every((t) => t && hay.includes(t));
+      const matchNotText = parsed.notText.length === 0 ? true : parsed.notText.every((t) => t && !hay.includes(t));
+      const matchTags = parsed.tags.length === 0 ? true : parsed.tags.every((t) => t && tags.some((x) => x.includes(t)));
+      const matchNotTags = parsed.notTags.length === 0 ? true : parsed.notTags.every((t) => t && !tags.some((x) => x.includes(t)));
+      const matchSources =
+        parsed.sources.length === 0
+          ? true
+          : parsed.sources.every((t) => t && (sourceName.includes(t) || (sourceId ? normalizeText(sourceId).includes(t) : false)));
+      const matchNotSources =
+        parsed.notSources.length === 0
+          ? true
+          : parsed.notSources.every((t) => t && !(sourceName.includes(t) || (sourceId ? normalizeText(sourceId).includes(t) : false)));
+      const matchCats = parsed.categories.length === 0 ? true : parsed.categories.some((c) => c && category === c);
+      const matchNotCats = parsed.notCategories.length === 0 ? true : parsed.notCategories.every((c) => c && category !== c);
+      const matchAfter = parsed.afterMs == null ? true : published != null ? published >= parsed.afterMs : false;
+      const matchBefore = parsed.beforeMs == null ? true : published != null ? published <= parsed.beforeMs : false;
       const matchFollow = !followOnlyEnabled
         ? true
         : followWords.length === 0
           ? false
           : followWords.some((w) => w && hay.includes(w));
       const matchFollowSources = !followSourcesOnlyEnabled ? true : sourceId ? followedSources.has(sourceId) : false;
-      const blocked = blockWords.some((w) => w && hay.includes(w));
       const read = id ? readIds.has(id) : false;
+      const matchIsRead = parsed.isRead == null ? true : parsed.isRead ? read : !read;
+      const matchIsUnread = parsed.isUnread == null ? true : parsed.isUnread ? !read : read;
+      const matchIsFresh =
+        parsed.isFresh == null
+          ? true
+          : published != null
+            ? parsed.isFresh
+              ? Date.now() - published >= 0 && Date.now() - published < UI.FRESH_WINDOW_MS
+              : !(Date.now() - published >= 0 && Date.now() - published < UI.FRESH_WINDOW_MS)
+            : false;
+
+      const blocked = blockWords.some((w) => w && hay.includes(w));
       const hideByRead = hideReadEnabled && read;
       const sourceEnabled = !sourceId || !disabledSources.has(sourceId);
 
-      const ok = matchSearch && matchFollow && matchFollowSources && !blocked && !hideByRead && sourceEnabled;
+      const ok =
+        matchText &&
+        matchNotText &&
+        matchTags &&
+        matchNotTags &&
+        matchSources &&
+        matchNotSources &&
+        matchCats &&
+        matchNotCats &&
+        matchAfter &&
+        matchBefore &&
+        matchIsRead &&
+        matchIsUnread &&
+        matchIsFresh &&
+        matchFollow &&
+        matchFollowSources &&
+        !blocked &&
+        !hideByRead &&
+        sourceEnabled;
       const hidden = !ok;
       if (hiddenState[i] !== hidden) {
         cards[i].classList.toggle("hidden", hidden);
@@ -1055,8 +1287,35 @@ function createListFilter(params: {
     });
   };
 
+  let searchTrackTimer: number | null = null;
+  let lastTrackedQuery = "";
+  const scheduleSearchTrack = () => {
+    if (searchTrackTimer != null) window.clearTimeout(searchTrackTimer);
+    searchTrackTimer = window.setTimeout(() => {
+      searchTrackTimer = null;
+      const q = input.value.trim();
+      const normalized = q ? q.slice(0, 160) : "";
+      if (normalized === lastTrackedQuery) return;
+      lastTrackedQuery = normalized;
+      if (!normalized) return;
+      track({ type: "search", data: { q: normalized } });
+    }, 360);
+  };
+
   input.addEventListener("input", schedule);
+  input.addEventListener("input", scheduleSearchTrack);
+  input.addEventListener("focus", () => initIfNeeded());
   document.addEventListener("acg:filters-changed", schedule);
+  document.addEventListener("acg:filters-changed", () => {
+    track({
+      type: "filters_changed",
+      data: {
+        onlyFollowed: Boolean(filters.onlyFollowed),
+        onlyFollowedSources: Boolean(filters.onlyFollowedSources),
+        hideRead: Boolean(filters.hideRead)
+      }
+    });
+  });
 
   const shouldInitImmediately =
     input.value.trim().length > 0 ||
@@ -1455,13 +1714,13 @@ function renderBookmarksSkeleton(grid: HTMLElement) {
   const frag = document.createDocumentFragment();
   for (let i = 0; i < count; i += 1) {
     const card = document.createElement("article");
-    card.className = "glass-card rounded-2xl p-4 animate-pulse";
+    card.className = "glass-card rounded-2xl p-4";
     card.setAttribute("aria-hidden", "true");
     card.innerHTML = `
-      <div class="aspect-[16/9] rounded-xl bg-slate-900/5"></div>
-      <div class="mt-4 h-4 w-2/3 rounded bg-slate-900/5"></div>
-      <div class="mt-2 h-3 w-5/6 rounded bg-slate-900/5"></div>
-      <div class="mt-2 h-3 w-4/6 rounded bg-slate-900/5"></div>
+      <div class="acg-skeleton aspect-[16/9] rounded-xl"></div>
+      <div class="acg-skeleton mt-4 h-4 w-2/3 rounded"></div>
+      <div class="acg-skeleton mt-2 h-3 w-5/6 rounded"></div>
+      <div class="acg-skeleton mt-2 h-3 w-4/6 rounded"></div>
     `;
     frag.appendChild(card);
   }
@@ -1496,6 +1755,7 @@ function buildBookmarkCard(params: {
   article.dataset.postId = post.id;
   article.dataset.category = post.category;
   article.dataset.sourceId = post.sourceId;
+  article.dataset.publishedAt = post.publishedAt;
   article.dataset.hasCover = post.cover ? "true" : "false";
   if (readIds.has(post.id)) article.setAttribute("data-read", "true");
 
@@ -1633,6 +1893,8 @@ function buildBookmarkCard(params: {
     sourceLink.href = post.sourceUrl;
     sourceLink.target = "_blank";
     sourceLink.rel = "noreferrer noopener";
+    sourceLink.dataset.sourceBadge = "true";
+    sourceLink.dataset.sourceName = post.sourceName;
 
     const sourceDot = document.createElement("span");
     sourceDot.className = `size-1.5 rounded-full ${theme.dot}`;
@@ -2527,9 +2789,104 @@ function markCurrentPostRead(readIds: Set<string>) {
   saveIds(READ_KEY, readIds);
 }
 
+function supportsViewTransitions(): boolean {
+  try {
+    return typeof (document as any).startViewTransition === "function";
+  } catch {
+    return false;
+  }
+}
+
+function wirePageTransitions() {
+  // 说明：现代浏览器会走 View Transitions（由 CSS 定义动效）；这里仅为不支持的浏览器提供 WAAPI 降级。
+  if (prefersReducedMotion()) return;
+  if (supportsViewTransitions()) return;
+
+  try {
+    document.documentElement.animate(
+      [
+        { opacity: 0, filter: "blur(10px)", transform: "translateY(8px) scale(1.01)" },
+        { opacity: 1, filter: "blur(0px)", transform: "translateY(0) scale(1)" }
+      ],
+      { duration: 260, easing: "cubic-bezier(0.16, 1, 0.3, 1)", fill: "both" }
+    );
+  } catch {
+    // ignore
+  }
+
+  const shouldIgnoreClick = (ev: MouseEvent) =>
+    ev.defaultPrevented ||
+    ev.button !== 0 ||
+    ev.metaKey ||
+    ev.ctrlKey ||
+    ev.shiftKey ||
+    ev.altKey;
+
+  const findAnchor = (target: EventTarget | null): HTMLAnchorElement | null => {
+    if (!(target instanceof Element)) return null;
+    const a = target.closest("a[href]");
+    return a instanceof HTMLAnchorElement ? a : null;
+  };
+
+  const isSameDocumentHashNav = (next: URL): boolean => {
+    try {
+      return next.origin === location.origin && next.pathname === location.pathname && next.search === location.search;
+    } catch {
+      return false;
+    }
+  };
+
+  document.addEventListener(
+    "click",
+    (ev) => {
+      if (shouldIgnoreClick(ev)) return;
+      const a = findAnchor(ev.target);
+      if (!a) return;
+      if (a.target && a.target !== "_self") return;
+      if (a.hasAttribute("download")) return;
+      if (a.dataset.noTransition === "true") return;
+
+      let next: URL;
+      try {
+        next = new URL(a.href, location.href);
+      } catch {
+        return;
+      }
+
+      if (next.protocol !== "http:" && next.protocol !== "https:") return;
+      if (next.origin !== location.origin) return;
+      if (isSameDocumentHashNav(next)) return;
+
+      ev.preventDefault();
+
+      try {
+        const anim = document.documentElement.animate(
+          [
+            { opacity: 1, filter: "blur(0px)", transform: "translateY(0) scale(1)" },
+            { opacity: 0, filter: "blur(12px)", transform: "translateY(10px) scale(0.985)" }
+          ],
+          { duration: 220, easing: "cubic-bezier(0.16, 1, 0.3, 1)", fill: "both" }
+        );
+        void anim.finished
+          .catch(() => {
+            // ignore
+          })
+          .finally(() => {
+            location.href = next.href;
+          });
+      } catch {
+        location.href = next.href;
+      }
+    },
+    true
+  );
+}
+
 function main() {
   window.__acgCoverError = handleCoverError;
   window.__acgCoverLoad = handleCoverLoad;
+
+  wireTelemetry();
 
   const bookmarkIds = loadIds(BOOKMARK_KEY);
   const readIds = loadIds(READ_KEY);
@@ -2538,6 +2895,7 @@ function main() {
   const filters = loadFilters();
   const disabledSources = loadIds(DISABLED_SOURCES_KEY);
   const followedSources = loadIds(FOLLOWED_SOURCES_KEY);
+  wirePageTransitions();
   wireThemeMode();
   markCurrentPostRead(readIds);
   // 性能：首页/分类页卡片较多时，立即遍历全量 DOM 打标会造成“首屏卡一下”。

@@ -5,6 +5,31 @@
 /* 轻噪点 + 极光背景（避免死白/死黑） */
 :root {
   color-scheme: light;
+  --acg-phi: 1.61803398875;
+  --acg-leading: 1.618;
+  --acg-leading-tight: 1.272;
+  --acg-grid-cols: 12;
+  --acg-grid-gap: clamp(14px, 1.8vw, 18px);
+  --acg-grid-gutter: clamp(16px, 4vw, 28px);
+  --acg-text-phi-xs: clamp(0.72rem, 0.69rem + 0.18vw, 0.78rem);
+  --acg-text-phi-sm: clamp(0.86rem, 0.83rem + 0.25vw, 0.93rem);
+  --acg-text-phi-md: clamp(1rem, 0.95rem + 0.35vw, 1.1rem);
+  --acg-text-phi-lg: clamp(1.4rem, 1.18rem + 0.8vw, 1.62rem);
+  --acg-text-phi-xl: clamp(1.62rem, 1.34rem + 1.2vw, 2.1rem);
+  --acg-text-phi-2xl: clamp(2.2rem, 1.72rem + 1.9vw, 2.62rem);
+  --acg-border-gradient: linear-gradient(135deg, rgba(124, 58, 237, 0.55), rgba(59, 130, 246, 0.38), rgba(16, 185, 129, 0.30));
+  --acg-shadow-e1: 0 1px 2px rgba(2, 6, 23, 0.06), 0 1px 0 rgba(255, 255, 255, 0.55) inset;
+  --acg-shadow-e2: 0 4px 14px rgba(2, 6, 23, 0.08), 0 1px 0 rgba(255, 255, 255, 0.48) inset;
+  --acg-shadow-e3: 0 10px 26px rgba(2, 6, 23, 0.10);
+  --acg-shadow-e4: 0 14px 36px rgba(2, 6, 23, 0.12);
+  --acg-shadow-e5: var(--shadow-card);
+  --acg-shadow-e6: 0 18px 50px rgba(2, 6, 23, 0.14);
+  --acg-shadow-e7: 0 24px 68px rgba(2, 6, 23, 0.16);
+  --acg-shadow-e8: var(--shadow-card-hover);
+  --acg-shadow-e9: var(--shadow-soft);
+  --acg-shadow-e10: 0 32px 94px rgba(2, 6, 23, 0.20);
+  --acg-shadow-e11: 0 44px 124px rgba(2, 6, 23, 0.24);
+  --acg-shadow-e12: 0 62px 168px rgba(2, 6, 23, 0.28);
   --text: #0b0f14;
   --muted: rgba(15, 23, 42, 0.62);
   --glass-border: rgba(15, 23, 42, 0.10);
@@ -39,6 +64,16 @@
 */
 :root[data-acg-theme="dark"] {
   color-scheme: dark;
+  --acg-border-gradient: linear-gradient(135deg, rgba(129, 140, 248, 0.65), rgba(59, 130, 246, 0.42), rgba(16, 185, 129, 0.32));
+  --acg-shadow-e1: 0 1px 2px rgba(0, 0, 0, 0.32), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  --acg-shadow-e2: 0 4px 16px rgba(0, 0, 0, 0.34), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  --acg-shadow-e3: 0 12px 34px rgba(0, 0, 0, 0.36);
+  --acg-shadow-e4: 0 16px 44px rgba(0, 0, 0, 0.38);
+  --acg-shadow-e6: 0 20px 60px rgba(0, 0, 0, 0.40);
+  --acg-shadow-e7: 0 28px 84px rgba(0, 0, 0, 0.42);
+  --acg-shadow-e10: 0 38px 120px rgba(0, 0, 0, 0.50);
+  --acg-shadow-e11: 0 50px 150px rgba(0, 0, 0, 0.56);
+  --acg-shadow-e12: 0 70px 190px rgba(0, 0, 0, 0.62);
   --text: rgba(248, 250, 252, 0.92);
   --muted: rgba(226, 232, 240, 0.68);
   --glass-border: rgba(148, 163, 184, 0.18);
@@ -62,6 +97,16 @@
   :root:not([data-acg-theme]),
   :root[data-acg-theme="auto"] {
     color-scheme: dark;
+    --acg-border-gradient: linear-gradient(135deg, rgba(129, 140, 248, 0.65), rgba(59, 130, 246, 0.42), rgba(16, 185, 129, 0.32));
+    --acg-shadow-e1: 0 1px 2px rgba(0, 0, 0, 0.32), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+    --acg-shadow-e2: 0 4px 16px rgba(0, 0, 0, 0.34), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+    --acg-shadow-e3: 0 12px 34px rgba(0, 0, 0, 0.36);
+    --acg-shadow-e4: 0 16px 44px rgba(0, 0, 0, 0.38);
+    --acg-shadow-e6: 0 20px 60px rgba(0, 0, 0, 0.40);
+    --acg-shadow-e7: 0 28px 84px rgba(0, 0, 0, 0.42);
+    --acg-shadow-e10: 0 38px 120px rgba(0, 0, 0, 0.50);
+    --acg-shadow-e11: 0 50px 150px rgba(0, 0, 0, 0.56);
+    --acg-shadow-e12: 0 70px 190px rgba(0, 0, 0, 0.62);
     --text: rgba(248, 250, 252, 0.92);
     --muted: rgba(226, 232, 240, 0.68);
     --glass-border: rgba(148, 163, 184, 0.18);
@@ -320,7 +365,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  line-height: 1.55;
+  line-height: var(--acg-leading);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans",
@@ -456,6 +501,88 @@ html[data-acg-net="slow"] body::after {
   }
 }
 
+/* 页面转场：优先使用 View Transitions（支持时更丝滑）；否则由客户端脚本降级到 WAAPI 淡入淡出 */
+@supports (view-transition-name: acg-main) {
+  ::view-transition-old(acg-main) {
+    animation: acg-vt-main-out var(--dur-slow) var(--ease-smooth) both;
+  }
+
+  ::view-transition-new(acg-main) {
+    animation: acg-vt-main-in var(--dur-slow) var(--ease-smooth) both;
+  }
+
+  ::view-transition-old(acg-header) {
+    animation: acg-vt-header-out calc(var(--dur) * 1.4) var(--ease-standard) both;
+  }
+
+  ::view-transition-new(acg-header) {
+    animation: acg-vt-header-in calc(var(--dur) * 1.4) var(--ease-standard) both;
+  }
+}
+
+@keyframes acg-vt-main-out {
+  from {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(10px) scale(0.985);
+  }
+}
+
+@keyframes acg-vt-main-in {
+  from {
+    opacity: 0;
+    filter: blur(14px);
+    transform: translateY(-8px) scale(1.01);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes acg-vt-header-out {
+  from {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0.92;
+    filter: blur(6px);
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes acg-vt-header-in {
+  from {
+    opacity: 0.92;
+    filter: blur(6px);
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @supports (view-transition-name: acg-main) {
+    ::view-transition-old(acg-main),
+    ::view-transition-new(acg-main),
+    ::view-transition-old(acg-header),
+    ::view-transition-new(acg-header) {
+      animation: none !important;
+    }
+  }
+}
+
 @media (max-width: 1023px) {
   :root {
     /* 移动端底部导航默认高度（含 safe-area）。用于把 FAB/Toast 顶上去 */
@@ -560,41 +687,80 @@ img {
 
 /* 玻璃卡片基础 */
 .glass {
-  background: var(--glass-surface);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: var(--shadow-card);
+  border: 1px solid transparent;
+  background:
+    var(--glass-surface) padding-box,
+    var(--acg-border-gradient) border-box;
+  backdrop-filter: blur(14px) saturate(1.22);
+  -webkit-backdrop-filter: blur(14px) saturate(1.22);
+  box-shadow: var(--acg-shadow-e5);
 }
 
 html[data-acg-device="phone"] .glass {
   /* 手机端降低 blur 开销：保持玻璃质感，但更稳更顺 */
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px) saturate(1.14);
+  -webkit-backdrop-filter: blur(10px) saturate(1.14);
 }
 
 /* 列表卡片：保留“玻璃感”，但不使用昂贵的 backdrop-filter（大列表更顺滑） */
 .glass-card {
-  background: var(--glass-card-surface);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-card);
+  border: 1px solid transparent;
+  background:
+    var(--glass-card-surface) padding-box,
+    var(--acg-border-gradient) border-box;
+  box-shadow: var(--acg-shadow-e5);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 
+@media (hover: hover) {
+  /* 动态渐变边框：仅 hover 时启动动画，避免大面积常驻动画影响合成性能 */
+  .glass,
+  .glass-card {
+    background-position: 0 0, 0% 50%;
+    background-size: auto, 220% 220%;
+  }
+
+  .glass:hover,
+  .glass-card:hover {
+    animation: acg-border-pan 9s var(--ease-smooth) infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass:hover,
+  .glass-card:hover {
+    animation: none;
+  }
+}
+
+@keyframes acg-border-pan {
+  0% {
+    background-position: 0 0, 0% 50%;
+  }
+  50% {
+    background-position: 0 0, 100% 50%;
+  }
+  100% {
+    background-position: 0 0, 0% 50%;
+  }
+}
+
 /* 少量“悬浮操作”按钮：允许更精致的玻璃质感（数量很少，不会拖慢大列表） */
 .acg-icon-fab {
-  border: 1px solid rgba(255, 255, 255, 0.38);
-  background: var(--fab-surface);
-  box-shadow: 0 18px 60px rgba(2, 6, 23, 0.18);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid transparent;
+  background:
+    var(--fab-surface) padding-box,
+    var(--acg-border-gradient) border-box;
+  box-shadow: var(--acg-shadow-e7);
+  backdrop-filter: blur(14px) saturate(1.22);
+  -webkit-backdrop-filter: blur(14px) saturate(1.22);
 }
 
 html[data-acg-device="phone"] .acg-icon-fab {
-  backdrop-filter: blur(11px);
-  -webkit-backdrop-filter: blur(11px);
-  box-shadow: 0 16px 50px rgba(2, 6, 23, 0.16);
+  backdrop-filter: blur(11px) saturate(1.14);
+  -webkit-backdrop-filter: blur(11px) saturate(1.14);
+  box-shadow: var(--acg-shadow-e6);
 }
 
 /* 阅读模式排版（全文预览）：让“抓取到的 Markdown/列表页”更像可读文章 */
@@ -1152,6 +1318,46 @@ html[data-acg-device="phone"] .acg-card {
   color: rgba(255, 255, 255, 0.90);
 }
 
+.acg-cover-fallback-icon .acg-icon path {
+  stroke-dasharray: 140;
+  stroke-dashoffset: 140;
+  animation: acg-path-draw 1.35s var(--ease-smooth) infinite;
+}
+
+.acg-cover-fallback-icon .acg-icon path:nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.acg-cover-fallback-icon .acg-icon path:nth-child(3) {
+  animation-delay: 180ms;
+}
+
+.cover-loaded .acg-cover-fallback-icon .acg-icon path {
+  animation: none;
+  stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acg-cover-fallback-icon .acg-icon path {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes acg-path-draw {
+  0% {
+    stroke-dashoffset: 140;
+    opacity: 0.66;
+  }
+  45% {
+    opacity: 0.98;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.92;
+  }
+}
+
 .acg-cover-fallback-brand {
   font-size: 12px;
   font-weight: 800;
@@ -1251,6 +1457,59 @@ html[data-acg-device="phone"] .acg-card {
 @media (prefers-reduced-motion: reduce) {
   .clickable {
     transition: none;
+  }
+}
+
+/* Skeleton：加载中骨架屏（低成本 shimmer，适配暗黑与减少动态效果偏好） */
+.acg-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+:root[data-acg-theme="dark"] .acg-skeleton {
+  background: rgba(148, 163, 184, 0.14);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-acg-theme]) .acg-skeleton,
+  :root[data-acg-theme="auto"] .acg-skeleton {
+    background: rgba(148, 163, 184, 0.14);
+  }
+}
+
+.acg-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: acg-shimmer 1.1s linear infinite;
+  opacity: 0.45;
+}
+
+:root[data-acg-theme="dark"] .acg-skeleton::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+  opacity: 0.9;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-acg-theme]) .acg-skeleton::after,
+  :root[data-acg-theme="auto"] .acg-skeleton::after {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+    opacity: 0.9;
+  }
+}
+
+@keyframes acg-shimmer {
+  to {
+    transform: translateX(120%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acg-skeleton::after {
+    display: none;
   }
 }
 
@@ -1583,8 +1842,10 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 
 /* 快捷筛选 Chip：移动端更好点 */
 .acg-chip {
-  border: 1px solid var(--glass-border);
-  background: var(--chip-surface);
+  border: 1px solid transparent;
+  background:
+    var(--chip-surface) padding-box,
+    var(--acg-border-gradient) border-box;
   color: var(--text);
   opacity: 0.88;
 }
@@ -1602,8 +1863,9 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 }
 
 .acg-chip[data-active="true"] {
-  border-color: rgba(124, 58, 237, 0.35);
-  background: rgba(124, 58, 237, 0.16);
+  background:
+    rgba(124, 58, 237, 0.16) padding-box,
+    var(--acg-border-gradient) border-box;
   color: var(--text);
   opacity: 1;
 }
@@ -1615,8 +1877,10 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   gap: 4px;
   padding: 4px;
   border-radius: 999px;
-  border: 1px solid var(--glass-border);
-  background: var(--chip-surface);
+  border: 1px solid transparent;
+  background:
+    var(--chip-surface) padding-box,
+    var(--acg-border-gradient) border-box;
 }
 
 .acg-seg-item {
@@ -1712,13 +1976,16 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 }
 
 .acg-toast {
+  --acg-toast-border: var(--acg-border-gradient);
   padding: 12px 14px;
   border-radius: 16px;
-  border: 1px solid var(--glass-border);
-  background: var(--toast-surface);
-  box-shadow: 0 18px 60px rgba(2, 6, 23, 0.14);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid transparent;
+  background:
+    var(--toast-surface) padding-box,
+    var(--acg-toast-border) border-box;
+  box-shadow: var(--acg-shadow-e7);
+  backdrop-filter: blur(14px) saturate(1.22);
+  -webkit-backdrop-filter: blur(14px) saturate(1.22);
   color: var(--text);
   font-size: 12px;
   line-height: 1.4;
@@ -1726,11 +1993,11 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 }
 
 .acg-toast[data-variant="success"] {
-  border-color: rgba(16, 185, 129, 0.25);
+  --acg-toast-border: linear-gradient(135deg, rgba(16, 185, 129, 0.55), rgba(59, 130, 246, 0.30), rgba(16, 185, 129, 0.45));
 }
 
 .acg-toast[data-variant="error"] {
-  border-color: rgba(244, 63, 94, 0.28);
+  --acg-toast-border: linear-gradient(135deg, rgba(244, 63, 94, 0.55), rgba(124, 58, 237, 0.32), rgba(244, 63, 94, 0.45));
 }
 
 .acg-toast-title {

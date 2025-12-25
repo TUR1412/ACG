@@ -50,7 +50,7 @@ const spotlight = (() => {
 ---
 
 <SiteLayout lang="zh" currentPath="/">
-  <section class="acg-layout-grid grid gap-4 md:grid-cols-12">
+  <section class="acg-layout-grid grid gap-grid md:grid-cols-12">
     <div class="glass relative overflow-hidden rounded-2xl p-6 md:col-span-8">
       <div class="pointer-events-none absolute inset-0">
         <div class="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-violet-500/10 blur-3xl"></div>
@@ -59,7 +59,7 @@ const spotlight = (() => {
 
       <div class="relative flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 class="m-0 text-2xl font-semibold leading-tight tracking-tight text-slate-950 md:text-3xl">
+          <h1 class="m-0 text-phi-xl font-semibold leading-tight tracking-tight text-slate-950 md:text-phi-2xl">
             {t("zh", "nav.latest")}
           </h1>
           <p class="mt-1 text-xs text-slate-600">
@@ -266,12 +266,12 @@ const spotlight = (() => {
 
   <SpotlightGrid posts={spotlight} lang="zh" title={t("zh", "home.spotlight")} />
 
-  <section class="acg-layout-grid mt-6 grid gap-4 md:grid-cols-12">
+  <section class="acg-layout-grid mt-6 grid gap-grid md:grid-cols-12">
     <div class="md:col-span-8">
       <PostList posts={latest} lang="zh" />
       <div id="acg-list-empty" class="mt-4 glass shine rounded-2xl p-8 hidden">
         <div class="flex flex-col items-center gap-3 text-center">
-          <div class="radar grid size-16 place-items-center shadow-sm">
+          <div class="radar grid size-16 place-items-center shadow-e4">
             <span class="text-sm font-bold text-white/90">?</span>
           </div>
           <div>

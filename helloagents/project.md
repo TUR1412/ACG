@@ -18,6 +18,12 @@
 - 同步脚本：以 `console.log` 输出关键路径结果；失败以 `process.exitCode=1` 终止。
 - 站点运行时：客户端错误尽量降级（不影响列表浏览），必要时以 Toast 提示用户。
 
+## 隐私与埋点
+- 默认：仅在本地记录事件队列（`localStorage`），不做任何上传。
+- 可选上报：仅当用户显式配置并开启上传时才尝试上报：
+  - `acg.telemetry.upload.v1=true`
+  - `acg.telemetry.endpoint.v1=https://<your-endpoint>`
+
 ## 测试与流程
 - 类型检查：`npm run check`（Astro Check + TS）
 - 构建：`npm run build`

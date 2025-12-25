@@ -119,7 +119,9 @@ export async function httpFetch(url: string, init?: RequestInit, options?: HttpR
         // 5xx/429：允许做一次轻量重试；其他情况交给调用方处理（比如 404/451 有明确语义）。
         const retryable = res.status >= 500 || res.status === 429;
         if (!res.ok && retryable && attempt < retries) {
-          await sleep(retryDelayMs * Math.pow(2, attempt));
+          const base = retryDelayMs * Math.pow(2, attempt);
+          const jitter = 0.85 + Math.random() * 0.3;
+          await sleep(Math.floor(base * jitter));
           continue;
         }
 
@@ -136,7 +138,9 @@ export async function httpFetch(url: string, init?: RequestInit, options?: HttpR
         }
 
         if (attempt < retries) {
-          await sleep(retryDelayMs * Math.pow(2, attempt));
+          const base = retryDelayMs * Math.pow(2, attempt);
+          const jitter = 0.85 + Math.random() * 0.3;
+          await sleep(Math.floor(base * jitter));
           continue;
         }
 

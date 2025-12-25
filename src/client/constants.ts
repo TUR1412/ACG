@@ -14,7 +14,10 @@ export const STORAGE_KEYS = {
   DISABLED_SOURCES: "acg.sourcesDisabled.v1",
   FOLLOWED_SOURCES: "acg.sourcesFollowed.v1",
   BOOKMARK_META: "acg.bookmarks.meta.v1",
-  THEME: "acg.theme.v1"
+  THEME: "acg.theme.v1",
+  TELEMETRY: "acg.telemetry.v1",
+  TELEMETRY_ENDPOINT: "acg.telemetry.endpoint.v1",
+  TELEMETRY_UPLOAD: "acg.telemetry.upload.v1"
 } as const;
 
 export const NETWORK = {
