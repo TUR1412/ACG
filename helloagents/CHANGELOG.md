@@ -10,10 +10,12 @@
 - 玻璃拟态升级：主要容器支持动态渐变边框（hover 动画）与 SVG 路径绘制式占位动效。
 - 交互体验：View Transitions 转场动效（CSS）+ WAAPI 降级；收藏页骨架屏 shimmer。
 - 功能补强：站内搜索支持多级筛选语法（`tag:`/`source:`/`cat:`/`before:`/`after:`/`is:` + `-` 反选）。
+- 功能补强：新增“全站搜索”模式（Web Worker 预取 `posts.json(.gz)` + IndexedDB 缓存；虚拟网格渲染大结果集），并提供 `?` 快捷键快速查看筛选语法提示。
 - 可观测：新增本地优先埋点模块（默认不上传；可选 sendBeacon/fetch 上报）。
 
 ### 变更
 - 网络请求退避重试加入 jitter，降低同步重试带来的拥塞风险。
+- 视觉系统参数变量化：玻璃 blur/saturate 与边框动效可通过 `--acg-glass-*` / `--acg-border-pan-*` 调参。
 
 ## [0.2.0] - 2025-12-25
 

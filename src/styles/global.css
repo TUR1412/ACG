@@ -11,6 +11,14 @@
   --acg-grid-cols: 12;
   --acg-grid-gap: clamp(14px, 1.8vw, 18px);
   --acg-grid-gutter: clamp(16px, 4vw, 28px);
+  --acg-glass-blur: 14px;
+  --acg-glass-sat: 1.22;
+  --acg-glass-blur-phone: 10px;
+  --acg-glass-sat-phone: 1.14;
+  --acg-fab-blur: 14px;
+  --acg-fab-sat: 1.22;
+  --acg-border-pan-duration: 9s;
+  --acg-border-pan-scale: 220%;
   --acg-text-phi-xs: clamp(0.72rem, 0.69rem + 0.18vw, 0.78rem);
   --acg-text-phi-sm: clamp(0.86rem, 0.83rem + 0.25vw, 0.93rem);
   --acg-text-phi-md: clamp(1rem, 0.95rem + 0.35vw, 1.1rem);
@@ -691,15 +699,15 @@ img {
   background:
     var(--glass-surface) padding-box,
     var(--acg-border-gradient) border-box;
-  backdrop-filter: blur(14px) saturate(1.22);
-  -webkit-backdrop-filter: blur(14px) saturate(1.22);
+  backdrop-filter: blur(var(--acg-glass-blur)) saturate(var(--acg-glass-sat));
+  -webkit-backdrop-filter: blur(var(--acg-glass-blur)) saturate(var(--acg-glass-sat));
   box-shadow: var(--acg-shadow-e5);
 }
 
 html[data-acg-device="phone"] .glass {
   /* 手机端降低 blur 开销：保持玻璃质感，但更稳更顺 */
-  backdrop-filter: blur(10px) saturate(1.14);
-  -webkit-backdrop-filter: blur(10px) saturate(1.14);
+  backdrop-filter: blur(var(--acg-glass-blur-phone)) saturate(var(--acg-glass-sat-phone));
+  -webkit-backdrop-filter: blur(var(--acg-glass-blur-phone)) saturate(var(--acg-glass-sat-phone));
 }
 
 /* 列表卡片：保留“玻璃感”，但不使用昂贵的 backdrop-filter（大列表更顺滑） */
@@ -718,12 +726,12 @@ html[data-acg-device="phone"] .glass {
   .glass,
   .glass-card {
     background-position: 0 0, 0% 50%;
-    background-size: auto, 220% 220%;
+    background-size: auto, var(--acg-border-pan-scale) var(--acg-border-pan-scale);
   }
 
   .glass:hover,
   .glass-card:hover {
-    animation: acg-border-pan 9s var(--ease-smooth) infinite;
+    animation: acg-border-pan var(--acg-border-pan-duration) var(--ease-smooth) infinite;
   }
 }
 
@@ -753,17 +761,107 @@ html[data-acg-device="phone"] .glass {
     var(--fab-surface) padding-box,
     var(--acg-border-gradient) border-box;
   box-shadow: var(--acg-shadow-e7);
-  backdrop-filter: blur(14px) saturate(1.22);
-  -webkit-backdrop-filter: blur(14px) saturate(1.22);
+  backdrop-filter: blur(var(--acg-fab-blur)) saturate(var(--acg-fab-sat));
+  -webkit-backdrop-filter: blur(var(--acg-fab-blur)) saturate(var(--acg-fab-sat));
 }
 
 html[data-acg-device="phone"] .acg-icon-fab {
-  backdrop-filter: blur(11px) saturate(1.14);
-  -webkit-backdrop-filter: blur(11px) saturate(1.14);
+  backdrop-filter: blur(var(--acg-glass-blur-phone)) saturate(var(--acg-glass-sat-phone));
+  -webkit-backdrop-filter: blur(var(--acg-glass-blur-phone)) saturate(var(--acg-glass-sat-phone));
   box-shadow: var(--acg-shadow-e6);
 }
 
-/* 阅读模式排版（全文预览）：让“抓取到的 Markdown/列表页”更像可读文章 */
+/* 视觉系统 vNext：语义化栅格 + 阴影层级（Tailwind 之外也可复用） */
+.acg-grid-12 {
+  display: grid;
+  grid-template-columns: repeat(var(--acg-grid-cols), minmax(0, 1fr));
+  gap: var(--acg-grid-gap);
+}
+
+.acg-grid-12[data-gutter="on"] {
+  padding-left: var(--acg-grid-gutter);
+  padding-right: var(--acg-grid-gutter);
+}
+
+.acg-col {
+  grid-column: span var(--acg-col-span, 12) / span var(--acg-col-span, 12);
+}
+
+.acg-col-span-1 {
+  --acg-col-span: 1;
+}
+.acg-col-span-2 {
+  --acg-col-span: 2;
+}
+.acg-col-span-3 {
+  --acg-col-span: 3;
+}
+.acg-col-span-4 {
+  --acg-col-span: 4;
+}
+.acg-col-span-5 {
+  --acg-col-span: 5;
+}
+.acg-col-span-6 {
+  --acg-col-span: 6;
+}
+.acg-col-span-7 {
+  --acg-col-span: 7;
+}
+.acg-col-span-8 {
+  --acg-col-span: 8;
+}
+.acg-col-span-9 {
+  --acg-col-span: 9;
+}
+.acg-col-span-10 {
+  --acg-col-span: 10;
+}
+.acg-col-span-11 {
+  --acg-col-span: 11;
+}
+.acg-col-span-12 {
+  --acg-col-span: 12;
+}
+
+.acg-elev-1 {
+  box-shadow: var(--acg-shadow-e1);
+}
+.acg-elev-2 {
+  box-shadow: var(--acg-shadow-e2);
+}
+.acg-elev-3 {
+  box-shadow: var(--acg-shadow-e3);
+}
+.acg-elev-4 {
+  box-shadow: var(--acg-shadow-e4);
+}
+.acg-elev-5 {
+  box-shadow: var(--acg-shadow-e5);
+}
+.acg-elev-6 {
+  box-shadow: var(--acg-shadow-e6);
+}
+.acg-elev-7 {
+  box-shadow: var(--acg-shadow-e7);
+}
+.acg-elev-8 {
+  box-shadow: var(--acg-shadow-e8);
+}
+.acg-elev-9 {
+  box-shadow: var(--acg-shadow-e9);
+}
+.acg-elev-10 {
+  box-shadow: var(--acg-shadow-e10);
+}
+.acg-elev-11 {
+  box-shadow: var(--acg-shadow-e11);
+}
+.acg-elev-12 {
+  box-shadow: var(--acg-shadow-e12);
+}
+
+/* 阅读模式排版（全文预览）：让“抓取到的 Markdown/列表页”更像可读文章 */        
 .acg-prose {
   font-size: 14px;
   line-height: 1.75;

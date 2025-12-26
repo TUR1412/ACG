@@ -41,10 +41,46 @@ type FilterStore = {
 
 type ThemeMode = "auto" | "light" | "dark";
 
+type SearchScope = "page" | "all";
+
 const THEME_COLOR = {
   LIGHT: "#f2f4f8",
   DARK: "#05070b"
 } as const;
+
+function loadSearchScope(): SearchScope {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.SEARCH_SCOPE);
+    return raw === "all" || raw === "page" ? raw : "page";
+  } catch {
+    return "page";
+  }
+}
+
+function saveSearchScope(scope: SearchScope) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.SEARCH_SCOPE, scope);
+  } catch {
+    // ignore
+  }
+}
+
+let searchScope: SearchScope = loadSearchScope();
+
+function getSearchScope(): SearchScope {
+  return searchScope;
+}
+
+function setSearchScope(scope: SearchScope) {
+  searchScope = scope;
+  saveSearchScope(scope);
+  try {
+    document.documentElement.dataset.acgSearchScope = scope;
+  } catch {
+    // ignore
+  }
+  document.dispatchEvent(new CustomEvent("acg:search-scope-changed", { detail: { scope } }));
+}
 
 declare global {
   interface Window {
@@ -674,6 +710,19 @@ function wireKeyboardShortcuts() {
       return;
     }
 
+    if (e.key === "?" && !isTypingTarget(e.target)) {
+      e.preventDefault();
+      toast({
+        title: isJapanese() ? "検索構文のヒント" : "搜索语法提示",
+        desc: isJapanese()
+          ? "例: tag:xxx / source:xxx / cat:anime / after:2025-12-01 / is:unread（反転は -tag:xxx など）"
+          : "例: tag:xxx / source:xxx / cat:anime / after:2025-12-01 / is:unread（反选用 -tag:xxx 等）",
+        variant: "info",
+        timeoutMs: 3600
+      });
+      return;
+    }
+
     if (e.key === "Escape" && document.activeElement === input) {
       if (input.value) {
         input.value = "";
@@ -1178,6 +1227,7 @@ function createListFilter(params: {
   });
 
   const applyNow = () => {
+    if (getSearchScope() === "all") return;
     initIfNeeded();
     if (!initialized) return;
 
@@ -1599,7 +1649,7 @@ function whenLabel(lang: BookmarkLang, publishedAt: string): string {
 }
 
 let bookmarkPostsByIdPromise: Promise<Map<string, BookmarkPost>> | null = null;
-async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {
+async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {     
   if (bookmarkPostsByIdPromise) return bookmarkPostsByIdPromise;
   bookmarkPostsByIdPromise = (async () => {
     const url = href(NETWORK.POSTS_JSON_PATH);
@@ -1607,9 +1657,9 @@ async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {
       url,
       gzUrl: href(NETWORK.POSTS_JSON_GZ_PATH),
       options: {
-      label: "posts.json",
-      timeoutMs: NETWORK.DEFAULT_TIMEOUT_MS,
-      retries: 1,
+        label: "posts.json",
+        timeoutMs: NETWORK.DEFAULT_TIMEOUT_MS,
+        retries: 1,
         cache: "force-cache"
       }
     });
@@ -1647,6 +1697,401 @@ async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {
   })();
 
   return bookmarkPostsByIdPromise;
+}
+
+function shouldPrefetchAllPosts(): boolean {
+  try {
+    const conn = (navigator as any).connection as
+      | { saveData?: boolean; effectiveType?: string }
+      | undefined;
+    if (conn?.saveData) return false;
+    const effective = String(conn?.effectiveType ?? "").toLowerCase();
+    if (effective.includes("2g")) return false;
+  } catch {
+    // ignore
+  }
+  return true;
+}
+
+function wireGlobalSearch(params: {
+  bookmarkIds: Set<string>;
+  readIds: Set<string>;
+  follows: Set<string>;
+  blocklist: Set<string>;
+  disabledSources: Set<string>;
+  followedSources: Set<string>;
+  filters: FilterStore;
+}) {
+  const { bookmarkIds, readIds, follows, blocklist, disabledSources, followedSources, filters } = params;
+
+  const input = document.querySelector<HTMLInputElement>("#acg-search");
+  const pageGrid = document.querySelector<HTMLElement>(".acg-post-grid");
+  const empty = document.querySelector<HTMLElement>("#acg-list-empty");
+  const count = document.querySelector<HTMLElement>("#acg-search-count");
+  const unreadCount = document.querySelector<HTMLElement>("#acg-unread-count");
+  if (!input || !pageGrid || !empty) return;
+
+  const chipRow = (() => {
+    const anyQuick = document.querySelector<HTMLButtonElement>("button[data-quick-toggle]");
+    return anyQuick?.closest<HTMLElement>(".acg-hscroll") ?? null;
+  })();
+  if (!chipRow) return;
+
+  const toggleId = "acg-search-scope-toggle";
+  let toggle = chipRow.querySelector<HTMLButtonElement>(`#${toggleId}`);
+  if (!toggle) {
+    toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.id = toggleId;
+    toggle.className = "acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable";
+    toggle.textContent = isJapanese() ? "全件" : "全站";
+    toggle.title = isJapanese() ? "全件検索（全データを読み込む）" : "全站搜索（加载全部数据）";
+    toggle.setAttribute("aria-pressed", "false");
+    toggle.dataset.active = "false";
+    chipRow.appendChild(toggle);
+  }
+
+  type SearchWorkerInMessage =
+    | { type: "init"; postsUrl: string; postsGzUrl?: string }
+    | {
+        type: "set_state";
+        state: {
+          readIds: string[];
+          follows: string[];
+          blocklist: string[];
+          disabledSources: string[];
+          followedSources: string[];
+          filters: FilterStore;
+        };
+      }
+    | { type: "search"; requestId: number; q: string; freshWindowMs: number };
+
+  type SearchWorkerOutMessage =
+    | { type: "ready"; total: number }
+    | { type: "result"; requestId: number; total: number; matched: number; unread: number; posts: BookmarkPost[] }
+    | { type: "error"; requestId?: number; message: string };
+
+  let worker: Worker | null = null;
+  let workerInitStartedAt = 0;
+  let workerReady = false;
+  let workerTotal = 0;
+  let workerRequestId = 0;
+  let latestRequestId = 0;
+  let stateDirty = true;
+  let wrap: HTMLElement | null = null;
+  let grid: HTMLElement | null = null;
+  let virtual: VirtualGridController<BookmarkPost> | null = null;
+  let scheduled = false;
+
+  const destroyVirtual = () => {
+    try {
+      virtual?.destroy();
+    } catch {
+      // ignore
+    }
+    virtual = null;
+  };
+
+  const ensureWrap = () => {
+    if (wrap && grid) return;
+    wrap = document.createElement("div");
+    wrap.id = "acg-global-search";
+    grid = document.createElement("div");
+    grid.id = "acg-global-search-grid";
+    grid.className = pageGrid.className;
+    wrap.appendChild(grid);
+    empty.parentElement?.insertBefore(wrap, empty);
+  };
+
+  const removeWrap = () => {
+    destroyVirtual();
+    try {
+      wrap?.remove();
+    } catch {
+      // ignore
+    }
+    wrap = null;
+    grid = null;
+  };
+
+  const setPageGridVisible = (visible: boolean) => {
+    pageGrid.classList.toggle("hidden", !visible);
+  };
+
+  const setEmptyVisible = (visible: boolean) => {
+    empty.classList.toggle("hidden", !visible);
+  };
+
+  const syncToggleUi = () => {
+    const enabled = getSearchScope() === "all";
+    toggle!.dataset.active = enabled ? "true" : "false";
+    toggle!.setAttribute("aria-pressed", enabled ? "true" : "false");
+  };
+
+  const ensureWorker = (showSkeleton: boolean) => {
+    if (worker) return;
+
+    if (showSkeleton) {
+      ensureWrap();
+      if (grid) renderBookmarksSkeleton(grid);
+      setEmptyVisible(false);
+    }
+
+    let next: Worker;
+    try {
+      next = new Worker(new URL("./workers/search.worker.ts", import.meta.url), { type: "module" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast({
+        title: isJapanese() ? "全件検索の初期化に失敗" : "全站搜索初始化失败",
+        desc: msg,
+        variant: "error"
+      });
+      return;
+    }
+
+    worker = next;
+    workerReady = false;
+    workerTotal = 0;
+
+    workerInitStartedAt = (() => {
+      try {
+        return performance.now();
+      } catch {
+        return Date.now();
+      }
+    })();
+
+    track({ type: "prefetch_posts_start" });
+
+    worker.addEventListener("message", (ev: MessageEvent<SearchWorkerOutMessage>) => {
+      const msg = ev.data;
+      if (!msg || typeof msg !== "object") return;
+      if (getSearchScope() !== "all") return;
+
+      if (msg.type === "ready") {
+        workerReady = true;
+        workerTotal = msg.total;
+        const tookMs = Math.round(
+          (() => {
+            try {
+              return performance.now() - workerInitStartedAt;
+            } catch {
+              return Date.now() - workerInitStartedAt;
+            }
+          })()
+        );
+        track({ type: "prefetch_posts_done", data: { count: msg.total, ms: tookMs } });
+        return;
+      }
+
+      if (msg.type === "result") {
+        if (msg.requestId !== latestRequestId) return;
+        renderResults(msg.posts, getBookmarkLang());
+        if (count) count.textContent = `${msg.matched}/${msg.total}`;
+        if (unreadCount) unreadCount.textContent = String(msg.unread);
+        setEmptyVisible(msg.matched === 0);
+        return;
+      }
+
+      if (msg.type === "error") {
+        const desc = msg.message ? String(msg.message) : "";
+        toast({
+          title: isJapanese() ? "全件検索の処理に失敗" : "全站搜索处理失败",
+          desc,
+          variant: "error"
+        });
+        return;
+      }
+    });
+
+    worker.addEventListener("error", () => {
+      if (getSearchScope() !== "all") return;
+      toast({
+        title: isJapanese() ? "全件検索ワーカーが停止しました" : "全站搜索 Worker 异常停止",
+        variant: "error"
+      });
+    });
+
+    try {
+      worker.postMessage({
+        type: "init",
+        postsUrl: href(NETWORK.POSTS_JSON_PATH),
+        postsGzUrl: href(NETWORK.POSTS_JSON_GZ_PATH)
+      } satisfies SearchWorkerInMessage);
+    } catch {
+      // ignore
+    }
+  };
+
+  const syncWorkerState = () => {
+    if (!worker) return;
+    if (!stateDirty) return;
+    stateDirty = false;
+    try {
+      worker.postMessage({
+        type: "set_state",
+        state: {
+          readIds: [...readIds],
+          follows: [...follows],
+          blocklist: [...blocklist],
+          disabledSources: [...disabledSources],
+          followedSources: [...followedSources],
+          filters
+        }
+      } satisfies SearchWorkerInMessage);
+    } catch {
+      stateDirty = true;
+    }
+  };
+
+  const requestSearch = (q: string) => {
+    if (!worker) return;
+    const requestId = (workerRequestId += 1);
+    latestRequestId = requestId;
+    try {
+      worker.postMessage({
+        type: "search",
+        requestId,
+        q,
+        freshWindowMs: UI.FRESH_WINDOW_MS
+      } satisfies SearchWorkerInMessage);
+    } catch {
+      // ignore
+    }
+  };
+
+  const renderResults = (list: BookmarkPost[], lang: BookmarkLang) => {
+    ensureWrap();
+    if (!grid) return;
+
+    const useVirtual = list.length >= 240;
+    if (useVirtual) {
+      if (!virtual) {
+        grid.innerHTML = "";
+        virtual = createVirtualGrid<BookmarkPost>({
+          container: grid,
+          items: list,
+          overscanRows: 6,
+          estimateRowHeight: UI.BOOKMARK_CARD_ESTIMATE_ROW_HEIGHT,
+          renderItem: (post) => buildBookmarkCard({ post, lang, readIds, bookmarkIds })
+        });
+      } else {
+        virtual.setItems(list);
+      }
+      return;
+    }
+
+    if (virtual) destroyVirtual();
+
+    const frag = document.createDocumentFragment();
+    for (const post of list) frag.appendChild(buildBookmarkCard({ post, lang, readIds, bookmarkIds }));
+    grid.innerHTML = "";
+    grid.appendChild(frag);
+  };
+
+  const applyNow = () => {
+    if (getSearchScope() !== "all") return;
+
+    setPageGridVisible(false);
+
+    ensureWorker(true);
+    if (!worker) return;
+
+    syncWorkerState();
+    requestSearch(input.value);
+
+    if (!workerReady) {
+      ensureWrap();
+      if (grid) renderBookmarksSkeleton(grid);
+    } else if (workerTotal > 0 && !input.value.trim()) {
+      if (count) count.textContent = `0/${workerTotal}`;
+      if (unreadCount) unreadCount.textContent = "0";
+    }
+
+    setEmptyVisible(false);
+  };
+
+  const schedule = () => {
+    if (getSearchScope() !== "all") return;
+    if (scheduled) return;
+    scheduled = true;
+    window.requestAnimationFrame(() => {
+      scheduled = false;
+      applyNow();
+    });
+  };
+
+  const setEnabled = (enabled: boolean) => {
+    setSearchScope(enabled ? "all" : "page");
+    syncToggleUi();
+    stateDirty = true;
+
+    if (enabled) {
+      ensureWrap();
+      setPageGridVisible(false);
+      track({ type: "search_scope", data: { scope: "all" } });
+      toast({
+        title: isJapanese() ? "全件検索モード" : "已切换到全站搜索",
+        desc: isJapanese() ? "初回はデータを読み込みます。" : "首次使用会加载全部数据。",
+        variant: "info",
+        timeoutMs: 1400
+      });
+      schedule();
+      return;
+    }
+
+    track({ type: "search_scope", data: { scope: "page" } });
+    toast({
+      title: isJapanese() ? "ページ内検索モード" : "已切换到本页搜索",
+      variant: "info",
+      timeoutMs: 1200
+    });
+
+    removeWrap();
+    setPageGridVisible(true);
+    // 让页面内筛选立刻接管并刷新计数/空态
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+
+  toggle.addEventListener("click", (e) => {
+    e.preventDefault();
+    const enabled = getSearchScope() === "all";
+    setEnabled(!enabled);
+  });
+
+  input.addEventListener("input", schedule);
+  input.addEventListener("focus", () => {
+    if (!shouldPrefetchAllPosts()) return;
+    void getBookmarkPostsById().catch(() => {
+      // ignore
+    });
+  });
+  document.addEventListener("acg:filters-changed", () => {
+    stateDirty = true;
+    schedule();
+  });
+  document.addEventListener("acg:read-changed", () => {
+    stateDirty = true;
+    schedule();
+  });
+  document.addEventListener("acg:search-scope-changed", () => {
+    syncToggleUi();
+    if (getSearchScope() === "all") schedule();
+  });
+
+  // 静默预取：弱网/省流量偏好下不主动拉全量数据；否则在空闲时预热缓存。
+  runWhenIdle(() => {
+    if (!shouldPrefetchAllPosts()) return;
+    if (getSearchScope() === "all") return;
+    void getBookmarkPostsById().catch(() => {
+      // ignore
+    });
+  }, UI.IDLE_DEFAULT_TIMEOUT_MS);
+
+  // 初始：若用户上次停留在全站搜索，则自动恢复
+  syncToggleUi();
+  if (getSearchScope() === "all") setEnabled(true);
 }
 
 type BookmarkMetaStore = {
@@ -1732,8 +2177,9 @@ function buildBookmarkCard(params: {
   post: BookmarkPost;
   lang: BookmarkLang;
   readIds: Set<string>;
+  bookmarkIds: Set<string>;
 }): HTMLElement {
-  const { post, lang, readIds } = params;
+  const { post, lang, readIds, bookmarkIds } = params;
   const theme = BOOKMARK_CATEGORY_THEME[post.category];
   const label = BOOKMARK_CATEGORY_LABELS[lang][post.category];
   const retryCoverLabel = lang === "ja" ? "画像を再試行" : "重试封面";
@@ -1918,7 +2364,7 @@ function buildBookmarkCard(params: {
   star.type = "button";
   star.className = "glass-card rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable";
   star.dataset.bookmarkId = post.id;
-  star.setAttribute("aria-pressed", "true");
+  const bookmarked = bookmarkIds.has(post.id);
   const bookmarkLabel = lang === "ja" ? "ブックマーク" : "收藏";
   star.title = bookmarkLabel;
   star.setAttribute("aria-label", bookmarkLabel);
@@ -1927,7 +2373,7 @@ function buildBookmarkCard(params: {
   starIcon.setAttribute("aria-hidden", "true");
   starIcon.appendChild(createUiIcon({ name: "star", size: 18 }));
   star.appendChild(starIcon);
-  setBookmarkButtonState(star, true);
+  setBookmarkButtonState(star, bookmarked);
   head.appendChild(star);
 
   if (displaySnippet) {
@@ -1935,6 +2381,21 @@ function buildBookmarkCard(params: {
     p.className = "mt-2 line-clamp-3 text-sm leading-relaxed text-slate-600";
     p.textContent = displaySnippet;
     body.appendChild(p);
+  }
+
+  if (Array.isArray(post.tags) && post.tags.length > 0) {
+    const wrap = document.createElement("div");
+    wrap.className =
+      "acg-hscroll mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0";
+    for (const tag of post.tags.slice(0, 4)) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `shrink-0 whitespace-nowrap rounded-full border border-slate-900/10 bg-white/50 px-2.5 py-1 text-xs hover:bg-white/70 clickable ${theme.ink}`;
+      btn.dataset.tag = tag;
+      btn.textContent = tag;
+      wrap.appendChild(btn);
+    }
+    body.appendChild(wrap);
   }
 
   return article;
@@ -2018,7 +2479,7 @@ function wireBookmarksPage(bookmarkIds: Set<string>, readIds: Set<string>) {
           if (optimistic.length > 0) {
             optimistic.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
             const frag = document.createDocumentFragment();
-            for (const post of optimistic) frag.appendChild(buildBookmarkCard({ post, lang, readIds }));
+            for (const post of optimistic) frag.appendChild(buildBookmarkCard({ post, lang, readIds, bookmarkIds }));
             grid.innerHTML = "";
             grid.appendChild(frag);
             renderedIds = new Set(optimistic.map((p) => p.id));
@@ -2057,7 +2518,7 @@ function wireBookmarksPage(bookmarkIds: Set<string>, readIds: Set<string>) {
             items: list,
             overscanRows: 6,
             estimateRowHeight: UI.BOOKMARK_CARD_ESTIMATE_ROW_HEIGHT,
-            renderItem: (post) => buildBookmarkCard({ post, lang, readIds })
+            renderItem: (post) => buildBookmarkCard({ post, lang, readIds, bookmarkIds })    
           });
         } else {
           virtual.setItems(list);
@@ -2072,7 +2533,7 @@ function wireBookmarksPage(bookmarkIds: Set<string>, readIds: Set<string>) {
           virtual = null;
         }
         const frag = document.createDocumentFragment();
-        for (const post of list) frag.appendChild(buildBookmarkCard({ post, lang, readIds }));
+        for (const post of list) frag.appendChild(buildBookmarkCard({ post, lang, readIds, bookmarkIds }));
         grid.innerHTML = "";
         grid.appendChild(frag);
       }
@@ -2787,6 +3248,11 @@ function markCurrentPostRead(readIds: Set<string>) {
   if (readIds.has(current)) return;
   readIds.add(current);
   saveIds(READ_KEY, readIds);
+  try {
+    document.dispatchEvent(new CustomEvent("acg:read-changed"));
+  } catch {
+    // ignore
+  }
 }
 
 function supportsViewTransitions(): boolean {
@@ -2910,6 +3376,7 @@ function main() {
   wireSourceToggles(disabledSources);
   wireSourceFollows(followedSources);
   createListFilter({ readIds, follows, blocklist, disabledSources, followedSources, filters });
+  wireGlobalSearch({ bookmarkIds, readIds, follows, blocklist, disabledSources, followedSources, filters });
   wireQuickToggles();
   wireKeyboardShortcuts();
   wireSearchClear();
