@@ -24,6 +24,8 @@ export const STORAGE_KEYS = {
 export const NETWORK = {
   POSTS_JSON_PATH: "/data/posts.json",
   POSTS_JSON_GZ_PATH: "/data/posts.json.gz",
+  SEARCH_PACK_JSON_PATH: "/data/search-pack.v1.json",
+  SEARCH_PACK_JSON_GZ_PATH: "/data/search-pack.v1.json.gz",
   DEFAULT_TIMEOUT_MS: 12_000,
   DEFAULT_RETRY_DELAY_MS: 180,
   SLOW_REQUEST_THRESHOLD_MS: 1800,

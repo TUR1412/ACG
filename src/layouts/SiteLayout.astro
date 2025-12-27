@@ -142,8 +142,39 @@ const swHref = href("/sw.js");
         }
       })();
     </script>
-    <link rel="icon" type="image/svg+xml" href={href("/favicon.svg")} />
-    <link rel="preconnect" href="https://images.weserv.nl" crossorigin />
+    <script is:inline>
+      (() => {
+        const el = document.documentElement;
+        let perf = "";
+
+        try {
+          const conn = typeof navigator !== "undefined" ? navigator.connection : null;
+          const saveData = Boolean(conn && conn.saveData);
+          const effective = String(conn && conn.effectiveType ? conn.effectiveType : "").toLowerCase();
+          const slowNet = effective.includes("2g");
+
+          const memRaw = typeof navigator !== "undefined" ? navigator.deviceMemory : undefined;
+          const mem = typeof memRaw === "number" ? memRaw : NaN;
+
+          const coresRaw = typeof navigator !== "undefined" ? navigator.hardwareConcurrency : undefined;
+          const cores = typeof coresRaw === "number" ? coresRaw : NaN;
+
+          if (saveData || slowNet || (Number.isFinite(mem) && mem <= 4) || (Number.isFinite(cores) && cores <= 4)) {
+            perf = "low";
+          }
+        } catch {
+          // ignore
+        }
+
+        try {
+          if (perf) el.dataset.acgPerf = perf;
+        } catch {
+          // ignore
+        }
+      })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href={href("/favicon.svg")} />        
+    <link rel="preconnect" href="https://images.weserv.nl" crossorigin />       
     <link rel="preconnect" href="https://wsrv.nl" crossorigin />
   </head>
   <body data-current-post-id={currentPostId}>

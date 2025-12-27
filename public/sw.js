@@ -41,7 +41,7 @@ function isUnderBase(reqUrl) {
 
 function isDataRequest(reqUrl) {
   if (!reqUrl) return false;
-  return /\/data\/(posts|status)\.json(\.gz)?$/i.test(reqUrl.pathname);
+  return /\/data\/(posts|status|search-pack\.v1)\.json(\.gz)?$/i.test(reqUrl.pathname);
 }
 
 function isAssetRequest(reqUrl) {

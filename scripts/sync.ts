@@ -48,6 +48,25 @@ type Post = {
   sourceUrl: string;
 };
 
+type SearchPackIndexRow = {
+  /** 索引：对应 posts[i] */
+  i: number;
+  hay: string;
+  tags: string[];
+  sourceName: string;
+  sourceId: string;
+  sourceIdNorm: string;
+  category: string;
+  publishedAtMs: number | null;
+};
+
+type SearchPackV1 = {
+  v: 1;
+  generatedAt: string;
+  posts: Post[];
+  index: SearchPackIndexRow[];
+};
+
 type SourceStatus = {
   id: string;
   name: string;
@@ -69,8 +88,49 @@ type SyncStatus = {
 };
 
 function hasJapaneseKana(text: string): boolean {
-  // Hiragana + Katakana。仅靠汉字无法区分中/日，所以用 kana 作为“强证据”。
+  // Hiragana + Katakana。仅靠汉字无法区分中/日，所以用 kana 作为“强证据”。     
   return /[\u3041-\u30ff]/.test(text);
+}
+
+function normalizeSearchText(input: string): string {
+  return input.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function buildSearchPack(posts: Post[], generatedAt: string): SearchPackV1 {
+  const index: SearchPackIndexRow[] = [];
+
+  for (let i = 0; i < posts.length; i += 1) {
+    const post = posts[i];
+    const tags = (post.tags ?? []).map((t) => normalizeSearchText(t)).filter(Boolean);
+    const sourceName = normalizeSearchText(post.sourceName);
+    const sourceId = post.sourceId ?? "";
+    const sourceIdNorm = normalizeSearchText(sourceId);
+    const category = normalizeSearchText(post.category);
+    const ts = post.publishedAt ? Date.parse(post.publishedAt) : NaN;
+    const publishedAtMs = Number.isFinite(ts) ? ts : null;
+
+    const hay = normalizeSearchText(
+      [
+        post.title,
+        post.titleZh ?? "",
+        post.titleJa ?? "",
+        post.summary ?? "",
+        post.summaryZh ?? "",
+        post.summaryJa ?? "",
+        post.preview ?? "",
+        post.previewZh ?? "",
+        post.previewJa ?? "",
+        tags.join(" "),
+        sourceName,
+        sourceIdNorm,
+        category
+      ].join(" ")
+    );
+
+    index.push({ i, hay, tags, sourceName, sourceId, sourceIdNorm, category, publishedAtMs });
+  }
+
+  return { v: 1, generatedAt, posts, index };
 }
 
 async function translatePosts(params: {
@@ -697,8 +757,10 @@ async function main() {
 
   const outPostsPath = resolve(root, "src", "data", "generated", "posts.json");
   const outStatusPath = resolve(root, "src", "data", "generated", "status.json");
+  const outSearchPackPath = resolve(root, "src", "data", "generated", "search-pack.v1.json");
   const publicPostsPath = resolve(root, "public", "data", "posts.json");
   const publicStatusPath = resolve(root, "public", "data", "status.json");
+  const publicSearchPackPath = resolve(root, "public", "data", "search-pack.v1.json");
   const cachePath = cacheFilePath(root);
   const translateCachePath = resolve(root, ".cache", "translate.json");
 
@@ -785,6 +847,12 @@ async function main() {
     return;
   }
 
+  const writeJsonMinified = async (filePath: string, data: unknown) => {
+    await mkdir(dirname(filePath), { recursive: true });
+    const raw = JSON.stringify(data) + "\n";
+    await writeFile(filePath, raw, "utf-8");
+  };
+
   const writePublicJsonAndGzip = async (filePath: string, data: unknown) => {
     await mkdir(dirname(filePath), { recursive: true });
     const raw = JSON.stringify(data) + "\n";
@@ -797,7 +865,12 @@ async function main() {
   await writeJsonFile(outStatusPath, status);
   await writePublicJsonAndGzip(publicPostsPath, pruned);
   await writePublicJsonAndGzip(publicStatusPath, status);
-  console.log(`[DONE] posts=${pruned.length} generatedAt=${generatedAt}`);
+
+  // 全站搜索：预生成“搜索包”（posts + index），避免运行时在 Worker 内反复构建索引
+  const searchPack = buildSearchPack(pruned, generatedAt);
+  await writeJsonMinified(outSearchPackPath, searchPack);
+  await writePublicJsonAndGzip(publicSearchPackPath, searchPack);
+  console.log(`[DONE] posts=${pruned.length} generatedAt=${generatedAt}`);      
 }
 
 main().catch((err) => {

@@ -30,11 +30,12 @@ type FilterStore = {
 };
 
 type IndexedPost = {
-  post: BookmarkPost;
+  i: number;
   hay: string;
   tags: string[];
   sourceName: string;
   sourceId: string;
+  sourceIdNorm: string;
   category: string;
   publishedAtMs: number | null;
 };
@@ -59,6 +60,8 @@ type WorkerInitMessage = {
   type: "init";
   postsUrl: string;
   postsGzUrl?: string;
+  indexUrl?: string;
+  indexGzUrl?: string;
 };
 
 type WorkerSetStateMessage = {
@@ -94,6 +97,7 @@ type WorkerResultMessage = {
   matched: number;
   unread: number;
   posts: BookmarkPost[];
+  truncated: boolean;
 };
 
 type WorkerErrorMessage = {
@@ -107,12 +111,16 @@ type WorkerOutMessage = WorkerReadyMessage | WorkerResultMessage | WorkerErrorMe
 const DB_NAME = "acg.search.cache.v1";
 const STORE_NAME = "kv";
 const POSTS_KEY = "posts";
+const MAX_RESULTS = 1500;
 
 let postsUrl = "";
 let postsGzUrl = "";
+let indexUrl = "";
+let indexGzUrl = "";
 
 let posts: BookmarkPost[] = [];
 let indexed: IndexedPost[] = [];
+let activeRequestId = 0;
 
 const state = {
   readIds: new Set<string>(),
@@ -283,10 +291,12 @@ function normalizePost(value: unknown): BookmarkPost | null {
 
 function buildIndex(list: BookmarkPost[]): IndexedPost[] {
   const out: IndexedPost[] = [];
-  for (const post of list) {
+  for (let i = 0; i < list.length; i += 1) {
+    const post = list[i];
     const tags = (post.tags ?? []).map((t) => normalizeText(t)).filter(Boolean);
     const sourceName = normalizeText(post.sourceName);
-    const sourceId = normalizeText(post.sourceId);
+    const sourceId = post.sourceId ?? "";
+    const sourceIdNorm = normalizeText(sourceId);
     const category = normalizeText(post.category);
     const ts = post.publishedAt ? Date.parse(post.publishedAt) : NaN;
     const publishedAtMs = Number.isFinite(ts) ? ts : null;
@@ -304,19 +314,42 @@ function buildIndex(list: BookmarkPost[]): IndexedPost[] {
         post.previewJa ?? "",
         tags.join(" "),
         sourceName,
-        sourceId,
+        sourceIdNorm,
         category
       ].join(" ")
     );
 
-    out.push({ post, hay, tags, sourceName, sourceId, category, publishedAtMs });
+    out.push({ i, hay, tags, sourceName, sourceId, sourceIdNorm, category, publishedAtMs });
   }
   return out;
 }
 
+function normalizeIndexRow(value: unknown, maxPosts: number): IndexedPost | null {
+  if (!value || typeof value !== "object") return null;
+  const it = value as any;
+
+  const iRaw = typeof it.i === "number" ? it.i : NaN;
+  const i = Number.isFinite(iRaw) ? Math.floor(iRaw) : NaN;
+  if (!Number.isFinite(i) || i < 0 || i >= maxPosts) return null;
+
+  const hay = typeof it.hay === "string" ? normalizeText(it.hay) : "";
+  if (!hay) return null;
+
+  const tags = Array.isArray(it.tags) ? it.tags.filter((x: unknown) => typeof x === "string").map((t: string) => normalizeText(t)).filter(Boolean) : [];
+  const sourceName = typeof it.sourceName === "string" ? normalizeText(it.sourceName) : "";
+  const sourceId = typeof it.sourceId === "string" ? it.sourceId : "";
+  const sourceIdNorm = typeof it.sourceIdNorm === "string" ? normalizeText(it.sourceIdNorm) : normalizeText(sourceId);
+  const category = typeof it.category === "string" ? normalizeText(it.category) : "";
+
+  const pRaw = typeof it.publishedAtMs === "number" ? it.publishedAtMs : NaN;
+  const publishedAtMs = Number.isFinite(pRaw) ? pRaw : null;
+
+  return { i, hay, tags, sourceName, sourceId, sourceIdNorm, category, publishedAtMs };
+}
+
 function supportsGzipDecompression(): boolean {
   try {
-    return typeof (globalThis as any).DecompressionStream === "function";
+    return typeof (globalThis as any).DecompressionStream === "function";       
   } catch {
     return false;
   }
@@ -452,10 +485,48 @@ async function dbSet<T>(key: string, value: T): Promise<void> {
 async function ensureDataLoaded(): Promise<void> {
   if (posts.length > 0 && indexed.length > 0) return;
 
-  const cached = await dbGet<{ v: 1; savedAt: string; posts: BookmarkPost[] }>(POSTS_KEY);
-  if (cached?.v === 1 && Array.isArray(cached.posts) && cached.posts.length > 0) {
-    posts = cached.posts;
-    indexed = buildIndex(posts);
+  const cached = await dbGet<unknown>(POSTS_KEY);
+  if (cached && typeof cached === "object") {
+    const v = (cached as any).v;
+    if (v === 2 && Array.isArray((cached as any).posts) && Array.isArray((cached as any).index)) {
+      const list = (cached as any).posts as BookmarkPost[];
+      const idx = (cached as any).index as IndexedPost[];
+      if (list.length > 0 && idx.length > 0) {
+        posts = list;
+        indexed = idx.length === list.length ? idx : buildIndex(list);
+        return;
+      }
+    }
+
+    if (v === 1 && Array.isArray((cached as any).posts)) {
+      const list = (cached as any).posts as BookmarkPost[];
+      if (list.length > 0) {
+        posts = list;
+        indexed = buildIndex(list);
+        await dbSet(POSTS_KEY, { v: 2, savedAt: new Date().toISOString(), posts: list, index: indexed });
+        return;
+      }
+    }
+  }
+
+  // 优先尝试“搜索包”（posts + index）
+  if (indexUrl) {
+    try {
+      const json = await fetchJsonPreferGzip(indexUrl, indexGzUrl || undefined);
+      const pack = json as any;
+      if (pack && typeof pack === "object" && pack.v === 1 && Array.isArray(pack.posts) && Array.isArray(pack.index)) {
+        const list = (pack.posts as unknown[]).map(normalizePost).filter((x): x is BookmarkPost => Boolean(x));
+        const idx = pack.index.map((x: unknown) => normalizeIndexRow(x, list.length)).filter((x: IndexedPost | null): x is IndexedPost => Boolean(x));
+        if (list.length > 0 && idx.length === list.length) {
+          posts = list;
+          indexed = idx;
+          await dbSet(POSTS_KEY, { v: 2, savedAt: new Date().toISOString(), posts: list, index: idx });
+          return;
+        }
+      }
+    } catch {
+      // ignore and fallback
+    }
   }
 
   if (!postsUrl) return;
@@ -466,9 +537,9 @@ async function ensureDataLoaded(): Promise<void> {
     const list = json.map(normalizePost).filter((x): x is BookmarkPost => Boolean(x));
     posts = list;
     indexed = buildIndex(list);
-    await dbSet(POSTS_KEY, { v: 1, savedAt: new Date().toISOString(), posts: list });
+    await dbSet(POSTS_KEY, { v: 2, savedAt: new Date().toISOString(), posts: list, index: indexed });
   } catch {
-    // ignore: keep cached if any
+    // ignore: keep empty
   }
 }
 
@@ -505,9 +576,17 @@ async function runSearch(params: { requestId: number; q: string; freshWindowMs: 
 
   const results: BookmarkPost[] = [];
   let unreadShown = 0;
+  let truncated = false;
 
-  for (const row of indexed) {
-    const post = row.post;
+  const requestId = params.requestId;
+
+  for (let index = 0; index < indexed.length; index += 1) {
+    if (index % 256 === 0 && activeRequestId !== requestId) return;
+
+    const row = indexed[index];
+    const post = posts[row.i];
+    if (!post) continue;
+
     const id = post.id;
     const read = id ? state.readIds.has(id) : false;
 
@@ -518,17 +597,17 @@ async function runSearch(params: { requestId: number; q: string; freshWindowMs: 
     const matchSources =
       parsed.sources.length === 0
         ? true
-        : parsed.sources.every((t) => t && (row.sourceName.includes(t) || (row.sourceId ? row.sourceId.includes(t) : false)));
+        : parsed.sources.every((t) => t && (row.sourceName.includes(t) || (row.sourceIdNorm ? row.sourceIdNorm.includes(t) : false)));
     const matchNotSources =
       parsed.notSources.length === 0
         ? true
-        : parsed.notSources.every((t) => t && !(row.sourceName.includes(t) || (row.sourceId ? row.sourceId.includes(t) : false)));
+        : parsed.notSources.every((t) => t && !(row.sourceName.includes(t) || (row.sourceIdNorm ? row.sourceIdNorm.includes(t) : false)));
     const matchCats = parsed.categories.length === 0 ? true : parsed.categories.some((c) => c && row.category === c);
     const matchNotCats = parsed.notCategories.length === 0 ? true : parsed.notCategories.every((c) => c && row.category !== c);
     const matchAfter = parsed.afterMs == null ? true : row.publishedAtMs != null ? row.publishedAtMs >= parsed.afterMs : false;
     const matchBefore = parsed.beforeMs == null ? true : row.publishedAtMs != null ? row.publishedAtMs <= parsed.beforeMs : false;
     const matchFollow = !followOnlyEnabled ? true : followWords.length === 0 ? false : followWords.some((w) => w && row.hay.includes(w));
-    const matchFollowSources = !followSourcesOnlyEnabled ? true : post.sourceId ? state.followedSources.has(post.sourceId) : false;
+    const matchFollowSources = !followSourcesOnlyEnabled ? true : row.sourceId ? state.followedSources.has(row.sourceId) : false;
     const matchIsRead = parsed.isRead == null ? true : parsed.isRead ? read : !read;
     const matchIsUnread = parsed.isUnread == null ? true : parsed.isUnread ? !read : read;
 
@@ -545,7 +624,7 @@ async function runSearch(params: { requestId: number; q: string; freshWindowMs: 
 
     const blocked = blockWords.some((w) => w && row.hay.includes(w));
     const hideByRead = hideReadEnabled && read;
-    const sourceEnabled = !post.sourceId || !state.disabledSources.has(post.sourceId);
+    const sourceEnabled = !row.sourceId || !state.disabledSources.has(row.sourceId);
 
     const ok =
       matchText &&
@@ -570,15 +649,21 @@ async function runSearch(params: { requestId: number; q: string; freshWindowMs: 
 
     results.push(post);
     if (!read) unreadShown += 1;
+    if (results.length >= MAX_RESULTS) {
+      truncated = true;
+      break;
+    }
   }
 
+  if (activeRequestId !== requestId) return;
   post({
     type: "result",
-    requestId: params.requestId,
+    requestId,
     total: indexed.length,
     matched: results.length,
     unread: unreadShown,
-    posts: results
+    posts: results,
+    truncated
   });
 }
 
@@ -589,6 +674,8 @@ self.addEventListener("message", (ev: MessageEvent<WorkerInMessage>) => {
   if (msg.type === "init") {
     postsUrl = msg.postsUrl;
     postsGzUrl = msg.postsGzUrl ?? "";
+    indexUrl = msg.indexUrl ?? "";
+    indexGzUrl = msg.indexGzUrl ?? "";
     void (async () => {
       try {
         await ensureDataLoaded();
@@ -607,6 +694,7 @@ self.addEventListener("message", (ev: MessageEvent<WorkerInMessage>) => {
   }
 
   if (msg.type === "search") {
+    activeRequestId = msg.requestId;
     void (async () => {
       try {
         await runSearch({ requestId: msg.requestId, q: msg.q, freshWindowMs: msg.freshWindowMs });

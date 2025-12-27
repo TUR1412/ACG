@@ -10,12 +10,14 @@
 - 玻璃拟态升级：主要容器支持动态渐变边框（hover 动画）与 SVG 路径绘制式占位动效。
 - 交互体验：View Transitions 转场动效（CSS）+ WAAPI 降级；收藏页骨架屏 shimmer。
 - 功能补强：站内搜索支持多级筛选语法（`tag:`/`source:`/`cat:`/`before:`/`after:`/`is:` + `-` 反选）。
-- 功能补强：新增“全站搜索”模式（Web Worker 预取 `posts.json(.gz)` + IndexedDB 缓存；虚拟网格渲染大结果集），并提供 `?` 快捷键快速查看筛选语法提示。
+- 功能补强：新增“全站搜索包” search-pack（构建期生成 `search-pack.v1.json(.gz)`：posts + 预计算索引），全站搜索 Worker 优先预取 search-pack，必要时回退 `posts.json(.gz)`；IndexedDB 缓存升级为 posts+index（含迁移），并支持请求取消/结果截断以稳定 60FPS。
 - 可观测：新增本地优先埋点模块（默认不上传；可选 sendBeacon/fetch 上报）。
 
 ### 变更
 - 网络请求退避重试加入 jitter，降低同步重试带来的拥塞风险。
 - 视觉系统参数变量化：玻璃 blur/saturate 与边框动效可通过 `--acg-glass-*` / `--acg-border-pan-*` 调参。
+- 视觉性能：新增 `data-acg-perf="low"` 自动降级（连接信息/设备信息 + 运行时 FPS 探测），降低 blur/阴影/边框动画开销。
+- PWA 缓存：Service Worker 的 data 缓存策略覆盖 `search-pack.v1.json(.gz)`，改善冷启动与弱网体验。
 
 ## [0.2.0] - 2025-12-25
 

@@ -65,6 +65,21 @@
   --acg-bottom-nav-h: 0px;
 }
 
+/* 性能分级：低性能/省流量设备自动降级部分昂贵效果（保持质感但更稳更顺） */
+:root[data-acg-perf="low"] {
+  --acg-glass-blur: 10px;
+  --acg-glass-sat: 1.14;
+  --acg-glass-blur-phone: 8px;
+  --acg-glass-sat-phone: 1.10;
+  --acg-fab-blur: 12px;
+  --acg-fab-sat: 1.14;
+  --acg-border-pan-duration: 0ms;
+  --acg-border-pan-scale: 180%;
+  --shadow-soft: 0 14px 44px rgba(2, 6, 23, 0.10);
+  --shadow-card: 0 8px 22px rgba(2, 6, 23, 0.07);
+  --shadow-card-hover: 0 14px 44px rgba(2, 6, 23, 0.11);
+}
+
 /* 暗黑模式：
   - data-acg-theme="dark"：强制暗黑
   - data-acg-theme="light"：强制浅色
@@ -740,6 +755,11 @@ html[data-acg-device="phone"] .glass {
   .glass-card:hover {
     animation: none;
   }
+}
+
+:root[data-acg-perf="low"] .glass:hover,
+:root[data-acg-perf="low"] .glass-card:hover {
+  animation: none !important;
 }
 
 @keyframes acg-border-pan {

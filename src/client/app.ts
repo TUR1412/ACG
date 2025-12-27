@@ -303,6 +303,38 @@ function prefersReducedMotion(): boolean {
   }
 }
 
+function maybeAutoTunePerfMode() {
+  const el = document.documentElement;
+  if (el.dataset.acgPerf === "low") return;
+  if (!("requestAnimationFrame" in window)) return;
+
+  let raf = 0;
+  let frames = 0;
+  let start = 0;
+
+  const targetDurationMs = 1200;
+  const tick = (t: number) => {
+    frames += 1;
+    if (!start) start = t;
+    const dt = t - start;
+    if (dt >= targetDurationMs) {
+      const fps = (frames * 1000) / Math.max(1, dt);
+      if (fps < 55) {
+        try {
+          el.dataset.acgPerf = "low";
+        } catch {
+          // ignore
+        }
+        track({ type: "perf_auto_low", data: { fps: Math.round(fps * 10) / 10 } });
+      }
+      return;
+    }
+    raf = window.requestAnimationFrame(tick);
+  };
+
+  raf = window.requestAnimationFrame(tick);
+}
+
 function prefersColorSchemeDark(): boolean {
   try {
     return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
@@ -1752,7 +1784,7 @@ function wireGlobalSearch(params: {
   }
 
   type SearchWorkerInMessage =
-    | { type: "init"; postsUrl: string; postsGzUrl?: string }
+    | { type: "init"; postsUrl: string; postsGzUrl?: string; indexUrl?: string; indexGzUrl?: string }
     | {
         type: "set_state";
         state: {
@@ -1768,7 +1800,7 @@ function wireGlobalSearch(params: {
 
   type SearchWorkerOutMessage =
     | { type: "ready"; total: number }
-    | { type: "result"; requestId: number; total: number; matched: number; unread: number; posts: BookmarkPost[] }
+    | { type: "result"; requestId: number; total: number; matched: number; unread: number; posts: BookmarkPost[]; truncated: boolean }
     | { type: "error"; requestId?: number; message: string };
 
   let worker: Worker | null = null;
@@ -1777,6 +1809,7 @@ function wireGlobalSearch(params: {
   let workerTotal = 0;
   let workerRequestId = 0;
   let latestRequestId = 0;
+  let lastTruncatedToastRequestId = 0;
   let stateDirty = true;
   let wrap: HTMLElement | null = null;
   let grid: HTMLElement | null = null;
@@ -1888,9 +1921,19 @@ function wireGlobalSearch(params: {
       if (msg.type === "result") {
         if (msg.requestId !== latestRequestId) return;
         renderResults(msg.posts, getBookmarkLang());
-        if (count) count.textContent = `${msg.matched}/${msg.total}`;
+        if (count) count.textContent = msg.truncated ? `${msg.matched}+/${msg.total}` : `${msg.matched}/${msg.total}`;
         if (unreadCount) unreadCount.textContent = String(msg.unread);
         setEmptyVisible(msg.matched === 0);
+
+        if (msg.truncated && msg.requestId !== lastTruncatedToastRequestId) {
+          lastTruncatedToastRequestId = msg.requestId;
+          toast({
+            title: isJapanese() ? "結果が多すぎます" : "结果过多",
+            desc: isJapanese() ? `先頭 ${msg.matched} 件のみ表示します。条件を絞ってください。` : `仅展示前 ${msg.matched} 条，请继续缩小条件。`,
+            variant: "info",
+            timeoutMs: 1600
+          });
+        }
         return;
       }
 
@@ -1917,7 +1960,9 @@ function wireGlobalSearch(params: {
       worker.postMessage({
         type: "init",
         postsUrl: href(NETWORK.POSTS_JSON_PATH),
-        postsGzUrl: href(NETWORK.POSTS_JSON_GZ_PATH)
+        postsGzUrl: href(NETWORK.POSTS_JSON_GZ_PATH),
+        indexUrl: href(NETWORK.SEARCH_PACK_JSON_PATH),
+        indexGzUrl: href(NETWORK.SEARCH_PACK_JSON_GZ_PATH)
       } satisfies SearchWorkerInMessage);
     } catch {
       // ignore
@@ -1999,14 +2044,22 @@ function wireGlobalSearch(params: {
     if (!worker) return;
 
     syncWorkerState();
-    requestSearch(input.value);
+
+    const q = input.value.trim();
+    const shouldSearch = Boolean(q) || filters.hideRead || filters.onlyFollowed || filters.onlyFollowedSources;
+    if (shouldSearch) {
+      requestSearch(input.value);
+    } else {
+      renderResults([], getBookmarkLang());
+      if (count) count.textContent = workerTotal > 0 ? `0/${workerTotal}` : "0/0";
+      if (unreadCount) unreadCount.textContent = "0";
+      setEmptyVisible(true);
+      return;
+    }
 
     if (!workerReady) {
       ensureWrap();
       if (grid) renderBookmarksSkeleton(grid);
-    } else if (workerTotal > 0 && !input.value.trim()) {
-      if (count) count.textContent = `0/${workerTotal}`;
-      if (unreadCount) unreadCount.textContent = "0";
     }
 
     setEmptyVisible(false);
@@ -3363,6 +3416,7 @@ function main() {
   const followedSources = loadIds(FOLLOWED_SOURCES_KEY);
   wirePageTransitions();
   wireThemeMode();
+  maybeAutoTunePerfMode();
   markCurrentPostRead(readIds);
   // 性能：首页/分类页卡片较多时，立即遍历全量 DOM 打标会造成“首屏卡一下”。
   // 已读逻辑不影响关键可用性（筛选逻辑直接读 readIds），因此延后到 idle 更稳更顺。

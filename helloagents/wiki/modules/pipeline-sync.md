@@ -6,7 +6,7 @@
 ## 模块概述
 - 职责：拉取来源（RSS/HTML）→ 去重排序 → 补图/预览增强 → 翻译字段（限量）→ 写入 `src/data/generated` 与 `public/data`
 - 状态：✅稳定
-- 最后更新：2025-12-25
+- 最后更新：2025-12-27
 
 ## 规范
 ### 需求: 同步管线可验证
@@ -17,4 +17,9 @@
 - `scripts/sync.ts`
 - `scripts/lib/*`
 - `src/lib/source-config.ts`（来源配置 SSOT）
+
+## 产物
+- `src/data/generated/posts.json` / `public/data/posts.json(.gz)`
+- `src/data/generated/status.json` / `public/data/status.json(.gz)`
+- `src/data/generated/search-pack.v1.json` / `public/data/search-pack.v1.json(.gz)`（全站搜索包：posts + 预计算索引）
 
