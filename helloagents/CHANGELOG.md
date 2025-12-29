@@ -12,12 +12,14 @@
 - 功能补强：站内搜索支持多级筛选语法（`tag:`/`source:`/`cat:`/`before:`/`after:`/`is:` + `-` 反选）。
 - 功能补强：新增“全站搜索包” search-pack（构建期生成 `search-pack.v1.json(.gz)`：posts + 预计算索引），全站搜索 Worker 优先预取 search-pack，必要时回退 `posts.json(.gz)`；IndexedDB 缓存升级为 posts+index（含迁移），并支持请求取消/结果截断以稳定 60FPS。
 - 可观测：新增本地优先埋点模块（默认不上传；可选 sendBeacon/fetch 上报）。
+- 命令面板深链：支持 `/#cmdk` 直接打开 Command Palette，并通过事件桥接复用全局 Toast 展示复制等反馈。
 
 ### 变更
 - 网络请求退避重试加入 jitter，降低同步重试带来的拥塞风险。
 - 视觉系统参数变量化：玻璃 blur/saturate 与边框动效可通过 `--acg-glass-*` / `--acg-border-pan-*` 调参。
 - 视觉性能：新增 `data-acg-perf="low"` 自动降级（连接信息/设备信息 + 运行时 FPS 探测），降低 blur/阴影/边框动画开销。
 - PWA 缓存：Service Worker 的 data 缓存策略覆盖 `search-pack.v1.json(.gz)`，改善冷启动与弱网体验。
+- 工具函数去重：剪贴板复制逻辑统一到 `src/client/utils/clipboard.ts`（更可靠的回退路径与清理）。
 
 ## [0.2.1] - 2025-12-29
 

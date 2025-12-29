@@ -117,7 +117,7 @@ flowchart TB
 - **OPML**：`/zh/opml.xml`（中文）· `/ja/opml.xml`（日本語）
 - **状态页**：`/zh/status/` · `/ja/status/`（抓取健康度与错误提示）
 - **命令面板（Command Palette）**：任意页面按 `Ctrl/⌘ + K`（快速导航/切换过滤/主题/语言）
-- **快捷深链**：`/#search` 聚焦搜索；`/#prefs` 打开偏好设置抽屉（仅在首页/分类页有效）
+- **快捷深链**：`/#search` 聚焦搜索；`/#prefs` 打开偏好设置抽屉（仅在首页/分类页有效）；`/#cmdk` 打开命令面板（任意页面）
 - **设备调试面板**：任意页面加 `?debug=1`，或设置 `localStorage["acg.debug"]="1"`（用于排查“手机被渲染成桌面布局”等问题）
 - **健康全景图（控制台）**：任意页面加 `?health=1`，或设置 `localStorage["acg.health"]="1"`（实时输出 FPS/LongTask/内存/请求状态等）
 - **主题（暗黑模式）**：右上角“主题”可在 `自动/浅色/深色` 间切换；亦可在偏好面板中选择（持久化键：`localStorage["acg.theme.v1"]="auto|light|dark"`）

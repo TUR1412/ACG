@@ -1,5 +1,6 @@
 import { href } from "../../lib/href";
 import { normalizeText } from "../search/query";
+import { copyToClipboard } from "../utils/clipboard";
 import { isJapanese } from "../utils/lang";
 import { track } from "../utils/telemetry";
 
@@ -18,7 +19,6 @@ type CmdkUi = {
   panel: HTMLElement;
   input: HTMLInputElement;
   list: HTMLElement;
-  meta: HTMLElement;
 };
 
 let ui: CmdkUi | null = null;
@@ -26,6 +26,14 @@ let activeIndex = 0;
 let lastFocus: HTMLElement | null = null;
 let allCommands: CommandView[] = [];
 let filtered: CommandView[] = [];
+
+function toast(params: { title: string; desc?: string; variant?: "info" | "success" | "error"; timeoutMs?: number }) {
+  try {
+    document.dispatchEvent(new CustomEvent("acg:toast", { detail: params }));
+  } catch {
+    // ignore
+  }
+}
 
 function getLang(): "zh" | "ja" {
   return isJapanese() ? "ja" : "zh";
@@ -38,42 +46,6 @@ function isMacLike(): boolean {
   } catch {
     return false;
   }
-}
-
-async function copyToClipboard(text: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    // ignore
-  }
-
-  try {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    ta.style.top = "0";
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    const ok = (document as unknown as { execCommand?: (commandId: string) => boolean }).execCommand?.("copy") ?? false;
-    ta.remove();
-    return ok;
-  } catch {
-    return false;
-  }
-}
-
-function setMeta(text: string) {
-  if (!ui) return;
-  ui.meta.textContent = text;
-  ui.meta.classList.remove("hidden");
-  window.setTimeout(() => {
-    ui?.meta.classList.add("hidden");
-  }, 1200);
 }
 
 function close() {
@@ -245,7 +217,12 @@ function buildCommands(): CommandView[] {
 
   const copyPageUrl = async () => {
     const ok = await copyToClipboard(location.href);
-    setMeta(ok ? (isJapanese() ? "コピーしました" : "已复制") : isJapanese() ? "コピー失敗" : "复制失败");
+    toast({
+      title: ok ? (isJapanese() ? "コピーしました" : "已复制") : isJapanese() ? "コピー失敗" : "复制失败",
+      variant: ok ? "success" : "error",
+      timeoutMs: 1200
+    });
+    close();
   };
 
   const go = (path: string) => () => {
@@ -304,6 +281,23 @@ function buildCommands(): CommandView[] {
       run: action(() => {
         close();
         openPrefs();
+      })
+    },
+    {
+      id: "toggle_search_scope",
+      title: isJapanese() ? "検索範囲を切替（ページ/全件）" : "切换：搜索范围（本页/全站）",
+      desc: isJapanese() ? "acg-search-scope-toggle" : "acg-search-scope-toggle",
+      keywords: ["scope", "page", "all", "global", "search"],
+      run: action(() => {
+        const ok = click("#acg-search-scope-toggle");
+        close();
+        if (ok) return;
+        toast({
+          title: isJapanese() ? "このページでは切替できません" : "当前页面无法切换搜索范围",
+          desc: isJapanese() ? "検索入力があるページで試してください。" : "请在带搜索框的页面使用此命令。",
+          variant: "error",
+          timeoutMs: 1600
+        });
       })
     },
     {
@@ -429,10 +423,6 @@ function ensureUi(): CmdkUi {
   foot.textContent = isJapanese() ? "↑↓ 選択 / Enter 実行 / Esc 閉じる" : "↑↓ 选择 / Enter 执行 / Esc 关闭";
   panel.appendChild(foot);
 
-  const meta = document.createElement("div");
-  meta.className = "acg-cmdk-meta hidden";
-  panel.appendChild(meta);
-
   input.addEventListener("input", applyFilter);
   input.addEventListener("keydown", (e) => {
     if (e.defaultPrevented) return;
@@ -473,7 +463,7 @@ function ensureUi(): CmdkUi {
 
   document.body.appendChild(root);
 
-  ui = { root, panel, input, list, meta };
+  ui = { root, panel, input, list };
   return ui;
 }
 

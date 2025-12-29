@@ -5,6 +5,7 @@ import { normalizeText, parseQuery } from "./search/query";
 import { bestInitialCoverSrc } from "./utils/cover";
 import { isJapanese } from "./utils/lang";
 import { fetchJsonPreferGzip } from "./utils/http";
+import { copyToClipboard } from "./utils/clipboard";
 import { createVirtualGrid, type VirtualGridController } from "./utils/virtual-grid";
 import { maybeStartHealthMonitor } from "./utils/health";
 import { track, wireTelemetry } from "./utils/telemetry";
@@ -68,6 +69,17 @@ function saveSearchScope(scope: SearchScope) {
 
 let searchScope: SearchScope = loadSearchScope();
 let cmdkModulePromise: Promise<{ openCommandPalette: () => void }> | null = null;
+
+function requestOpenCommandPalette() {
+  try {
+    if (!cmdkModulePromise) {
+      cmdkModulePromise = import("./features/cmdk") as Promise<{ openCommandPalette: () => void }>;
+    }
+    void cmdkModulePromise.then((m) => m.openCommandPalette());
+  } catch {
+    // ignore
+  }
+}
 
 function getSearchScope(): SearchScope {
   return searchScope;
@@ -209,6 +221,30 @@ function toast(params: { title: string; desc?: string; variant?: ToastVariant; t
   } catch {
     // ignore
   }
+}
+
+type ToastBridgeEventDetail = {
+  title?: unknown;
+  desc?: unknown;
+  variant?: unknown;
+  timeoutMs?: unknown;
+};
+
+function wireToastBridge() {
+  document.addEventListener("acg:toast", (e) => {
+    const detail = (e as CustomEvent).detail as ToastBridgeEventDetail | null | undefined;
+    if (!detail || typeof detail !== "object") return;
+    const title = typeof detail.title === "string" ? detail.title : "";
+    if (!title) return;
+    const desc = typeof detail.desc === "string" ? detail.desc : undefined;
+    const variantRaw = detail.variant;
+    const variant: ToastVariant | undefined =
+      variantRaw === "info" || variantRaw === "success" || variantRaw === "error" ? variantRaw : undefined;
+    const timeoutMsRaw = detail.timeoutMs;
+    const timeoutMs =
+      typeof timeoutMsRaw === "number" && Number.isFinite(timeoutMsRaw) ? timeoutMsRaw : undefined;
+    toast({ title, desc, variant, timeoutMs });
+  });
 }
 
 function pop(el: HTMLElement) {
@@ -774,12 +810,7 @@ function wireCommandPaletteShortcut() {
     if (!e.ctrlKey && !e.metaKey) return;
     if (String(e.key).toLowerCase() !== "k") return;
     e.preventDefault();
-
-    if (!cmdkModulePromise) {
-      cmdkModulePromise = import("./features/cmdk") as Promise<{ openCommandPalette: () => void }>;
-    }
-
-    void cmdkModulePromise.then((m) => m.openCommandPalette());
+    requestOpenCommandPalette();
   });
 }
 
@@ -1009,6 +1040,19 @@ function openPrefsFromHash() {
   } catch {
     // ignore
   }
+}
+
+function openCmdkFromHash() {
+  try {
+    if (window.location.hash !== "#cmdk") return;
+    // 清理 hash，避免返回/刷新时重复打开
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  } catch {
+    // ignore
+    return;
+  }
+
+  requestOpenCommandPalette();
 }
 
 function wireDeviceDebug() {
@@ -2919,37 +2963,10 @@ function wireSourceFollows(followedSources: Set<string>) {
   });
 }
 
-async function copyToClipboard(text: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    // ignore
-  }
-
-  try {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    ta.style.top = "0";
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    const ok = (document as unknown as { execCommand?: (commandId: string) => boolean }).execCommand?.("copy") ?? false;
-    ta.remove();
-    return ok;
-  } catch {
-    return false;
-  }
-}
-
 function wireDailyBriefCopy() {
-  const btn = document.querySelector<HTMLButtonElement>("#acg-brief-copy");
+  const btn = document.querySelector<HTMLButtonElement>("#acg-brief-copy");     
   const list = document.querySelector<HTMLElement>("#acg-daily-brief");
-  const msg = document.querySelector<HTMLElement>("#acg-brief-message");
+  const msg = document.querySelector<HTMLElement>("#acg-brief-message");        
   if (!btn || !list) return;
 
   btn.addEventListener("click", async () => {
@@ -3293,6 +3310,7 @@ function main() {
   window.__acgCoverLoad = handleCoverLoad;
 
   wireTelemetry();
+  wireToastBridge();
 
   const bookmarkIds = loadIds(BOOKMARK_KEY);
   const readIds = loadIds(READ_KEY);
@@ -3329,10 +3347,11 @@ function main() {
   wireTagChips();
   wireDailyBriefCopy();
   wireSpotlightCarousel();
-  runWhenIdle(() => hydrateCoverStates(), UI.HYDRATE_COVER_IDLE_DELAY_MS);      
+  runWhenIdle(() => hydrateCoverStates(), UI.HYDRATE_COVER_IDLE_DELAY_MS);
   wireDeviceDebug();
   maybeStartHealthMonitor();
   openPrefsFromHash();
+  openCmdkFromHash();
   focusSearchFromHash();
 }
 
