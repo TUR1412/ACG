@@ -47,6 +47,7 @@
 - **缺图观感优化**：封面占位会先出现，图片真正加载后再淡出（慢网也不显空）
 - **封面失败自愈**：升级 https / 代理兜底（Weserv）/ 调整 referrer / cache bust
 - **站内搜索**：标题/摘要/标签实时过滤（不会请求后端）；支持 `tag:` / `source:` / `cat:` / `before:` / `after:` / `is:` 等组合语法与 `-` 反选
+- **命令面板（Command Palette）**：`Ctrl/⌘ + K` 快速导航/切换过滤/主题/语言，并支持一键复制当前页链接
 - **本地收藏/已读**：打开详情自动标记已读；收藏可导入/导出
 - **关注/屏蔽**：关键词关注 + 屏蔽（支持“只看关注 / 隐藏已读”）
 - **订阅流（关注源）**：星标关注来源 + “只看关注源”一键过滤
@@ -115,6 +116,8 @@ flowchart TB
 - **JSON Feed**：`/zh/feed.json`（中文）· `/ja/feed.json`（日本語）
 - **OPML**：`/zh/opml.xml`（中文）· `/ja/opml.xml`（日本語）
 - **状态页**：`/zh/status/` · `/ja/status/`（抓取健康度与错误提示）
+- **命令面板（Command Palette）**：任意页面按 `Ctrl/⌘ + K`（快速导航/切换过滤/主题/语言）
+- **快捷深链**：`/#search` 聚焦搜索；`/#prefs` 打开偏好设置抽屉（仅在首页/分类页有效）
 - **设备调试面板**：任意页面加 `?debug=1`，或设置 `localStorage["acg.debug"]="1"`（用于排查“手机被渲染成桌面布局”等问题）
 - **健康全景图（控制台）**：任意页面加 `?health=1`，或设置 `localStorage["acg.health"]="1"`（实时输出 FPS/LongTask/内存/请求状态等）
 - **主题（暗黑模式）**：右上角“主题”可在 `自动/浅色/深色` 间切换；亦可在偏好面板中选择（持久化键：`localStorage["acg.theme.v1"]="auto|light|dark"`）
@@ -134,6 +137,8 @@ flowchart TB
 ## 性能（Performance）
 
 - **首包 JS 更轻**：把“全文预览（抽取/清洗/渲染/翻译）”拆成 lazy chunk，只有在详情页存在全文区块时才会加载。
+- **命令面板按需加载**：Command Palette（`Ctrl/⌘ + K`）为 lazy chunk，触发后才会下载与初始化。
+- **查询解析去重**：页面内过滤与全站搜索 Worker 共享同一份查询解析逻辑，减少重复代码与行为差异。
 - **依赖更干净**：移除未使用的 React/React DOM 与 Astro React 集成（本项目当前无 `.tsx/.jsx` 组件）。
 - **数据更省流**：`npm run sync` 会生成 `public/data/posts.json.gz`（gzip），浏览器支持 `DecompressionStream` 时优先拉取压缩版本并自动回退到 `.json`。
 - **超大列表可用**：收藏列表达到一定规模会自动启用“虚拟滚动”渲染（windowing），滚动仅渲染视口附近卡片，避免 DOM 爆炸。

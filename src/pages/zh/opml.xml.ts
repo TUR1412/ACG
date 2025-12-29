@@ -1,8 +1,7 @@
-import type { APIContext } from "astro";
 import { SOURCE_CONFIGS } from "../../lib/source-config";
 import { renderOpml } from "../../lib/opml";
 
-export async function GET(context: APIContext): Promise<Response> {
+export async function GET(): Promise<Response> {
   const xml = renderOpml({
     title: "ACG Radar Sources (zh)",
     dateCreated: new Date().toISOString(),

@@ -1,6 +1,7 @@
 import { toWeservImageUrl } from "../lib/cover";
 import { href } from "../lib/href";
 import { NETWORK, STORAGE_KEYS, UI, MS } from "./constants";
+import { normalizeText, parseQuery } from "./search/query";
 import { bestInitialCoverSrc } from "./utils/cover";
 import { isJapanese } from "./utils/lang";
 import { fetchJsonPreferGzip } from "./utils/http";
@@ -66,6 +67,7 @@ function saveSearchScope(scope: SearchScope) {
 }
 
 let searchScope: SearchScope = loadSearchScope();
+let cmdkModulePromise: Promise<{ openCommandPalette: () => void }> | null = null;
 
 function getSearchScope(): SearchScope {
   return searchScope;
@@ -308,7 +310,6 @@ function maybeAutoTunePerfMode() {
   if (el.dataset.acgPerf === "low") return;
   if (!("requestAnimationFrame" in window)) return;
 
-  let raf = 0;
   let frames = 0;
   let start = 0;
 
@@ -329,10 +330,10 @@ function maybeAutoTunePerfMode() {
       }
       return;
     }
-    raf = window.requestAnimationFrame(tick);
+    window.requestAnimationFrame(tick);
   };
 
-  raf = window.requestAnimationFrame(tick);
+  window.requestAnimationFrame(tick);
 }
 
 function prefersColorSchemeDark(): boolean {
@@ -727,7 +728,7 @@ function wireBackToTop() {
 }
 
 function wireKeyboardShortcuts() {
-  const input = document.querySelector<HTMLInputElement>("#acg-search");
+  const input = document.querySelector<HTMLInputElement>("#acg-search");        
   if (!input) return;
 
   document.addEventListener("keydown", (e) => {
@@ -766,9 +767,25 @@ function wireKeyboardShortcuts() {
   });
 }
 
+function wireCommandPaletteShortcut() {
+  document.addEventListener("keydown", (e) => {
+    if (e.defaultPrevented) return;
+    if (e.altKey) return;
+    if (!e.ctrlKey && !e.metaKey) return;
+    if (String(e.key).toLowerCase() !== "k") return;
+    e.preventDefault();
+
+    if (!cmdkModulePromise) {
+      cmdkModulePromise = import("./features/cmdk") as Promise<{ openCommandPalette: () => void }>;
+    }
+
+    void cmdkModulePromise.then((m) => m.openCommandPalette());
+  });
+}
+
 function wireSearchClear() {
-  const input = document.querySelector<HTMLInputElement>("#acg-search");
-  const btn = document.querySelector<HTMLButtonElement>("#acg-search-clear");
+  const input = document.querySelector<HTMLInputElement>("#acg-search");        
+  const btn = document.querySelector<HTMLButtonElement>("#acg-search-clear");   
   if (!input || !btn) return;
 
   const apply = () => {
@@ -967,13 +984,27 @@ function wireQuickToggles() {
 function focusSearchFromHash() {
   try {
     if (window.location.hash !== "#search") return;
-    const input = document.querySelector<HTMLInputElement>("#acg-search");
+    const input = document.querySelector<HTMLInputElement>("#acg-search");      
     if (!input) return;
     const behavior = prefersReducedMotion() ? "auto" : "smooth";
     input.scrollIntoView({ behavior, block: "center" });
     input.focus();
     input.select();
     // 清理 hash，避免返回/刷新时重复聚焦
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  } catch {
+    // ignore
+  }
+}
+
+function openPrefsFromHash() {
+  try {
+    if (window.location.hash !== "#prefs") return;
+    const opener = document.querySelector<HTMLElement>("[data-open-prefs]");
+    if (opener) {
+      opener.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    }
+    // 清理 hash，避免返回/刷新时重复打开
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
   } catch {
     // ignore
@@ -1037,150 +1068,6 @@ function wireDeviceDebug() {
   lines.push(`ua: ${ua}`);
 
   pre.textContent = lines.join("\n");
-}
-
-function normalizeText(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/\u3000/g, " ")
-    .replace(/[\u200b-\u200d\uFEFF]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-type ParsedQuery = {
-  text: string[];
-  notText: string[];
-  tags: string[];
-  notTags: string[];
-  sources: string[];
-  notSources: string[];
-  categories: string[];
-  notCategories: string[];
-  afterMs: number | null;
-  beforeMs: number | null;
-  isRead: boolean | null;
-  isUnread: boolean | null;
-  isFresh: boolean | null;
-};
-
-const QUERY_CATEGORY_ALIASES: Record<string, string> = {
-  anime: "anime",
-  动画: "anime",
-  アニメ: "anime",
-  game: "game",
-  游戏: "game",
-  ゲーム: "game",
-  goods: "goods",
-  周边: "goods",
-  周邊: "goods",
-  グッズ: "goods",
-  seiyuu: "seiyuu",
-  声优: "seiyuu",
-  声優: "seiyuu"
-};
-
-function tokenizeQuery(raw: string): string[] {
-  const out: string[] = [];
-  const s = raw.trim();
-  if (!s) return out;
-
-  const re = /"([^"]+)"|'([^']+)'|(\S+)/g;
-  for (const m of s.matchAll(re)) {
-    const token = (m[1] ?? m[2] ?? m[3] ?? "").trim();
-    if (token) out.push(token);
-  }
-  return out;
-}
-
-function parseDateToMs(raw: string): number | null {
-  const s = raw.trim();
-  if (!s) return null;
-  const t = Date.parse(s);
-  return Number.isFinite(t) ? t : null;
-}
-
-function parseQuery(raw: string): ParsedQuery {
-  const out: ParsedQuery = {
-    text: [],
-    notText: [],
-    tags: [],
-    notTags: [],
-    sources: [],
-    notSources: [],
-    categories: [],
-    notCategories: [],
-    afterMs: null,
-    beforeMs: null,
-    isRead: null,
-    isUnread: null,
-    isFresh: null
-  };
-
-  const tokens = tokenizeQuery(raw);
-  for (const tokenRaw of tokens) {
-    const negative = tokenRaw.startsWith("-");
-    const token = (negative ? tokenRaw.slice(1) : tokenRaw).trim();
-    if (!token) continue;
-
-    const parts = token.split(":");
-    const keyRaw = parts.length >= 2 ? parts[0] : "";
-    const valueRaw = parts.length >= 2 ? parts.slice(1).join(":") : token;
-    const key = normalizeText(keyRaw);
-    const value = normalizeText(valueRaw);
-    if (!value) continue;
-
-    const push = (arr: string[]) => arr.push(value);
-
-    if (key === "tag" || key === "t") {
-      if (negative) push(out.notTags);
-      else push(out.tags);
-      continue;
-    }
-
-    if (key === "source" || key === "s") {
-      if (negative) push(out.notSources);
-      else push(out.sources);
-      continue;
-    }
-
-    if (key === "cat" || key === "c" || key === "category") {
-      const mapped = QUERY_CATEGORY_ALIASES[value] ?? value;
-      if (negative) out.notCategories.push(mapped);
-      else out.categories.push(mapped);
-      continue;
-    }
-
-    if (key === "after" || key === "since") {
-      const t = parseDateToMs(valueRaw);
-      if (t != null) out.afterMs = t;
-      continue;
-    }
-
-    if (key === "before" || key === "until") {
-      const t = parseDateToMs(valueRaw);
-      if (t != null) out.beforeMs = t;
-      continue;
-    }
-
-    if (key === "is") {
-      if (value === "read") {
-        out.isRead = !negative;
-        out.isUnread = negative ? true : null;
-      } else if (value === "unread" || value === "new") {
-        out.isUnread = !negative;
-        out.isRead = negative ? true : null;
-      } else if (value === "fresh") {
-        out.isFresh = !negative;
-      }
-      continue;
-    }
-
-    if (negative) out.notText.push(value);
-    else out.text.push(value);
-  }
-
-  return out;
 }
 
 function createListFilter(params: {
@@ -3433,17 +3320,19 @@ function main() {
   wireGlobalSearch({ bookmarkIds, readIds, follows, blocklist, disabledSources, followedSources, filters });
   wireQuickToggles();
   wireKeyboardShortcuts();
+  wireCommandPaletteShortcut();
   wireSearchClear();
   wirePrefsDrawer();
   if (document.querySelector("[data-fulltext]")) {
-    void import("./features/fulltext").then((m) => m.wireFullTextReader());
+    void import("./features/fulltext").then((m) => m.wireFullTextReader());     
   }
   wireTagChips();
   wireDailyBriefCopy();
   wireSpotlightCarousel();
-  runWhenIdle(() => hydrateCoverStates(), UI.HYDRATE_COVER_IDLE_DELAY_MS);
+  runWhenIdle(() => hydrateCoverStates(), UI.HYDRATE_COVER_IDLE_DELAY_MS);      
   wireDeviceDebug();
   maybeStartHealthMonitor();
+  openPrefsFromHash();
   focusSearchFromHash();
 }
 

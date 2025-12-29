@@ -3,6 +3,7 @@
 ## 技术栈
 - 核心：Astro（静态站点）+ TypeScript
 - 样式：Tailwind CSS + 自定义全局 CSS（玻璃拟态/主题变量）
+- 客户端：命令面板（`src/client/features/cmdk.ts`，`Ctrl/⌘ + K` 触发懒加载）+ 全站搜索 Worker（查询解析共享）
 - 同步：Node.js 脚本（`scripts/sync.ts`）在 GitHub Actions 定时执行
 - 部署：GitHub Pages（Actions 产物上传并发布）
 

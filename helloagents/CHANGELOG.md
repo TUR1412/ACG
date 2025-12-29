@@ -19,6 +19,19 @@
 - 视觉性能：新增 `data-acg-perf="low"` 自动降级（连接信息/设备信息 + 运行时 FPS 探测），降低 blur/阴影/边框动画开销。
 - PWA 缓存：Service Worker 的 data 缓存策略覆盖 `search-pack.v1.json(.gz)`，改善冷启动与弱网体验。
 
+## [0.2.1] - 2025-12-29
+
+### 新增
+- 新增命令面板（Command Palette）：`Ctrl/⌘ + K` 快速导航/切换过滤/主题/语言，并支持一键复制当前页链接（按需懒加载）。
+- 新增 `/#prefs` 深链：在首页/分类页可直接打开偏好设置抽屉（与 `/#search` 聚焦搜索一致）。
+
+### 变更
+- 搜索查询解析逻辑统一：页面内过滤与全站搜索 Worker 共享 `src/client/search/query.ts`，减少冗余并提升行为一致性。
+- Perf Budget 更贴合：HTML/XML/JSON 预算默认仅统计“核心入口页”（排除 `/p/<id>/` 详情页），默认阈值调整为 5000KB（可用 `ACG_BUDGET_HTML_KB` 覆盖）。
+
+### 修复
+- 修复 `astro check` 的未使用变量/参数提示（OPML endpoint、性能探测中的 RAF 变量）。
+
 ## [0.2.0] - 2025-12-25
 
 ### 新增
