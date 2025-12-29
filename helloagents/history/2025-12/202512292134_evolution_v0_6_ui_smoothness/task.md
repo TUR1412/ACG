@@ -1,5 +1,5 @@
 # 任务清单: evolution_v0_6_ui_smoothness
-目录: `helloagents/plan/202512292134_evolution_v0_6_ui_smoothness/`
+目录: `helloagents/history/2025-12/202512292134_evolution_v0_6_ui_smoothness/`
 
 ---
 
@@ -21,6 +21,5 @@
 
 ## 5. 验证与发布
 - [√] 5.1 验证：`npm run check` / `npm run build` / `npm run budget`
-- [ ] 5.2 发布：提交并推送至 `origin/main`
-- [ ] 5.3 方案包迁移至 `helloagents/history/2025-12/` 并更新 `helloagents/history/index.md`
-- [ ] 5.4 按用户要求销毁本地克隆目录 `C:\\Users\\Kong\\ACG`
+- [√] 5.2 发布：提交并推送至 `origin/main`
+- [√] 5.3 方案包迁移至 `helloagents/history/2025-12/` 并更新 `helloagents/history/index.md`

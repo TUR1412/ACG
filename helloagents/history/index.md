@@ -10,6 +10,7 @@
 | 202512252322 | evolution_v0_3 | 功能/重构 | ✅已完成 | history/2025-12/202512252322_evolution_v0_3/ |
 | 202512271504 | evolution_v0_4_searchpack_perf | 功能/重构 | ✅已完成 | history/2025-12/202512271504_evolution_v0_4_searchpack_perf/ |
 | 202512292051 | evolution_v0_5_ui_cmdk_toast | UI/体验 | ✅已完成 | history/2025-12/202512292051_evolution_v0_5_ui_cmdk_toast/ |
+| 202512292134 | evolution_v0_6_ui_smoothness | UI/体验 | ✅已完成 | history/2025-12/202512292134_evolution_v0_6_ui_smoothness/ |
 
 ## 按月归档
 
@@ -19,4 +20,5 @@
 - 202512252322_evolution_v0_3 (2025-12/202512252322_evolution_v0_3/) - 视觉系统令牌化 + 转场/骨架/高级筛选 + 本地埋点
 - 202512271504_evolution_v0_4_searchpack_perf (2025-12/202512271504_evolution_v0_4_searchpack_perf/) - 全站搜索 search-pack + 取消/截断 + 性能自适应降级
 - 202512292051_evolution_v0_5_ui_cmdk_toast (2025-12/202512292051_evolution_v0_5_ui_cmdk_toast/) - Cmdk 分组/高亮 + Toast 图标/点击消失 + 弹层细节打磨
+- 202512292134_evolution_v0_6_ui_smoothness (2025-12/202512292134_evolution_v0_6_ui_smoothness/) - 滚动期降级 + 卡片入场微动效 + 转场去 blur（更顺滑）
 
