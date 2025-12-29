@@ -214,10 +214,39 @@ function toast(params: { title: string; desc?: string; variant?: ToastVariant; t
     }
 
     root.appendChild(el);
-    window.setTimeout(() => {
-      el.remove();
-      if (root.childElementCount === 0) root.remove();
-    }, timeoutMs);
+    let disposed = false;
+    const dispose = () => {
+      if (disposed) return;
+      disposed = true;
+      try {
+        el.classList.add("is-leaving");
+      } catch {
+        // ignore
+      }
+      window.setTimeout(() => {
+        try {
+          el.remove();
+        } catch {
+          // ignore
+        }
+        try {
+          if (root.childElementCount === 0) root.remove();
+        } catch {
+          // ignore
+        }
+      }, 180);
+    };
+
+    const timer = window.setTimeout(dispose, timeoutMs);
+    el.addEventListener(
+      "click",
+      (e) => {
+        e.preventDefault();
+        window.clearTimeout(timer);
+        dispose();
+      },
+      { once: true }
+    );
   } catch {
     // ignore
   }

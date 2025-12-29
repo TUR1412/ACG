@@ -4,8 +4,11 @@ import { copyToClipboard } from "../utils/clipboard";
 import { isJapanese } from "../utils/lang";
 import { track } from "../utils/telemetry";
 
+type CommandGroup = "nav" | "search" | "filters" | "system" | "share";
+
 type Command = {
   id: string;
+  group: CommandGroup;
   title: string;
   desc?: string;
   keywords?: string[];
@@ -80,9 +83,61 @@ function scrollIntoViewIfNeeded(el: HTMLElement) {
   }
 }
 
+function groupLabel(group: CommandGroup): string {
+  const ja = isJapanese();
+  switch (group) {
+    case "nav":
+      return ja ? "ナビゲーション" : "导航";
+    case "search":
+      return ja ? "検索" : "搜索";
+    case "filters":
+      return ja ? "フィルター" : "过滤";
+    case "system":
+      return ja ? "システム" : "系统";
+    case "share":
+      return ja ? "共有" : "分享";
+    default:
+      return ja ? "その他" : "其他";
+  }
+}
+
+function appendHighlightedText(parent: HTMLElement, text: string, highlightRaw: string) {
+  const highlight = highlightRaw.trim();
+  if (!highlight) {
+    parent.textContent = text;
+    return;
+  }
+
+  const hay = text.toLowerCase();
+  const needle = highlight.toLowerCase();
+  const idx = hay.indexOf(needle);
+  if (idx < 0) {
+    parent.textContent = text;
+    return;
+  }
+
+  const before = text.slice(0, idx);
+  const mid = text.slice(idx, idx + highlight.length);
+  const after = text.slice(idx + highlight.length);
+
+  parent.append(document.createTextNode(before));
+  const mark = document.createElement("mark");
+  mark.className = "acg-cmdk-mark";
+  mark.textContent = mid;
+  parent.append(mark);
+  parent.append(document.createTextNode(after));
+}
+
 function render() {
   if (!ui) return;
   ui.list.innerHTML = "";
+  const highlight = (() => {
+    const raw = ui.input.value.trim();
+    if (!raw) return "";
+    const parts = raw.split(/\s+/).filter(Boolean);
+    if (parts.length <= 1) return raw;
+    return parts.reduce((acc, cur) => (cur.length > acc.length ? cur : acc), parts[0]);
+  })();
 
   if (filtered.length === 0) {
     const empty = document.createElement("div");
@@ -92,25 +147,41 @@ function render() {
     return;
   }
 
+  const showSections = new Set(filtered.map((x) => x.group)).size > 1;
+  let lastGroup: CommandGroup | null = null;
   for (let i = 0; i < filtered.length; i += 1) {
     const cmd = filtered[i];
+
+    if (showSections && cmd.group !== lastGroup) {
+      lastGroup = cmd.group;
+      const sec = document.createElement("div");
+      sec.className = "acg-cmdk-section";
+      sec.setAttribute("role", "presentation");
+      const label = document.createElement("div");
+      label.className = "acg-cmdk-section-title";
+      label.textContent = groupLabel(cmd.group);
+      sec.appendChild(label);
+      ui.list.appendChild(sec);
+    }
+
     const item = document.createElement("button");
     item.type = "button";
     item.className = "acg-cmdk-item";
     item.dataset.index = String(i);
+    item.dataset.group = cmd.group;
     item.setAttribute("role", "option");
     item.setAttribute("aria-selected", i === activeIndex ? "true" : "false");
     if (i === activeIndex) item.classList.add("is-active");
 
     const title = document.createElement("div");
     title.className = "acg-cmdk-item-title";
-    title.textContent = cmd.title;
+    appendHighlightedText(title, cmd.title, highlight);
     item.appendChild(title);
 
     if (cmd.desc) {
       const desc = document.createElement("div");
       desc.className = "acg-cmdk-item-desc";
-      desc.textContent = cmd.desc;
+      appendHighlightedText(desc, cmd.desc, highlight);
       item.appendChild(desc);
     }
 
@@ -237,6 +308,7 @@ function buildCommands(): CommandView[] {
   const commands: Command[] = [
     {
       id: "nav_latest",
+      group: "nav",
       title: isJapanese() ? "ニュース（最新）へ" : "前往：新闻动态（最新）",
       desc: isJapanese() ? "トップ / カテゴリ一覧" : "首页 / 分类列表",
       keywords: ["home", "latest", "news", "top"],
@@ -244,6 +316,7 @@ function buildCommands(): CommandView[] {
     },
     {
       id: "nav_bookmarks",
+      group: "nav",
       title: isJapanese() ? "ブックマークへ" : "前往：收藏",
       desc: isJapanese() ? "保存した記事" : "你收藏的文章",
       keywords: ["bookmark", "star", "save"],
@@ -251,6 +324,7 @@ function buildCommands(): CommandView[] {
     },
     {
       id: "nav_status",
+      group: "nav",
       title: isJapanese() ? "ステータスへ" : "前往：状态页",
       desc: isJapanese() ? "抓取の健康度" : "抓取健康度与错误提示",
       keywords: ["status", "health"],
@@ -258,6 +332,7 @@ function buildCommands(): CommandView[] {
     },
     {
       id: "nav_about",
+      group: "nav",
       title: isJapanese() ? "このサイトについて" : "前往：关于",
       desc: isJapanese() ? "仕組み / ソース" : "机制说明 / 来源列表",
       keywords: ["about", "info"],
@@ -265,6 +340,7 @@ function buildCommands(): CommandView[] {
     },
     {
       id: "focus_search",
+      group: "search",
       title: isJapanese() ? "検索を開く / フォーカス" : "打开/聚焦搜索",
       desc: isJapanese() ? "「/」でも可" : "也可按「/」",
       keywords: ["search", "find", "/"],
@@ -275,6 +351,7 @@ function buildCommands(): CommandView[] {
     },
     {
       id: "open_prefs",
+      group: "filters",
       title: isJapanese() ? "設定（Preferences）" : "偏好设置（Preferences）",
       desc: isJapanese() ? "フィルタ / ソース / テーマ" : "过滤 / 来源 / 主题",
       keywords: ["prefs", "settings", "filter", "theme"],
@@ -285,6 +362,7 @@ function buildCommands(): CommandView[] {
     },
     {
       id: "toggle_search_scope",
+      group: "filters",
       title: isJapanese() ? "検索範囲を切替（ページ/全件）" : "切换：搜索范围（本页/全站）",
       desc: isJapanese() ? "acg-search-scope-toggle" : "acg-search-scope-toggle",
       keywords: ["scope", "page", "all", "global", "search"],
@@ -302,6 +380,7 @@ function buildCommands(): CommandView[] {
     },
     {
       id: "toggle_followed",
+      group: "filters",
       title: isJapanese() ? "「フォローのみ」を切替" : "切换：只看关注关键词",
       desc: isJapanese() ? "acg-only-followed" : "acg-only-followed",
       keywords: ["only", "follow", "keyword"],
@@ -313,6 +392,7 @@ function buildCommands(): CommandView[] {
     },
     {
       id: "toggle_followed_sources",
+      group: "filters",
       title: isJapanese() ? "「フォロー源のみ」を切替" : "切换：只看关注来源",
       desc: isJapanese() ? "acg-only-followed-sources" : "acg-only-followed-sources",
       keywords: ["only", "follow", "source"],
@@ -324,6 +404,7 @@ function buildCommands(): CommandView[] {
     },
     {
       id: "toggle_hide_read",
+      group: "filters",
       title: isJapanese() ? "「既読を隠す」を切替" : "切换：隐藏已读",
       desc: isJapanese() ? "acg-hide-read" : "acg-hide-read",
       keywords: ["hide", "read", "unread"],
@@ -335,6 +416,7 @@ function buildCommands(): CommandView[] {
     },
     {
       id: "toggle_theme",
+      group: "system",
       title: isJapanese() ? "テーマを切替" : "切换主题",
       desc: isJapanese() ? "自動 / ライト / ダーク" : "自动 / 浅色 / 深色",
       keywords: ["theme", "dark", "light"],
@@ -346,6 +428,7 @@ function buildCommands(): CommandView[] {
     },
     {
       id: "switch_lang",
+      group: "system",
       title: isJapanese() ? "言語を切替" : "切换语言",
       desc: isJapanese() ? "日本語 / 中文" : "中文 / 日本語",
       keywords: ["lang", "language", "中文", "日本語"],
@@ -356,6 +439,7 @@ function buildCommands(): CommandView[] {
     },
     {
       id: "copy_url",
+      group: "share",
       title: isJapanese() ? "このページのURLをコピー" : "复制当前页链接",
       desc: isJapanese() ? "共有用" : "用于分享",
       keywords: ["copy", "share", "url", "link"],
