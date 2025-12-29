@@ -792,6 +792,93 @@ function wireBackToTop() {
   }
 }
 
+function wireScrollPerfHints() {
+  // 目标：滚动期临时降级昂贵效果（backdrop-filter / shimmer 等），让滚动更稳更顺；
+  // 停止滚动后自动恢复质感。
+  //
+  // 约束：尽量低开销（passive + rAF 节流），避免把“优化”本身变成负担。
+  try {
+    const root = document.documentElement;
+    if (!("requestAnimationFrame" in window)) return;
+
+    let rafId = 0;
+    let clearTimer: number | null = null;
+    let scrolling = false;
+
+    const markScrolling = () => {
+      if (!scrolling) {
+        scrolling = true;
+        try {
+          root.dataset.acgScroll = "1";
+        } catch {
+          // ignore
+        }
+      }
+
+      if (clearTimer) window.clearTimeout(clearTimer);
+      clearTimer = window.setTimeout(() => {
+        scrolling = false;
+        try {
+          delete root.dataset.acgScroll;
+        } catch {
+          // ignore
+        }
+      }, 160);
+    };
+
+    const onAnyScroll = () => {
+      if (rafId) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = 0;
+        markScrolling();
+      });
+    };
+
+    // capture: true → 捕获所有滚动容器（scroll 事件不冒泡）
+    document.addEventListener("scroll", onAnyScroll, { passive: true, capture: true });
+  } catch {
+    // ignore
+  }
+}
+
+function wireCardInViewAnimations() {
+  // 目标：低成本“入场”微动效（transform/opacity），让信息流更有层次；
+  // 低性能设备或减少动效偏好时自动关闭。
+  try {
+    if (prefersReducedMotion()) return;
+    if (!("IntersectionObserver" in window)) return;
+    const root = document.documentElement;
+    if (root.dataset.acgPerf === "low") return;
+
+    runWhenIdle(() => {
+      const cards = [...document.querySelectorAll<HTMLElement>(".acg-card.clickable:not(.stagger-item)")];
+      if (cards.length === 0) return;
+      // 极端情况下避免扫全量导致“首屏卡一下”
+      if (cards.length > 240) return;
+
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (!(entry.target instanceof HTMLElement)) continue;
+            if (!entry.isIntersecting && entry.intersectionRatio < 0.12) continue;
+            entry.target.dataset.acgInview = "1";
+            io.unobserve(entry.target);
+          }
+        },
+        { root: null, rootMargin: "80px 0px", threshold: [0.12, 0.25] }
+      );
+
+      for (const el of cards) {
+        if (el.dataset.acgInview) continue;
+        el.dataset.acgInview = "0";
+        io.observe(el);
+      }
+    }, 900);
+  } catch {
+    // ignore
+  }
+}
+
 function wireKeyboardShortcuts() {
   const input = document.querySelector<HTMLInputElement>("#acg-search");        
   if (!input) return;
@@ -3257,8 +3344,8 @@ function wirePageTransitions() {
   try {
     document.documentElement.animate(
       [
-        { opacity: 0, filter: "blur(10px)", transform: "translateY(8px) scale(1.01)" },
-        { opacity: 1, filter: "blur(0px)", transform: "translateY(0) scale(1)" }
+        { opacity: 0, transform: "translateY(8px) scale(1.01)" },
+        { opacity: 1, transform: "translateY(0) scale(1)" }
       ],
       { duration: 260, easing: "cubic-bezier(0.16, 1, 0.3, 1)", fill: "both" }
     );
@@ -3314,8 +3401,8 @@ function wirePageTransitions() {
       try {
         const anim = document.documentElement.animate(
           [
-            { opacity: 1, filter: "blur(0px)", transform: "translateY(0) scale(1)" },
-            { opacity: 0, filter: "blur(12px)", transform: "translateY(10px) scale(0.985)" }
+            { opacity: 1, transform: "translateY(0) scale(1)" },
+            { opacity: 0, transform: "translateY(10px) scale(0.985)" }
           ],
           { duration: 220, easing: "cubic-bezier(0.16, 1, 0.3, 1)", fill: "both" }
         );
@@ -3351,6 +3438,8 @@ function main() {
   wirePageTransitions();
   wireThemeMode();
   maybeAutoTunePerfMode();
+  wireScrollPerfHints();
+  wireCardInViewAnimations();
   markCurrentPostRead(readIds);
   // 性能：首页/分类页卡片较多时，立即遍历全量 DOM 打标会造成“首屏卡一下”。
   // 已读逻辑不影响关键可用性（筛选逻辑直接读 readIds），因此延后到 idle 更稳更顺。

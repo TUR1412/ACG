@@ -80,6 +80,53 @@
   --shadow-card-hover: 0 14px 44px rgba(2, 6, 23, 0.11);
 }
 
+/* 滚动期降级：滚动时临时关闭高开销效果（停止滚动后恢复）。 */
+:root[data-acg-scroll="1"] {
+  --acg-glass-blur: 0px;
+  --acg-glass-sat: 1;
+  --acg-glass-blur-phone: 0px;
+  --acg-glass-sat-phone: 1;
+  --acg-fab-blur: 0px;
+  --acg-fab-sat: 1;
+  --acg-border-pan-duration: 0ms;
+}
+
+/* 滚动期：禁用固定层/大面积 backdrop-filter，避免滚动合成掉帧。 */
+:root[data-acg-scroll="1"] .acg-header-surface,
+:root[data-acg-scroll="1"] .glass,
+:root[data-acg-scroll="1"] .acg-icon-fab,
+:root[data-acg-scroll="1"] .acg-toast,
+:root[data-acg-scroll="1"] .acg-carousel-controls-inner,
+:root[data-acg-scroll="1"] .acg-carousel-nav,
+:root[data-acg-scroll="1"] .acg-cmdk-backdrop,
+:root[data-acg-scroll="1"] .acg-cmdk-panel {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-acg-scroll="1"] .acg-header-surface {
+  background: rgba(255, 255, 255, 0.70) !important;
+}
+
+:root[data-acg-scroll="1"][data-acg-theme="dark"] .acg-header-surface {
+  background: rgba(2, 6, 23, 0.74) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-acg-scroll="1"]:not([data-acg-theme]) .acg-header-surface,
+  :root[data-acg-scroll="1"][data-acg-theme="auto"] .acg-header-surface {
+    background: rgba(2, 6, 23, 0.74) !important;
+  }
+}
+
+/* 低性能设备：Toast/轮播控件也不要用 blur（更稳）。 */
+:root[data-acg-perf="low"] .acg-toast,
+:root[data-acg-perf="low"] .acg-carousel-controls-inner,
+:root[data-acg-perf="low"] .acg-carousel-nav {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 /* 暗黑模式：
   - data-acg-theme="dark"：强制暗黑
   - data-acg-theme="light"：强制浅色
@@ -546,12 +593,10 @@ html[data-acg-net="slow"] body::after {
 @keyframes acg-vt-main-out {
   from {
     opacity: 1;
-    filter: blur(0);
     transform: translateY(0) scale(1);
   }
   to {
     opacity: 0;
-    filter: blur(10px);
     transform: translateY(10px) scale(0.985);
   }
 }
@@ -559,12 +604,10 @@ html[data-acg-net="slow"] body::after {
 @keyframes acg-vt-main-in {
   from {
     opacity: 0;
-    filter: blur(14px);
     transform: translateY(-8px) scale(1.01);
   }
   to {
     opacity: 1;
-    filter: blur(0);
     transform: translateY(0) scale(1);
   }
 }
@@ -572,12 +615,10 @@ html[data-acg-net="slow"] body::after {
 @keyframes acg-vt-header-out {
   from {
     opacity: 1;
-    filter: blur(0);
     transform: translateY(0);
   }
   to {
     opacity: 0.92;
-    filter: blur(6px);
     transform: translateY(-4px);
   }
 }
@@ -585,12 +626,10 @@ html[data-acg-net="slow"] body::after {
 @keyframes acg-vt-header-in {
   from {
     opacity: 0.92;
-    filter: blur(6px);
     transform: translateY(4px);
   }
   to {
     opacity: 1;
-    filter: blur(0);
     transform: translateY(0);
   }
 }
@@ -1442,6 +1481,12 @@ html[data-acg-device="phone"] .acg-card {
   animation: acg-path-draw 1.35s var(--ease-smooth) infinite;
 }
 
+:root[data-acg-perf="low"] .acg-cover-fallback-icon .acg-icon path,
+:root[data-acg-scroll="1"] .acg-cover-fallback-icon .acg-icon path {
+  animation: none !important;
+  stroke-dashoffset: 0;
+}
+
 .acg-cover-fallback-icon .acg-icon path:nth-child(2) {
   animation-delay: 90ms;
 }
@@ -1532,11 +1577,35 @@ html[data-acg-device="phone"] .acg-card {
   contain-intrinsic-size: 360px 320px;
 }
 
+/* 信息流“入场”微动效：仅 transform/opacity（低成本）。由脚本在可视时打标 data-acg-inview。 */
+.acg-card[data-acg-inview="0"] {
+  opacity: 0.92;
+  transform: translateY(10px);
+}
+
+.acg-card[data-acg-inview="1"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+:root[data-acg-perf="low"] .acg-card[data-acg-inview] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acg-card[data-acg-inview] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* 可点击触感 */
 .clickable {
   cursor: pointer;
   transition:
     transform var(--dur-fast) var(--ease-standard),
+    opacity var(--dur-fast) ease,
     box-shadow var(--dur-fast) ease,
     border-color var(--dur-fast) ease,
     background-color var(--dur-fast) ease,
@@ -1604,6 +1673,11 @@ html[data-acg-device="phone"] .acg-card {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
   animation: acg-shimmer 1.1s linear infinite;
   opacity: 0.45;
+}
+
+:root[data-acg-perf="low"] .acg-skeleton::after,
+:root[data-acg-scroll="1"] .acg-skeleton::after {
+  display: none;
 }
 
 :root[data-acg-theme="dark"] .acg-skeleton::after {
@@ -1786,8 +1860,8 @@ html[data-acg-device="tablet"] .acg-post-grid {
   }
 
   .glass {
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(var(--acg-glass-blur-phone)) saturate(var(--acg-glass-sat-phone));
+    -webkit-backdrop-filter: blur(var(--acg-glass-blur-phone)) saturate(var(--acg-glass-sat-phone));
   }
 }
 

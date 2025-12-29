@@ -19,11 +19,11 @@
 
 ### 需求: 弹层与微交互一致性
 场景：Toast / Command Palette 等浮层需要“商业级”视觉反馈，同时在低性能设备上避免不必要开销。
-- 预期结果：命令面板支持分组标题、关键词高亮与滚动条样式；Toast 提供 variant 图标、hover 阴影与点击消失动画；在 `data-acg-perf="low"` 下自动禁用 backdrop blur 等高开销效果。
+- 预期结果：命令面板支持分组标题、关键词高亮与滚动条样式；Toast 提供 variant 图标、hover 阴影与点击消失动画；在 `data-acg-perf="low"` 或滚动期 `data-acg-scroll="1"` 下自动禁用 backdrop blur 等高开销效果，并暂停 shimmer/占位动画以保证滚动稳定。
 
 ### 需求: 页面转场动效
 场景：在页面跳转时获得更连贯的阅读节奏，并兼容不支持新 API 的浏览器。
-- 预期结果：支持 View Transitions 动效；不支持时降级到 WAAPI 的淡入淡出，且遵循 prefers-reduced-motion。
+- 预期结果：支持 View Transitions 动效；不支持时降级到 WAAPI 的淡入淡出，且遵循 prefers-reduced-motion；动效以 opacity/transform 为主，避免 filter blur 造成合成开销。
 
 ## 依赖
 - `tailwind.config.ts`

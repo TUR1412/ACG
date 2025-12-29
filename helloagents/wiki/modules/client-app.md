@@ -23,7 +23,12 @@
 - 预期结果：`Ctrl/⌘ + K` 打开命令面板，支持搜索命令（导航/过滤/主题/语言/复制链接等）；命令面板为 lazy chunk，未触发时不影响首屏加载。
 - 深链补强：支持 `/#search` 聚焦搜索、`/#prefs` 打开偏好设置抽屉、`/#cmdk` 直接打开命令面板（与键盘入口一致）。
 - 实现要点：命令面板通过 `acg:toast` 事件桥接复用全局 Toast；剪贴板复制逻辑复用 `src/client/utils/clipboard.ts`（避免重复实现与分叉）；列表支持分组标题与关键词高亮。
-- UI 细节：命令面板入场动效与滚动条样式统一；Toast 增加图标与点击消失动画（弱网/低性能模式自动降级 backdrop blur）。
+- UI 细节：命令面板入场动效与滚动条样式统一；Toast 增加图标与点击消失动画（低性能模式或滚动期自动降级 backdrop blur）。
+
+### 需求: 滚动期流畅度（UI Perf Hints）
+场景：在移动端或性能较弱的设备上，滚动时 backdrop-filter/常驻动画更容易导致掉帧与“卡顿感”。
+- 预期结果：滚动期自动注入 `data-acg-scroll="1"`，临时禁用固定层/大面积 blur，并暂停 shimmer/占位动效；停止滚动后恢复质感。
+- 低成本增强：列表卡片使用 `IntersectionObserver` 打标 `data-acg-inview`，仅用 transform/opacity 做入场层次（`prefers-reduced-motion` 与 `data-acg-perf="low"` 自动关闭）。
 
 ### 需求: 全站搜索预取（60FPS）
 场景：本页仅渲染最新/分类的一部分内容，但用户希望在同一个搜索框里检索全量数据，并保持滚动与输入流畅。

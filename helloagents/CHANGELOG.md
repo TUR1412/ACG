@@ -22,6 +22,9 @@
 - PWA 缓存：Service Worker 的 data 缓存策略覆盖 `search-pack.v1.json(.gz)`，改善冷启动与弱网体验。
 - 工具函数去重：剪贴板复制逻辑统一到 `src/client/utils/clipboard.ts`（更可靠的回退路径与清理）。
 - Toast 交互：增加图标、悬停阴影与点击消失动画（保持轻量且更直观）。
+- UI 流畅度：新增滚动期 `data-acg-scroll="1"` 视觉降级（滚动时禁用 backdrop-filter、暂停 shimmer/占位动画），提升滚动稳定性。
+- 信息流层次：卡片入场 `data-acg-inview`（IntersectionObserver 打标 + transform/opacity 过渡；低性能与减少动效自动关闭）。
+- 页面转场：View Transitions 与 WAAPI 降级去除 filter blur（仅保留 opacity/transform），降低合成与掉帧风险。
 
 ## [0.2.1] - 2025-12-29
 
