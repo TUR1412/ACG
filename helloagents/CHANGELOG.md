@@ -17,6 +17,9 @@
 
 ### 变更
 - 网络请求退避重试加入 jitter，降低同步重试带来的拥塞风险。
+- 搜索查询解析模块下沉到 `src/lib/search/query.ts`，供页面内过滤、全站搜索 Worker 与命令面板共享（减少路径耦合）。
+- 详情页：新增“复制链接”按钮（复制站内页面链接），并复用全局 Toast 反馈。
+- SEO/分享：`SiteLayout` 增加 canonical + Open Graph/Twitter meta；详情页默认注入 `article` 类型与封面图（如可用）。
 - 视觉系统参数变量化：玻璃 blur/saturate 与边框动效可通过 `--acg-glass-*` / `--acg-border-pan-*` 调参。
 - 视觉性能：新增 `data-acg-perf="low"` 自动降级（连接信息/设备信息 + 运行时 FPS 探测），降低 blur/阴影/边框动画开销。
 - PWA 缓存：Service Worker 的 data 缓存策略覆盖 `search-pack.v1.json(.gz)`，改善冷启动与弱网体验。
@@ -33,7 +36,7 @@
 - 新增 `/#prefs` 深链：在首页/分类页可直接打开偏好设置抽屉（与 `/#search` 聚焦搜索一致）。
 
 ### 变更
-- 搜索查询解析逻辑统一：页面内过滤与全站搜索 Worker 共享 `src/client/search/query.ts`，减少冗余并提升行为一致性。
+- 搜索查询解析逻辑统一：页面内过滤与全站搜索 Worker 共享 `src/lib/search/query.ts`，减少冗余并提升行为一致性。
 - Perf Budget 更贴合：HTML/XML/JSON 预算默认仅统计“核心入口页”（排除 `/p/<id>/` 详情页），默认阈值调整为 5000KB（可用 `ACG_BUDGET_HTML_KB` 覆盖）。
 
 ### 修复

@@ -481,12 +481,14 @@ async function fetchBytes(params: {
 }
 
 async function pool<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>): Promise<void> {
-  const queue = items.slice();
-  const runners = Array.from({ length: Math.max(1, Math.min(concurrency, queue.length)) }, async () => {
-    while (queue.length > 0) {
-      const next = queue.shift();
-      if (!next) return;
-      await worker(next);
+  const max = Math.max(1, Math.min(concurrency, items.length));
+  let index = 0;
+  const runners = Array.from({ length: max }, async () => {
+    while (true) {
+      const i = index;
+      index += 1;
+      if (i >= items.length) return;
+      await worker(items[i]);
     }
   });
   await Promise.all(runners);

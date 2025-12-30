@@ -30,6 +30,7 @@ const theme = getCategoryTheme(post.category);
 const retryCoverLabel = "画像を再試行";
 const cover = resolveCover(post.cover, 1400);
 const coverOriginal = post.coverOriginal ?? cover?.original;
+const ogImage = cover ? (Astro.site ? new URL(cover.src, Astro.site).toString() : cover.src) : undefined;
 const title = post.titleJa ?? post.title;
 const summary = post.summaryJa ?? post.summary;
 const preview = post.previewJa ?? post.preview;
@@ -40,9 +41,18 @@ const publishedAtMs = new Date(post.publishedAt).getTime();
 const isFresh = Number.isFinite(publishedAtMs) && Date.now() - publishedAtMs >= 0 && Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
 const freshLabel = "新着";
 const tt = (p: Post) => p.titleJa ?? p.title;
+const pageUrl = Astro.site ? new URL(href(`/ja/p/${post.id}/`), Astro.site).toString() : href(`/ja/p/${post.id}/`);
 ---
 
-<SiteLayout lang="ja" title={title} currentPath={`/p/${post.id}/`} currentPostId={post.id}>
+<SiteLayout
+  lang="ja"
+  title={title}
+  description={primaryText ?? undefined}
+  ogType="article"
+  ogImage={ogImage}
+  currentPath={`/p/${post.id}/`}
+  currentPostId={post.id}
+>
   <article class="glass overflow-hidden rounded-2xl">
     <div class="relative" data-has-cover={post.cover ? "true" : "false"}>
       <div class:list={["absolute inset-0 bg-gradient-to-br", theme.cover]}></div>
@@ -191,6 +201,16 @@ const tt = (p: Post) => p.titleJa ?? p.title;
         >
           {t("ja", "post.openSource")}
         </a>
+        <button
+          type="button"
+          class="glass inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-slate-950 clickable"
+          data-copy-text={pageUrl}
+          aria-label="ページリンクをコピー"
+          title="ページリンクをコピー"
+        >
+          <Icon name="link" size={18} />
+          <span class="ml-2">リンクをコピー</span>
+        </button>
         <button
           type="button"
           class="glass inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-slate-950 clickable"

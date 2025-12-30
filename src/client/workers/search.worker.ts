@@ -1,28 +1,10 @@
-import { normalizeText, parseQuery } from "../search/query";
+import { normalizeText, parseQuery } from "../../lib/search/query";
+import type { SearchPackIndexRow } from "../../lib/search/pack";
+import type { Post } from "../../lib/types";
 
 type BookmarkCategory = "anime" | "game" | "goods" | "seiyuu";
 
-type BookmarkPost = {
-  id: string;
-  title: string;
-  titleZh?: string;
-  titleJa?: string;
-  summary?: string;
-  summaryZh?: string;
-  summaryJa?: string;
-  preview?: string;
-  previewZh?: string;
-  previewJa?: string;
-  url: string;
-  publishedAt: string;
-  cover?: string;
-  coverOriginal?: string;
-  category: BookmarkCategory;
-  tags?: string[];
-  sourceId: string;
-  sourceName: string;
-  sourceUrl: string;
-};
+type BookmarkPost = Post;
 
 type FilterStore = {
   version: 2;
@@ -31,16 +13,7 @@ type FilterStore = {
   hideRead: boolean;
 };
 
-type IndexedPost = {
-  i: number;
-  hay: string;
-  tags: string[];
-  sourceName: string;
-  sourceId: string;
-  sourceIdNorm: string;
-  category: string;
-  publishedAtMs: number | null;
-};
+type IndexedPost = SearchPackIndexRow;
 
 type WorkerInitMessage = {
   type: "init";
@@ -145,7 +118,7 @@ function normalizePost(value: unknown): BookmarkPost | null {
     cover: typeof it.cover === "string" ? it.cover : undefined,
     coverOriginal: typeof it.coverOriginal === "string" ? it.coverOriginal : undefined,
     category: normalizeCategory(it.category),
-    tags: Array.isArray(it.tags) ? it.tags.filter((x: unknown) => typeof x === "string") : undefined,
+    tags: Array.isArray(it.tags) ? it.tags.filter((x: unknown) => typeof x === "string") : [],
     sourceId: typeof it.sourceId === "string" ? it.sourceId : "",
     sourceName: typeof it.sourceName === "string" ? it.sourceName : "",
     sourceUrl: typeof it.sourceUrl === "string" ? it.sourceUrl : ""

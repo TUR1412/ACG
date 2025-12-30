@@ -30,6 +30,7 @@ const theme = getCategoryTheme(post.category);
 const retryCoverLabel = "重试封面";
 const cover = resolveCover(post.cover, 1400);
 const coverOriginal = post.coverOriginal ?? cover?.original;
+const ogImage = cover ? (Astro.site ? new URL(cover.src, Astro.site).toString() : cover.src) : undefined;
 const title = post.titleZh ?? post.title;
 const summary = post.summaryZh ?? post.summary;
 const preview = post.previewZh ?? post.preview;
@@ -40,9 +41,18 @@ const publishedAtMs = new Date(post.publishedAt).getTime();
 const isFresh = Number.isFinite(publishedAtMs) && Date.now() - publishedAtMs >= 0 && Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
 const freshLabel = "NEW";
 const tt = (p: Post) => p.titleZh ?? p.title;
+const pageUrl = Astro.site ? new URL(href(`/zh/p/${post.id}/`), Astro.site).toString() : href(`/zh/p/${post.id}/`);
 ---
 
-<SiteLayout lang="zh" title={title} currentPath={`/p/${post.id}/`} currentPostId={post.id}>
+<SiteLayout
+  lang="zh"
+  title={title}
+  description={primaryText ?? undefined}
+  ogType="article"
+  ogImage={ogImage}
+  currentPath={`/p/${post.id}/`}
+  currentPostId={post.id}
+>
   <article class="glass overflow-hidden rounded-2xl">
     <div class="relative" data-has-cover={post.cover ? "true" : "false"}>
       <div class:list={["absolute inset-0 bg-gradient-to-br", theme.cover]}></div>
@@ -191,6 +201,16 @@ const tt = (p: Post) => p.titleZh ?? p.title;
         >
           {t("zh", "post.openSource")}
         </a>
+        <button
+          type="button"
+          class="glass inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-slate-950 clickable"
+          data-copy-text={pageUrl}
+          aria-label="复制页面链接"
+          title="复制页面链接"
+        >
+          <Icon name="link" size={18} />
+          <span class="ml-2">复制链接</span>
+        </button>
         <button
           type="button"
           class="glass inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-slate-950 clickable"

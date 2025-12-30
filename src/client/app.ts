@@ -1,7 +1,7 @@
 import { toWeservImageUrl } from "../lib/cover";
 import { href } from "../lib/href";
 import { NETWORK, STORAGE_KEYS, UI, MS } from "./constants";
-import { normalizeText, parseQuery } from "./search/query";
+import { normalizeText, parseQuery } from "../lib/search/query";
 import { bestInitialCoverSrc } from "./utils/cover";
 import { isJapanese } from "./utils/lang";
 import { fetchJsonPreferGzip } from "./utils/http";
@@ -3105,6 +3105,24 @@ function wireDailyBriefCopy() {
   });
 }
 
+function wireCopyTextButtons() {
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>("button[data-copy-text]")];
+  if (buttons.length === 0) return;
+
+  for (const btn of buttons) {
+    btn.addEventListener("click", async () => {
+      const text = btn.dataset.copyText ?? "";
+      if (!text) return;
+
+      const ok = await copyToClipboard(text);
+      toast({
+        title: ok ? (isJapanese() ? "リンクをコピーしました" : "已复制链接") : isJapanese() ? "コピー失敗" : "复制失败",
+        variant: ok ? "success" : "error"
+      });
+    });
+  }
+}
+
 function wireSpotlightCarousel() {
   const roots = document.querySelectorAll<HTMLElement>("[data-spotlight-carousel]");
   if (roots.length === 0) return;
@@ -3464,8 +3482,9 @@ function main() {
   }
   wireTagChips();
   wireDailyBriefCopy();
+  wireCopyTextButtons();
   wireSpotlightCarousel();
-  runWhenIdle(() => hydrateCoverStates(), UI.HYDRATE_COVER_IDLE_DELAY_MS);
+  runWhenIdle(() => hydrateCoverStates(), UI.HYDRATE_COVER_IDLE_DELAY_MS);      
   wireDeviceDebug();
   maybeStartHealthMonitor();
   openPrefsFromHash();

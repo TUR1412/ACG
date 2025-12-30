@@ -9,12 +9,15 @@ type Props = {
   lang: Lang;
   title?: string;
   description?: string;
+  ogImage?: string;
+  ogType?: "website" | "article";
   currentCategory?: Category;
   currentPath?: string;
   currentPostId?: string;
 };
 
-const { lang, title, description, currentCategory, currentPath, currentPostId } = Astro.props;
+const { lang, title, description, ogImage, ogType, currentCategory, currentPath, currentPostId } =
+  Astro.props;
 
 const htmlLang = lang === "ja" ? "ja" : "zh-Hans";
 const pageTitle = title ? `${title} · ${t(lang, "site.name")}` : t(lang, "site.name");
@@ -26,6 +29,17 @@ function withLang(path: string): string {
 
 const otherLang = lang === "zh" ? "ja" : "zh";
 const langSwitchHref = href(`/${otherLang}${currentPath ?? "/"}`);
+
+const canonicalPath = withLang(currentPath ?? "/");
+const canonicalUrl = Astro.site ? new URL(canonicalPath, Astro.site).toString() : canonicalPath;
+const alternateUrl = Astro.site ? new URL(langSwitchHref, Astro.site).toString() : langSwitchHref;
+const hreflang = lang === "ja" ? "ja" : "zh-Hans";
+const hreflangAlt = otherLang === "ja" ? "ja" : "zh-Hans";
+const ogLocale = lang === "ja" ? "ja_JP" : "zh_CN";
+const ogLocaleAlt = otherLang === "ja" ? "ja_JP" : "zh_CN";
+const resolvedOgType = ogType ?? (currentPostId ? "article" : "website");
+const resolvedOgImage = ogImage ? String(ogImage) : null;
+const twitterCard = resolvedOgImage ? "summary_large_image" : "summary";
 
 const isBookmarks = currentPath === "/bookmarks/";
 const isStatus = currentPath === "/status/";
@@ -44,6 +58,21 @@ const swHref = href("/sw.js");
     <meta name="view-transition" content="same-origin" />
     <title>{pageTitle}</title>
     <meta name="description" content={pageDescription} />
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="alternate" hreflang={hreflang} href={canonicalUrl} />
+    <link rel="alternate" hreflang={hreflangAlt} href={alternateUrl} />
+    <meta property="og:site_name" content={t(lang, "site.name")} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:type" content={resolvedOgType} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:locale" content={ogLocale} />
+    <meta property="og:locale:alternate" content={ogLocaleAlt} />
+    {resolvedOgImage ? <meta property="og:image" content={resolvedOgImage} /> : null}
+    <meta name="twitter:card" content={twitterCard} />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={pageDescription} />
+    {resolvedOgImage ? <meta name="twitter:image" content={resolvedOgImage} /> : null}
     <link rel="alternate" type="application/rss+xml" title={lang === "ja" ? "ACGレーダー RSS" : "ACG Radar RSS"} href={withLang("/feed.xml")} />
     <meta name="theme-color" content="#f2f4f8" />
     <link rel="manifest" href={manifestHref} />

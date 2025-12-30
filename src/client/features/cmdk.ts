@@ -1,5 +1,5 @@
 import { href } from "../../lib/href";
-import { normalizeText } from "../search/query";
+import { normalizeText } from "../../lib/search/query";
 import { copyToClipboard } from "../utils/clipboard";
 import { isJapanese } from "../utils/lang";
 import { track } from "../utils/telemetry";

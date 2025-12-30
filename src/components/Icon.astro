@@ -1,5 +1,6 @@
 ---
-export type IconName = "arrow-left" | "arrow-right" | "arrow-up" | "chart" | "chevron-right" | "clock" | "external-link" | "info" | "moon" | "refresh" | "search" | "sliders" | "star" | "sun" | "x";
+export type IconName =
+  "arrow-left" | "arrow-right" | "arrow-up" | "chart" | "chevron-right" | "clock" | "external-link" | "info" | "link" | "moon" | "refresh" | "search" | "sliders" | "star" | "sun" | "x";
 
 type Props = {
   name: IconName;
@@ -133,6 +134,25 @@ const cls = ["acg-icon", className].filter(Boolean).join(" ");
       <path d="M10 14 19 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
       <path
         d="M10 5H6.8A2.8 2.8 0 0 0 4 7.8v9.4A2.8 2.8 0 0 0 6.8 20h9.4A2.8 2.8 0 0 0 19 17.2V14"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </>
+  ) : null}
+
+  {name === "link" ? (
+    <>
+      <path
+        d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"
         stroke="currentColor"
         stroke-width="2"
         stroke-linecap="round"

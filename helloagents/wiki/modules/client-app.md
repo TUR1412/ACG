@@ -41,7 +41,8 @@
 
 ## 依赖
 - `src/client/app.ts`
-- `src/client/search/query.ts`
+- `src/lib/search/query.ts`
+- `src/lib/search/pack.ts`
 - `src/client/workers/search.worker.ts`
 - `src/client/features/cmdk.ts`
 - `src/client/features/fulltext.ts`
