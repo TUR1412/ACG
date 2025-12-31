@@ -5,6 +5,7 @@ type Budget = {
   jsKb: number;
   cssKb: number;
   htmlKb: number;
+  dataJsonKb: number;
   dataGzKb: number;
   coversMb: number;
   totalMb: number;
@@ -67,6 +68,7 @@ async function main() {
     jsKb: toInt(process.env.ACG_BUDGET_JS_KB, 450),
     cssKb: toInt(process.env.ACG_BUDGET_CSS_KB, 650),
     htmlKb: toInt(process.env.ACG_BUDGET_HTML_KB, 5000),
+    dataJsonKb: toInt(process.env.ACG_BUDGET_DATA_JSON_KB, 0),
     dataGzKb: toInt(process.env.ACG_BUDGET_DATA_GZ_KB, 4500),
     coversMb: toInt(process.env.ACG_BUDGET_COVERS_MB, 160),
     totalMb: toInt(process.env.ACG_BUDGET_TOTAL_MB, 220)
@@ -81,6 +83,7 @@ async function main() {
   let cssBytes = 0;
   let htmlBytes = 0;
   let htmlCoreBytes = 0;
+  let dataJsonBytes = 0;
   let dataGzBytes = 0;
   let coversBytes = 0;
   let totalBytes = 0;
@@ -94,6 +97,12 @@ async function main() {
     if (isUnder(rel, "data") && rel.endsWith(".gz")) dataGzBytes += f.size;
     if (ext === ".js" || ext === ".mjs") jsBytes += f.size;
     if (ext === ".css") cssBytes += f.size;
+
+    if (ext === ".json" && isUnder(rel, "data")) {
+      dataJsonBytes += f.size;
+      continue;
+    }
+
     if (ext === ".html" || ext === ".xml" || ext === ".json") {
       htmlBytes += f.size;
       if (!isPostDetailHtml(rel)) htmlCoreBytes += f.size;
@@ -105,6 +114,9 @@ async function main() {
   console.log(`[BUDGET] css=${bytesToKb(cssBytes)}KB (limit ${budget.cssKb}KB)`);
   console.log(
     `[BUDGET] html/xml/json(core)=${bytesToKb(htmlCoreBytes)}KB (limit ${budget.htmlKb}KB), total=${bytesToKb(htmlBytes)}KB`
+  );
+  console.log(
+    `[BUDGET] data.json=${bytesToKb(dataJsonBytes)}KB (limit ${budget.dataJsonKb > 0 ? `${budget.dataJsonKb}KB` : "off"})`
   );
   console.log(`[BUDGET] data.gz=${bytesToKb(dataGzBytes)}KB (limit ${budget.dataGzKb}KB)`);
   console.log(`[BUDGET] covers=${bytesToMb(coversBytes)}MB (limit ${budget.coversMb}MB)`);
@@ -119,6 +131,7 @@ async function main() {
   const jsKb = bytesToKb(jsBytes);
   const cssKb = bytesToKb(cssBytes);
   const htmlKb = bytesToKb(htmlCoreBytes);
+  const dataJsonKb = bytesToKb(dataJsonBytes);
   const dataGzKb = bytesToKb(dataGzBytes);
   const coversMb = bytesToMb(coversBytes);
   const totalMb = bytesToMb(totalBytes);
@@ -126,6 +139,8 @@ async function main() {
   if (budget.jsKb > 0 && jsKb > budget.jsKb) failures.push(`JS 超标: ${jsKb}KB > ${budget.jsKb}KB`);
   if (budget.cssKb > 0 && cssKb > budget.cssKb) failures.push(`CSS 超标: ${cssKb}KB > ${budget.cssKb}KB`);
   if (budget.htmlKb > 0 && htmlKb > budget.htmlKb) failures.push(`HTML/XML/JSON 超标: ${htmlKb}KB > ${budget.htmlKb}KB`);
+  if (budget.dataJsonKb > 0 && dataJsonKb > budget.dataJsonKb)
+    failures.push(`data.json 超标: ${dataJsonKb}KB > ${budget.dataJsonKb}KB`);
   if (budget.dataGzKb > 0 && dataGzKb > budget.dataGzKb) failures.push(`data.gz 超标: ${dataGzKb}KB > ${budget.dataGzKb}KB`);
   if (budget.coversMb > 0 && coversMb > budget.coversMb) failures.push(`covers 超标: ${coversMb}MB > ${budget.coversMb}MB`);
   if (budget.totalMb > 0 && totalMb > budget.totalMb) failures.push(`dist 总体积超标: ${totalMb}MB > ${budget.totalMb}MB`);

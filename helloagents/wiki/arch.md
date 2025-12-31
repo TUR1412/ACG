@@ -46,6 +46,14 @@ sequenceDiagram
   Site->>Pages: 上传并部署
 ```
 
+## 质量门禁（CI）
+
+- `npm run validate`：校验同步产物结构与关键不变量
+- `npm run budget`：校验 `dist/` 产物体积预算（指标按“入口页 vs 数据载荷”拆分）
+  - `html/xml/json(core)`：入口页与核心 endpoint（排除 `/p/<id>/index.html` 详情页；不计入 `dist/data/*.json`）
+  - `data.json`：`dist/data/*.json`（默认仅观测；可用 `ACG_BUDGET_DATA_JSON_KB` 启用门禁）
+  - `data.gz`：`dist/data/*.json.gz`（门禁指标，反映网络与缓存成本）
+
 ## 重大架构决策
 
 | adr_id | title | date | status | affected_modules | details |
@@ -54,4 +62,5 @@ sequenceDiagram
 | ADR-002 | 增加 OPML 与 JSON Feed 订阅导出 | 2025-12-25 | ✅已采纳 | web-ui / shared-lib | history/2025-12/202512252117_evolution_v0_2/how.md |
 | ADR-003 | 引入 PWA 基础（Manifest + SW） | 2025-12-25 | ✅已采纳 | web-ui / client-app | history/2025-12/202512252117_evolution_v0_2/how.md |
 | ADR-004 | CI 增加数据校验与体积预算门禁 | 2025-12-25 | ✅已采纳 | pipeline-sync | history/2025-12/202512252117_evolution_v0_2/how.md |
+| ADR-005 | Perf Budget 指标按“入口页 vs 数据载荷”拆分 | 2025-12-31 | ✅已采纳 | pipeline-sync | history/2025-12/202512312048_evolution_v0_7_budget_data_split/how.md |
 

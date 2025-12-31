@@ -23,6 +23,7 @@
 - 视觉系统参数变量化：玻璃 blur/saturate 与边框动效可通过 `--acg-glass-*` / `--acg-border-pan-*` 调参。
 - 视觉性能：新增 `data-acg-perf="low"` 自动降级（连接信息/设备信息 + 运行时 FPS 探测），降低 blur/阴影/边框动画开销。
 - PWA 缓存：Service Worker 的 data 缓存策略覆盖 `search-pack.v1.json(.gz)`，改善冷启动与弱网体验。
+- Perf Budget 指标拆分：入口页 core 预算不计入 `dist/data/*.json`；新增 `data.json` 指标（默认仅观测，可用 `ACG_BUDGET_DATA_JSON_KB` 启用门禁）。
 - 工具函数去重：剪贴板复制逻辑统一到 `src/client/utils/clipboard.ts`（更可靠的回退路径与清理）。
 - Toast 交互：增加图标、悬停阴影与点击消失动画（保持轻量且更直观）。
 - UI 流畅度：新增滚动期 `data-acg-scroll="1"` 视觉降级（滚动时禁用 backdrop-filter、暂停 shimmer/占位动画），提升滚动稳定性。
