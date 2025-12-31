@@ -684,6 +684,41 @@ p {
   outline-offset: 2px;
 }
 
+/* 可访问性：跳到主内容（仅键盘聚焦时出现） */
+.acg-skip-link {
+  position: fixed;
+  left: clamp(12px, 2vw, 18px);
+  top: clamp(12px, 2vw, 18px);
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  transform: translateY(-160%);
+  opacity: 0;
+  transition:
+    transform var(--dur-fast) var(--ease-spring),
+    opacity var(--dur-fast) ease;
+}
+
+.acg-skip-link:focus,
+.acg-skip-link:focus-visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acg-skip-link {
+    transition: none;
+  }
+}
+
 img {
   display: block;
   max-width: 100%;

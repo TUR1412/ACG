@@ -2154,6 +2154,51 @@ function wireGlobalSearch(params: {
     input.dispatchEvent(new Event("input", { bubbles: true }));
   };
 
+  const applySearchPreset = (presetRaw: string) => {
+    const preset = presetRaw.trim();
+    if (!preset) return;
+
+    try {
+      input.value = preset;
+    } catch {
+      // ignore
+    }
+
+    if (getSearchScope() !== "all") {
+      setEnabled(true);
+    } else {
+      schedule();
+    }
+
+    try {
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    } catch {
+      // ignore
+    }
+
+    try {
+      const behavior = prefersReducedMotion() ? "auto" : "smooth";
+      input.scrollIntoView({ behavior, block: "center" });
+      input.focus();
+      input.select();
+    } catch {
+      // ignore
+    }
+
+    track({ type: "search_preset", data: { preset } });
+  };
+
+  document.addEventListener("click", (e) => {
+    if (e.defaultPrevented) return;
+    if (!(e.target instanceof HTMLElement)) return;
+    const el = e.target.closest<HTMLElement>("[data-search-preset]");
+    if (!el) return;
+    const preset = String(el.dataset.searchPreset ?? "");
+    if (!preset.trim()) return;
+    e.preventDefault();
+    applySearchPreset(preset);
+  });
+
   toggle.addEventListener("click", (e) => {
     e.preventDefault();
     const enabled = getSearchScope() === "all";

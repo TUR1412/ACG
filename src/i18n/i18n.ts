@@ -19,6 +19,7 @@ export type I18nKey =
   | "home.copyBrief"
   | "home.copied"
   | "home.unread"
+  | "search.scopeAllCategory"
   | "search.placeholder"
   | "search.result"
   | "search.emptyTitle"
@@ -49,6 +50,7 @@ export type I18nKey =
   | "common.loading"
   | "common.noData"
   | "common.updatedAt"
+  | "common.skipToContent"
   | "post.openSource"
   | "post.previewTitle"
   | "post.previewHint"
@@ -88,6 +90,7 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "home.copyBrief": "复制快报",
     "home.copied": "已复制到剪贴板",
     "home.unread": "未读",
+    "search.scopeAllCategory": "全站·本分类",
     "search.placeholder": "搜索标题 / 摘要 / 标签…",
     "search.result": "匹配",
     "search.emptyTitle": "没有匹配结果",
@@ -118,6 +121,7 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "common.loading": "加载中…",
     "common.noData": "暂无数据，稍后将自动更新。",
     "common.updatedAt": "更新于",
+    "common.skipToContent": "跳到主要内容",
     "post.openSource": "打开原文",
     "post.previewTitle": "内容预览",
     "post.previewHint": "预览来自页面描述/自动摘录（非全文）。完整内容请点击「打开原文」。",
@@ -156,6 +160,7 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "home.copyBrief": "コピー",
     "home.copied": "クリップボードにコピーしました",
     "home.unread": "未読",
+    "search.scopeAllCategory": "全件·カテゴリ",
     "search.placeholder": "検索（タイトル / 要約 / タグ）…",
     "search.result": "一致",
     "search.emptyTitle": "一致する結果がありません",
@@ -186,6 +191,7 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "common.loading": "読み込み中…",
     "common.noData": "データがまだありません。自動更新をお待ちください。",
     "common.updatedAt": "更新",
+    "common.skipToContent": "本文へスキップ",
     "post.openSource": "元記事へ",
     "post.previewTitle": "内容プレビュー",
     "post.previewHint": "プレビューはページの説明/自動抽出（全文ではありません）。全文は「元記事へ」からご確認ください。",

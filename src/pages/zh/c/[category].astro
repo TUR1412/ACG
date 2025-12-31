@@ -14,7 +14,9 @@ export function getStaticPaths() {
 
 const posts = await readGeneratedPosts();
 const category = Astro.params.category as Category;
-const filtered = posts.filter((p) => p.category === category).slice(0, 120);
+const inCategory = posts.filter((p) => p.category === category);
+const total = inCategory.length;
+const filtered = inCategory.slice(0, 60);
 const theme = getCategoryTheme(category);
 ---
 
@@ -36,7 +38,7 @@ const theme = getCategoryTheme(category);
           <h1 class="m-0 text-phi-xl font-semibold leading-tight tracking-tight text-slate-950 md:text-phi-2xl">
             {categoryLabel("zh", category)}
           </h1>
-          <p class="mt-1 text-xs text-slate-600">{t("zh", "nav.latest")} · {filtered.length} 条</p>
+          <p class="mt-1 text-xs text-slate-600">{t("zh", "nav.latest")} · {filtered.length}/{total} 条</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2 text-xs text-slate-700">
@@ -99,6 +101,16 @@ const theme = getCategoryTheme(category);
           data-active="false"
         >
           {t("zh", "prefs.hideRead")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-search-preset={`cat:${category}`}
+          title={`cat:${category}`}
+          aria-label={t("zh", "search.scopeAllCategory")}
+        >
+          <Icon name="search" size={16} />
+          <span>{t("zh", "search.scopeAllCategory")}</span>
         </button>
         <button
           type="button"
