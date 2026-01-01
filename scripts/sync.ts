@@ -18,119 +18,14 @@ import { parseFeedToItems } from "./sources/feed-source";
 import { parseAnimeAnimeList } from "./sources/html-animeanime";
 import { extractCoverFromHtml, extractPreviewFromHtml, isProbablyNonCoverImageUrl } from "./lib/html";
 import type { RawItem, Source } from "./sources/types";
-import type { Category } from "../src/lib/categories";
+import type { Post, SourceStatus, SyncStatus } from "../src/lib/types";
+import { buildSearchPack } from "../src/lib/search/pack";
 import { deriveTags } from "./lib/tagger";
 import { readTranslateCache, translateTextCached, type TranslateCache } from "./lib/translate";
-
-type Post = {
-  id: string;
-  title: string;
-  /** 中文翻译标题（用于 /zh 路由显示） */
-  titleZh?: string;
-  /** 日文翻译标题（用于 /ja 路由显示） */
-  titleJa?: string;
-  summary?: string;
-  /** 文章预览（严格截断，不是全文） */
-  preview?: string;
-  previewZh?: string;
-  previewJa?: string;
-  summaryZh?: string;
-  summaryJa?: string;
-  url: string;
-  publishedAt: string;
-  cover?: string;
-  /** 原始封面地址（当 cover 被替换为本地缓存时保留，便于回退/调试） */
-  coverOriginal?: string;
-  category: Category;
-  tags: string[];
-  sourceId: string;
-  sourceName: string;
-  sourceUrl: string;
-};
-
-type SearchPackIndexRow = {
-  /** 索引：对应 posts[i] */
-  i: number;
-  hay: string;
-  tags: string[];
-  sourceName: string;
-  sourceId: string;
-  sourceIdNorm: string;
-  category: string;
-  publishedAtMs: number | null;
-};
-
-type SearchPackV1 = {
-  v: 1;
-  generatedAt: string;
-  posts: Post[];
-  index: SearchPackIndexRow[];
-};
-
-type SourceStatus = {
-  id: string;
-  name: string;
-  kind: string;
-  url: string;
-  ok: boolean;
-  httpStatus?: number;
-  durationMs: number;
-  fetchedAt?: string;
-  itemCount: number;
-  used: "fetched" | "cached" | "fallback";
-  error?: string;
-};
-
-type SyncStatus = {
-  generatedAt: string | null;
-  durationMs: number;
-  sources: SourceStatus[];
-};
 
 function hasJapaneseKana(text: string): boolean {
   // Hiragana + Katakana。仅靠汉字无法区分中/日，所以用 kana 作为“强证据”。     
   return /[\u3041-\u30ff]/.test(text);
-}
-
-function normalizeSearchText(input: string): string {
-  return input.toLowerCase().replace(/\s+/g, " ").trim();
-}
-
-function buildSearchPack(posts: Post[], generatedAt: string): SearchPackV1 {
-  const index: SearchPackIndexRow[] = [];
-
-  for (let i = 0; i < posts.length; i += 1) {
-    const post = posts[i];
-    const tags = (post.tags ?? []).map((t) => normalizeSearchText(t)).filter(Boolean);
-    const sourceName = normalizeSearchText(post.sourceName);
-    const sourceId = post.sourceId ?? "";
-    const sourceIdNorm = normalizeSearchText(sourceId);
-    const category = normalizeSearchText(post.category);
-    const ts = post.publishedAt ? Date.parse(post.publishedAt) : NaN;
-    const publishedAtMs = Number.isFinite(ts) ? ts : null;
-
-    const hay = normalizeSearchText(
-      [
-        post.title,
-        post.titleZh ?? "",
-        post.titleJa ?? "",
-        post.summary ?? "",
-        post.summaryZh ?? "",
-        post.summaryJa ?? "",
-        post.preview ?? "",
-        post.previewZh ?? "",
-        post.previewJa ?? "",
-        tags.join(" "),
-        sourceName,
-        sourceIdNorm,
-        category
-      ].join(" ")
-    );
-
-    index.push({ i, hay, tags, sourceName, sourceId, sourceIdNorm, category, publishedAtMs });
-  }
-
-  return { v: 1, generatedAt, posts, index };
 }
 
 async function translatePosts(params: {

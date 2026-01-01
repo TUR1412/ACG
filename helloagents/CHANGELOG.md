@@ -21,6 +21,9 @@
 - 分类页首屏瘦身：分类页静态渲染条目数 120→60，显著降低 HTML 体积与解析成本；全量内容可通过“全站·本分类”一键进入。
 - 网络请求退避重试加入 jitter，降低同步重试带来的拥塞风险。
 - 搜索查询解析模块下沉到 `src/lib/search/query.ts`，供页面内过滤、全站搜索 Worker 与命令面板共享（减少路径耦合）。
+- 搜索包构建去重：同步管线 `scripts/sync.ts` 复用 `src/lib/search/pack.ts` 的 `buildSearchPack`（减少重复实现，确保构建期与运行时一致）。
+- 搜索 Worker 更稳：读取 IndexedDB/search-pack 时对 posts/index 做归一化与自愈写回（避免旧缓存/异常数据导致索引不一致）。
+- 文档呈现升级：README 增加 Title ASCII 艺术字、扩展 Badges，并补充 TL;DR 的 Emoji 特性列表。
 - 详情页：新增“复制链接”按钮（复制站内页面链接），并复用全局 Toast 反馈。
 - SEO/分享：`SiteLayout` 增加 canonical + Open Graph/Twitter meta；详情页默认注入 `article` 类型与封面图（如可用）。
 - 视觉系统参数变量化：玻璃 blur/saturate 与边框动效可通过 `--acg-glass-*` / `--acg-border-pan-*` 调参。

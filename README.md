@@ -1,3 +1,10 @@
+```text
+   ___   _______   _______           ____            __
+  / _ | / ___/ /  / ___/ /  ___ ____/ __ \\___ ____  / /__
+ / __ |/ /__/ /__/ /__/ _ \\/ -_) __/ /_/ / _ `/ _ \\/  '_/
+/_/ |_|\\___/____/\\___/_//_/\\__/_/  \\____/\\_,_/_//_/_/\\_\\
+```
+
 <p align="center">
   <img src="docs/readme-banner.svg?raw=1" alt="ACG Radar / ACGレーダー" />
 </p>
@@ -9,6 +16,10 @@
 
 [![Hourly Sync & Deploy (GitHub Pages)](https://github.com/TUR1412/ACG/actions/workflows/hourly-sync-and-deploy.yml/badge.svg)](https://github.com/TUR1412/ACG/actions/workflows/hourly-sync-and-deploy.yml)
 ![MIT](https://img.shields.io/badge/License-MIT-black)
+![Astro](https://img.shields.io/badge/Astro-5-FF5D01?logo=astro&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06b6d4?logo=tailwindcss&logoColor=white)
+![PWA](https://img.shields.io/badge/PWA-ready-22c55e)
 
 **在线预览 / Demo**
 
@@ -35,6 +46,14 @@
 ---
 
 ## 功能亮点（Features）
+
+**快速扫一眼（TL;DR）**
+
+- 🌐 双语 UI（`/zh/` / `/ja/`）
+- ⏱️ GitHub Actions 每小时更新
+- 🔎 站内搜索语法：`tag:` / `source:` / `cat:` / `before:` / `after:` / `is:` + `-` 反选
+- ⌘ Command Palette：`Ctrl/⌘ + K`
+- 📦 PWA：弱网/离线兜底
 
 - **中日双语 / 日中バイリンガル**：`/zh/`、`/ja/` 路由隔离
 - **全局语言转换（标题/摘要）**：按所选语言自动翻译（中文用户不再被日文/英文“卡住”）

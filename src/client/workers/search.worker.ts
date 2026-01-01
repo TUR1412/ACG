@@ -1,5 +1,5 @@
 import { normalizeText, parseQuery } from "../../lib/search/query";
-import type { SearchPackIndexRow } from "../../lib/search/pack";
+import { buildSearchIndex, normalizeSearchPackIndexRow, type SearchPackIndexRow } from "../../lib/search/pack";
 import type { Post } from "../../lib/types";
 
 type BookmarkCategory = "anime" | "game" | "goods" | "seiyuu";
@@ -123,64 +123,6 @@ function normalizePost(value: unknown): BookmarkPost | null {
     sourceName: typeof it.sourceName === "string" ? it.sourceName : "",
     sourceUrl: typeof it.sourceUrl === "string" ? it.sourceUrl : ""
   } satisfies BookmarkPost;
-}
-
-function buildIndex(list: BookmarkPost[]): IndexedPost[] {
-  const out: IndexedPost[] = [];
-  for (let i = 0; i < list.length; i += 1) {
-    const post = list[i];
-    const tags = (post.tags ?? []).map((t) => normalizeText(t)).filter(Boolean);
-    const sourceName = normalizeText(post.sourceName);
-    const sourceId = post.sourceId ?? "";
-    const sourceIdNorm = normalizeText(sourceId);
-    const category = normalizeText(post.category);
-    const ts = post.publishedAt ? Date.parse(post.publishedAt) : NaN;
-    const publishedAtMs = Number.isFinite(ts) ? ts : null;
-
-    const hay = normalizeText(
-      [
-        post.title,
-        post.titleZh ?? "",
-        post.titleJa ?? "",
-        post.summary ?? "",
-        post.summaryZh ?? "",
-        post.summaryJa ?? "",
-        post.preview ?? "",
-        post.previewZh ?? "",
-        post.previewJa ?? "",
-        tags.join(" "),
-        sourceName,
-        sourceIdNorm,
-        category
-      ].join(" ")
-    );
-
-    out.push({ i, hay, tags, sourceName, sourceId, sourceIdNorm, category, publishedAtMs });
-  }
-  return out;
-}
-
-function normalizeIndexRow(value: unknown, maxPosts: number): IndexedPost | null {
-  if (!value || typeof value !== "object") return null;
-  const it = value as any;
-
-  const iRaw = typeof it.i === "number" ? it.i : NaN;
-  const i = Number.isFinite(iRaw) ? Math.floor(iRaw) : NaN;
-  if (!Number.isFinite(i) || i < 0 || i >= maxPosts) return null;
-
-  const hay = typeof it.hay === "string" ? normalizeText(it.hay) : "";
-  if (!hay) return null;
-
-  const tags = Array.isArray(it.tags) ? it.tags.filter((x: unknown) => typeof x === "string").map((t: string) => normalizeText(t)).filter(Boolean) : [];
-  const sourceName = typeof it.sourceName === "string" ? normalizeText(it.sourceName) : "";
-  const sourceId = typeof it.sourceId === "string" ? it.sourceId : "";
-  const sourceIdNorm = typeof it.sourceIdNorm === "string" ? normalizeText(it.sourceIdNorm) : normalizeText(sourceId);
-  const category = typeof it.category === "string" ? normalizeText(it.category) : "";
-
-  const pRaw = typeof it.publishedAtMs === "number" ? it.publishedAtMs : NaN;
-  const publishedAtMs = Number.isFinite(pRaw) ? pRaw : null;
-
-  return { i, hay, tags, sourceName, sourceId, sourceIdNorm, category, publishedAtMs };
 }
 
 function supportsGzipDecompression(): boolean {
@@ -325,20 +267,32 @@ async function ensureDataLoaded(): Promise<void> {
   if (cached && typeof cached === "object") {
     const v = (cached as any).v;
     if (v === 2 && Array.isArray((cached as any).posts) && Array.isArray((cached as any).index)) {
-      const list = (cached as any).posts as BookmarkPost[];
-      const idx = (cached as any).index as IndexedPost[];
-      if (list.length > 0 && idx.length > 0) {
+      const listRaw = (cached as any).posts as unknown[];
+      const idxRaw = (cached as any).index as unknown[];
+      const list = listRaw.map(normalizePost).filter((x): x is BookmarkPost => Boolean(x));
+      if (list.length > 0) {
+        const idx = idxRaw
+          .map((x: unknown) => normalizeSearchPackIndexRow(x, list.length))
+          .filter((x: IndexedPost | null): x is IndexedPost => Boolean(x));
+
         posts = list;
-        indexed = idx.length === list.length ? idx : buildIndex(list);
+        indexed = idx.length === list.length ? idx : buildSearchIndex(list);
+
+        const shouldResave =
+          list.length !== listRaw.length || idx.length !== idxRaw.length || idx.length !== list.length;
+        if (shouldResave && indexed.length > 0) {
+          void dbSet(POSTS_KEY, { v: 2, savedAt: new Date().toISOString(), posts: list, index: indexed });
+        }
+
         return;
       }
     }
 
     if (v === 1 && Array.isArray((cached as any).posts)) {
-      const list = (cached as any).posts as BookmarkPost[];
+      const list = ((cached as any).posts as unknown[]).map(normalizePost).filter((x): x is BookmarkPost => Boolean(x));
       if (list.length > 0) {
         posts = list;
-        indexed = buildIndex(list);
+        indexed = buildSearchIndex(list);
         await dbSet(POSTS_KEY, { v: 2, savedAt: new Date().toISOString(), posts: list, index: indexed });
         return;
       }
@@ -352,7 +306,9 @@ async function ensureDataLoaded(): Promise<void> {
       const pack = json as any;
       if (pack && typeof pack === "object" && pack.v === 1 && Array.isArray(pack.posts) && Array.isArray(pack.index)) {
         const list = (pack.posts as unknown[]).map(normalizePost).filter((x): x is BookmarkPost => Boolean(x));
-        const idx = pack.index.map((x: unknown) => normalizeIndexRow(x, list.length)).filter((x: IndexedPost | null): x is IndexedPost => Boolean(x));
+        const idx = pack.index
+          .map((x: unknown) => normalizeSearchPackIndexRow(x, list.length))
+          .filter((x: IndexedPost | null): x is IndexedPost => Boolean(x));
         if (list.length > 0 && idx.length === list.length) {
           posts = list;
           indexed = idx;
@@ -372,7 +328,7 @@ async function ensureDataLoaded(): Promise<void> {
     if (!Array.isArray(json)) throw new Error("posts.json 格式错误");
     const list = json.map(normalizePost).filter((x): x is BookmarkPost => Boolean(x));
     posts = list;
-    indexed = buildIndex(list);
+    indexed = buildSearchIndex(list);
     await dbSet(POSTS_KEY, { v: 2, savedAt: new Date().toISOString(), posts: list, index: indexed });
   } catch {
     // ignore: keep empty

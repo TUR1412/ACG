@@ -17,6 +17,7 @@
 - `scripts/sync.ts`
 - `scripts/lib/*`
 - `src/lib/source-config.ts`（来源配置 SSOT）
+- `src/lib/search/pack.ts`（search-pack 构建与索引生成的共享实现）
 
 ## 产物
 - `src/data/generated/posts.json` / `public/data/posts.json(.gz)`
