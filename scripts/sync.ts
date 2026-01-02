@@ -2,7 +2,7 @@ import { dirname, resolve } from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { gzipSync } from "node:zlib";
-import { SOURCES } from "./sources/index";
+import { parseSourceToItems, SOURCES } from "./sources/index";
 import { parseArgs } from "./lib/args";
 import {
   cacheFilePath,
@@ -14,10 +14,8 @@ import {
   writeJsonFile,
   type HttpCache
 } from "./lib/http-cache";
-import { parseFeedToItems } from "./sources/feed-source";
-import { parseAnimeAnimeList } from "./sources/html-animeanime";
 import { extractCoverFromHtml, extractPreviewFromHtml, isProbablyNonCoverImageUrl } from "./lib/html";
-import type { RawItem, Source } from "./sources/types";
+import type { Source } from "./sources/types";
 import type { Post, SourceStatus, SyncStatus } from "../src/lib/types";
 import { buildSearchPack } from "../src/lib/search/pack";
 import { deriveTags } from "./lib/tagger";
@@ -238,14 +236,7 @@ async function runSource(params: {
     };
   }
 
-  let rawItems: RawItem[] = [];
-  if (source.kind === "feed") {
-    rawItems = parseFeedToItems({ source, xml: res.text });
-  } else if (source.kind === "html" && source.id === "animeanime-list") {
-    rawItems = parseAnimeAnimeList(res.text);
-  } else {
-    rawItems = [];
-  }
+  const rawItems = parseSourceToItems({ source, text: res.text });
 
   const filtered = source.include
     ? rawItems.filter((it) => source.include?.({ title: it.title, summary: it.summary, url: it.url }))

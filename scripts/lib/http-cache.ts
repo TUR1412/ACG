@@ -41,16 +41,34 @@ export function sha1(input: string): string {
 }
 
 export function normalizeUrl(url: string): string {
+  const input = url.trim();
   try {
-    const parsed = new URL(url);
+    const parsed = new URL(input);
     parsed.hash = "";
+
+    // 数据质量：剥离常见追踪参数，减少重复条目与噪声。
+    // 原则：保守删除（仅移除“明显不影响内容定位”的参数）。
+    const trackingKeys = new Set([
+      "fbclid",
+      "gclid",
+      "igshid",
+      "mc_cid",
+      "mc_eid",
+      "mkt_tok",
+      "yclid"
+    ]);
+    for (const key of [...parsed.searchParams.keys()]) {
+      const k = key.toLowerCase();
+      if (k.startsWith("utm_") || trackingKeys.has(k)) parsed.searchParams.delete(key);
+    }
+
     return parsed.toString();
   } catch {
-    return url.trim();
+    return input;
   }
 }
 
-export function stripAndTruncate(text: string, maxLen: number): string {
+export function stripAndTruncate(text: string, maxLen: number): string {        
   const compact = text.replace(/\s+/g, " ").trim();
   if (compact.length <= maxLen) return compact;
   return compact.slice(0, Math.max(0, maxLen - 1)).trimEnd() + "…";
@@ -58,8 +76,28 @@ export function stripAndTruncate(text: string, maxLen: number): string {
 
 export type FetchResult =
   | { ok: true; status: number; text: string; fromCache: false; headers: Headers }
-  | { ok: true; status: 304; text: ""; fromCache: true; headers: Headers }
+  | { ok: true; status: 304; text: ""; fromCache: true; headers: Headers }      
   | { ok: false; status?: number; error: string };
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function shouldRetryStatus(status: number): boolean {
+  return status === 429 || (status >= 500 && status <= 599);
+}
+
+function shouldRetryError(message: string): boolean {
+  const m = message.toLowerCase();
+  return (
+    m.includes("aborted") ||
+    m.includes("timeout") ||
+    m.includes("timed out") ||
+    m.includes("econnreset") ||
+    m.includes("enotfound") ||
+    m.includes("fetch failed")
+  );
+}
 
 export async function fetchTextWithCache(params: {
   url: string;
@@ -69,51 +107,72 @@ export async function fetchTextWithCache(params: {
   verbose: boolean;
   force?: boolean;
   persistCache?: boolean;
+  retries?: number;
 }): Promise<FetchResult> {
   const { url, cache, cachePath, timeoutMs, verbose } = params;
   const force = params.force ?? false;
   const persistCache = params.persistCache ?? true;
+  const retries = Math.min(2, Math.max(0, params.retries ?? 1));
   const entry = cache[url] ?? {};
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-  try {
-    const headers: Record<string, string> = {
-      "user-agent": DEFAULT_USER_AGENT,
-      "accept-language": "ja,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
-      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-    };
-    if (!force) {
-      if (entry.etag) headers["if-none-match"] = entry.etag;
-      if (entry.lastModified) headers["if-modified-since"] = entry.lastModified;
+    try {
+      const headers: Record<string, string> = {
+        "user-agent": DEFAULT_USER_AGENT,
+        "accept-language": "ja,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
+        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+      };
+      if (!force) {
+        if (entry.etag) headers["if-none-match"] = entry.etag;
+        if (entry.lastModified) headers["if-modified-since"] = entry.lastModified;
+      }
+
+      const res = await fetch(url, { headers, signal: controller.signal, redirect: "follow" });
+      if (res.status === 304) {
+        if (verbose) console.log(`[304] ${url}`);
+        return { ok: true, status: 304 as const, text: "", fromCache: true, headers: res.headers };
+      }
+
+      if (!res.ok) {
+        const error = `HTTP ${res.status}`;
+        const retryable = shouldRetryStatus(res.status);
+        if (retryable && attempt < retries) {
+          const delay = Math.floor(260 * (attempt + 1) + Math.random() * 240);
+          if (verbose) console.log(`[RETRY] ${url} ${error} wait=${delay}ms`);
+          await sleep(delay);
+          continue;
+        }
+        return { ok: false, status: res.status, error };
+      }
+
+      const text = await res.text();
+      const next: HttpCacheEntry = {
+        etag: res.headers.get("etag") ?? entry.etag,
+        lastModified: res.headers.get("last-modified") ?? entry.lastModified,
+        lastOkAt: new Date().toISOString()
+      };
+      cache[url] = next;
+      if (persistCache) await writeJsonFile(cachePath, cache);
+      return { ok: true, status: res.status, text, fromCache: false, headers: res.headers };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const retryable = shouldRetryError(message);
+      if (retryable && attempt < retries) {
+        const delay = Math.floor(260 * (attempt + 1) + Math.random() * 240);
+        if (verbose) console.log(`[RETRY] ${url} ${message} wait=${delay}ms`);
+        await sleep(delay);
+        continue;
+      }
+      return { ok: false, error: message };
+    } finally {
+      clearTimeout(timeout);
     }
-
-    const res = await fetch(url, { headers, signal: controller.signal, redirect: "follow" });
-    if (res.status === 304) {
-      if (verbose) console.log(`[304] ${url}`);
-      return { ok: true, status: 304 as const, text: "", fromCache: true, headers: res.headers };
-    }
-
-    if (!res.ok) {
-      return { ok: false, status: res.status, error: `HTTP ${res.status}` };
-    }
-
-    const text = await res.text();
-    const next: HttpCacheEntry = {
-      etag: res.headers.get("etag") ?? entry.etag,
-      lastModified: res.headers.get("last-modified") ?? entry.lastModified,
-      lastOkAt: new Date().toISOString()
-    };
-    cache[url] = next;
-    if (persistCache) await writeJsonFile(cachePath, cache);
-    return { ok: true, status: res.status, text, fromCache: false, headers: res.headers };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { ok: false, error: message };
-  } finally {
-    clearTimeout(timeout);
   }
+
+  return { ok: false, error: "unknown" };
 }
 
 export function cacheFilePath(rootDir: string): string {

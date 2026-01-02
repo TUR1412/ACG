@@ -63,4 +63,8 @@ sequenceDiagram
 | ADR-003 | 引入 PWA 基础（Manifest + SW） | 2025-12-25 | ✅已采纳 | web-ui / client-app | history/2025-12/202512252117_evolution_v0_2/how.md |
 | ADR-004 | CI 增加数据校验与体积预算门禁 | 2025-12-25 | ✅已采纳 | pipeline-sync | history/2025-12/202512252117_evolution_v0_2/how.md |
 | ADR-005 | Perf Budget 指标按“入口页 vs 数据载荷”拆分 | 2025-12-31 | ✅已采纳 | pipeline-sync | history/2025-12/202512312048_evolution_v0_7_budget_data_split/how.md |
+| ADR-006 | 全文预览采用“渲染快速可见 + idle 后处理”的分阶段策略 | 2026-01-02 | ✅已采纳 | client-app | history/2026-01/202601021014_evolution_v0_9_fulltext_perf_pipeline/how.md |
+| ADR-007 | 同步管线的 HTML 来源解析采用注册表（插件式） | 2026-01-02 | ✅已采纳 | pipeline-sync | history/2026-01/202601021014_evolution_v0_9_fulltext_perf_pipeline/how.md |
+| ADR-008 | URL 规范化剥离常见追踪参数 | 2026-01-02 | ✅已采纳 | pipeline-sync / shared-lib | history/2026-01/202601021014_evolution_v0_9_fulltext_perf_pipeline/how.md |
+| ADR-009 | 抓取请求增加保守重试与 jitter 退避 | 2026-01-02 | ✅已采纳 | pipeline-sync | history/2026-01/202601021014_evolution_v0_9_fulltext_perf_pipeline/how.md |
 

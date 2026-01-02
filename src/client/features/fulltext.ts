@@ -14,6 +14,55 @@ type FullTextLang = "zh" | "ja";
 const FULLTEXT_CACHE_MAX_CHARS = 160_000;
 const FULLTEXT_REQUEST_TIMEOUT_MS = 22_000;
 const FULLTEXT_STATUS_FLASH_MS = 1600;
+const FULLTEXT_POSTPROCESS_IDLE_TIMEOUT_MS = 1600;
+const FULLTEXT_AUTO_TRANSLATE_SCROLL_DELAY_MS = 260;
+
+function isLowPerfMode(): boolean {
+  try {
+    return document.documentElement.dataset.acgPerf === "low";
+  } catch {
+    return false;
+  }
+}
+
+function isScrollingNow(): boolean {
+  try {
+    return document.documentElement.dataset.acgScroll === "1";
+  } catch {
+    return false;
+  }
+}
+
+function runWhenIdle(task: () => void, timeoutMs: number) {
+  try {
+    const ric = (window as any).requestIdleCallback as
+      | ((cb: (deadline?: unknown) => void, opts?: { timeout?: number }) => number)
+      | undefined;
+    if (typeof ric === "function") {
+      ric(
+        () => {
+          try {
+            task();
+          } catch {
+            // ignore
+          }
+        },
+        { timeout: timeoutMs }
+      );
+      return;
+    }
+  } catch {
+    // ignore
+  }
+
+  window.setTimeout(() => {
+    try {
+      task();
+    } catch {
+      // ignore
+    }
+  }, Math.min(80, Math.max(0, timeoutMs)));
+}
 
 type FullTextCacheEntry = {
   url: string;
@@ -2563,6 +2612,7 @@ export function wireFullTextReader() {
     // 说明：全文可能很长，localStorage 写入会被配额/上限拦截（或被我们主动跳过）。
     // 但用户在“本次会话”里依然应该能用「查看原文/查看翻译」切换，所以保留内存态兜底。
     let memoryCache: FullTextCacheEntry | null = null;
+    let renderSeq = 0;
 
     const setStatus = (text: string) => {
       if (!statusEl) return;
@@ -2579,43 +2629,66 @@ export function wireFullTextReader() {
     };
 
     const render = (text: string) => {
+      renderSeq += 1;
+      const seq = renderSeq;
+
       delete contentEl.dataset.acgProseEnhanced;
+      delete contentEl.dataset.acgProseKind;
       contentEl.innerHTML = stripInternalPlaceholdersFromHtml(renderMarkdownToHtml(text, url));
-      let kind: ProseKind = "article";
-      try {
-        kind = detectProseKind(contentEl);
-        contentEl.dataset.acgProseKind = kind;
-      } catch {
-        // ignore
-      }
 
-      if (kind === "article") {
+      // 说明：以下逻辑会遍历/重写 DOM，移动端可能造成“卡一下”；因此延后到 idle 执行。
+      // 使用 seq 防止快速切换（原文/翻译/重试）导致重复后处理与错序写入。
+      const postProcess = () => {
+        if (seq !== renderSeq) return;
+
+        let kind: ProseKind = "article";
         try {
-          pruneProseArticleJunk(contentEl);
+          kind = detectProseKind(contentEl);
+          contentEl.dataset.acgProseKind = kind;
         } catch {
           // ignore
         }
-      }
 
-      if (kind === "index") {
-        try {
-          enhanceProseIndex(contentEl);
-        } catch {
-          // ignore
+        if (kind === "article") {
+          try {
+            pruneProseArticleJunk(contentEl);
+          } catch {
+            // ignore
+          }
         }
-      }
 
-      try {
-        enhanceProseImageGalleries(contentEl);
-      } catch {
-        // ignore
-      }
+        if (kind === "index") {
+          try {
+            enhanceProseIndex(contentEl);
+          } catch {
+            // ignore
+          }
+        }
 
-      try {
-        enhanceLinkListItems(contentEl);
-      } catch {
-        // ignore
-      }
+        const lowPerf = isLowPerfMode();
+        const imgCount = contentEl.querySelectorAll("img").length;
+        const linkCount = contentEl.querySelectorAll("a[href]").length;
+
+        // 低性能模式：对“增强”做阈值限制（优先保证滚动与交互）。
+        if (!lowPerf || imgCount <= 36) {
+          try {
+            enhanceProseImageGalleries(contentEl);
+          } catch {
+            // ignore
+          }
+        }
+
+        if (!lowPerf || linkCount <= 220) {
+          try {
+            enhanceLinkListItems(contentEl);
+          } catch {
+            // ignore
+          }
+        }
+      };
+
+      const timeoutMs = isLowPerfMode() ? FULLTEXT_POSTPROCESS_IDLE_TIMEOUT_MS : 600;
+      runWhenIdle(postProcess, timeoutMs);
     };
 
     const hasTranslated = (cache: FullTextCacheEntry) => (lang === "zh" ? Boolean(cache.zh) : Boolean(cache.ja));
@@ -2804,7 +2877,20 @@ export function wireFullTextReader() {
     if (autoload) {
       const startTranslateIfWanted = () => {
         if (viewMode === "original") return;
-        void ensureTranslated();
+        // 低性能模式：默认不自动翻译（保留手动入口）。
+        if (isLowPerfMode()) return;
+
+        // 滚动期：优先保证滚动与交互，延后到滚动停止再翻译。
+        const tryStart = () => {
+          if (viewMode === "original") return;
+          if (isLowPerfMode()) return;
+          if (isScrollingNow()) {
+            window.setTimeout(tryStart, FULLTEXT_AUTO_TRANSLATE_SCROLL_DELAY_MS);
+            return;
+          }
+          void ensureTranslated();
+        };
+        tryStart();
       };
 
       if (!("IntersectionObserver" in window)) {

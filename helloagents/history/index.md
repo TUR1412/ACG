@@ -13,6 +13,7 @@
 | 202512292134 | evolution_v0_6_ui_smoothness | UI/体验 | ✅已完成 | history/2025-12/202512292134_evolution_v0_6_ui_smoothness/ |
 | 202512312048 | evolution_v0_7_budget_data_split | 修复/重构 | ✅已完成 | history/2025-12/202512312048_evolution_v0_7_budget_data_split/ |
 | 202512312242 | evolution_v0_8_ui_category_global_search | UI/体验 | ✅已完成 | history/2025-12/202512312242_evolution_v0_8_ui_category_global_search/ |
+| 202601021014 | evolution_v0_9_fulltext_perf_pipeline | 功能/重构 | ✅已完成 | history/2026-01/202601021014_evolution_v0_9_fulltext_perf_pipeline/ |
 
 ## 按月归档
 
@@ -25,4 +26,8 @@
 - 202512292134_evolution_v0_6_ui_smoothness (2025-12/202512292134_evolution_v0_6_ui_smoothness/) - 滚动期降级 + 卡片入场微动效 + 转场去 blur（更顺滑）
 - 202512312048_evolution_v0_7_budget_data_split (2025-12/202512312048_evolution_v0_7_budget_data_split/) - Perf Budget 指标拆分（data.json 独立统计，避免入口页 core 门禁误报）
 - 202512312242_evolution_v0_8_ui_category_global_search (2025-12/202512312242_evolution_v0_8_ui_category_global_search/) - 分类页首屏瘦身（120→60）+ 全站·本分类预置 + Skip Link
+
+### 2026-01
+
+- 202601021014_evolution_v0_9_fulltext_perf_pipeline (2026-01/202601021014_evolution_v0_9_fulltext_perf_pipeline/) - 全文预览性能分阶段（idle 后处理 + 低性能/滚动期降级）+ 同步管线插件化与稳定性增强
 

@@ -1,5 +1,7 @@
-import type { Source } from "./types";
+import type { RawItem, Source } from "./types";
 import { SOURCE_CONFIGS, type SourceConfig } from "../../src/lib/source-config";
+import { parseFeedToItems } from "./feed-source";
+import { parseAnimeAnimeList } from "./html-animeanime";
 
 function compileInclude(config: SourceConfig): Source["include"] {
   if (!config.include) return undefined;
@@ -28,4 +30,20 @@ export const SOURCES: Source[] = SOURCE_CONFIGS.map((s) => ({
   category: s.category,
   include: compileInclude(s)
 }));
+
+type HtmlParser = (html: string) => RawItem[];
+
+const HTML_PARSERS: Record<string, HtmlParser> = {
+  "animeanime-list": parseAnimeAnimeList
+};
+
+export function parseSourceToItems(params: { source: Source; text: string }): RawItem[] {
+  const { source, text } = params;
+  if (source.kind === "feed") return parseFeedToItems({ source, xml: text });
+  if (source.kind === "html") {
+    const parser = HTML_PARSERS[source.id];
+    return typeof parser === "function" ? parser(text) : [];
+  }
+  return [];
+}
 

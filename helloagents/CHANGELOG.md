@@ -35,6 +35,10 @@
 - UI 流畅度：新增滚动期 `data-acg-scroll="1"` 视觉降级（滚动时禁用 backdrop-filter、暂停 shimmer/占位动画），提升滚动稳定性。
 - 信息流层次：卡片入场 `data-acg-inview`（IntersectionObserver 打标 + transform/opacity 过渡；低性能与减少动效自动关闭）。
 - 页面转场：View Transitions 与 WAAPI 降级去除 filter blur（仅保留 opacity/transform），降低合成与掉帧风险。
+- 全文预览性能：渲染后处理（去壳/图墙治理/链接增强）延后到 idle 执行，并对 `data-acg-perf="low"` 做阈值限制；滚动期不自动触发自动翻译，降低移动端卡顿。
+- 抓取稳定性：对瞬时失败（超时/429/5xx）增加保守重试 + jitter 退避，降低整点波动误报。
+- 数据质量：同步阶段 URL 规范化剥离常见追踪参数（如 `utm_*` / `fbclid` / `gclid` 等），提升去重准确性。
+- 可维护性：同步管线的 HTML 来源解析改为注册表（插件式），移除按 source.id 的硬编码特判。
 
 ## [0.2.1] - 2025-12-29
 
