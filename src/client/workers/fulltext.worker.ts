@@ -1,4 +1,4 @@
-import { renderMarkdownToHtml, stripInternalPlaceholdersFromHtml, translateViaGtx } from "../features/fulltext";
+import { renderMarkdownToHtmlBlocks, stripInternalPlaceholdersFromHtml, translateViaGtx } from "../features/fulltext";
 
 type FullTextLang = "zh" | "ja";
 
@@ -23,6 +23,7 @@ type FullTextWorkerRenderResultMessage = {
   type: "render_result";
   requestId: number;
   html: string;
+  blocks?: string[];
 };
 
 type FullTextWorkerTranslateResultMessage = {
@@ -75,8 +76,10 @@ self.addEventListener("message", (ev: MessageEvent<FullTextWorkerInMessage>) => 
 
   if (msg.type === "render") {
     try {
-      const html = stripInternalPlaceholdersFromHtml(renderMarkdownToHtml(msg.md, msg.baseUrl));
-      post({ type: "render_result", requestId: msg.requestId, html });
+      const rawBlocks = renderMarkdownToHtmlBlocks(msg.md, msg.baseUrl);
+      const blocks = rawBlocks.map(stripInternalPlaceholdersFromHtml).filter((x) => x.trim().length > 0);
+      const html = blocks.join("\n");
+      post({ type: "render_result", requestId: msg.requestId, html, blocks });
     } catch (err) {
       post({ type: "error", phase: "render", requestId: msg.requestId, message: stringifyError(err) });
     }
@@ -99,4 +102,3 @@ self.addEventListener("message", (ev: MessageEvent<FullTextWorkerInMessage>) => 
     });
   }
 });
-

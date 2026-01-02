@@ -32,6 +32,7 @@ type FullTextWorkerRenderResultMessage = {
   type: "render_result";
   requestId: number;
   html: string;
+  blocks?: string[];
 };
 
 type FullTextWorkerTranslateResultMessage = {
@@ -92,6 +93,42 @@ function runWhenIdle(task: () => void, timeoutMs: number) {
         () => {
           try {
             task();
+          } catch {
+            // ignore
+          }
+        },
+        { timeout: timeoutMs }
+      );
+      return;
+    }
+  } catch {
+    // ignore
+  }
+
+  window.setTimeout(() => {
+    try {
+      task();
+    } catch {
+      // ignore
+    }
+  }, Math.min(80, Math.max(0, timeoutMs)));
+}
+
+type IdleDeadlineLike = {
+  timeRemaining?: () => number;
+  didTimeout?: boolean;
+};
+
+function runDuringIdle(task: (deadline?: IdleDeadlineLike) => void, timeoutMs: number) {
+  try {
+    const ric = (window as any).requestIdleCallback as
+      | ((cb: (deadline: IdleDeadlineLike) => void, opts?: { timeout?: number }) => number)
+      | undefined;
+    if (typeof ric === "function") {
+      ric(
+        (deadline) => {
+          try {
+            task(deadline);
           } catch {
             // ignore
           }
@@ -830,6 +867,7 @@ export function renderMarkdownToHtml(md: string, baseUrl: string): string {
     }
 
     // normal paragraph
+    closeList();
     para.push(trimmed);
   }
 
@@ -837,6 +875,66 @@ export function renderMarkdownToHtml(md: string, baseUrl: string): string {
   flushPara();
   closeList();
   return out.join("\n");
+}
+
+export function renderMarkdownToHtmlBlocks(md: string, baseUrl: string): string[] {
+  const html = renderMarkdownToHtml(md, baseUrl).trim();
+  if (!html) return [];
+
+  const lines = html.split("\n").filter((l) => l.trim().length > 0);
+  const blocks: string[] = [];
+
+  const MAX_LIST_ITEMS_PER_BLOCK = 28;
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i] ?? "";
+    const t = line.trim();
+
+    if (t === "<ul>" || t === "<ol>") {
+      const kind = t === "<ul>" ? "ul" : "ol";
+      const endTag = `</${kind}>`;
+
+      const rawItems: string[] = [];
+      let j = i + 1;
+      for (; j < lines.length; j += 1) {
+        const next = (lines[j] ?? "").trim();
+        if (next === endTag) break;
+        rawItems.push(lines[j] ?? "");
+      }
+
+      // 找不到闭合标签：退化成普通行（不冒险重写结构）
+      if (j >= lines.length) {
+        blocks.push(line);
+        continue;
+      }
+
+      // split list block by <li> count（避免单块过大）
+      let liCount = 0;
+      let buf: string[] = [];
+      const flushChunk = () => {
+        if (buf.length === 0) return;
+        blocks.push(`<${kind}>${buf.join("")}</${kind}>`);
+        buf = [];
+        liCount = 0;
+      };
+
+      for (const frag of rawItems) {
+        const fragTrim = frag.trim();
+        if (!fragTrim) continue;
+        buf.push(fragTrim);
+        if (fragTrim.startsWith("<li")) liCount += 1;
+        if (liCount >= MAX_LIST_ITEMS_PER_BLOCK) flushChunk();
+      }
+      flushChunk();
+
+      i = j; // skip closing tag
+      continue;
+    }
+
+    blocks.push(t);
+  }
+
+  return blocks;
 }
 
 type ProseKind = "article" | "index";
@@ -2663,8 +2761,10 @@ export function wireFullTextReader() {
     let memoryCache: FullTextCacheEntry | null = null;
     let renderSeq = 0;
 
+    type FullTextRenderPayload = { html: string; blocks?: string[] };
+
     type FullTextWorkerPending =
-      | { kind: "render"; resolve: (html: string) => void; reject: (err: Error) => void }
+      | { kind: "render"; resolve: (payload: FullTextRenderPayload) => void; reject: (err: Error) => void }
       | {
           kind: "translate";
           resolve: (translated: string) => void;
@@ -2724,7 +2824,7 @@ export function wireFullTextReader() {
           const pending = workerPending.get(msg.requestId);
           if (pending?.kind !== "render") return;
           workerPending.delete(msg.requestId);
-          pending.resolve(msg.html);
+          pending.resolve({ html: msg.html, blocks: msg.blocks });
           return;
         }
 
@@ -2757,10 +2857,11 @@ export function wireFullTextReader() {
       return worker;
     };
 
-    const renderHtmlMainThread = (md: string): string =>
-      stripInternalPlaceholdersFromHtml(renderMarkdownToHtml(md, url));
+    const renderHtmlMainThread = (md: string): FullTextRenderPayload => ({
+      html: stripInternalPlaceholdersFromHtml(renderMarkdownToHtml(md, url))
+    });
 
-    const renderHtml = async (md: string): Promise<string> => {
+    const renderHtml = async (md: string): Promise<FullTextRenderPayload> => {
       // 小文本直接主线程渲染，避免 Worker 启动/通信开销。
       const shouldUseWorker = md.length >= 8000 || isLowPerfMode();
       if (!shouldUseWorker) return renderHtmlMainThread(md);
@@ -2769,7 +2870,7 @@ export function wireFullTextReader() {
       if (!w) return renderHtmlMainThread(md);
 
       const requestId = (workerRequestSeq += 1);
-      return await new Promise<string>((resolve, reject) => {
+      return await new Promise<FullTextRenderPayload>((resolve, reject) => {
         workerPending.set(requestId, { kind: "render", resolve, reject });
         try {
           w.postMessage({ type: "render", requestId, md, baseUrl: url } satisfies FullTextWorkerInMessage);
@@ -2823,12 +2924,11 @@ export function wireFullTextReader() {
       renderSeq += 1;
       const seq = renderSeq;
 
-      const applyHtml = (html: string) => {
+      const applyRendered = (rendered: FullTextRenderPayload) => {
         if (seq !== renderSeq) return;
 
         delete contentEl.dataset.acgProseEnhanced;
         delete contentEl.dataset.acgProseKind;
-        contentEl.innerHTML = html;
 
         // 说明：以下逻辑会遍历/重写 DOM，移动端可能造成“卡一下”；因此延后到 idle 执行。
         // 使用 seq 防止快速切换（原文/翻译/重试）导致重复后处理与错序写入。
@@ -2881,18 +2981,120 @@ export function wireFullTextReader() {
           }
         };
 
-        const timeoutMs = isLowPerfMode() ? FULLTEXT_POSTPROCESS_IDLE_TIMEOUT_MS : 600;
-        runWhenIdle(postProcess, timeoutMs);
+        const schedulePostProcess = () => {
+          const timeoutMs = isLowPerfMode() ? FULLTEXT_POSTPROCESS_IDLE_TIMEOUT_MS : 600;
+          runWhenIdle(postProcess, timeoutMs);
+        };
+
+        const applyHtmlOnce = (html: string) => {
+          contentEl.innerHTML = html;
+          schedulePostProcess();
+        };
+
+        const getBlocksForProgressive = (): string[] | null => {
+          if (Array.isArray(rendered.blocks) && rendered.blocks.length > 0) {
+            const b = rendered.blocks.map((x) => x.trim()).filter((x) => x.length > 0);
+            if (b.length > 0) return b;
+          }
+
+          try {
+            const b = renderMarkdownToHtmlBlocks(text, url)
+              .map(stripInternalPlaceholdersFromHtml)
+              .map((x) => x.trim())
+              .filter((x) => x.length > 0);
+            return b.length > 0 ? b : null;
+          } catch {
+            return null;
+          }
+        };
+
+        const shouldProgressive =
+          isLowPerfMode() ||
+          rendered.html.length >= 24_000 ||
+          (Array.isArray(rendered.blocks) ? rendered.blocks.length >= 44 : false);
+
+        if (!shouldProgressive) {
+          applyHtmlOnce(rendered.html);
+          return;
+        }
+
+        const blocks = getBlocksForProgressive();
+        if (!blocks) {
+          applyHtmlOnce(rendered.html);
+          return;
+        }
+
+        try {
+          contentEl.innerHTML = "";
+
+          const tpl = document.createElement("template");
+          let nextIndex = 0;
+
+          const appendSome = (count: number) => {
+            const frag = document.createDocumentFragment();
+            const end = Math.min(blocks.length, nextIndex + Math.max(1, count));
+            for (let i = nextIndex; i < end; i += 1) {
+              tpl.innerHTML = blocks[i] ?? "";
+              frag.appendChild(tpl.content);
+            }
+            nextIndex = end;
+            contentEl.appendChild(frag);
+          };
+
+          // 优先快速渲染一小段（让首屏尽快可见），剩余内容在空闲时渐进追加。
+          appendSome(isLowPerfMode() ? 6 : 10);
+
+          const pump = (deadline?: IdleDeadlineLike) => {
+            if (seq !== renderSeq) return;
+            if (nextIndex >= blocks.length) {
+              schedulePostProcess();
+              return;
+            }
+
+            const start = performance.now();
+            const timeRemaining =
+              typeof deadline?.timeRemaining === "function" ? deadline.timeRemaining() : 0;
+            const budgetMs = Math.max(6, Math.min(18, timeRemaining || (isLowPerfMode() ? 10 : 14)));
+            const maxPerChunk = isLowPerfMode() ? 6 : 12;
+
+            const frag = document.createDocumentFragment();
+            let appended = 0;
+            while (nextIndex < blocks.length) {
+              tpl.innerHTML = blocks[nextIndex] ?? "";
+              frag.appendChild(tpl.content);
+              nextIndex += 1;
+              appended += 1;
+              if (appended >= maxPerChunk) break;
+              if (performance.now() - start >= budgetMs) break;
+            }
+            contentEl.appendChild(frag);
+
+            if (nextIndex >= blocks.length) {
+              schedulePostProcess();
+              return;
+            }
+
+            // 如果用户在滚动，放慢追加节奏，优先保证滚动流畅。
+            const nextTimeout = isScrollingNow() ? 1600 : isLowPerfMode() ? 1200 : 900;
+            runDuringIdle(pump, nextTimeout);
+          };
+
+          if (nextIndex >= blocks.length) schedulePostProcess();
+          else runDuringIdle(pump, isLowPerfMode() ? 600 : 420);
+        } catch {
+          // 兜底：渐进渲染失败时回退到一次性渲染，不影响可用性
+          applyHtmlOnce(rendered.html);
+        }
       };
 
       void renderHtml(text)
-        .then((html) => {
-          applyHtml(html);
+        .then((rendered) => {
+          applyRendered(rendered);
         })
         .catch(() => {
           // 兜底：避免渲染异常导致区域空白
           try {
-            applyHtml(`<pre><code>${escapeHtml(text)}</code></pre>`);
+            applyRendered({ html: `<pre><code>${escapeHtml(text)}</code></pre>` });
           } catch {
             // ignore
           }

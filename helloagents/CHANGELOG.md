@@ -37,6 +37,7 @@
 - 页面转场：View Transitions 与 WAAPI 降级去除 filter blur（仅保留 opacity/transform），降低合成与掉帧风险。
 - 全文预览性能：渲染后处理（去壳/图墙治理/链接增强）延后到 idle 执行，并对 `data-acg-perf="low"` 做阈值限制；滚动期不自动触发自动翻译，降低移动端卡顿。
 - 全文预览 Worker 化：渲染/翻译的字符串重计算优先由 Web Worker 执行，主线程只做 DOM 注入与 idle 后处理；Worker 不可用时回退主线程实现。
+- 全文预览 DOM 注入：渲染结果按 blocks 切分，并在长文/低性能模式下渐进式追加，减少一次性 `innerHTML` 注入带来的长任务与切换卡顿。
 - 抓取稳定性：对瞬时失败（超时/429/5xx）增加保守重试 + jitter 退避，降低整点波动误报。
 - 状态页可观测性：为每个来源记录抓取 attempts/waitMs 与解析 raw/filtered 统计，并在 `/status` 页面展示，降低排障成本。
 - 数据质量：同步阶段 URL 规范化剥离常见追踪参数（如 `utm_*` / `fbclid` / `gclid` 等），提升去重准确性。
