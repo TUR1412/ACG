@@ -63,9 +63,9 @@ export const SOURCE_CONFIGS: SourceConfig[] = [
   {
     id: "animeanime-list",
     name: "アニメ！アニメ！",
-    kind: "html",
+    kind: "feed",
     lang: "ja",
-    url: "https://animeanime.jp/article/",
+    url: "https://animeanime.jp/rss20/index.rdf",
     homepage: "https://animeanime.jp/",
     category: "anime"
   },

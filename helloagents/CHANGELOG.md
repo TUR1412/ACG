@@ -48,6 +48,8 @@
 - 可维护性：同步管线的 HTML 来源解析改为注册表（插件式），移除按 source.id 的硬编码特判。
 - 翻译质量：来源配置新增 `lang`（`en|ja|zh|unknown`），同步翻译阶段按来源语言跳过“同语种自翻译”，并在已有翻译字段存在时不重复生成（降低波动与请求量）。
 - 抓取稳定性：新增 `parse_drop`（解析结果异常缩水）回退策略；当历史数据足够多且本次明显异常变少时回退上一轮，避免静默停更（阈值可用环境变量覆盖）。
+- 抓取稳定性：`parse_drop` 判定基于解析前的 `rawItemCount`（而非过滤后的条目数），避免带 `include` 的来源因过滤后条目较少而误触发 fallback。
+- 来源质量：`animeanime-list` 从 HTML 列表页切换为 RSS 源（`https://animeanime.jp/rss20/index.rdf`），降低解析脆弱性并提升抓取稳定性。
 - 状态页体验：新增全局汇总指标（本轮新增/疑似停更/连续失败≥3）与 `parse_*` 错误建议（zh/ja），更快定位风险来源。
 - PWA 离线/弱网：Service Worker 对 data 请求按类型提供安全兜底（避免 `{}` 误伤），离线页展示最近更新时间并增加 status 快捷入口；客户端新增 online/offline Toast 轻提示。
 

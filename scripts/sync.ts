@@ -372,7 +372,7 @@ async function runSource(params: {
 
   const suspiciousDrop =
     previous.length >= dropMinPrev &&
-    posts.length < Math.max(dropMinKeep, Math.floor(previous.length * dropRatio));
+    rawItems.length < Math.max(dropMinKeep, Math.floor(previous.length * dropRatio));
   if (suspiciousDrop) {
     return {
       posts: previous,
