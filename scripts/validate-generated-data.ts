@@ -131,6 +131,11 @@ function validateStatus(json: unknown, errors: ValidationError[]) {
     if (!usedOk) pushError(errors, `${base}.used`, "used 非法（应为 fetched/cached/fallback）");
 
     if (it.httpStatus != null && toNumber(it.httpStatus) == null) pushError(errors, `${base}.httpStatus`, "httpStatus 不是数字");
+    if (it.attempts != null && toNumber(it.attempts) == null) pushError(errors, `${base}.attempts`, "attempts 不是数字");
+    if (it.waitMs != null && toNumber(it.waitMs) == null) pushError(errors, `${base}.waitMs`, "waitMs 不是数字");
+    if (it.rawItemCount != null && toNumber(it.rawItemCount) == null) pushError(errors, `${base}.rawItemCount`, "rawItemCount 不是数字");
+    if (it.filteredItemCount != null && toNumber(it.filteredItemCount) == null)
+      pushError(errors, `${base}.filteredItemCount`, "filteredItemCount 不是数字");
     if (it.error != null && !isNonEmptyString(it.error)) pushError(errors, `${base}.error`, "error 类型非法");
   }
 

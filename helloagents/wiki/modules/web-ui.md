@@ -6,7 +6,7 @@
 ## 模块概述
 - 职责：Astro 页面/组件渲染、RSS/JSON Feed/OPML 输出、SEO 元信息、布局与导航
 - 状态：✅稳定
-- 最后更新：2025-12-31
+- 最后更新：2026-01-02
 
 ## 规范
 ### 需求: 订阅导出兼容
@@ -32,6 +32,10 @@
 ### 需求: 页面转场动效
 场景：在页面跳转时获得更连贯的阅读节奏，并兼容不支持新 API 的浏览器。
 - 预期结果：支持 View Transitions 动效；不支持时降级到 WAAPI 的淡入淡出，且遵循 prefers-reduced-motion；动效以 opacity/transform 为主，避免 filter blur 造成合成开销。
+
+### 需求: 状态页可观测性（来源级）
+场景：当来源偶发失败/解析波动时，需要在静态站内快速定位原因，而不依赖 CI 日志全文排查。
+- 预期结果：`/status` 展示来源级重试指标（attempts/waitMs）与解析统计（raw/filtered），帮助快速判断“网络波动 vs 解析失效”。
 
 ## 依赖
 - `tailwind.config.ts`

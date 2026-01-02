@@ -212,7 +212,9 @@ async function runSource(params: {
         durationMs: Date.now() - start,
         fetchedAt: new Date().toISOString(),
         itemCount: previous.length,
-        used: "cached"
+        used: "cached",
+        attempts: res.attempts,
+        waitMs: res.waitMs
       }
     };
   }
@@ -231,6 +233,8 @@ async function runSource(params: {
         fetchedAt: new Date().toISOString(),
         itemCount: previous.length,
         used: "fallback",
+        attempts: res.attempts,
+        waitMs: res.waitMs,
         error: res.error
       }
     };
@@ -276,7 +280,11 @@ async function runSource(params: {
       durationMs: Date.now() - start,
       fetchedAt: new Date().toISOString(),
       itemCount: posts.length,
-      used: "fetched"
+      used: "fetched",
+      attempts: res.attempts,
+      waitMs: res.waitMs,
+      rawItemCount: rawItems.length,
+      filteredItemCount: filtered.length
     }
   };
 }

@@ -75,9 +75,25 @@ export function stripAndTruncate(text: string, maxLen: number): string {
 }
 
 export type FetchResult =
-  | { ok: true; status: number; text: string; fromCache: false; headers: Headers }
-  | { ok: true; status: 304; text: ""; fromCache: true; headers: Headers }      
-  | { ok: false; status?: number; error: string };
+  | {
+      ok: true;
+      status: number;
+      text: string;
+      fromCache: false;
+      headers: Headers;
+      attempts: number;
+      waitMs: number;
+    }
+  | {
+      ok: true;
+      status: 304;
+      text: "";
+      fromCache: true;
+      headers: Headers;
+      attempts: number;
+      waitMs: number;
+    }
+  | { ok: false; status?: number; error: string; attempts: number; waitMs: number };
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -114,6 +130,7 @@ export async function fetchTextWithCache(params: {
   const persistCache = params.persistCache ?? true;
   const retries = Math.min(2, Math.max(0, params.retries ?? 1));
   const entry = cache[url] ?? {};
+  let waitMs = 0;
 
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     const controller = new AbortController();
@@ -133,7 +150,24 @@ export async function fetchTextWithCache(params: {
       const res = await fetch(url, { headers, signal: controller.signal, redirect: "follow" });
       if (res.status === 304) {
         if (verbose) console.log(`[304] ${url}`);
-        return { ok: true, status: 304 as const, text: "", fromCache: true, headers: res.headers };
+        const next: HttpCacheEntry = {
+          ...entry,
+          etag: res.headers.get("etag") ?? entry.etag,
+          lastModified: res.headers.get("last-modified") ?? entry.lastModified,
+          // 304 也代表“本次验证成功”：刷新时间戳，便于 status page 判断“最近是否稳定”。
+          lastOkAt: new Date().toISOString()
+        };
+        cache[url] = next;
+        if (persistCache) await writeJsonFile(cachePath, cache);
+        return {
+          ok: true,
+          status: 304 as const,
+          text: "",
+          fromCache: true,
+          headers: res.headers,
+          attempts: attempt + 1,
+          waitMs
+        };
       }
 
       if (!res.ok) {
@@ -142,10 +176,11 @@ export async function fetchTextWithCache(params: {
         if (retryable && attempt < retries) {
           const delay = Math.floor(260 * (attempt + 1) + Math.random() * 240);
           if (verbose) console.log(`[RETRY] ${url} ${error} wait=${delay}ms`);
+          waitMs += delay;
           await sleep(delay);
           continue;
         }
-        return { ok: false, status: res.status, error };
+        return { ok: false, status: res.status, error, attempts: attempt + 1, waitMs };
       }
 
       const text = await res.text();
@@ -156,23 +191,32 @@ export async function fetchTextWithCache(params: {
       };
       cache[url] = next;
       if (persistCache) await writeJsonFile(cachePath, cache);
-      return { ok: true, status: res.status, text, fromCache: false, headers: res.headers };
+      return {
+        ok: true,
+        status: res.status,
+        text,
+        fromCache: false,
+        headers: res.headers,
+        attempts: attempt + 1,
+        waitMs
+      };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       const retryable = shouldRetryError(message);
       if (retryable && attempt < retries) {
         const delay = Math.floor(260 * (attempt + 1) + Math.random() * 240);
         if (verbose) console.log(`[RETRY] ${url} ${message} wait=${delay}ms`);
+        waitMs += delay;
         await sleep(delay);
         continue;
       }
-      return { ok: false, error: message };
+      return { ok: false, error: message, attempts: attempt + 1, waitMs };
     } finally {
       clearTimeout(timeout);
     }
   }
 
-  return { ok: false, error: "unknown" };
+  return { ok: false, error: "unknown", attempts: retries + 1, waitMs };
 }
 
 export function cacheFilePath(rootDir: string): string {

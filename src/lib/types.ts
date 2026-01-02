@@ -37,6 +37,14 @@ export type SourceStatus = {
   fetchedAt?: string;
   itemCount: number;
   used: "fetched" | "cached" | "fallback";
+  /** 抓取本次实际尝试次数（含首次） */
+  attempts?: number;
+  /** 抓取重试退避累计等待（毫秒，含 jitter） */
+  waitMs?: number;
+  /** 解析器输出的原始条目数（过滤前） */
+  rawItemCount?: number;
+  /** include 过滤后的条目数（生成 posts 前） */
+  filteredItemCount?: number;
   error?: string;
 };
 
