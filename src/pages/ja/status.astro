@@ -11,6 +11,9 @@ const totalSources = status.sources.length;
 const okSources = status.sources.filter((s) => s.ok).length;
 const errSources = totalSources - okSources;
 const totalItems = status.sources.reduce((sum, s) => sum + (s.itemCount ?? 0), 0);
+const totalNewItems = status.sources.reduce((sum, s) => sum + (s.newItemCount ?? 0), 0);
+const flakySources = status.sources.filter((s) => typeof s.consecutiveFails === "number" && s.consecutiveFails >= 3).length;
+const staleThresholdHours = 72;
 const slowest = [...status.sources].sort((a, b) => b.durationMs - a.durationMs)[0];
 const successRate = totalSources > 0 ? Math.round((okSources / totalSources) * 100) : 0;
 
@@ -24,6 +27,11 @@ function staleHours(latestPublishedAt?: string): number | null {
   return diffMs / (1000 * 60 * 60);
 }
 
+const staleSources = status.sources.filter((s) => {
+  const h = staleHours(s.latestPublishedAt);
+  return h != null && h >= staleThresholdHours;
+}).length;
+
 function fmt(latestPublishedAt?: string): string {
   if (!latestPublishedAt) return "-";
   try {
@@ -36,7 +44,8 @@ function fmt(latestPublishedAt?: string): string {
 function suggest(s: (typeof status.sources)[number]): string {
   const stale = staleHours(s.latestPublishedAt);
   if (s.ok) {
-    if (stale != null && stale >= 72) return "更新停止の可能性：最新の公開日時が古いです。";
+    if (stale != null && stale >= staleThresholdHours)
+      return `更新停止の可能性：最新の公開日時が ${staleThresholdHours} 時間以上前です。`;
     return "-";
   }
   if (typeof s.consecutiveFails === "number" && s.consecutiveFails >= 3) {
@@ -46,6 +55,8 @@ function suggest(s: (typeof status.sources)[number]): string {
   if (s.httpStatus === 403 || s.httpStatus === 401) return "ブロックの可能性：RSS/公開ソース利用、取得回数を減らす。";
   if (s.httpStatus === 404) return "URL が変更された可能性：ソース URL とアダプターを更新してください。";
   const err = (s.error ?? "").toLowerCase();
+  if (err.includes("parse_empty") || err.includes("parse_drop"))
+    return "解析結果が不自然：ソース構造変更/ブロックの可能性。必要ならパーサ更新や別ソースへ。";
   if (err.includes("timeout") || err.includes("aborted")) return "タイムアウト：時間をおく／並列数を下げる。";
   return "エラー詳細を確認し、sources 設定で調整してください。";
 }
@@ -73,13 +84,13 @@ function suggest(s: (typeof status.sources)[number]): string {
     <div class="glass shine rounded-2xl p-5">
       <div class="text-xs font-semibold text-slate-600">エラー（ソース）</div>
       <div class="mt-2 text-2xl font-semibold text-rose-800">{errSources}</div>
-      <div class="mt-1 text-xs text-slate-600">単一ソースの失敗は全体に影響しません</div>
+      <div class="mt-1 text-xs text-slate-600">連続失敗3回以上：{flakySources} · 単一ソースの失敗は全体に影響しません</div>
     </div>
 
     <div class="glass shine rounded-2xl p-5">
       <div class="text-xs font-semibold text-slate-600">取得件数</div>
       <div class="mt-2 text-2xl font-semibold text-slate-950">{totalItems}</div>
-      <div class="mt-1 text-xs text-slate-600">キャッシュ/フォールバック含む</div>
+      <div class="mt-1 text-xs text-slate-600">新規 {totalNewItems} · 更新停滞疑い {staleSources}</div>
     </div>
 
     <div class="glass shine rounded-2xl p-5">
@@ -154,7 +165,7 @@ function suggest(s: (typeof status.sources)[number]): string {
                   "px-3 py-2 text-xs",
                   (() => {
                     const h = staleHours(s.latestPublishedAt);
-                    if (h != null && h >= 72) return "text-amber-800";
+                    if (h != null && h >= staleThresholdHours) return "text-amber-800";
                     return "text-slate-600";
                   })()
                 ]}

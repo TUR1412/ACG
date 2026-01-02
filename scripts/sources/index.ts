@@ -25,6 +25,7 @@ export const SOURCES: Source[] = SOURCE_CONFIGS.map((s) => ({
   id: s.id,
   name: s.name,
   kind: s.kind,
+  lang: s.lang,
   url: s.url,
   homepage: s.homepage,
   category: s.category,

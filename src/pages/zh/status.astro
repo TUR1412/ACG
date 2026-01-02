@@ -11,6 +11,9 @@ const totalSources = status.sources.length;
 const okSources = status.sources.filter((s) => s.ok).length;
 const errSources = totalSources - okSources;
 const totalItems = status.sources.reduce((sum, s) => sum + (s.itemCount ?? 0), 0);
+const totalNewItems = status.sources.reduce((sum, s) => sum + (s.newItemCount ?? 0), 0);
+const flakySources = status.sources.filter((s) => typeof s.consecutiveFails === "number" && s.consecutiveFails >= 3).length;
+const staleThresholdHours = 72;
 const slowest = [...status.sources].sort((a, b) => b.durationMs - a.durationMs)[0];
 const successRate = totalSources > 0 ? Math.round((okSources / totalSources) * 100) : 0;
 
@@ -24,6 +27,11 @@ function staleHours(latestPublishedAt?: string): number | null {
   return diffMs / (1000 * 60 * 60);
 }
 
+const staleSources = status.sources.filter((s) => {
+  const h = staleHours(s.latestPublishedAt);
+  return h != null && h >= staleThresholdHours;
+}).length;
+
 function fmt(latestPublishedAt?: string): string {
   if (!latestPublishedAt) return "-";
   try {
@@ -36,7 +44,8 @@ function fmt(latestPublishedAt?: string): string {
 function suggest(s: (typeof status.sources)[number]): string {
   const stale = staleHours(s.latestPublishedAt);
   if (s.ok) {
-    if (stale != null && stale >= 72) return "可能停更/抓取卡住：最新发布时间距今较久。";
+    if (stale != null && stale >= staleThresholdHours)
+      return `可能停更/抓取卡住：最新发布时间距今超过 ${staleThresholdHours} 小时。`;
     return "-";
   }
   if (typeof s.consecutiveFails === "number" && s.consecutiveFails >= 3) {
@@ -46,6 +55,8 @@ function suggest(s: (typeof status.sources)[number]): string {
   if (s.httpStatus === 403 || s.httpStatus === 401) return "可能被拦截：建议改用 RSS/公开源，或减少抓取。";
   if (s.httpStatus === 404) return "地址可能变更：检查来源 URL 并更新适配器。";
   const err = (s.error ?? "").toLowerCase();
+  if (err.includes("parse_empty") || err.includes("parse_drop"))
+    return "解析输出异常：建议检查来源结构变化/反爬拦截，必要时更新解析器或更换来源。";
   if (err.includes("timeout") || err.includes("aborted")) return "请求超时：可稍后重试或降低并发。";
   return "请查看错误详情，并在 sources 配置中调整该来源。";
 }
@@ -73,13 +84,13 @@ function suggest(s: (typeof status.sources)[number]): string {
     <div class="glass shine rounded-2xl p-5">
       <div class="text-xs font-semibold text-slate-600">异常来源</div>
       <div class="mt-2 text-2xl font-semibold text-rose-800">{errSources}</div>
-      <div class="mt-1 text-xs text-slate-600">单个来源失败不会影响全站部署</div>
+      <div class="mt-1 text-xs text-slate-600">连续失败≥3：{flakySources} · 单个来源失败不会影响全站部署</div>
     </div>
 
     <div class="glass shine rounded-2xl p-5">
       <div class="text-xs font-semibold text-slate-600">本次条目</div>
       <div class="mt-2 text-2xl font-semibold text-slate-950">{totalItems}</div>
-      <div class="mt-1 text-xs text-slate-600">聚合条目数（含缓存回退）</div>
+      <div class="mt-1 text-xs text-slate-600">新增 {totalNewItems} · 疑似停更 {staleSources}</div>   
     </div>
 
     <div class="glass shine rounded-2xl p-5">
@@ -154,7 +165,7 @@ function suggest(s: (typeof status.sources)[number]): string {
                   "px-3 py-2 text-xs",
                   (() => {
                     const h = staleHours(s.latestPublishedAt);
-                    if (h != null && h >= 72) return "text-amber-800";
+                    if (h != null && h >= staleThresholdHours) return "text-amber-800";
                     return "text-slate-600";
                   })()
                 ]}

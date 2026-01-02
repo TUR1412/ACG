@@ -168,9 +168,10 @@ flowchart TB
 ## 数据来源（Sources）
 
 默认来源在 `src/lib/source-config.ts`（单一事实来源，脚本与页面共用）。
+来源配置支持可选字段 `lang`（`en|ja|zh|unknown`），用于同步预生成翻译时避免“同语种自翻译”。
 
 本站聚合 **标题 / 摘要 / 时间 / 来源链接** 并导流至原文。  
-详情页的「全文预览（实验）」为**实时解析/翻译**，不在仓库内持久化存储全文；版权归原站/原作者。  
+详情页的「全文预览（实验）」为**实时解析/翻译**，不在仓库内持久化存储全文；版权归原站/原作者。
 若你是来源方希望移除或调整展示方式，请提 Issue。
 
 ---
@@ -268,6 +269,9 @@ npm run sync -- --days 30 --limit 2000 --verbose
 
 - `ACG_TRANSLATE_MAX_POSTS`：每次同步最多对多少条“最新内容”生成中/日翻译字段（默认 `220`）
 - `ACG_TRANSLATE_TIMEOUT_MS`：翻译请求超时（毫秒，默认 `18000`）
+- `ACG_PARSE_DROP_MIN_PREV`：触发 `parse_drop` 回退所需的最小历史条目数（默认 `12`）
+- `ACG_PARSE_DROP_MIN_KEEP`：本轮条目数小于该值时视为“异常缩水”（默认 `3`）
+- `ACG_PARSE_DROP_RATIO`：本轮条目数小于 `previous * ratio` 时视为“异常缩水”（默认 `0.15`）
 
 > GitHub Actions 工作流可能会覆盖这些默认值：见 `.github/workflows/hourly-sync-and-deploy.yml`。
 

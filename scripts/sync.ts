@@ -16,6 +16,7 @@ import {
 } from "./lib/http-cache";
 import { extractCoverFromHtml, extractPreviewFromHtml, isProbablyNonCoverImageUrl } from "./lib/html";
 import type { Source } from "./sources/types";
+import type { SourceLang } from "../src/lib/source-config";
 import type { Post, SourceStatus, SyncStatus } from "../src/lib/types";
 import { buildSearchPack } from "../src/lib/search/pack";
 import { deriveTags } from "./lib/tagger";
@@ -43,26 +44,35 @@ async function translatePosts(params: {
   let attempted = 0;
   let translated = 0;
 
+  const sourceLangById = new Map<string, SourceLang>();
+  for (const s of SOURCES) sourceLangById.set(s.id, s.lang ?? "unknown");
+
   for (const post of targets) {
+    const sourceLang = sourceLangById.get(post.sourceId) ?? "unknown";
+    const shouldTranslateToZh = sourceLang !== "zh";
+    const shouldTranslateToJa = sourceLang !== "ja";
+
     // 标题
     if (post.title) {
-      attempted += 1;
-      const nextZh = await translateTextCached({
-        text: post.title,
-        target: "zh",
-        cache,
-        cachePath,
-        timeoutMs,
-        verbose,
-        persistCache
-      });
-      if (nextZh && nextZh !== post.title) {
-        post.titleZh = stripAndTruncate(nextZh, 180);
-        translated += 1;
+      if (shouldTranslateToZh && !post.titleZh) {
+        attempted += 1;
+        const nextZh = await translateTextCached({
+          text: post.title,
+          target: "zh",
+          cache,
+          cachePath,
+          timeoutMs,
+          verbose,
+          persistCache
+        });
+        if (nextZh && nextZh !== post.title) {
+          post.titleZh = stripAndTruncate(nextZh, 180);
+          translated += 1;
+        }
       }
-
+ 
       // 日文：如果原文已经明显是日文（含 kana），就不“翻译回日文”（避免破坏原标题）
-      if (!hasJapaneseKana(post.title)) {
+      if (shouldTranslateToJa && !post.titleJa && !hasJapaneseKana(post.title)) {
         attempted += 1;
         const nextJa = await translateTextCached({
           text: post.title,
@@ -82,22 +92,24 @@ async function translatePosts(params: {
 
     // 摘要/预览：分别翻译（UI 会按需挑一个展示）
     if (post.summary) {
-      attempted += 1;
-      const nextZh = await translateTextCached({
-        text: post.summary,
-        target: "zh",
-        cache,
-        cachePath,
-        timeoutMs,
-        verbose,
-        persistCache
-      });
-      if (nextZh && nextZh !== post.summary) {
-        post.summaryZh = stripAndTruncate(nextZh, 420);
-        translated += 1;
+      if (shouldTranslateToZh && !post.summaryZh) {
+        attempted += 1;
+        const nextZh = await translateTextCached({
+          text: post.summary,
+          target: "zh",
+          cache,
+          cachePath,
+          timeoutMs,
+          verbose,
+          persistCache
+        });
+        if (nextZh && nextZh !== post.summary) {
+          post.summaryZh = stripAndTruncate(nextZh, 420);
+          translated += 1;
+        }
       }
-
-      if (!hasJapaneseKana(post.summary)) {
+ 
+      if (shouldTranslateToJa && !post.summaryJa && !hasJapaneseKana(post.summary)) {
         attempted += 1;
         const nextJa = await translateTextCached({
           text: post.summary,
@@ -116,22 +128,24 @@ async function translatePosts(params: {
     }
 
     if (post.preview) {
-      attempted += 1;
-      const nextZh = await translateTextCached({
-        text: post.preview,
-        target: "zh",
-        cache,
-        cachePath,
-        timeoutMs,
-        verbose,
-        persistCache
-      });
-      if (nextZh && nextZh !== post.preview) {
-        post.previewZh = stripAndTruncate(nextZh, 520);
-        translated += 1;
+      if (shouldTranslateToZh && !post.previewZh) {
+        attempted += 1;
+        const nextZh = await translateTextCached({
+          text: post.preview,
+          target: "zh",
+          cache,
+          cachePath,
+          timeoutMs,
+          verbose,
+          persistCache
+        });
+        if (nextZh && nextZh !== post.preview) {
+          post.previewZh = stripAndTruncate(nextZh, 520);
+          translated += 1;
+        }
       }
 
-      if (!hasJapaneseKana(post.preview)) {
+      if (shouldTranslateToJa && !post.previewJa && !hasJapaneseKana(post.preview)) {
         attempted += 1;
         const nextJa = await translateTextCached({
           text: post.preview,
@@ -320,6 +334,44 @@ async function runSource(params: {
       sourceUrl: source.homepage ?? source.url
     };
   });
+
+  // 解析结果“异常缩水”：可能是来源结构变更/反爬命中/被错误 HTML 污染。
+  // 保守策略：当历史足够多且本次明显变少时，回退上一轮数据，避免静默停更。
+  const dropMinPrev = parseNonNegativeInt(process.env.ACG_PARSE_DROP_MIN_PREV, 12);
+  const dropMinKeep = parseNonNegativeInt(process.env.ACG_PARSE_DROP_MIN_KEEP, 3);
+  const dropRatio = (() => {
+    const raw = process.env.ACG_PARSE_DROP_RATIO;
+    const parsed = raw == null ? NaN : Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0 || parsed >= 1) return 0.15;
+    return parsed;
+  })();
+
+  const suspiciousDrop =
+    previous.length >= dropMinPrev &&
+    posts.length < Math.max(dropMinKeep, Math.floor(previous.length * dropRatio));
+  if (suspiciousDrop) {
+    return {
+      posts: previous,
+      status: {
+        id: source.id,
+        name: source.name,
+        kind: source.kind,
+        url: source.url,
+        ok: false,
+        httpStatus: res.status,
+        durationMs: Date.now() - start,
+        fetchedAt: new Date().toISOString(),
+        itemCount: previous.length,
+        newItemCount: 0,
+        used: "fallback",
+        attempts: res.attempts,
+        waitMs: res.waitMs,
+        rawItemCount: rawItems.length,
+        filteredItemCount: filtered.length,
+        error: "parse_drop"
+      }
+    };
+  }
 
   return {
     posts,

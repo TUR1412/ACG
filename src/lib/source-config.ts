@@ -2,6 +2,8 @@ import type { Category } from "./categories";
 
 export type SourceKind = "feed" | "html";
 
+export type SourceLang = "en" | "ja" | "zh" | "unknown";
+
 export type SourceIncludeRule = {
   /**
    * 正则表达式主体（不包含包裹用的 / /）
@@ -18,6 +20,11 @@ export type SourceConfig = {
   id: string;
   name: string;
   kind: SourceKind;
+  /**
+   * 来源主要语言（用于离线预生成翻译时避免“同语种自翻译”）。
+   * 若不确定可省略，默认按 unknown 处理。
+   */
+  lang?: SourceLang;
   /**
    * Feed URL 或 HTML 列表入口（取决于 kind）
    */
@@ -39,6 +46,7 @@ export const SOURCE_CONFIGS: SourceConfig[] = [
     id: "ann-all",
     name: "Anime News Network",
     kind: "feed",
+    lang: "en",
     url: "https://www.animenewsnetwork.com/all/rss.xml?ann-edition=us",
     homepage: "https://www.animenewsnetwork.com/",
     category: "anime"
@@ -47,6 +55,7 @@ export const SOURCE_CONFIGS: SourceConfig[] = [
     id: "mal-news",
     name: "MyAnimeList News",
     kind: "feed",
+    lang: "en",
     url: "https://myanimelist.net/rss/news.xml",
     homepage: "https://myanimelist.net/news",
     category: "anime"
@@ -55,6 +64,7 @@ export const SOURCE_CONFIGS: SourceConfig[] = [
     id: "animeanime-list",
     name: "アニメ！アニメ！",
     kind: "html",
+    lang: "ja",
     url: "https://animeanime.jp/article/",
     homepage: "https://animeanime.jp/",
     category: "anime"
@@ -63,6 +73,7 @@ export const SOURCE_CONFIGS: SourceConfig[] = [
     id: "inside-games",
     name: "Inside Games",
     kind: "feed",
+    lang: "ja",
     url: "https://www.inside-games.jp/rss/index.rdf",
     homepage: "https://www.inside-games.jp/",
     category: "game",
@@ -75,6 +86,7 @@ export const SOURCE_CONFIGS: SourceConfig[] = [
     id: "tom-news",
     name: "Tokyo Otaku Mode",
     kind: "feed",
+    lang: "en",
     url: "https://otakumode.com/news/feed",
     homepage: "https://otakumode.com/",
     category: "goods"
@@ -83,6 +95,7 @@ export const SOURCE_CONFIGS: SourceConfig[] = [
     id: "natalie-music",
     name: "音楽ナタリー",
     kind: "feed",
+    lang: "ja",
     url: "https://natalie.mu/music/feed/news",
     homepage: "https://natalie.mu/music",
     category: "seiyuu",
