@@ -136,6 +136,16 @@ function validateStatus(json: unknown, errors: ValidationError[]) {
     if (it.rawItemCount != null && toNumber(it.rawItemCount) == null) pushError(errors, `${base}.rawItemCount`, "rawItemCount 不是数字");
     if (it.filteredItemCount != null && toNumber(it.filteredItemCount) == null)
       pushError(errors, `${base}.filteredItemCount`, "filteredItemCount 不是数字");
+    if (it.newItemCount != null && toNumber(it.newItemCount) == null) pushError(errors, `${base}.newItemCount`, "newItemCount 不是数字");
+    if (it.visibleItemCount != null && toNumber(it.visibleItemCount) == null)
+      pushError(errors, `${base}.visibleItemCount`, "visibleItemCount 不是数字");
+    if (it.consecutiveFails != null && toNumber(it.consecutiveFails) == null)
+      pushError(errors, `${base}.consecutiveFails`, "consecutiveFails 不是数字");
+    if (it.latestPublishedAt != null) {
+      if (!isNonEmptyString(it.latestPublishedAt)) pushError(errors, `${base}.latestPublishedAt`, "latestPublishedAt 类型非法");
+      else if (!Number.isFinite(Date.parse(it.latestPublishedAt)))
+        pushError(errors, `${base}.latestPublishedAt`, "latestPublishedAt 不是可解析的时间");
+    }
     if (it.error != null && !isNonEmptyString(it.error)) pushError(errors, `${base}.error`, "error 类型非法");
   }
 

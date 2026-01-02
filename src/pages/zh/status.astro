@@ -14,8 +14,34 @@ const totalItems = status.sources.reduce((sum, s) => sum + (s.itemCount ?? 0), 0
 const slowest = [...status.sources].sort((a, b) => b.durationMs - a.durationMs)[0];
 const successRate = totalSources > 0 ? Math.round((okSources / totalSources) * 100) : 0;
 
+const generatedAtMs = status.generatedAt ? Date.parse(status.generatedAt) : NaN;
+function staleHours(latestPublishedAt?: string): number | null {
+  if (!latestPublishedAt) return null;
+  if (!Number.isFinite(generatedAtMs)) return null;
+  const latestMs = Date.parse(latestPublishedAt);
+  if (!Number.isFinite(latestMs)) return null;
+  const diffMs = Math.max(0, generatedAtMs - latestMs);
+  return diffMs / (1000 * 60 * 60);
+}
+
+function fmt(latestPublishedAt?: string): string {
+  if (!latestPublishedAt) return "-";
+  try {
+    return formatDateTime("zh", latestPublishedAt);
+  } catch {
+    return latestPublishedAt;
+  }
+}
+
 function suggest(s: (typeof status.sources)[number]): string {
-  if (s.ok) return "-";
+  const stale = staleHours(s.latestPublishedAt);
+  if (s.ok) {
+    if (stale != null && stale >= 72) return "可能停更/抓取卡住：最新发布时间距今较久。";
+    return "-";
+  }
+  if (typeof s.consecutiveFails === "number" && s.consecutiveFails >= 3) {
+    return `连续失败 ${s.consecutiveFails} 次：建议检查来源 URL/解析器/是否被拦截。`;
+  }
   if (s.httpStatus === 429) return "请求过于频繁：可降低更新频率、启用缓存或稍后重试。";
   if (s.httpStatus === 403 || s.httpStatus === 401) return "可能被拦截：建议改用 RSS/公开源，或减少抓取。";
   if (s.httpStatus === 404) return "地址可能变更：检查来源 URL 并更新适配器。";
@@ -72,6 +98,9 @@ function suggest(s: (typeof status.sources)[number]): string {
             <th class="px-3">来源</th>
             <th class="px-3">状态</th>
             <th class="px-3">条目</th>
+            <th class="px-3">新增</th>
+            <th class="px-3">最新</th>
+            <th class="px-3">连续</th>
             <th class="px-3">解析</th>
             <th class="px-3">HTTP</th>
             <th class="px-3">耗时</th>
@@ -97,10 +126,46 @@ function suggest(s: (typeof status.sources)[number]): string {
                     s.ok ? "bg-emerald-500/15 text-emerald-800" : "bg-rose-500/15 text-rose-800"
                   ]}
                 >
-                  {s.ok ? t("zh", "status.ok") : t("zh", "status.error")}
+                  {s.ok ? t("zh", "status.ok") : t("zh", "status.error")}       
                 </span>
               </td>
-              <td class="px-3 py-2">{s.itemCount}</td>
+              <td class="px-3 py-2">
+                {s.itemCount}
+                {typeof s.visibleItemCount === "number" ? (
+                  <div class="text-xs text-slate-600">可见 {s.visibleItemCount}</div>
+                ) : null}
+              </td>
+              <td class="px-3 py-2">
+                {typeof s.newItemCount === "number" ? (
+                  <span
+                    class:list={[
+                      "text-xs font-medium",
+                      s.newItemCount > 0 ? "text-emerald-800" : "text-slate-600"
+                    ]}
+                  >
+                    {s.newItemCount > 0 ? `+${s.newItemCount}` : "0"}
+                  </span>
+                ) : (
+                  <span class="text-xs text-slate-600">-</span>
+                )}
+              </td>
+              <td
+                class:list={[
+                  "px-3 py-2 text-xs",
+                  (() => {
+                    const h = staleHours(s.latestPublishedAt);
+                    if (h != null && h >= 72) return "text-amber-800";
+                    return "text-slate-600";
+                  })()
+                ]}
+              >
+                {fmt(s.latestPublishedAt)}
+              </td>
+              <td class="px-3 py-2 text-xs text-slate-600">
+                {typeof s.consecutiveFails === "number" && s.consecutiveFails > 0
+                  ? `${s.consecutiveFails}次`
+                  : "-"}
+              </td>
               <td class="px-3 py-2 text-xs text-slate-600">
                 {s.rawItemCount != null && s.filteredItemCount != null ? `${s.rawItemCount} → ${s.filteredItemCount}` : "-"}
               </td>

@@ -14,8 +14,34 @@ const totalItems = status.sources.reduce((sum, s) => sum + (s.itemCount ?? 0), 0
 const slowest = [...status.sources].sort((a, b) => b.durationMs - a.durationMs)[0];
 const successRate = totalSources > 0 ? Math.round((okSources / totalSources) * 100) : 0;
 
+const generatedAtMs = status.generatedAt ? Date.parse(status.generatedAt) : NaN;
+function staleHours(latestPublishedAt?: string): number | null {
+  if (!latestPublishedAt) return null;
+  if (!Number.isFinite(generatedAtMs)) return null;
+  const latestMs = Date.parse(latestPublishedAt);
+  if (!Number.isFinite(latestMs)) return null;
+  const diffMs = Math.max(0, generatedAtMs - latestMs);
+  return diffMs / (1000 * 60 * 60);
+}
+
+function fmt(latestPublishedAt?: string): string {
+  if (!latestPublishedAt) return "-";
+  try {
+    return formatDateTime("ja", latestPublishedAt);
+  } catch {
+    return latestPublishedAt;
+  }
+}
+
 function suggest(s: (typeof status.sources)[number]): string {
-  if (s.ok) return "-";
+  const stale = staleHours(s.latestPublishedAt);
+  if (s.ok) {
+    if (stale != null && stale >= 72) return "更新停止の可能性：最新の公開日時が古いです。";
+    return "-";
+  }
+  if (typeof s.consecutiveFails === "number" && s.consecutiveFails >= 3) {
+    return `連続失敗 ${s.consecutiveFails} 回：URL/パーサ/ブロック状況を確認してください。`;
+  }
   if (s.httpStatus === 429) return "リクエスト過多：更新頻度を下げる／キャッシュ利用／時間をおいて再試行。";
   if (s.httpStatus === 403 || s.httpStatus === 401) return "ブロックの可能性：RSS/公開ソース利用、取得回数を減らす。";
   if (s.httpStatus === 404) return "URL が変更された可能性：ソース URL とアダプターを更新してください。";
@@ -72,6 +98,9 @@ function suggest(s: (typeof status.sources)[number]): string {
             <th class="px-3">ソース</th>
             <th class="px-3">状態</th>
             <th class="px-3">件数</th>
+            <th class="px-3">新規</th>
+            <th class="px-3">最新</th>
+            <th class="px-3">連続</th>
             <th class="px-3">解析</th>
             <th class="px-3">HTTP</th>
             <th class="px-3">時間</th>
@@ -97,10 +126,46 @@ function suggest(s: (typeof status.sources)[number]): string {
                     s.ok ? "bg-emerald-500/15 text-emerald-800" : "bg-rose-500/15 text-rose-800"
                   ]}
                 >
-                  {s.ok ? t("ja", "status.ok") : t("ja", "status.error")}
+                  {s.ok ? t("ja", "status.ok") : t("ja", "status.error")}       
                 </span>
               </td>
-              <td class="px-3 py-2">{s.itemCount}</td>
+              <td class="px-3 py-2">
+                {s.itemCount}
+                {typeof s.visibleItemCount === "number" ? (
+                  <div class="text-xs text-slate-600">表示 {s.visibleItemCount}</div>
+                ) : null}
+              </td>
+              <td class="px-3 py-2">
+                {typeof s.newItemCount === "number" ? (
+                  <span
+                    class:list={[
+                      "text-xs font-medium",
+                      s.newItemCount > 0 ? "text-emerald-800" : "text-slate-600"
+                    ]}
+                  >
+                    {s.newItemCount > 0 ? `+${s.newItemCount}` : "0"}
+                  </span>
+                ) : (
+                  <span class="text-xs text-slate-600">-</span>
+                )}
+              </td>
+              <td
+                class:list={[
+                  "px-3 py-2 text-xs",
+                  (() => {
+                    const h = staleHours(s.latestPublishedAt);
+                    if (h != null && h >= 72) return "text-amber-800";
+                    return "text-slate-600";
+                  })()
+                ]}
+              >
+                {fmt(s.latestPublishedAt)}
+              </td>
+              <td class="px-3 py-2 text-xs text-slate-600">
+                {typeof s.consecutiveFails === "number" && s.consecutiveFails > 0
+                  ? `${s.consecutiveFails}回`
+                  : "-"}
+              </td>
               <td class="px-3 py-2 text-xs text-slate-600">
                 {s.rawItemCount != null && s.filteredItemCount != null ? `${s.rawItemCount} → ${s.filteredItemCount}` : "-"}
               </td>

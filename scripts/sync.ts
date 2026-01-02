@@ -212,6 +212,7 @@ async function runSource(params: {
         durationMs: Date.now() - start,
         fetchedAt: new Date().toISOString(),
         itemCount: previous.length,
+        newItemCount: 0,
         used: "cached",
         attempts: res.attempts,
         waitMs: res.waitMs
@@ -232,6 +233,7 @@ async function runSource(params: {
         durationMs: Date.now() - start,
         fetchedAt: new Date().toISOString(),
         itemCount: previous.length,
+        newItemCount: 0,
         used: "fallback",
         attempts: res.attempts,
         waitMs: res.waitMs,
@@ -240,7 +242,58 @@ async function runSource(params: {
     };
   }
 
-  const rawItems = parseSourceToItems({ source, text: res.text });
+  let rawItems: ReturnType<typeof parseSourceToItems> = [];
+  try {
+    rawItems = parseSourceToItems({ source, text: res.text });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      posts: previous,
+      status: {
+        id: source.id,
+        name: source.name,
+        kind: source.kind,
+        url: source.url,
+        ok: false,
+        httpStatus: res.status,
+        durationMs: Date.now() - start,
+        fetchedAt: new Date().toISOString(),
+        itemCount: previous.length,
+        newItemCount: 0,
+        used: "fallback",
+        attempts: res.attempts,
+        waitMs: res.waitMs,
+        rawItemCount: 0,
+        filteredItemCount: 0,
+        error: message || "parse_error"
+      }
+    };
+  }
+
+  // 解析输出为空：大概率是来源结构变化/解析器失效。保守回退到上一轮数据以避免静默停更。
+  if (rawItems.length === 0) {
+    return {
+      posts: previous,
+      status: {
+        id: source.id,
+        name: source.name,
+        kind: source.kind,
+        url: source.url,
+        ok: false,
+        httpStatus: res.status,
+        durationMs: Date.now() - start,
+        fetchedAt: new Date().toISOString(),
+        itemCount: previous.length,
+        newItemCount: 0,
+        used: "fallback",
+        attempts: res.attempts,
+        waitMs: res.waitMs,
+        rawItemCount: 0,
+        filteredItemCount: 0,
+        error: "parse_empty"
+      }
+    };
+  }
 
   const filtered = source.include
     ? rawItems.filter((it) => source.include?.({ title: it.title, summary: it.summary, url: it.url }))
@@ -280,6 +333,10 @@ async function runSource(params: {
       durationMs: Date.now() - start,
       fetchedAt: new Date().toISOString(),
       itemCount: posts.length,
+      newItemCount: (() => {
+        const prevIds = new Set(previous.map((p) => p.id));
+        return posts.reduce((sum, p) => sum + (prevIds.has(p.id) ? 0 : 1), 0);
+      })(),
       used: "fetched",
       attempts: res.attempts,
       waitMs: res.waitMs,
@@ -681,6 +738,36 @@ async function main() {
     }
   })();
 
+  // 状态趋势：回读上一轮 status.json，用于计算连续失败等趋势字段（不阻断同步）。  
+  const remoteStatusUrl =
+    process.env.ACG_REMOTE_STATUS_URL ?? "https://tur1412.github.io/ACG/data/status.json";
+  const previousRemoteStatus = await (async () => {
+    try {
+      const res = await fetch(`${remoteStatusUrl}?t=${Date.now()}`, {
+        headers: { "user-agent": "Mozilla/5.0 (ACG-FeedBot/0.1; +https://github.com/TUR1412/ACG)" }
+      });
+      if (!res.ok) return null;
+      const json = (await res.json()) as unknown;
+      return json && typeof json === "object" ? (json as Record<string, unknown>) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const previousStatusById = new Map<string, any>();
+  try {
+    const sources =
+      previousRemoteStatus && Array.isArray((previousRemoteStatus as any).sources)
+        ? ((previousRemoteStatus as any).sources as any[])
+        : [];
+    for (const it of sources) {
+      const id = typeof it?.id === "string" ? it.id : "";
+      if (id) previousStatusById.set(id, it);
+    }
+  } catch {
+    // ignore
+  }
+
   const allowed = new Set(SOURCES.map((s) => s.id));
   const previousPosts = (previousRemote.length > 0 ? previousRemote : previousLocal).filter((p) =>
     allowed.has(p.sourceId)
@@ -700,6 +787,15 @@ async function main() {
       verbose: args.verbose,
       persistCache: !args.dryRun
     });
+    // 连续失败：依赖上一轮 remote status（若不可用则退化为 0/1）
+    const prev = previousStatusById.get(source.id);
+    const prevFails =
+      typeof prev?.consecutiveFails === "number" && Number.isFinite(prev.consecutiveFails)
+        ? prev.consecutiveFails
+        : prev?.ok === false
+          ? 1
+          : 0;
+    status.consecutiveFails = status.ok ? 0 : prevFails + 1;
     sourceStatuses.push(status);
     allPosts.push(...posts);
     console.log(
@@ -708,6 +804,20 @@ async function main() {
   }
 
   const pruned = filterByDays(dedupeAndSort(allPosts), args.days).slice(0, args.limit);
+
+  // 基于最终产物补齐“可见数量/最新发布时间”（用于状态页判断 stale）
+  const visibleCountBySource = new Map<string, number>();
+  const latestPublishedAtBySource = new Map<string, string>();
+  for (const p of pruned) {
+    visibleCountBySource.set(p.sourceId, (visibleCountBySource.get(p.sourceId) ?? 0) + 1);
+    const prev = latestPublishedAtBySource.get(p.sourceId);
+    if (!prev || p.publishedAt > prev) latestPublishedAtBySource.set(p.sourceId, p.publishedAt);
+  }
+  for (const s of sourceStatuses) {
+    s.visibleItemCount = visibleCountBySource.get(s.id) ?? 0;
+    const latest = latestPublishedAtBySource.get(s.id);
+    if (latest) s.latestPublishedAt = latest;
+  }
 
   if (!args.dryRun) {
     const { attempted, enriched, maxTotal } = await enrichCoversFromArticlePages({

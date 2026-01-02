@@ -70,4 +70,5 @@ sequenceDiagram
 | ADR-010 | 全文预览渲染/翻译迁移到 Web Worker | 2026-01-02 | ✅已采纳 | client-app | history/2026-01/202601021845_evolution_v0_10_fulltext_worker/how.md |
 | ADR-011 | status.json 增强可观测性字段（重试/解析统计） | 2026-01-02 | ✅已采纳 | pipeline-sync / web-ui | history/2026-01/202601022104_evolution_v0_11_status_observability/how.md |
 | ADR-012 | 全文预览 DOM 注入升级为“blocks 渐进追加” | 2026-01-02 | ✅已采纳 | client-app | history/2026-01/202601022255_evolution_v0_12_fulltext_progressive_dom/how.md |
+| ADR-013 | status.json 引入趋势字段（连续失败/增量/最新发布时间） | 2026-01-03 | ✅已采纳 | pipeline-sync / web-ui | history/2026-01/202601030108_evolution_v0_13_status_health_trend/how.md |
 

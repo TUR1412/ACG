@@ -36,6 +36,14 @@ export type SourceStatus = {
   durationMs: number;
   fetchedAt?: string;
   itemCount: number;
+  /** 本轮相对上一轮 remote posts 的新增条目数（按 post.id 去重） */
+  newItemCount?: number;
+  /** 最终产物（pruned posts）中该来源条目数（用于解释“抓取条目数 vs 可见条目数”差异） */
+  visibleItemCount?: number;
+  /** 最终产物（pruned posts）中该来源最新一条的发布时间 */
+  latestPublishedAt?: string;
+  /** 连续失败次数（成功则归零；依赖回读上一轮 remote status） */
+  consecutiveFails?: number;
   used: "fetched" | "cached" | "fallback";
   /** 抓取本次实际尝试次数（含首次） */
   attempts?: number;
