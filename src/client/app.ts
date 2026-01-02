@@ -276,6 +276,50 @@ function wireToastBridge() {
   });
 }
 
+function wireNetworkStatusToasts() {
+  let lastToastAt = 0;
+  const MIN_GAP_MS = 3500;
+
+  const emit = (params: { title: string; desc?: string; variant?: ToastVariant; timeoutMs?: number }) => {
+    const now = Date.now();
+    if (now - lastToastAt < MIN_GAP_MS) return;
+    lastToastAt = now;
+    toast(params);
+  };
+
+  const onOffline = () => {
+    emit({
+      title: isJapanese() ? "オフライン" : "离线模式",
+      desc: isJapanese()
+        ? "ネットワークが利用できません。キャッシュがあれば表示できます。"
+        : "网络不可用：如已缓存，可继续浏览最近访问过的页面。",
+      variant: "info",
+      timeoutMs: 2400
+    });
+  };
+
+  const onOnline = () => {
+    emit({
+      title: isJapanese() ? "オンラインに復帰" : "网络已恢复",
+      desc: isJapanese() ? "最新データは再読み込みで取得できます。" : "刷新即可获取最新数据。",
+      variant: "success",
+      timeoutMs: 1800
+    });
+  };
+
+  window.addEventListener("offline", onOffline);
+  window.addEventListener("online", onOnline);
+
+  // 首次进入页面时，如果已处于离线状态，给一次轻提示。
+  try {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      window.setTimeout(onOffline, 420);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 function pop(el: HTMLElement) {
   el.classList.remove("pop");
   window.requestAnimationFrame(() => {
@@ -3490,6 +3534,7 @@ function main() {
 
   wireTelemetry();
   wireToastBridge();
+  wireNetworkStatusToasts();
 
   const bookmarkIds = loadIds(BOOKMARK_KEY);
   const readIds = loadIds(READ_KEY);

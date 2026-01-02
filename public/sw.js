@@ -39,9 +39,29 @@ function isUnderBase(reqUrl) {
   return reqUrl && reqUrl.pathname.startsWith(base);
 }
 
+function dataRequestKind(reqUrl) {
+  if (!reqUrl) return null;
+  const pathname = (reqUrl.pathname || "").toLowerCase();
+  const gz = pathname.endsWith(".json.gz");
+
+  if (pathname.endsWith("/data/posts.json") || pathname.endsWith("/data/posts.json.gz")) {
+    return { kind: "posts", gz };
+  }
+  if (pathname.endsWith("/data/status.json") || pathname.endsWith("/data/status.json.gz")) {
+    return { kind: "status", gz };
+  }
+  if (
+    pathname.endsWith("/data/search-pack.v1.json") ||
+    pathname.endsWith("/data/search-pack.v1.json.gz")
+  ) {
+    return { kind: "search-pack", gz };
+  }
+
+  return null;
+}
+
 function isDataRequest(reqUrl) {
-  if (!reqUrl) return false;
-  return /\/data\/(posts|status|search-pack\.v1)\.json(\.gz)?$/i.test(reqUrl.pathname);
+  return Boolean(dataRequestKind(reqUrl));
 }
 
 function isAssetRequest(reqUrl) {
@@ -80,11 +100,43 @@ function offlineHtml() {
         <h1>网络不可用（Offline）</h1>
         <p>当前处于离线或网络不稳定状态。你仍可以打开“最近访问过的页面”。</p>
         <p>オフライン状態です。最近アクセスしたページは表示できる場合があります。</p>
+        <p id="acg-offline-meta">正在尝试读取最近缓存的数据更新时间…</p>
         <div class="row">
           <a class="btn" href="${base}">返回主页</a>
           <a class="btn" href="${base}zh/">中文</a>
           <a class="btn" href="${base}ja/">日本語</a>
+          <a class="btn" href="${base}zh/status/">状态</a>
+          <a class="btn" href="${base}ja/status/">ステータス</a>
         </div>
+        <script>
+          (() => {
+            const el = document.getElementById("acg-offline-meta");
+            if (!el) return;
+
+            const fmt = (iso) => {
+              try {
+                const d = new Date(iso);
+                return Number.isFinite(d.getTime()) ? d.toLocaleString() : iso;
+              } catch {
+                return iso;
+              }
+            };
+
+            fetch("${base}data/status.json")
+              .then((r) => (r && r.ok ? r.json() : null))
+              .then((json) => {
+                const t = json && typeof json === "object" ? json.generatedAt : null;
+                if (typeof t === "string" && t) {
+                  el.textContent = "最近一次数据更新时间：" + fmt(t) + "（可能为缓存）";
+                } else {
+                  el.textContent = "暂无可用缓存数据（首次访问需要联网）。";
+                }
+              })
+              .catch(() => {
+                el.textContent = "无法读取缓存数据。";
+              });
+          })();
+        </script>
       </div>
     </div>
   </body>
@@ -120,6 +172,14 @@ self.addEventListener("install", (event) => {
         await cache.addAll(urls);
       } catch {
         // 允许离线安装失败：后续靠运行时缓存逐步补齐
+      }
+
+      // 预缓存最关键的数据：让离线页能展示“最近更新时间”（不影响性能与体积）。
+      try {
+        const cache = await caches.open(CACHE_DATA);
+        await cache.addAll([`${base}data/status.json`]);
+      } catch {
+        // ignore
       }
     })()
   );
@@ -170,7 +230,8 @@ self.addEventListener("fetch", (event) => {
   }
 
   // 数据：stale-while-revalidate（优先返回缓存，再后台更新）
-  if (isDataRequest(reqUrl)) {
+  const dk = dataRequestKind(reqUrl);
+  if (dk) {
     event.respondWith(
       (async () => {
         const cached = await cacheMatch(CACHE_DATA, request);
@@ -190,7 +251,20 @@ self.addEventListener("fetch", (event) => {
         }
 
         const fresh = await fetchPromise;
-        return fresh || new Response("{}", { headers: { "content-type": "application/json; charset=utf-8" } });
+        if (fresh) return fresh;
+
+        // *.json.gz：让调用方自然回退到 .json（避免返回“伪 gzip”导致解压失败）。
+        if (dk.gz) return new Response("", { status: 504 });
+
+        const headers = { "content-type": "application/json; charset=utf-8" };
+        if (dk.kind === "posts") return new Response("[]\n", { headers });
+        if (dk.kind === "status") {
+          return new Response(JSON.stringify({ generatedAt: null, durationMs: 0, sources: [] }) + "\n", { headers });
+        }
+        if (dk.kind === "search-pack") {
+          return new Response(JSON.stringify({ v: 1, generatedAt: null, posts: [], index: [] }) + "\n", { headers });
+        }
+        return new Response("{}\n", { headers });
       })()
     );
     return;

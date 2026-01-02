@@ -72,4 +72,5 @@ sequenceDiagram
 | ADR-012 | 全文预览 DOM 注入升级为“blocks 渐进追加” | 2026-01-02 | ✅已采纳 | client-app | history/2026-01/202601022255_evolution_v0_12_fulltext_progressive_dom/how.md |
 | ADR-013 | status.json 引入趋势字段（连续失败/增量/最新发布时间） | 2026-01-03 | ✅已采纳 | pipeline-sync / web-ui | history/2026-01/202601030108_evolution_v0_13_status_health_trend/how.md |
 | ADR-014 | 同步翻译引入来源 lang + 抓取异常缩水回退（parse_drop） | 2026-01-03 | ✅已采纳 | pipeline-sync / web-ui / shared-lib | history/2026-01/202601030220_evolution_v0_14_translation_lang_and_parse_drop/how.md |
+| ADR-015 | PWA 离线：SW data 请求按类型兜底 + 离线状态可感知 | 2026-01-03 | ✅已采纳 | pwa / client-app | history/2026-01/202601030318_evolution_v0_15_pwa_offline_data_fallback/how.md |
 
