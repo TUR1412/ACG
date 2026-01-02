@@ -21,6 +21,8 @@ type WorkerInitMessage = {
   postsGzUrl?: string;
   indexUrl?: string;
   indexGzUrl?: string;
+  indexUrlFallback?: string;
+  indexGzUrlFallback?: string;
 };
 
 type WorkerSetStateMessage = {
@@ -76,6 +78,8 @@ let postsUrl = "";
 let postsGzUrl = "";
 let indexUrl = "";
 let indexGzUrl = "";
+let indexUrlFallback = "";
+let indexGzUrlFallback = "";
 
 let posts: BookmarkPost[] = [];
 let indexed: IndexedPost[] = [];
@@ -299,12 +303,13 @@ async function ensureDataLoaded(): Promise<void> {
     }
   }
 
-  // 优先尝试“搜索包”（posts + index）
-  if (indexUrl) {
+  const tryLoadPack = async (url: string, gzUrl?: string): Promise<boolean> => {
+    if (!url) return false;
     try {
-      const json = await fetchJsonPreferGzip(indexUrl, indexGzUrl || undefined);
+      const json = await fetchJsonPreferGzip(url, gzUrl);
       const pack = json as any;
-      if (pack && typeof pack === "object" && pack.v === 1 && Array.isArray(pack.posts) && Array.isArray(pack.index)) {
+      const v = pack && typeof pack === "object" ? pack.v : 0;
+      if ((v === 1 || v === 2) && Array.isArray(pack.posts) && Array.isArray(pack.index)) {
         const list = (pack.posts as unknown[]).map(normalizePost).filter((x): x is BookmarkPost => Boolean(x));
         const idx = pack.index
           .map((x: unknown) => normalizeSearchPackIndexRow(x, list.length))
@@ -313,12 +318,21 @@ async function ensureDataLoaded(): Promise<void> {
           posts = list;
           indexed = idx;
           await dbSet(POSTS_KEY, { v: 2, savedAt: new Date().toISOString(), posts: list, index: idx });
-          return;
+          return true;
         }
       }
     } catch {
       // ignore and fallback
     }
+    return false;
+  };
+
+  // 优先尝试“搜索包”（posts + index）
+  if (indexUrl) {
+    const ok = await tryLoadPack(indexUrl, indexGzUrl || undefined);
+    if (ok) return;
+    const okFallback = await tryLoadPack(indexUrlFallback, indexGzUrlFallback || undefined);
+    if (okFallback) return;
   }
 
   if (!postsUrl) return;
@@ -468,6 +482,8 @@ self.addEventListener("message", (ev: MessageEvent<WorkerInMessage>) => {
     postsGzUrl = msg.postsGzUrl ?? "";
     indexUrl = msg.indexUrl ?? "";
     indexGzUrl = msg.indexGzUrl ?? "";
+    indexUrlFallback = msg.indexUrlFallback ?? "";
+    indexGzUrlFallback = msg.indexGzUrlFallback ?? "";
     void (async () => {
       try {
         await ensureDataLoaded();

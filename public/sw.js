@@ -51,10 +51,22 @@ function dataRequestKind(reqUrl) {
     return { kind: "status", gz };
   }
   if (
+    pathname.endsWith("/data/status-history.v1.json") ||
+    pathname.endsWith("/data/status-history.v1.json.gz")
+  ) {
+    return { kind: "status-history", gz };
+  }
+  if (
     pathname.endsWith("/data/search-pack.v1.json") ||
     pathname.endsWith("/data/search-pack.v1.json.gz")
   ) {
     return { kind: "search-pack", gz };
+  }
+  if (
+    pathname.endsWith("/data/search-pack.v2.json") ||
+    pathname.endsWith("/data/search-pack.v2.json.gz")
+  ) {
+    return { kind: "search-pack-v2", gz };
   }
 
   return null;
@@ -177,7 +189,7 @@ self.addEventListener("install", (event) => {
       // 预缓存最关键的数据：让离线页能展示“最近更新时间”（不影响性能与体积）。
       try {
         const cache = await caches.open(CACHE_DATA);
-        await cache.addAll([`${base}data/status.json`]);
+        await cache.addAll([`${base}data/status.json`, `${base}data/status-history.v1.json`]);
       } catch {
         // ignore
       }
@@ -263,6 +275,12 @@ self.addEventListener("fetch", (event) => {
         }
         if (dk.kind === "search-pack") {
           return new Response(JSON.stringify({ v: 1, generatedAt: null, posts: [], index: [] }) + "\n", { headers });
+        }
+        if (dk.kind === "search-pack-v2") {
+          return new Response(JSON.stringify({ v: 2, generatedAt: null, posts: [], index: [] }) + "\n", { headers });
+        }
+        if (dk.kind === "status-history") {
+          return new Response(JSON.stringify({ v: 1, generatedAt: null, entries: [] }) + "\n", { headers });
         }
         return new Response("{}\n", { headers });
       })()

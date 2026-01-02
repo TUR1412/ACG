@@ -20,6 +20,15 @@ export type SearchPackV1 = {
   index: SearchPackIndexRow[];
 };
 
+export type SearchPackV2 = {
+  v: 2;
+  generatedAt: string;
+  posts: Post[];
+  index: SearchPackIndexRow[];
+};
+
+export type SearchPack = SearchPackV1 | SearchPackV2;
+
 export function buildSearchIndex(posts: Post[]): SearchPackIndexRow[] {
   const index: SearchPackIndexRow[] = [];
 
@@ -59,6 +68,10 @@ export function buildSearchIndex(posts: Post[]): SearchPackIndexRow[] {
 
 export function buildSearchPack(posts: Post[], generatedAt: string): SearchPackV1 {
   return { v: 1, generatedAt, posts, index: buildSearchIndex(posts) };
+}
+
+export function buildSearchPackV2(posts: Post[], generatedAt: string): SearchPackV2 {
+  return { v: 2, generatedAt, posts, index: buildSearchIndex(posts) };
 }
 
 export function normalizeSearchPackIndexRow(value: unknown, maxPosts: number): SearchPackIndexRow | null {

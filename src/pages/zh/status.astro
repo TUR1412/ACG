@@ -1,10 +1,11 @@
 ---
 import SiteLayout from "../../layouts/SiteLayout.astro";
-import { readGeneratedStatus } from "../../lib/generated-data";
+import { readGeneratedStatus, readGeneratedStatusHistory } from "../../lib/generated-data";
 import { formatDateTime } from "../../lib/format";
 import { t } from "../../i18n/i18n";
 
 const status = await readGeneratedStatus();
+const history = await readGeneratedStatusHistory();
 const updatedAt = status.generatedAt ? formatDateTime("zh", status.generatedAt) : "-";
 
 const totalSources = status.sources.length;
@@ -18,6 +19,44 @@ const slowest = [...status.sources].sort((a, b) => b.durationMs - a.durationMs)[
 const successRate = totalSources > 0 ? Math.round((okSources / totalSources) * 100) : 0;
 
 const generatedAtMs = status.generatedAt ? Date.parse(status.generatedAt) : NaN;
+const historyEntries = Array.isArray(history.entries)
+  ? [...history.entries].sort((a, b) => a.generatedAt.localeCompare(b.generatedAt))
+  : [];
+const historyLast30 = historyEntries.slice(-30);
+const showTrend = historyEntries.length >= 2;
+
+function pct(ok: number, total: number): number {
+  if (!Number.isFinite(ok) || !Number.isFinite(total) || total <= 0) return 0;
+  return Math.max(0, Math.min(100, Math.round((ok / total) * 100)));
+}
+
+function sparkPath(values: number[], w = 120, h = 40, pad = 2): string {
+  if (!Array.isArray(values) || values.length === 0) return "";
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const innerW = Math.max(1, w - pad * 2);
+  const innerH = Math.max(1, h - pad * 2);
+  const step = values.length > 1 ? innerW / (values.length - 1) : 0;
+
+  let d = "";
+  for (let i = 0; i < values.length; i += 1) {
+    const v = values[i];
+    const x = pad + step * i;
+    const y = pad + innerH * (1 - (v - min) / range);
+    const p = `${x.toFixed(2)},${y.toFixed(2)}`;
+    d += i === 0 ? `M${p}` : ` L${p}`;
+  }
+  return d;
+}
+
+const trendSuccess30 = historyLast30.map((e) => pct(e.okSources, e.totalSources));
+const trendErr30 = historyLast30.map((e) => e.errSources);
+const trendNew30 = historyLast30.map((e) => e.totalNewItems);
+const trendNowSuccess = trendSuccess30.length > 0 ? trendSuccess30[trendSuccess30.length - 1] : successRate;
+const trendNowErr = trendErr30.length > 0 ? trendErr30[trendErr30.length - 1] : errSources;
+const trendNowNew = trendNew30.length > 0 ? trendNew30[trendNew30.length - 1] : totalNewItems;
+const trendUpdatedAt = history.generatedAt ? formatDateTime("zh", history.generatedAt) : updatedAt;
 function staleHours(latestPublishedAt?: string): number | null {
   if (!latestPublishedAt) return null;
   if (!Number.isFinite(generatedAtMs)) return null;
@@ -71,6 +110,74 @@ function suggest(s: (typeof status.sources)[number]): string {
       {t("zh", "status.lastRun")}: {updatedAt} · {status.durationMs}ms
     </p>
   </div>
+
+  {showTrend ? (
+    <section class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="glass shine rounded-2xl p-5">
+        <div class="flex items-end justify-between gap-4">
+          <div>
+            <div class="text-xs font-semibold text-slate-600">成功率趋势（近30轮）</div>
+            <div class="mt-2 text-2xl font-semibold text-slate-950">{trendNowSuccess}%</div>
+            <div class="mt-1 text-xs text-slate-600">更新：{trendUpdatedAt}</div>
+          </div>
+          <svg class="h-10 w-28 text-emerald-700" viewBox="0 0 120 40" aria-hidden="true">
+            <path
+              d={sparkPath(trendSuccess30)}
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+      </div>
+
+      <div class="glass shine rounded-2xl p-5">
+        <div class="flex items-end justify-between gap-4">
+          <div>
+            <div class="text-xs font-semibold text-slate-600">异常来源趋势（近30轮）</div>
+            <div class="mt-2 text-2xl font-semibold text-rose-800">{trendNowErr}</div>
+            <div class="mt-1 text-xs text-slate-600">连续失败≥3：{flakySources}</div>
+          </div>
+          <svg class="h-10 w-28 text-rose-700" viewBox="0 0 120 40" aria-hidden="true">
+            <path
+              d={sparkPath(trendErr30)}
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+      </div>
+
+      <div class="glass shine rounded-2xl p-5">
+        <div class="flex items-end justify-between gap-4">
+          <div>
+            <div class="text-xs font-semibold text-slate-600">新增条目趋势（近30轮）</div>
+            <div class="mt-2 text-2xl font-semibold text-slate-950">{trendNowNew}</div>
+            <div class="mt-1 text-xs text-slate-600">疑似停更：{staleSources}</div>
+          </div>
+          <svg class="h-10 w-28 text-slate-800" viewBox="0 0 120 40" aria-hidden="true">
+            <path
+              d={sparkPath(trendNew30)}
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+      </div>
+    </section>
+  ) : (
+    <div class="mt-6 glass rounded-2xl p-5 text-sm text-slate-700">
+      趋势数据尚未积累：请等待下一轮同步后再查看（需要至少 2 轮记录）。
+    </div>
+  )}
 
   <section class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
     <div class="glass shine rounded-2xl p-5">

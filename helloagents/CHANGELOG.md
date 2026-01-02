@@ -10,7 +10,9 @@
 - 玻璃拟态升级：主要容器支持动态渐变边框（hover 动画）与 SVG 路径绘制式占位动效。
 - 交互体验：View Transitions 转场动效（CSS）+ WAAPI 降级；收藏页骨架屏 shimmer。
 - 功能补强：站内搜索支持多级筛选语法（`tag:`/`source:`/`cat:`/`before:`/`after:`/`is:` + `-` 反选）。
-- 功能补强：新增“全站搜索包” search-pack（构建期生成 `search-pack.v1.json(.gz)`：posts + 预计算索引），全站搜索 Worker 优先预取 search-pack，必要时回退 `posts.json(.gz)`；IndexedDB 缓存升级为 posts+index（含迁移），并支持请求取消/结果截断以稳定 60FPS。
+- 功能补强：新增“全站搜索包” search-pack（构建期生成 `search-pack.v1.json(.gz)` / `search-pack.v2.json(.gz)`：posts + 预计算索引），全站搜索 Worker 默认优先 v2，失败回退 v1，必要时回退 `posts.json(.gz)`；IndexedDB 缓存升级为 posts+index（含迁移），并支持请求取消/结果截断以稳定 60FPS。
+- 状态趋势可追溯：同步阶段生成 `status-history.v1.json(.gz)`（回读上一轮并追加裁剪），`/status` 可展示最近 7/30 轮趋势（成功率/异常来源数/新增条目）。
+- 来源扩量：新增多个 RSS/Atom/RDF 来源并对部分泛资讯源加入 include 降噪，提升抓取数量性且维持可维护性。
 - 可观测：新增本地优先埋点模块（默认不上传；可选 sendBeacon/fetch 上报）。
 - 命令面板深链：支持 `/#cmdk` 直接打开 Command Palette，并通过事件桥接复用全局 Toast 展示复制等反馈。
 - 命令面板 UI：分组标题 + 关键词高亮 + 滚动条与入场动效微调（提升“商业软件”质感）。
@@ -28,7 +30,7 @@
 - SEO/分享：`SiteLayout` 增加 canonical + Open Graph/Twitter meta；详情页默认注入 `article` 类型与封面图（如可用）。
 - 视觉系统参数变量化：玻璃 blur/saturate 与边框动效可通过 `--acg-glass-*` / `--acg-border-pan-*` 调参。
 - 视觉性能：新增 `data-acg-perf="low"` 自动降级（连接信息/设备信息 + 运行时 FPS 探测），降低 blur/阴影/边框动画开销。
-- PWA 缓存：Service Worker 的 data 缓存策略覆盖 `search-pack.v1.json(.gz)`，改善冷启动与弱网体验。
+- PWA 缓存：Service Worker 的 data 缓存策略覆盖 `search-pack.v1.json(.gz)` / `search-pack.v2.json(.gz)` / `status-history.v1.json(.gz)`，改善冷启动与弱网体验。
 - Perf Budget 指标拆分：入口页 core 预算不计入 `dist/data/*.json`；新增 `data.json` 指标（默认仅观测，可用 `ACG_BUDGET_DATA_JSON_KB` 启用门禁）。
 - 工具函数去重：剪贴板复制逻辑统一到 `src/client/utils/clipboard.ts`（更可靠的回退路径与清理）。
 - Toast 交互：增加图标、悬停阴影与点击消失动画（保持轻量且更直观）。
@@ -42,6 +44,7 @@
 - 状态页可观测性：为每个来源记录抓取 attempts/waitMs 与解析 raw/filtered 统计，并在 `/status` 页面展示，降低排障成本。
 - 状态页趋势增强：新增每来源“新增条目数/最新发布时间/连续失败次数”等趋势字段，并在 `/status` 页面展示，更容易定位停更与持续失败。
 - 数据质量：同步阶段 URL 规范化剥离常见追踪参数（如 `utm_*` / `fbclid` / `gclid` 等），提升去重准确性。
+- 翻译覆盖策略：同步翻译阶段优先处理“缺翻译字段”的条目，在 `maxPosts` 限制下覆盖更均匀。
 - 可维护性：同步管线的 HTML 来源解析改为注册表（插件式），移除按 source.id 的硬编码特判。
 - 翻译质量：来源配置新增 `lang`（`en|ja|zh|unknown`），同步翻译阶段按来源语言跳过“同语种自翻译”，并在已有翻译字段存在时不重复生成（降低波动与请求量）。
 - 抓取稳定性：新增 `parse_drop`（解析结果异常缩水）回退策略；当历史数据足够多且本次明显异常变少时回退上一轮，避免静默停更（阈值可用环境变量覆盖）。

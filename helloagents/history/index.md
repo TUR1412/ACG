@@ -20,6 +20,7 @@
 | 202601030108 | evolution_v0_13_status_health_trend | 可观测性/稳定性 | ✅已完成 | history/2026-01/202601030108_evolution_v0_13_status_health_trend/ |
 | 202601030220 | evolution_v0_14_translation_lang_and_parse_drop | 翻译/稳定性 | ✅已完成 | history/2026-01/202601030220_evolution_v0_14_translation_lang_and_parse_drop/ |
 | 202601030318 | evolution_v0_15_pwa_offline_data_fallback | PWA/离线体验 | ✅已完成 | history/2026-01/202601030318_evolution_v0_15_pwa_offline_data_fallback/ |
+| 202601030352 | evolution_v0_16_status_history_searchpack_v2_sources | 可观测性/搜索/扩量 | ✅已完成 | history/2026-01/202601030352_evolution_v0_16_status_history_searchpack_v2_sources/ |
 
 ## 按月归档
 
@@ -42,4 +43,5 @@
 - 202601030108_evolution_v0_13_status_health_trend (2026-01/202601030108_evolution_v0_13_status_health_trend/) - 状态页趋势增强（新增条目/最新发布时间/连续失败），并在解析异常时保守回退避免静默停更
 - 202601030220_evolution_v0_14_translation_lang_and_parse_drop (2026-01/202601030220_evolution_v0_14_translation_lang_and_parse_drop/) - 翻译策略按来源 lang 跳过同语种自翻译 + parse_drop 异常缩水回退 + status 汇总增强
 - 202601030318_evolution_v0_15_pwa_offline_data_fallback (2026-01/202601030318_evolution_v0_15_pwa_offline_data_fallback/) - PWA 离线体验升级（data 请求安全兜底 + 离线页展示最近更新时间 + online/offline 轻提示）
+- 202601030352_evolution_v0_16_status_history_searchpack_v2_sources (2026-01/202601030352_evolution_v0_16_status_history_searchpack_v2_sources/) - status-history 趋势产物 + search-pack v2 瘦身与 fallback + 来源扩量 + 翻译覆盖更均匀
 

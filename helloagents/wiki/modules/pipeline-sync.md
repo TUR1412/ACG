@@ -4,7 +4,7 @@
 在 CI 或本地执行抓取与清洗，将外部来源转为站点可消费的静态 JSON 产物。
 
 ## 模块概述
-- 职责：拉取来源（RSS/HTML）→ 去重排序 → 补图/预览增强 → 翻译字段（限量）→ 写入 `src/data/generated` 与 `public/data`
+- 职责：拉取来源（RSS/HTML）→ 去重排序 → 补图/预览增强 → 翻译字段（限量）→ 生成搜索包/状态趋势 → 写入 `src/data/generated` 与 `public/data`
 - 状态：✅稳定
 - 最后更新：2026-01-02
 
@@ -29,6 +29,10 @@
 场景：来源偶发失败或解析器受页面结构影响时，需要快速判断“是否重试、重试成本、解析产出是否异常”。
 - 预期结果：`status.json` 为每个来源记录抓取 `attempts/waitMs` 与解析 `rawItemCount/filteredItemCount`，状态页可直接展示用于排障。
 
+### 需求: 状态趋势可追溯（status-history）
+场景：仅看“本轮 status”难以判断近期是否持续波动/持续失败/长期停更，需要趋势视角辅助排障。
+- 预期结果：同步阶段生成 `status-history.v1.json(.gz)`（回读上一轮并追加裁剪），状态页可展示最近 7/30 轮趋势。
+
 ## 依赖
 - `scripts/sync.ts`
 - `scripts/lib/*`
@@ -39,7 +43,9 @@
 ## 产物
 - `src/data/generated/posts.json` / `public/data/posts.json(.gz)`
 - `src/data/generated/status.json` / `public/data/status.json(.gz)`
-- `src/data/generated/search-pack.v1.json` / `public/data/search-pack.v1.json(.gz)`（全站搜索包：posts + 预计算索引）
+- `src/data/generated/status-history.v1.json` / `public/data/status-history.v1.json(.gz)`（状态趋势：按每次同步聚合）
+- `src/data/generated/search-pack.v1.json` / `public/data/search-pack.v1.json(.gz)`（全站搜索包 v1：posts + 预计算索引）
+- `src/data/generated/search-pack.v2.json` / `public/data/search-pack.v2.json(.gz)`（全站搜索包 v2：面向 Worker 的瘦身产物，优先加载）
 
 ## 质量门禁
 - `npm run validate`：结构与关键不变量校验（失败阻断部署）

@@ -61,3 +61,28 @@ export type SyncStatus = {
   durationMs: number;
   sources: SourceStatus[];
 };
+
+export type StatusHistoryEntry = {
+  generatedAt: string;
+  durationMs: number;
+  totalSources: number;
+  okSources: number;
+  errSources: number;
+  totalItems: number;
+  totalNewItems: number;
+  /** 连续失败≥3 的来源数 */
+  flakySources: number;
+  /** 疑似停更/抓取卡住（最新发布时间距离本轮生成时间超过阈值）的来源数 */
+  staleSources: number;
+  /** parse_empty 错误次数（来源级别） */
+  parseEmpty: number;
+  /** parse_drop 错误次数（来源级别） */
+  parseDrop: number;
+};
+
+export type StatusHistoryV1 = {
+  v: 1;
+  /** 本次 status-history 生成时间（可能为 null：例如离线兜底或首次生成失败） */
+  generatedAt: string | null;
+  entries: StatusHistoryEntry[];
+};

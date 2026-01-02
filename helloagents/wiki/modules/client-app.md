@@ -40,7 +40,7 @@
 
 ### 需求: 全站搜索预取（60FPS）
 场景：本页仅渲染最新/分类的一部分内容，但用户希望在同一个搜索框里检索全量数据，并保持滚动与输入流畅。
-- 预期结果：支持在“本页搜索/全站搜索”之间切换；全站模式下优先由 Web Worker 预取/解压 `public/data/search-pack.v1.json(.gz)`（posts + 预计算索引行），必要时回退到 `public/data/posts.json(.gz)` 并在 Worker 内补建索引；IndexedDB 缓存 posts+index（含版本迁移）；支持搜索请求取消与结果截断提示以保证输入/滚动 60FPS；已读变更通过 `acg:read-changed` 触发全站结果刷新；提供 `?` 快捷键提示筛选语法。
+- 预期结果：支持在“本页搜索/全站搜索”之间切换；全站模式下优先由 Web Worker 预取/解压 `public/data/search-pack.v2.json(.gz)`（posts 瘦身子集 + 预计算索引），失败回退到 `public/data/search-pack.v1.json(.gz)`，仍失败则回退到 `public/data/posts.json(.gz)` 并在 Worker 内补建索引；IndexedDB 缓存 posts+index（含版本迁移）；支持搜索请求取消与结果截断提示以保证输入/滚动 60FPS；已读变更通过 `acg:read-changed` 触发全站结果刷新；提供 `?` 快捷键提示筛选语法。
 - 快捷入口：支持通过 `[data-search-preset]` 一键切换到全站并预填查询（例如分类页 `cat:<category>`），降低学习成本。
 - 状态存储：使用 localStorage `acg.search.scope.v1` 记忆用户上次选择的搜索范围。
 

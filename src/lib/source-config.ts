@@ -103,6 +103,81 @@ export const SOURCE_CONFIGS: SourceConfig[] = [
       pattern: "声優|アニメ|ゲーム|2\\.5次元|舞台|キャスト",
       flags: "i"
     }
+  },
+  {
+    id: "natalie-comic",
+    name: "コミックナタリー",
+    kind: "feed",
+    lang: "ja",
+    url: "https://natalie.mu/comic/feed/news",
+    homepage: "https://natalie.mu/comic",
+    category: "anime"
+  },
+  {
+    id: "natalie-stage",
+    name: "ステージナタリー",
+    kind: "feed",
+    lang: "ja",
+    url: "https://natalie.mu/stage/feed/news",
+    homepage: "https://natalie.mu/stage",
+    category: "seiyuu",
+    include: {
+      pattern: "声優|アニメ|ゲーム|2\\.5次元|舞台|キャスト",
+      flags: "i"
+    }
+  },
+  {
+    id: "animecorner",
+    name: "Anime Corner",
+    kind: "feed",
+    lang: "en",
+    url: "https://animecorner.me/feed/",
+    homepage: "https://animecorner.me/",
+    category: "anime"
+  },
+  {
+    id: "siliconera",
+    name: "Siliconera",
+    kind: "feed",
+    lang: "en",
+    url: "https://www.siliconera.com/feed/",
+    homepage: "https://www.siliconera.com/",
+    category: "anime"
+  },
+  {
+    id: "gematsu",
+    name: "Gematsu",
+    kind: "feed",
+    lang: "en",
+    url: "https://www.gematsu.com/feed",
+    homepage: "https://www.gematsu.com/",
+    category: "game",
+    include: {
+      pattern: "collab|collaboration|crossover|anime|manga|vtuber|hololive|nijisanji|seiyuu|声優|アニメ|マンガ|漫画",
+      flags: "i"
+    }
+  },
+  {
+    id: "game-watch",
+    name: "GAME Watch",
+    kind: "feed",
+    lang: "ja",
+    url: "https://game.watch.impress.co.jp/data/rss/1.0/gmw/feed.rdf",
+    homepage: "https://game.watch.impress.co.jp/",
+    category: "game",
+    include: {
+      pattern: "コラボ|collab|聯動|アニメ|漫画|マンガ|声優|VTuber|ホロライブ",
+      flags: "i"
+    }
+  },
+  {
+    id: "hobby-watch",
+    name: "HOBBY Watch",
+    kind: "feed",
+    lang: "ja",
+    url: "https://hobby.watch.impress.co.jp/data/rss/1.0/hbw/feed.rdf",
+    homepage: "https://hobby.watch.impress.co.jp/",
+    category: "goods"
   }
 ];
 

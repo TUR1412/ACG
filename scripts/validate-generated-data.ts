@@ -204,17 +204,137 @@ function validateSearchPack(json: unknown, errors: ValidationError[]) {
   }
 }
 
+function validateSearchPackV2(json: unknown, errors: ValidationError[]) {
+  if (!json || typeof json !== "object") {
+    pushError(errors, "searchPackV2", "search-pack.v2.json 不是对象");
+    return;
+  }
+
+  const it = json as any;
+  const v = typeof it.v === "number" ? it.v : 0;
+  if (v !== 2) pushError(errors, "searchPackV2.v", "search pack v2 版本非法（应为 2）");
+
+  const posts = it.posts;
+  const index = it.index;
+  if (!Array.isArray(posts)) pushError(errors, "searchPackV2.posts", "posts 缺失或不是数组");
+  if (!Array.isArray(index)) pushError(errors, "searchPackV2.index", "index 缺失或不是数组");
+
+  const postLen = Array.isArray(posts) ? posts.length : 0;
+  const idxLen = Array.isArray(index) ? index.length : 0;
+  if (postLen <= 0) pushError(errors, "searchPackV2.posts", "posts 为空");
+  if (idxLen <= 0) pushError(errors, "searchPackV2.index", "index 为空");
+  if (postLen > 0 && idxLen > 0 && postLen !== idxLen) {
+    pushError(errors, "searchPackV2.index", `index 数量与 posts 不一致: ${idxLen} vs ${postLen}`);
+  }
+
+  // 轻量结构抽检：避免过度阻塞（全量遍历会增加 CI 耗时）
+  const samples = Array.isArray(index) ? (index as unknown[]).slice(0, 24) : [];
+  for (let i = 0; i < samples.length; i += 1) {
+    const row = samples[i] as any;
+    const base = `searchPackV2.index[${i}]`;
+    if (!row || typeof row !== "object") {
+      pushError(errors, base, "条目不是对象");
+      continue;
+    }
+    const ii = typeof row.i === "number" ? row.i : NaN;
+    if (!Number.isFinite(ii)) pushError(errors, `${base}.i`, "i 缺失或不是数字");
+    else if (postLen > 0 && (ii < 0 || ii >= postLen)) pushError(errors, `${base}.i`, "i 越界");
+
+    if (!isNonEmptyString(row.hay)) pushError(errors, `${base}.hay`, "hay 缺失或为空");
+    if (!Array.isArray(row.tags) || !row.tags.every((x: unknown) => typeof x === "string")) {
+      pushError(errors, `${base}.tags`, "tags 缺失或不是 string[]");
+    }
+    if (!isNonEmptyString(row.sourceName)) pushError(errors, `${base}.sourceName`, "sourceName 缺失或为空");
+    if (!isNonEmptyString(row.sourceId)) pushError(errors, `${base}.sourceId`, "sourceId 缺失或为空");
+    if (!isNonEmptyString(row.sourceIdNorm)) pushError(errors, `${base}.sourceIdNorm`, "sourceIdNorm 缺失或为空");
+    if (!isNonEmptyString(row.category)) pushError(errors, `${base}.category`, "category 缺失或为空");
+    if (row.publishedAtMs != null && toNumber(row.publishedAtMs) == null) {
+      pushError(errors, `${base}.publishedAtMs`, "publishedAtMs 类型非法（应为 number|null）");
+    }
+  }
+}
+
+function validateStatusHistory(json: unknown, errors: ValidationError[]) {
+  if (!json || typeof json !== "object") {
+    pushError(errors, "statusHistory", "status-history.v1.json 不是对象");
+    return;
+  }
+
+  const it = json as any;
+  const v = typeof it.v === "number" ? it.v : 0;
+  if (v !== 1) pushError(errors, "statusHistory.v", "status-history 版本非法（应为 1）");
+  if (it.generatedAt != null && !isNonEmptyString(it.generatedAt))
+    pushError(errors, "statusHistory.generatedAt", "generatedAt 类型非法");
+
+  const entries = it.entries;
+  if (!Array.isArray(entries)) {
+    pushError(errors, "statusHistory.entries", "entries 缺失或不是数组");
+    return;
+  }
+  if (entries.length <= 0) pushError(errors, "statusHistory.entries", "entries 为空");
+
+  const samples = entries.slice(Math.max(0, entries.length - 36));
+  let last = "";
+  for (let i = 0; i < samples.length; i += 1) {
+    const row = samples[i] as any;
+    const base = `statusHistory.entries[${Math.max(0, entries.length - 36) + i}]`;
+    if (!row || typeof row !== "object") {
+      pushError(errors, base, "条目不是对象");
+      continue;
+    }
+
+    if (!isNonEmptyString(row.generatedAt)) pushError(errors, `${base}.generatedAt`, "generatedAt 缺失或为空");
+    else {
+      const t = Date.parse(row.generatedAt);
+      if (!Number.isFinite(t)) pushError(errors, `${base}.generatedAt`, "generatedAt 不是可解析的时间");
+      if (last && row.generatedAt < last) pushError(errors, `${base}.generatedAt`, "entries 疑似未按时间升序排列");
+      last = row.generatedAt;
+    }
+
+    const mustNums: Array<[string, unknown]> = [
+      ["durationMs", row.durationMs],
+      ["totalSources", row.totalSources],
+      ["okSources", row.okSources],
+      ["errSources", row.errSources],
+      ["totalItems", row.totalItems],
+      ["totalNewItems", row.totalNewItems],
+      ["flakySources", row.flakySources],
+      ["staleSources", row.staleSources],
+      ["parseEmpty", row.parseEmpty],
+      ["parseDrop", row.parseDrop]
+    ];
+    for (const [k, v] of mustNums) {
+      if (toNumber(v) == null) pushError(errors, `${base}.${k}`, `${k} 缺失或不是数字`);
+    }
+  }
+}
+
 async function main() {
   const root = process.cwd();
 
-  const srcPosts = resolve(root, "src", "data", "generated", "posts.json");
-  const srcStatus = resolve(root, "src", "data", "generated", "status.json");
+  const srcPosts = resolve(root, "src", "data", "generated", "posts.json");     
+  const srcStatus = resolve(root, "src", "data", "generated", "status.json");   
+  const srcStatusHistory = resolve(root, "src", "data", "generated", "status-history.v1.json");
   const srcSearchPack = resolve(root, "src", "data", "generated", "search-pack.v1.json");
+  const srcSearchPackV2 = resolve(root, "src", "data", "generated", "search-pack.v2.json");
   const publicPosts = resolve(root, "public", "data", "posts.json");
   const publicStatus = resolve(root, "public", "data", "status.json");
+  const publicStatusHistory = resolve(root, "public", "data", "status-history.v1.json");
   const publicSearchPack = resolve(root, "public", "data", "search-pack.v1.json");
+  const publicSearchPackV2 = resolve(root, "public", "data", "search-pack.v2.json");
 
-  const mustExist = [srcPosts, srcStatus, srcSearchPack, publicPosts, publicStatus, publicSearchPack];
+  const mustExist = [
+    srcPosts,
+    srcStatus,
+    srcStatusHistory,
+    srcSearchPack,
+    srcSearchPackV2,
+    publicPosts,
+    publicStatus,
+    publicStatusHistory,
+    publicSearchPack,
+    publicSearchPackV2
+  ];
   const missing = mustExist.filter((p) => !existsSync(p));
   if (missing.length > 0) {
     console.error("[VALIDATE] 缺少生成文件：");
@@ -227,10 +347,14 @@ async function main() {
 
   const postsJson = await readJsonFile<unknown>(srcPosts);
   const statusJson = await readJsonFile<unknown>(srcStatus);
+  const statusHistoryJson = await readJsonFile<unknown>(srcStatusHistory);
   const searchPackJson = await readJsonFile<unknown>(srcSearchPack);
+  const searchPackV2Json = await readJsonFile<unknown>(srcSearchPackV2);
   validatePosts(postsJson, errors);
   validateStatus(statusJson, errors);
   validateSearchPack(searchPackJson, errors);
+  validateStatusHistory(statusHistoryJson, errors);
+  validateSearchPackV2(searchPackV2Json, errors);
 
   // 额外一致性检查：public 与 src 侧条目数量应一致（不做深比较，避免成本过高）
   try {
@@ -254,6 +378,18 @@ async function main() {
   }
 
   try {
+    const pubHistory = await readJsonFile<unknown>(publicStatusHistory);
+    if (!pubHistory || typeof pubHistory !== "object") {
+      pushError(errors, "public/data/status-history.v1.json", "public status-history.v1.json 不是对象");
+    } else {
+      const v = typeof (pubHistory as any).v === "number" ? (pubHistory as any).v : 0;
+      if (v !== 1) pushError(errors, "public/data/status-history.v1.json", "public status-history 版本非法（应为 1）");
+    }
+  } catch {
+    pushError(errors, "public/data/status-history.v1.json", "public status-history.v1.json 无法解析");
+  }
+
+  try {
     const pubPack = await readJsonFile<unknown>(publicSearchPack);
     if (!pubPack || typeof pubPack !== "object") {
       pushError(errors, "public/data/search-pack.v1.json", "public search pack 不是对象");
@@ -269,6 +405,24 @@ async function main() {
     }
   } catch {
     pushError(errors, "public/data/search-pack.v1.json", "public search pack 无法解析");
+  }
+
+  try {
+    const pubPack = await readJsonFile<unknown>(publicSearchPackV2);
+    if (!pubPack || typeof pubPack !== "object") {
+      pushError(errors, "public/data/search-pack.v2.json", "public search pack v2 不是对象");
+    } else {
+      const a =
+        searchPackV2Json && typeof searchPackV2Json === "object" && Array.isArray((searchPackV2Json as any).posts)
+          ? (searchPackV2Json as any).posts.length
+          : -1;
+      const b = Array.isArray((pubPack as any).posts) ? (pubPack as any).posts.length : -1;
+      if (a >= 0 && b >= 0 && a !== b) {
+        pushError(errors, "public/data/search-pack.v2.json", `public search pack v2 posts 数量与 src 不一致: ${b} vs ${a}`);
+      }
+    }
+  } catch {
+    pushError(errors, "public/data/search-pack.v2.json", "public search pack v2 无法解析");
   }
 
   if (errors.length > 0) {

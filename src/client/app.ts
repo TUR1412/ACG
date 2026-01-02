@@ -1875,7 +1875,15 @@ function wireGlobalSearch(params: {
   }
 
   type SearchWorkerInMessage =
-    | { type: "init"; postsUrl: string; postsGzUrl?: string; indexUrl?: string; indexGzUrl?: string }
+    | {
+        type: "init";
+        postsUrl: string;
+        postsGzUrl?: string;
+        indexUrl?: string;
+        indexGzUrl?: string;
+        indexUrlFallback?: string;
+        indexGzUrlFallback?: string;
+      }
     | {
         type: "set_state";
         state: {
@@ -2052,8 +2060,10 @@ function wireGlobalSearch(params: {
         type: "init",
         postsUrl: href(NETWORK.POSTS_JSON_PATH),
         postsGzUrl: href(NETWORK.POSTS_JSON_GZ_PATH),
-        indexUrl: href(NETWORK.SEARCH_PACK_JSON_PATH),
-        indexGzUrl: href(NETWORK.SEARCH_PACK_JSON_GZ_PATH)
+        indexUrl: href(NETWORK.SEARCH_PACK_V2_JSON_PATH),
+        indexGzUrl: href(NETWORK.SEARCH_PACK_V2_JSON_GZ_PATH),
+        indexUrlFallback: href(NETWORK.SEARCH_PACK_JSON_PATH),
+        indexGzUrlFallback: href(NETWORK.SEARCH_PACK_JSON_GZ_PATH)
       } satisfies SearchWorkerInMessage);
     } catch {
       // ignore

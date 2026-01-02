@@ -17,8 +17,8 @@ import {
 import { extractCoverFromHtml, extractPreviewFromHtml, isProbablyNonCoverImageUrl } from "./lib/html";
 import type { Source } from "./sources/types";
 import type { SourceLang } from "../src/lib/source-config";
-import type { Post, SourceStatus, SyncStatus } from "../src/lib/types";
-import { buildSearchPack } from "../src/lib/search/pack";
+import type { Post, SourceStatus, StatusHistoryEntry, StatusHistoryV1, SyncStatus } from "../src/lib/types";
+import { buildSearchPack, buildSearchPackV2 } from "../src/lib/search/pack";
 import { deriveTags } from "./lib/tagger";
 import { readTranslateCache, translateTextCached, type TranslateCache } from "./lib/translate";
 
@@ -39,13 +39,37 @@ async function translatePosts(params: {
   const timeoutMs = parseNonNegativeInt(process.env.ACG_TRANSLATE_TIMEOUT_MS, 18_000);
   const maxPosts = parseNonNegativeInt(process.env.ACG_TRANSLATE_MAX_POSTS, 220);
 
-  const limit = Math.min(Math.max(0, maxPosts), posts.length);
-  const targets = posts.slice(0, limit);
-  let attempted = 0;
-  let translated = 0;
-
   const sourceLangById = new Map<string, SourceLang>();
   for (const s of SOURCES) sourceLangById.set(s.id, s.lang ?? "unknown");
+
+  const needsTranslate = (post: Post): boolean => {
+    const sourceLang = sourceLangById.get(post.sourceId) ?? "unknown";
+    const shouldTranslateToZh = sourceLang !== "zh";
+    const shouldTranslateToJa = sourceLang !== "ja";
+
+    if (post.title) {
+      if (shouldTranslateToZh && !post.titleZh) return true;
+      if (shouldTranslateToJa && !post.titleJa && !hasJapaneseKana(post.title)) return true;
+    }
+
+    if (post.summary) {
+      if (shouldTranslateToZh && !post.summaryZh) return true;
+      if (shouldTranslateToJa && !post.summaryJa && !hasJapaneseKana(post.summary)) return true;
+    }
+
+    if (post.preview) {
+      if (shouldTranslateToZh && !post.previewZh) return true;
+      if (shouldTranslateToJa && !post.previewJa && !hasJapaneseKana(post.preview)) return true;
+    }
+
+    return false;
+  };
+
+  const candidates = posts.filter(needsTranslate);
+  const limit = Math.min(Math.max(0, maxPosts), candidates.length);
+  const targets = candidates.slice(0, limit);
+  let attempted = 0;
+  let translated = 0;
 
   for (const post of targets) {
     const sourceLang = sourceLangById.get(post.sourceId) ?? "unknown";
@@ -429,6 +453,58 @@ function parseNonNegativeInt(value: string | undefined, fallback: number): numbe
   return Math.floor(parsed);
 }
 
+function normalizeStatusHistoryEntry(value: unknown): StatusHistoryEntry | null {
+  if (!value || typeof value !== "object") return null;
+  const it = value as any;
+
+  const generatedAt = typeof it.generatedAt === "string" ? it.generatedAt : "";
+  if (!generatedAt) return null;
+
+  const num = (v: unknown): number | null => {
+    return typeof v === "number" && Number.isFinite(v) ? v : null;
+  };
+
+  const durationMs = num(it.durationMs);
+  const totalSources = num(it.totalSources);
+  const okSources = num(it.okSources);
+  const errSources = num(it.errSources);
+  const totalItems = num(it.totalItems);
+  const totalNewItems = num(it.totalNewItems);
+  const flakySources = num(it.flakySources);
+  const staleSources = num(it.staleSources);
+  const parseEmpty = num(it.parseEmpty);
+  const parseDrop = num(it.parseDrop);
+
+  if (
+    durationMs == null ||
+    totalSources == null ||
+    okSources == null ||
+    errSources == null ||
+    totalItems == null ||
+    totalNewItems == null ||
+    flakySources == null ||
+    staleSources == null ||
+    parseEmpty == null ||
+    parseDrop == null
+  ) {
+    return null;
+  }
+
+  return {
+    generatedAt,
+    durationMs,
+    totalSources,
+    okSources,
+    errSources,
+    totalItems,
+    totalNewItems,
+    flakySources,
+    staleSources,
+    parseEmpty,
+    parseDrop
+  };
+}
+
 function isHttpUrl(url: string): boolean {
   return /^https?:\/\//i.test(url);
 }
@@ -762,10 +838,25 @@ async function main() {
 
   const outPostsPath = resolve(root, "src", "data", "generated", "posts.json");
   const outStatusPath = resolve(root, "src", "data", "generated", "status.json");
+  const outStatusHistoryPath = resolve(
+    root,
+    "src",
+    "data",
+    "generated",
+    "status-history.v1.json"
+  );
   const outSearchPackPath = resolve(root, "src", "data", "generated", "search-pack.v1.json");
+  const outSearchPackV2Path = resolve(root, "src", "data", "generated", "search-pack.v2.json");
   const publicPostsPath = resolve(root, "public", "data", "posts.json");
   const publicStatusPath = resolve(root, "public", "data", "status.json");
+  const publicStatusHistoryPath = resolve(
+    root,
+    "public",
+    "data",
+    "status-history.v1.json"
+  );
   const publicSearchPackPath = resolve(root, "public", "data", "search-pack.v1.json");
+  const publicSearchPackV2Path = resolve(root, "public", "data", "search-pack.v2.json");
   const cachePath = cacheFilePath(root);
   const translateCachePath = resolve(root, ".cache", "translate.json");
 
@@ -819,6 +910,31 @@ async function main() {
   } catch {
     // ignore
   }
+
+  // status-history：回读上一轮趋势文件（用于连续可视化；不阻断同步）。
+  const remoteStatusHistoryUrl =
+    process.env.ACG_REMOTE_STATUS_HISTORY_URL ??
+    "https://tur1412.github.io/ACG/data/status-history.v1.json";
+  const previousRemoteStatusHistory = await (async () => {
+    try {
+      const res = await fetch(`${remoteStatusHistoryUrl}?t=${Date.now()}`, {
+        headers: { "user-agent": "Mozilla/5.0 (ACG-FeedBot/0.1; +https://github.com/TUR1412/ACG)" }
+      });
+      if (!res.ok) return null;
+      const json = (await res.json()) as unknown;
+      if (
+        json &&
+        typeof json === "object" &&
+        (json as any).v === 1 &&
+        Array.isArray((json as any).entries)
+      ) {
+        return json as StatusHistoryV1;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  })();
 
   const allowed = new Set(SOURCES.map((s) => s.id));
   const previousPosts = (previousRemote.length > 0 ? previousRemote : previousLocal).filter((p) =>
@@ -924,7 +1040,117 @@ async function main() {
   await writePublicJsonAndGzip(publicPostsPath, pruned);
   await writePublicJsonAndGzip(publicStatusPath, status);
 
+  // status-history：趋势汇总（按“每次同步”为粒度），用于 status 页面展示。
+  const staleThresholdHoursForHistory = parseNonNegativeInt(
+    process.env.ACG_STALE_THRESHOLD_HOURS,
+    72
+  );
+  const sourcesForHistory = status.sources ?? [];
+  const totalSourcesForHistory = sourcesForHistory.length;
+  const okSourcesForHistory = sourcesForHistory.filter((s) => s.ok).length;
+  const errSourcesForHistory = totalSourcesForHistory - okSourcesForHistory;
+  const totalItemsForHistory = sourcesForHistory.reduce((sum, s) => sum + (s.itemCount ?? 0), 0);
+  const totalNewItemsForHistory = sourcesForHistory.reduce(
+    (sum, s) => sum + (s.newItemCount ?? 0),
+    0
+  );
+  const flakySourcesForHistory = sourcesForHistory.filter(
+    (s) => typeof s.consecutiveFails === "number" && s.consecutiveFails >= 3
+  ).length;
+
+  const generatedAtMsForHistory = Date.parse(generatedAt);
+  const staleSourcesForHistory = sourcesForHistory.filter((s) => {
+    const latest = s.latestPublishedAt;
+    if (!latest) return false;
+    const latestMs = Date.parse(latest);
+    if (!Number.isFinite(generatedAtMsForHistory) || !Number.isFinite(latestMs)) return false;
+    const diffH = Math.max(0, generatedAtMsForHistory - latestMs) / (1000 * 60 * 60);
+    return diffH >= staleThresholdHoursForHistory;
+  }).length;
+
+  const parseEmptyForHistory = sourcesForHistory.filter((s) =>
+    (s.error ?? "").toLowerCase().includes("parse_empty")
+  ).length;
+  const parseDropForHistory = sourcesForHistory.filter((s) =>
+    (s.error ?? "").toLowerCase().includes("parse_drop")
+  ).length;
+
+  const entry: StatusHistoryEntry = {
+    generatedAt,
+    durationMs: status.durationMs ?? 0,
+    totalSources: totalSourcesForHistory,
+    okSources: okSourcesForHistory,
+    errSources: errSourcesForHistory,
+    totalItems: totalItemsForHistory,
+    totalNewItems: totalNewItemsForHistory,
+    flakySources: flakySourcesForHistory,
+    staleSources: staleSourcesForHistory,
+    parseEmpty: parseEmptyForHistory,
+    parseDrop: parseDropForHistory
+  };
+
+  const previousLocalHistory = await readJsonFile<StatusHistoryV1>(outStatusHistoryPath, {
+    v: 1,
+    generatedAt: null,
+    entries: []
+  });
+  const baseEntriesRaw: unknown[] =
+    previousRemoteStatusHistory && Array.isArray(previousRemoteStatusHistory.entries) && previousRemoteStatusHistory.entries.length > 0
+      ? (previousRemoteStatusHistory.entries as unknown[])
+      : (previousLocalHistory.entries as unknown[]);
+  const baseEntries = baseEntriesRaw
+    .map(normalizeStatusHistoryEntry)
+    .filter((x): x is StatusHistoryEntry => Boolean(x));
+
+  const maxEntries = parseNonNegativeInt(process.env.ACG_STATUS_HISTORY_MAX, 240);
+  const merged = [...baseEntries, entry].sort((a, b) => a.generatedAt.localeCompare(b.generatedAt));
+
+  // 去重：同一时间戳只保留最后一个（通常代表同一轮重复生成）。
+  const deduped: StatusHistoryEntry[] = [];
+  for (const it of merged) {
+    const prev = deduped[deduped.length - 1];
+    if (prev && prev.generatedAt === it.generatedAt) {
+      deduped[deduped.length - 1] = it;
+      continue;
+    }
+    deduped.push(it);
+  }
+  const trimmed =
+    maxEntries > 0 && deduped.length > maxEntries ? deduped.slice(deduped.length - maxEntries) : deduped;
+  const history: StatusHistoryV1 = { v: 1, generatedAt, entries: trimmed };
+
+  await writeJsonFile(outStatusHistoryPath, history);
+  await writePublicJsonAndGzip(publicStatusHistoryPath, history);
+
   // 全站搜索：预生成“搜索包”（posts + index），避免运行时在 Worker 内反复构建索引
+  // v2：为全站搜索瘦身（仅保留渲染必需字段；摘要/预览合并为 summary* 作为展示文案）
+  const searchPackPostsV2: Post[] = pruned.map((p) => {
+    const summary = p.summary ?? p.preview;
+    const summaryZh = p.summaryZh ?? p.previewZh;
+    const summaryJa = p.summaryJa ?? p.previewJa;
+    return {
+      id: p.id,
+      title: p.title,
+      ...(p.titleZh ? { titleZh: p.titleZh } : {}),
+      ...(p.titleJa ? { titleJa: p.titleJa } : {}),
+      ...(summary ? { summary } : {}),
+      ...(summaryZh ? { summaryZh } : {}),
+      ...(summaryJa ? { summaryJa } : {}),
+      url: p.url,
+      publishedAt: p.publishedAt,
+      ...(p.cover ? { cover: p.cover } : {}),
+      category: p.category,
+      tags: p.tags,
+      sourceId: p.sourceId,
+      sourceName: p.sourceName,
+      sourceUrl: p.sourceUrl
+    };
+  });
+  const searchPackV2 = buildSearchPackV2(searchPackPostsV2, generatedAt);
+  await writeJsonMinified(outSearchPackV2Path, searchPackV2);
+  await writePublicJsonAndGzip(publicSearchPackV2Path, searchPackV2);
+
+  // v1：保留兼容（旧版 Worker/缓存仍可读取）
   const searchPack = buildSearchPack(pruned, generatedAt);
   await writeJsonMinified(outSearchPackPath, searchPack);
   await writePublicJsonAndGzip(publicSearchPackPath, searchPack);

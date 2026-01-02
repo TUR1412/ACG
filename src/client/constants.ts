@@ -24,6 +24,8 @@ export const STORAGE_KEYS = {
 export const NETWORK = {
   POSTS_JSON_PATH: "/data/posts.json",
   POSTS_JSON_GZ_PATH: "/data/posts.json.gz",
+  SEARCH_PACK_V2_JSON_PATH: "/data/search-pack.v2.json",
+  SEARCH_PACK_V2_JSON_GZ_PATH: "/data/search-pack.v2.json.gz",
   SEARCH_PACK_JSON_PATH: "/data/search-pack.v1.json",
   SEARCH_PACK_JSON_GZ_PATH: "/data/search-pack.v1.json.gz",
   DEFAULT_TIMEOUT_MS: 12_000,
