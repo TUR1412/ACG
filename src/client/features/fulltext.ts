@@ -11,6 +11,55 @@ import { httpFetch } from "../utils/http";
 
 type FullTextLang = "zh" | "ja";
 
+type FullTextWorkerRenderMessage = {
+  type: "render";
+  requestId: number;
+  md: string;
+  baseUrl: string;
+};
+
+type FullTextWorkerTranslateMessage = {
+  type: "translate";
+  requestId: number;
+  text: string;
+  target: FullTextLang;
+  timeoutMs: number;
+};
+
+type FullTextWorkerInMessage = FullTextWorkerRenderMessage | FullTextWorkerTranslateMessage;
+
+type FullTextWorkerRenderResultMessage = {
+  type: "render_result";
+  requestId: number;
+  html: string;
+};
+
+type FullTextWorkerTranslateResultMessage = {
+  type: "translate_result";
+  requestId: number;
+  translated: string;
+};
+
+type FullTextWorkerProgressMessage = {
+  type: "progress";
+  requestId: number;
+  done: number;
+  total: number;
+};
+
+type FullTextWorkerErrorMessage = {
+  type: "error";
+  requestId?: number;
+  phase?: "render" | "translate";
+  message: string;
+};
+
+type FullTextWorkerOutMessage =
+  | FullTextWorkerRenderResultMessage
+  | FullTextWorkerTranslateResultMessage
+  | FullTextWorkerProgressMessage
+  | FullTextWorkerErrorMessage;
+
 const FULLTEXT_CACHE_MAX_CHARS = 160_000;
 const FULLTEXT_REQUEST_TIMEOUT_MS = 22_000;
 const FULLTEXT_STATUS_FLASH_MS = 1600;
@@ -269,7 +318,7 @@ function normalizeFullTextMarkdown(md: string): string {
   return text.trim();
 }
 
-function stripInternalPlaceholdersFromHtml(html: string): string {
+export function stripInternalPlaceholdersFromHtml(html: string): string {
   if (!html) return html;
   const zw = String.raw`[\s\u200B\uFEFF]*`;
   const num = String.raw`\d+`;
@@ -566,7 +615,7 @@ function renderInlineMarkdown(input: string, baseUrl: string): string {
   return text;
 }
 
-function renderMarkdownToHtml(md: string, baseUrl: string): string {
+export function renderMarkdownToHtml(md: string, baseUrl: string): string {
   const text = normalizeFullTextMarkdown(md);
   if (!text) return "";
 
@@ -2564,7 +2613,7 @@ function parseGoogleGtx(json: unknown): string | null {
   return joined.trim() ? joined : null;
 }
 
-async function translateViaGtx(params: { text: string; target: FullTextLang; timeoutMs: number; onProgress?: (done: number, total: number) => void }): Promise<string> {
+export async function translateViaGtx(params: { text: string; target: FullTextLang; timeoutMs: number; onProgress?: (done: number, total: number) => void }): Promise<string> {
   const { text, target, timeoutMs, onProgress } = params;
   const tl = target === "zh" ? "zh-CN" : "ja";
 
@@ -2614,6 +2663,148 @@ export function wireFullTextReader() {
     let memoryCache: FullTextCacheEntry | null = null;
     let renderSeq = 0;
 
+    type FullTextWorkerPending =
+      | { kind: "render"; resolve: (html: string) => void; reject: (err: Error) => void }
+      | {
+          kind: "translate";
+          resolve: (translated: string) => void;
+          reject: (err: Error) => void;
+          onProgress?: (done: number, total: number) => void;
+        };
+
+    let worker: Worker | null = null;
+    let workerBroken = false;
+    let workerRequestSeq = 0;
+    const workerPending = new Map<number, FullTextWorkerPending>();
+
+    const invalidateWorker = (reason: string) => {
+      workerBroken = true;
+      try {
+        worker?.terminate();
+      } catch {
+        // ignore
+      }
+      worker = null;
+
+      for (const pending of workerPending.values()) {
+        try {
+          pending.reject(new Error(reason));
+        } catch {
+          // ignore
+        }
+      }
+      workerPending.clear();
+    };
+
+    const ensureWorker = (): Worker | null => {
+      if (workerBroken) return null;
+      if (worker) return worker;
+
+      let next: Worker;
+      try {
+        next = new Worker(new URL("../workers/fulltext.worker.ts", import.meta.url), { type: "module" });
+      } catch {
+        workerBroken = true;
+        return null;
+      }
+
+      worker = next;
+
+      worker.addEventListener("message", (ev: MessageEvent<FullTextWorkerOutMessage>) => {
+        const msg = ev.data;
+        if (!msg || typeof msg !== "object") return;
+
+        if (msg.type === "progress") {
+          const pending = workerPending.get(msg.requestId);
+          if (pending?.kind === "translate") pending.onProgress?.(msg.done, msg.total);
+          return;
+        }
+
+        if (msg.type === "render_result") {
+          const pending = workerPending.get(msg.requestId);
+          if (pending?.kind !== "render") return;
+          workerPending.delete(msg.requestId);
+          pending.resolve(msg.html);
+          return;
+        }
+
+        if (msg.type === "translate_result") {
+          const pending = workerPending.get(msg.requestId);
+          if (pending?.kind !== "translate") return;
+          workerPending.delete(msg.requestId);
+          pending.resolve(msg.translated);
+          return;
+        }
+
+        if (msg.type === "error") {
+          const requestId = msg.requestId;
+          if (typeof requestId !== "number") return;
+          const pending = workerPending.get(requestId);
+          if (!pending) return;
+          workerPending.delete(requestId);
+          pending.reject(new Error(msg.message || "worker_error"));
+        }
+      });
+
+      worker.addEventListener("error", () => {
+        invalidateWorker("worker_crash");
+      });
+
+      worker.addEventListener("messageerror", () => {
+        invalidateWorker("worker_messageerror");
+      });
+
+      return worker;
+    };
+
+    const renderHtmlMainThread = (md: string): string =>
+      stripInternalPlaceholdersFromHtml(renderMarkdownToHtml(md, url));
+
+    const renderHtml = async (md: string): Promise<string> => {
+      // 小文本直接主线程渲染，避免 Worker 启动/通信开销。
+      const shouldUseWorker = md.length >= 8000 || isLowPerfMode();
+      if (!shouldUseWorker) return renderHtmlMainThread(md);
+
+      const w = ensureWorker();
+      if (!w) return renderHtmlMainThread(md);
+
+      const requestId = (workerRequestSeq += 1);
+      return await new Promise<string>((resolve, reject) => {
+        workerPending.set(requestId, { kind: "render", resolve, reject });
+        try {
+          w.postMessage({ type: "render", requestId, md, baseUrl: url } satisfies FullTextWorkerInMessage);
+        } catch (err) {
+          workerPending.delete(requestId);
+          invalidateWorker("worker_post_failed");
+          reject(err instanceof Error ? err : new Error(String(err)));
+        }
+      }).catch(() => renderHtmlMainThread(md));
+    };
+
+    const translateText = async (params: {
+      text: string;
+      target: FullTextLang;
+      timeoutMs: number;
+      onProgress?: (done: number, total: number) => void;
+    }): Promise<string> => {
+      const { text, target, timeoutMs, onProgress } = params;
+
+      const w = ensureWorker();
+      if (!w) return await translateViaGtx({ text, target, timeoutMs, onProgress });
+
+      const requestId = (workerRequestSeq += 1);
+      return await new Promise<string>((resolve, reject) => {
+        workerPending.set(requestId, { kind: "translate", resolve, reject, onProgress });
+        try {
+          w.postMessage({ type: "translate", requestId, text, target, timeoutMs } satisfies FullTextWorkerInMessage);
+        } catch (err) {
+          workerPending.delete(requestId);
+          invalidateWorker("worker_post_failed");
+          reject(err instanceof Error ? err : new Error(String(err)));
+        }
+      });
+    };
+
     const setStatus = (text: string) => {
       if (!statusEl) return;
       statusEl.textContent = text;
@@ -2632,63 +2823,80 @@ export function wireFullTextReader() {
       renderSeq += 1;
       const seq = renderSeq;
 
-      delete contentEl.dataset.acgProseEnhanced;
-      delete contentEl.dataset.acgProseKind;
-      contentEl.innerHTML = stripInternalPlaceholdersFromHtml(renderMarkdownToHtml(text, url));
-
-      // 说明：以下逻辑会遍历/重写 DOM，移动端可能造成“卡一下”；因此延后到 idle 执行。
-      // 使用 seq 防止快速切换（原文/翻译/重试）导致重复后处理与错序写入。
-      const postProcess = () => {
+      const applyHtml = (html: string) => {
         if (seq !== renderSeq) return;
 
-        let kind: ProseKind = "article";
-        try {
-          kind = detectProseKind(contentEl);
-          contentEl.dataset.acgProseKind = kind;
-        } catch {
-          // ignore
-        }
+        delete contentEl.dataset.acgProseEnhanced;
+        delete contentEl.dataset.acgProseKind;
+        contentEl.innerHTML = html;
 
-        if (kind === "article") {
+        // 说明：以下逻辑会遍历/重写 DOM，移动端可能造成“卡一下”；因此延后到 idle 执行。
+        // 使用 seq 防止快速切换（原文/翻译/重试）导致重复后处理与错序写入。
+        const postProcess = () => {
+          if (seq !== renderSeq) return;
+
+          let kind: ProseKind = "article";
           try {
-            pruneProseArticleJunk(contentEl);
+            kind = detectProseKind(contentEl);
+            contentEl.dataset.acgProseKind = kind;
           } catch {
             // ignore
           }
-        }
 
-        if (kind === "index") {
-          try {
-            enhanceProseIndex(contentEl);
-          } catch {
-            // ignore
+          if (kind === "article") {
+            try {
+              pruneProseArticleJunk(contentEl);
+            } catch {
+              // ignore
+            }
           }
-        }
 
-        const lowPerf = isLowPerfMode();
-        const imgCount = contentEl.querySelectorAll("img").length;
-        const linkCount = contentEl.querySelectorAll("a[href]").length;
-
-        // 低性能模式：对“增强”做阈值限制（优先保证滚动与交互）。
-        if (!lowPerf || imgCount <= 36) {
-          try {
-            enhanceProseImageGalleries(contentEl);
-          } catch {
-            // ignore
+          if (kind === "index") {
+            try {
+              enhanceProseIndex(contentEl);
+            } catch {
+              // ignore
+            }
           }
-        }
 
-        if (!lowPerf || linkCount <= 220) {
-          try {
-            enhanceLinkListItems(contentEl);
-          } catch {
-            // ignore
+          const lowPerf = isLowPerfMode();
+          const imgCount = contentEl.querySelectorAll("img").length;
+          const linkCount = contentEl.querySelectorAll("a[href]").length;
+
+          // 低性能模式：对“增强”做阈值限制（优先保证滚动与交互）。
+          if (!lowPerf || imgCount <= 36) {
+            try {
+              enhanceProseImageGalleries(contentEl);
+            } catch {
+              // ignore
+            }
           }
-        }
+
+          if (!lowPerf || linkCount <= 220) {
+            try {
+              enhanceLinkListItems(contentEl);
+            } catch {
+              // ignore
+            }
+          }
+        };
+
+        const timeoutMs = isLowPerfMode() ? FULLTEXT_POSTPROCESS_IDLE_TIMEOUT_MS : 600;
+        runWhenIdle(postProcess, timeoutMs);
       };
 
-      const timeoutMs = isLowPerfMode() ? FULLTEXT_POSTPROCESS_IDLE_TIMEOUT_MS : 600;
-      runWhenIdle(postProcess, timeoutMs);
+      void renderHtml(text)
+        .then((html) => {
+          applyHtml(html);
+        })
+        .catch(() => {
+          // 兜底：避免渲染异常导致区域空白
+          try {
+            applyHtml(`<pre><code>${escapeHtml(text)}</code></pre>`);
+          } catch {
+            // ignore
+          }
+        });
     };
 
     const hasTranslated = (cache: FullTextCacheEntry) => (lang === "zh" ? Boolean(cache.zh) : Boolean(cache.ja));
@@ -2797,7 +3005,7 @@ export function wireFullTextReader() {
         if (btnShowTranslated) btnShowTranslated.disabled = true;
 
         setStatus(lang === "ja" ? "翻訳中…" : "正在翻译…");
-        const translated = await translateViaGtx({
+        const translated = await translateText({
           text: cache.original,
           target: lang,
           timeoutMs: FULLTEXT_REQUEST_TIMEOUT_MS,

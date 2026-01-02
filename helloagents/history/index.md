@@ -14,6 +14,7 @@
 | 202512312048 | evolution_v0_7_budget_data_split | 修复/重构 | ✅已完成 | history/2025-12/202512312048_evolution_v0_7_budget_data_split/ |
 | 202512312242 | evolution_v0_8_ui_category_global_search | UI/体验 | ✅已完成 | history/2025-12/202512312242_evolution_v0_8_ui_category_global_search/ |
 | 202601021014 | evolution_v0_9_fulltext_perf_pipeline | 功能/重构 | ✅已完成 | history/2026-01/202601021014_evolution_v0_9_fulltext_perf_pipeline/ |
+| 202601021845 | evolution_v0_10_fulltext_worker | 功能/重构 | ✅已完成 | history/2026-01/202601021845_evolution_v0_10_fulltext_worker/ |
 
 ## 按月归档
 
@@ -30,4 +31,5 @@
 ### 2026-01
 
 - 202601021014_evolution_v0_9_fulltext_perf_pipeline (2026-01/202601021014_evolution_v0_9_fulltext_perf_pipeline/) - 全文预览性能分阶段（idle 后处理 + 低性能/滚动期降级）+ 同步管线插件化与稳定性增强
+- 202601021845_evolution_v0_10_fulltext_worker (2026-01/202601021845_evolution_v0_10_fulltext_worker/) - 全文预览 Worker 化（渲染/翻译重计算迁移到 Worker，主线程只做 DOM 注入 + idle 后处理，并保留回退与低性能策略）
 

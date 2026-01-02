@@ -33,6 +33,7 @@
 ### 需求: 全文预览（实验）性能策略
 场景：全文预览属于“重型能力”（跨站抓取 + 清洗 + 渲染 + 可选翻译），在移动端更容易造成“卡一下”。
 - 预期结果：全文预览为 lazy chunk，仅在详情页存在 `[data-fulltext]` 时加载。
+- 预期结果：渲染/翻译的字符串重计算优先由 Web Worker 执行，主线程只做 DOM 注入与 idle 后处理调度；Worker 不可用时回退到主线程实现。
 - 预期结果：渲染后处理（去壳/图墙治理/链接增强）延后到 idle 执行；在 `data-acg-perf="low"` 下对增强做阈值限制，优先保证滚动与交互。
 - 预期结果：自动翻译仅在非低性能模式且非滚动期触发；低性能模式默认不自动翻译（保留手动入口）。
 
@@ -51,6 +52,7 @@
 - `src/lib/search/query.ts`
 - `src/lib/search/pack.ts`
 - `src/client/workers/search.worker.ts`
+- `src/client/workers/fulltext.worker.ts`
 - `src/client/features/cmdk.ts`
 - `src/client/features/fulltext.ts`
 - `src/client/utils/http.ts`

@@ -67,4 +67,5 @@ sequenceDiagram
 | ADR-007 | 同步管线的 HTML 来源解析采用注册表（插件式） | 2026-01-02 | ✅已采纳 | pipeline-sync | history/2026-01/202601021014_evolution_v0_9_fulltext_perf_pipeline/how.md |
 | ADR-008 | URL 规范化剥离常见追踪参数 | 2026-01-02 | ✅已采纳 | pipeline-sync / shared-lib | history/2026-01/202601021014_evolution_v0_9_fulltext_perf_pipeline/how.md |
 | ADR-009 | 抓取请求增加保守重试与 jitter 退避 | 2026-01-02 | ✅已采纳 | pipeline-sync | history/2026-01/202601021014_evolution_v0_9_fulltext_perf_pipeline/how.md |
+| ADR-010 | 全文预览渲染/翻译迁移到 Web Worker | 2026-01-02 | ✅已采纳 | client-app | history/2026-01/202601021845_evolution_v0_10_fulltext_worker/how.md |
 

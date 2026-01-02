@@ -7,8 +7,13 @@ export function bestInitialCoverSrc(original: string, width = 1200): string {
     return href(original);
   }
   // https 页面里加载 http 图片会被浏览器直接拦截；这里直接用 https 包装，减少“看起来像缺图”的时间。
-  if (window.location.protocol === "https:" && original.startsWith("http://")) {
-    return toWeservImageUrl({ url: original, width });
+  try {
+    const protocol = (globalThis as any)?.location?.protocol as unknown;
+    if (protocol === "https:" && original.startsWith("http://")) {
+      return toWeservImageUrl({ url: original, width });
+    }
+  } catch {
+    // ignore
   }
   return original;
 }
