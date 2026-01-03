@@ -151,11 +151,7 @@ export const SOURCE_CONFIGS: SourceConfig[] = [
     lang: "en",
     url: "https://www.gematsu.com/feed",
     homepage: "https://www.gematsu.com/",
-    category: "game",
-    include: {
-      pattern: "collab|collaboration|crossover|anime|manga|vtuber|hololive|nijisanji|seiyuu|声優|アニメ|マンガ|漫画",
-      flags: "i"
-    }
+    category: "game"
   },
   {
     id: "game-watch",
@@ -164,11 +160,7 @@ export const SOURCE_CONFIGS: SourceConfig[] = [
     lang: "ja",
     url: "https://game.watch.impress.co.jp/data/rss/1.0/gmw/feed.rdf",
     homepage: "https://game.watch.impress.co.jp/",
-    category: "game",
-    include: {
-      pattern: "コラボ|collab|聯動|アニメ|漫画|マンガ|声優|VTuber|ホロライブ",
-      flags: "i"
-    }
+    category: "game"
   },
   {
     id: "hobby-watch",

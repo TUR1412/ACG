@@ -40,7 +40,9 @@
 - 全文预览性能：渲染后处理（去壳/图墙治理/链接增强）延后到 idle 执行，并对 `data-acg-perf="low"` 做阈值限制；滚动期不自动触发自动翻译，降低移动端卡顿。
 - 全文预览 Worker 化：渲染/翻译的字符串重计算优先由 Web Worker 执行，主线程只做 DOM 注入与 idle 后处理；Worker 不可用时回退主线程实现。
 - 全文预览 DOM 注入：渲染结果按 blocks 切分，并在长文/低性能模式下渐进式追加，减少一次性 `innerHTML` 注入带来的长任务与切换卡顿。
+- 全文预览滚动优化：对 `[data-fulltext-content] > *` 启用 `content-visibility: auto`（并配置 `contain-intrinsic-size` 兜底），降低长文滚动时的离屏渲染开销；不支持的浏览器自动退化。
 - 抓取稳定性：对瞬时失败（超时/429/5xx）增加保守重试 + jitter 退避，降低整点波动误报。
+- 同步提速：来源抓取支持 `ACG_SOURCE_CONCURRENCY` 有限并发（默认 `3`），抓取阶段 http cache 统一落盘，避免并发写入竞态并减少 IO。
 - 状态页可观测性：为每个来源记录抓取 attempts/waitMs 与解析 raw/filtered 统计，并在 `/status` 页面展示，降低排障成本。
 - 状态页趋势增强：新增每来源“新增条目数/最新发布时间/连续失败次数”等趋势字段，并在 `/status` 页面展示，更容易定位停更与持续失败。
 - 数据质量：同步阶段 URL 规范化剥离常见追踪参数（如 `utm_*` / `fbclid` / `gclid` 等），提升去重准确性。
@@ -49,6 +51,7 @@
 - 翻译质量：来源配置新增 `lang`（`en|ja|zh|unknown`），同步翻译阶段按来源语言跳过“同语种自翻译”，并在已有翻译字段存在时不重复生成（降低波动与请求量）。
 - 抓取稳定性：新增 `parse_drop`（解析结果异常缩水）回退策略；当历史数据足够多且本次明显异常变少时回退上一轮，避免静默停更（阈值可用环境变量覆盖）。
 - 抓取稳定性：`parse_drop` 判定基于解析前的 `rawItemCount`（而非过滤后的条目数），避免带 `include` 的来源因过滤后条目较少而误触发 fallback。
+- 抓取数量性：放宽 `Gematsu` / `GAME Watch` 的 include 降噪规则（改为不过滤），提升 game 类来源条目与搜索覆盖。
 - 来源质量：`animeanime-list` 从 HTML 列表页切换为 RSS 源（`https://animeanime.jp/rss20/index.rdf`），降低解析脆弱性并提升抓取稳定性。
 - 状态页体验：新增全局汇总指标（本轮新增/疑似停更/连续失败≥3）与 `parse_*` 错误建议（zh/ja），更快定位风险来源。
 - PWA 离线/弱网：Service Worker 对 data 请求按类型提供安全兜底（避免 `{}` 误伤），离线页展示最近更新时间并增加 status 快捷入口；客户端新增 online/offline Toast 轻提示。

@@ -269,6 +269,7 @@ npm run sync -- --days 30 --limit 2000 --verbose
 
 - `ACG_TRANSLATE_MAX_POSTS`：每次同步最多对多少条“最新内容”生成中/日翻译字段（默认 `220`）
 - `ACG_TRANSLATE_TIMEOUT_MS`：翻译请求超时（毫秒，默认 `18000`）
+- `ACG_SOURCE_CONCURRENCY`：来源抓取并发数（默认 `3`，范围 `1..8`；用于降低整轮同步耗时与整点波动）
 - `ACG_PARSE_DROP_MIN_PREV`：触发 `parse_drop` 回退所需的最小历史条目数（默认 `12`）
 - `ACG_PARSE_DROP_MIN_KEEP`：本轮条目数小于该值时视为“异常缩水”（默认 `3`）
 - `ACG_PARSE_DROP_RATIO`：本轮条目数小于 `previous * ratio` 时视为“异常缩水”（默认 `0.15`）

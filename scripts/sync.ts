@@ -201,6 +201,38 @@ function groupBySource(posts: Post[]): Map<string, Post[]> {
   return map;
 }
 
+async function mapWithConcurrency<T, R>(params: {
+  items: T[];
+  concurrency: number;
+  fn: (item: T, index: number) => Promise<R>;
+}): Promise<R[]> {
+  const { items, fn } = params;
+  const concurrency = Math.max(1, Math.floor(params.concurrency || 1));
+  if (items.length === 0) return [];
+
+  if (concurrency <= 1 || items.length <= 1) {
+    const out: R[] = [];
+    for (let i = 0; i < items.length; i += 1) out.push(await fn(items[i], i));
+    return out;
+  }
+
+  const out: R[] = new Array(items.length);
+  let nextIndex = 0;
+
+  const workerCount = Math.min(concurrency, items.length);
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (true) {
+      const i = nextIndex;
+      if (i >= items.length) return;
+      nextIndex += 1;
+      out[i] = await fn(items[i], i);
+    }
+  });
+
+  await Promise.all(workers);
+  return out;
+}
+
 async function runSource(params: {
   source: Source;
   cache: HttpCache;
@@ -946,15 +978,33 @@ async function main() {
   const sourceStatuses: SourceStatus[] = [];
   const allPosts: Post[] = [...previousPosts];
 
-  for (const source of SOURCES) {
-    const { posts, status } = await runSource({
-      source,
-      cache,
-      cachePath,
-      previousBySource,
-      verbose: args.verbose,
-      persistCache: !args.dryRun
-    });
+  const sourceConcurrency = (() => {
+    const raw = process.env.ACG_SOURCE_CONCURRENCY;
+    const parsed = raw == null ? NaN : Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) return 3;
+    return Math.max(1, Math.min(8, Math.floor(parsed)));
+  })();
+
+  // 来源抓取：支持有限并发（默认 3），以降低整轮耗时与整点波动。
+  // 注意：为避免并发写入 http cache 文件导致竞态，抓取阶段仅更新内存 cache，结束后统一落盘。
+  const sourceResults = await mapWithConcurrency({
+    items: SOURCES,
+    concurrency: sourceConcurrency,
+    fn: async (source) =>
+      await runSource({
+        source,
+        cache,
+        cachePath,
+        previousBySource,
+        verbose: args.verbose,
+        persistCache: false
+      })
+  });
+
+  for (let i = 0; i < SOURCES.length; i += 1) {
+    const source = SOURCES[i];
+    const { posts, status } = sourceResults[i];
+
     // 连续失败：依赖上一轮 remote status（若不可用则退化为 0/1）
     const prev = previousStatusById.get(source.id);
     const prevFails =
@@ -964,12 +1014,15 @@ async function main() {
           ? 1
           : 0;
     status.consecutiveFails = status.ok ? 0 : prevFails + 1;
+
     sourceStatuses.push(status);
     allPosts.push(...posts);
     console.log(
       `[${status.ok ? "OK" : "ERR"}] ${source.id} items=${status.itemCount} http=${status.httpStatus ?? "-"} used=${status.used}`
     );
   }
+
+  if (!args.dryRun) await writeJsonFile(cachePath, cache);
 
   const pruned = filterByDays(dedupeAndSort(allPosts), args.days).slice(0, args.limit);
 

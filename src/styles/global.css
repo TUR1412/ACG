@@ -1461,6 +1461,51 @@ html[data-acg-device="phone"] .acg-prose .acg-prose-gallery {
   box-shadow: none;
 }
 
+/* 全文预览长文：用 content-visibility 降低离屏渲染开销（尤其移动端） */
+[data-fulltext-content] > * {
+  content-visibility: auto;
+  contain: layout paint style;
+  contain-intrinsic-size: 220px;
+}
+
+[data-fulltext-content] > ul,
+[data-fulltext-content] > ol {
+  contain-intrinsic-size: 360px;
+}
+
+[data-fulltext-content] > pre,
+[data-fulltext-content] > blockquote,
+[data-fulltext-content] > table,
+[data-fulltext-content] > details {
+  contain-intrinsic-size: 320px;
+}
+
+[data-fulltext-content] > .acg-prose-gallery {
+  contain-intrinsic-size: 520px;
+}
+
+@media (max-width: 640px) {
+  [data-fulltext-content] > * {
+    contain-intrinsic-size: 180px;
+  }
+
+  [data-fulltext-content] > ul,
+  [data-fulltext-content] > ol {
+    contain-intrinsic-size: 280px;
+  }
+
+  [data-fulltext-content] > pre,
+  [data-fulltext-content] > blockquote,
+  [data-fulltext-content] > table,
+  [data-fulltext-content] > details {
+    contain-intrinsic-size: 260px;
+  }
+
+  [data-fulltext-content] > .acg-prose-gallery {
+    contain-intrinsic-size: 420px;
+  }
+}
+
 /* 大列表滚动：用 content-visibility 降低离屏渲染开销（支持的浏览器会更顺滑） */
 .acg-card {
   content-visibility: auto;

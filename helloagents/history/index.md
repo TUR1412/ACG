@@ -22,6 +22,8 @@
 | 202601030318 | evolution_v0_15_pwa_offline_data_fallback | PWA/离线体验 | ✅已完成 | history/2026-01/202601030318_evolution_v0_15_pwa_offline_data_fallback/ |
 | 202601030352 | evolution_v0_16_status_history_searchpack_v2_sources | 可观测性/搜索/扩量 | ✅已完成 | history/2026-01/202601030352_evolution_v0_16_status_history_searchpack_v2_sources/ |
 | 202601030609 | evolution_v0_17_parse_drop_and_animeanime_rss | 修复/稳定性 | ✅已完成 | history/2026-01/202601030609_evolution_v0_17_parse_drop_and_animeanime_rss/ |
+| 202601030729 | evolution_v0_18_fulltext_content_visibility | 性能/体验 | ✅已完成 | history/2026-01/202601030729_evolution_v0_18_fulltext_content_visibility/ |
+| 202601030845 | evolution_v0_19_sync_concurrency_and_yield | 稳定性/扩量/性能 | ✅已完成 | history/2026-01/202601030845_evolution_v0_19_sync_concurrency_and_yield/ |
 
 ## 按月归档
 
@@ -46,4 +48,6 @@
 - 202601030318_evolution_v0_15_pwa_offline_data_fallback (2026-01/202601030318_evolution_v0_15_pwa_offline_data_fallback/) - PWA 离线体验升级（data 请求安全兜底 + 离线页展示最近更新时间 + online/offline 轻提示）
 - 202601030352_evolution_v0_16_status_history_searchpack_v2_sources (2026-01/202601030352_evolution_v0_16_status_history_searchpack_v2_sources/) - status-history 趋势产物 + search-pack v2 瘦身与 fallback + 来源扩量 + 翻译覆盖更均匀
 - 202601030609_evolution_v0_17_parse_drop_and_animeanime_rss (2026-01/202601030609_evolution_v0_17_parse_drop_and_animeanime_rss/) - parse_drop 误报修复（以 rawItemCount 判定）+ animeanime 切换 RSS（降低解析脆弱性）
+- 202601030729_evolution_v0_18_fulltext_content_visibility (2026-01/202601030729_evolution_v0_18_fulltext_content_visibility/) - 全文预览滚动优化（content-visibility 分块渲染，降低离屏渲染开销）
+- 202601030845_evolution_v0_19_sync_concurrency_and_yield (2026-01/202601030845_evolution_v0_19_sync_concurrency_and_yield/) - 同步抓取有限并发 + cache 统一落盘 + 放宽低产出来源过滤以提升数量性
 

@@ -61,8 +61,20 @@ SourceStatus：
 - `durationMs`: number
 - `fetchedAt?`: string
 - `itemCount`: number
+- `newItemCount?`: number（相对上一轮 remote posts 的新增条目数）
+- `visibleItemCount?`: number（最终产物中该来源条目数）
+- `latestPublishedAt?`: string（最终产物中该来源最新一条发布时间）
+- `consecutiveFails?`: number（连续失败次数，成功归零）
 - `used`: "fetched" | "cached" | "fallback"
+- `attempts?`: number（抓取尝试次数，含首次）
+- `waitMs?`: number（重试退避累计等待，含 jitter）
+- `rawItemCount?`: number（解析器输出的原始条目数，过滤前）
+- `filteredItemCount?`: number（include 过滤后的条目数）
 - `error?`: string
+
+### 同步管线参数（Env）
+- `ACG_SOURCE_CONCURRENCY`：来源抓取并发数（默认 `3`，范围 `1..8`）。
+  - 并发开启时：抓取阶段仅更新内存中的 `.cache/http.json`（etag/last-modified/lastOkAt 等），阶段结束统一落盘，避免并发写入竞态并减少 IO。
 
 ## StatusHistory（状态趋势）
 
