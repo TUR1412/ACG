@@ -7,7 +7,7 @@ import { parseArgs } from "./lib/args";
 import {
   cacheFilePath,
   fetchTextWithCache,
-  normalizeUrl,
+  normalizeHttpUrl,
   readJsonFile,
   sha1,
   stripAndTruncate,
@@ -369,14 +369,18 @@ async function runSource(params: {
     ? rawItems.filter((it) => source.include?.({ title: it.title, summary: it.summary, url: it.url }))
     : rawItems;
 
-  const posts: Post[] = filtered.map((it) => {
-    const url = normalizeUrl(it.url);
+  const posts: Post[] = [];
+  for (const it of filtered) {
+    const url = normalizeHttpUrl(it.url);
+    if (!url) continue;
+
     const id = sha1(url);
     const title = stripAndTruncate(it.title, 180);
     // summary 是“资讯预览”的核心之一：列表页会被 line-clamp 截断，详情页可完整展示（仍然是短摘要，不是全文）。
     const summary = it.summary ? stripAndTruncate(it.summary, 360) : undefined;
     const tags = deriveTags({ title, summary, category: source.category });
-    return {
+
+    posts.push({
       id,
       title,
       summary,
@@ -387,9 +391,9 @@ async function runSource(params: {
       tags,
       sourceId: source.id,
       sourceName: source.name,
-      sourceUrl: source.homepage ?? source.url
-    };
-  });
+      sourceUrl: normalizeHttpUrl(source.homepage ?? source.url) ?? source.url
+    });
+  }
 
   // 解析结果“异常缩水”：可能是来源结构变更/反爬命中/被错误 HTML 污染。
   // 保守策略：当历史足够多且本次明显变少时，回退上一轮数据，避免静默停更。

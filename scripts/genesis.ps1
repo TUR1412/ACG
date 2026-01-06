@@ -21,6 +21,9 @@ param(
   [bool]$RunCheck = $true,
 
   [Parameter()]
+  [bool]$RunTests = $true,
+
+  [Parameter()]
   [bool]$RunBuild = $true,
 
   [Parameter()]
@@ -50,7 +53,7 @@ function Assert-Command {
 }
 
 Assert-Command "git"
-if ($InstallDeps -or $RunCheck -or $RunBuild) {
+if ($InstallDeps -or $RunCheck -or $RunTests -or $RunBuild) {
   Assert-Command "node"
   Assert-Command "npm"
 }
@@ -74,6 +77,10 @@ try {
 
   if ($RunCheck) {
     npm run check
+  }
+
+  if ($RunTests) {
+    npm test
   }
 
   if ($RunBuild) {

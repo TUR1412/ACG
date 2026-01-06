@@ -13,6 +13,7 @@ import { resolveCover } from "../../../lib/cover";
 import CategoryIcon from "../../../components/CategoryIcon.astro";
 import Icon from "../../../components/Icon.astro";
 import SourceBadge from "../../../components/SourceBadge.astro";
+import { safeExternalHttpUrl } from "../../../lib/safe-url";
 
 export async function getStaticPaths() {
   const posts = await readGeneratedPosts();
@@ -42,6 +43,7 @@ const isFresh = Number.isFinite(publishedAtMs) && Date.now() - publishedAtMs >= 
 const freshLabel = "NEW";
 const tt = (p: Post) => p.titleZh ?? p.title;
 const pageUrl = Astro.site ? new URL(href(`/zh/p/${post.id}/`), Astro.site).toString() : href(`/zh/p/${post.id}/`);
+const safeSourceUrl = safeExternalHttpUrl(post.url);
 ---
 
 <SiteLayout
@@ -153,8 +155,8 @@ const pageUrl = Astro.site ? new URL(href(`/zh/p/${post.id}/`), Astro.site).toSt
         data-fulltext
         data-fulltext-lang="zh"
         data-fulltext-post-id={post.id}
-        data-fulltext-url={post.url}
-        data-fulltext-autoload="true"
+        data-fulltext-url={safeSourceUrl ?? ""}
+        data-fulltext-autoload={safeSourceUrl ? "true" : "false"}
       >
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h2 class="m-0 text-sm font-semibold text-slate-950">{t("zh", "post.fullTextTitle")}</h2>
@@ -193,14 +195,20 @@ const pageUrl = Astro.site ? new URL(href(`/zh/p/${post.id}/`), Astro.site).toSt
       </section>
 
       <div class="mt-6 flex flex-wrap gap-3">
-        <a
-          class="inline-flex rounded-xl bg-slate-950 px-4 py-2 text-sm font-medium text-white clickable"
-          href={post.url}
-          target="_blank"
-          rel="noreferrer noopener"
-        >
-          {t("zh", "post.openSource")}
-        </a>
+        {safeSourceUrl ? (
+          <a
+            class="inline-flex rounded-xl bg-slate-950 px-4 py-2 text-sm font-medium text-white clickable"
+            href={safeSourceUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            {t("zh", "post.openSource")}
+          </a>
+        ) : (
+          <span class="inline-flex cursor-not-allowed rounded-xl bg-slate-950/60 px-4 py-2 text-sm font-medium text-white/80">
+            {t("zh", "post.openSource")}
+          </span>
+        )}
         <button
           type="button"
           class="glass inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-slate-950 clickable"

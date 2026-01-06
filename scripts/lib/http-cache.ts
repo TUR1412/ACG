@@ -40,27 +40,46 @@ export function sha1(input: string): string {
   return createHash("sha1").update(input).digest("hex");
 }
 
+function stripTrackingParams(parsed: URL) {
+  // 数据质量：剥离常见追踪参数，减少重复条目与噪声。
+  // 原则：保守删除（仅移除“明显不影响内容定位”的参数）。
+  const trackingKeys = new Set([
+    "fbclid",
+    "gclid",
+    "igshid",
+    "mc_cid",
+    "mc_eid",
+    "mkt_tok",
+    "yclid"
+  ]);
+  for (const key of [...parsed.searchParams.keys()]) {
+    const k = key.toLowerCase();
+    if (k.startsWith("utm_") || trackingKeys.has(k)) parsed.searchParams.delete(key);
+  }
+}
+
+export function normalizeHttpUrl(url: string): string | null {
+  const input = url.trim();
+  if (!input) return null;
+
+  try {
+    const parsed = new URL(input);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    parsed.hash = "";
+    stripTrackingParams(parsed);
+
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
 export function normalizeUrl(url: string): string {
   const input = url.trim();
   try {
     const parsed = new URL(input);
     parsed.hash = "";
-
-    // 数据质量：剥离常见追踪参数，减少重复条目与噪声。
-    // 原则：保守删除（仅移除“明显不影响内容定位”的参数）。
-    const trackingKeys = new Set([
-      "fbclid",
-      "gclid",
-      "igshid",
-      "mc_cid",
-      "mc_eid",
-      "mkt_tok",
-      "yclid"
-    ]);
-    for (const key of [...parsed.searchParams.keys()]) {
-      const k = key.toLowerCase();
-      if (k.startsWith("utm_") || trackingKeys.has(k)) parsed.searchParams.delete(key);
-    }
+    stripTrackingParams(parsed);
 
     return parsed.toString();
   } catch {

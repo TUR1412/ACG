@@ -4,7 +4,7 @@
 - 核心：Astro（静态站点）+ TypeScript
 - 样式：Tailwind CSS + 自定义全局 CSS（玻璃拟态/主题变量）
 - 客户端：命令面板（`src/client/features/cmdk.ts`，`Ctrl/⌘ + K` 触发懒加载）+ 全站搜索 Worker（查询解析共享）
-- 同步：Node.js 脚本（`scripts/sync.ts`）在 GitHub Actions 定时执行
+- 同步：Node.js（>=20）脚本（`scripts/sync.ts`）在 GitHub Actions 定时执行
 - 部署：GitHub Pages（Actions 产物上传并发布）
 
 ## 开发约定
@@ -27,6 +27,7 @@
 
 ## 测试与流程
 - 类型检查：`npm run check`（Astro Check + TS）
+- 单元测试：`npm test`（Node test runner + tsx，仅覆盖关键纯函数与安全边界）
 - 构建：`npm run build`
 - 数据同步：`npm run sync`
 - 质量门禁：

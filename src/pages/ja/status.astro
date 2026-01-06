@@ -3,6 +3,7 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
 import { readGeneratedStatus, readGeneratedStatusHistory } from "../../lib/generated-data";
 import { formatDateTime } from "../../lib/format";
 import { t } from "../../i18n/i18n";
+import { safeExternalHttpUrl } from "../../lib/safe-url";
 
 const status = await readGeneratedStatus();
 const history = await readGeneratedStatusHistory();
@@ -232,9 +233,15 @@ function suggest(s: (typeof status.sources)[number]): string {
           {status.sources.map((s) => (
             <tr class="glass">
               <td class="px-3 py-2">
-                <a class="font-medium text-slate-950 hover:underline" href={s.url} target="_blank" rel="noreferrer noopener">
-                  {s.name}
-                </a>
+                {(() => {
+                  const u = safeExternalHttpUrl(s.url);
+                  if (!u) return <span class="font-medium text-slate-950">{s.name}</span>;
+                  return (
+                    <a class="font-medium text-slate-950 hover:underline" href={u} target="_blank" rel="noreferrer noopener">
+                      {s.name}
+                    </a>
+                  );
+                })()}
                 <div class="text-xs text-slate-600">{s.id}</div>
               </td>
               <td class="px-3 py-2">

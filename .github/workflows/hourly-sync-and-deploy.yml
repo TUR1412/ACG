@@ -41,6 +41,9 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Tests
+        run: npm test
+
       - name: Sync Data
         env:
           # 偏激进：尽量补齐封面（og:image / twitter:image），让首页“少缺图”。

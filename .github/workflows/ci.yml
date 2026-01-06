@@ -27,6 +27,9 @@ jobs:
       - name: Typecheck (Astro)
         run: npm run check
 
+      - name: Tests
+        run: npm test
+
       - name: Build
         env:
           ACG_BASE: /ACG

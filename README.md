@@ -174,11 +174,15 @@ flowchart TB
 详情页的「全文预览（实验）」为**实时解析/翻译**，不在仓库内持久化存储全文；版权归原站/原作者。
 若你是来源方希望移除或调整展示方式，请提 Issue。
 
+安全说明（外链）：站点侧对外部链接做 **http(s) 协议白名单**（构建期与运行时双保险），非 http(s) 将被降级为不可点击，避免 `javascript:` 等协议带来的安全风险。
+
 ---
 
 ## 本地开发（Local Development）
 
 > 注意：`npm run dev` 是常驻开发服务（需要你自己手动运行），仓库不会在后台偷偷启动任何服务。
+
+环境要求：Node.js >= 20（GitHub Actions 使用 Node 20）。
 
 1) 安装依赖
 
@@ -186,25 +190,31 @@ flowchart TB
 npm install
 ```
 
-2) 抓取一次数据（生成到 `src/data/generated/` 与 `public/data/`，默认会被 `.gitignore` 忽略）
+2)（可选）运行单元测试（CI 同样会执行）
+
+```bash
+npm test
+```
+
+3) 抓取一次数据（生成到 `src/data/generated/` 与 `public/data/`，默认会被 `.gitignore` 忽略）
 
 ```bash
 npm run sync
 ```
 
-3) 启动开发服务器（仅本机）
+4) 启动开发服务器（仅本机）
 
 ```bash
 npm run dev
 ```
 
-4) 构建静态站点
+5) 构建静态站点
 
 ```bash
 npm run build
 ```
 
-5)（可选）运行质量门禁（数据校验 + 产物体积预算）
+6)（可选）运行质量门禁（数据校验 + 产物体积预算）
 
 ```bash
 npm run validate

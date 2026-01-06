@@ -6,6 +6,7 @@ import { categoryLabel } from "../../lib/categories";
 import { formatDateTime } from "../../lib/format";
 import { href } from "../../lib/href";
 import { SOURCE_CONFIGS } from "../../lib/source-config";
+import { safeExternalHttpUrl } from "../../lib/safe-url";
 
 const status = await readGeneratedStatus();
 const updatedAt = status.generatedAt ? formatDateTime("zh", status.generatedAt) : "-";
@@ -15,8 +16,8 @@ const sources = SOURCE_CONFIGS.map((s) => ({
   name: s.name,
   kind: s.kind,
   category: s.category,
-  url: s.url,
-  homepage: s.homepage ?? s.url
+  url: safeExternalHttpUrl(s.url),
+  homepage: safeExternalHttpUrl(s.homepage ?? s.url)
 }));
 ---
 
@@ -77,13 +78,26 @@ const sources = SOURCE_CONFIGS.map((s) => ({
               <td class="px-3 py-2">{categoryLabel("zh", s.category)}</td>
               <td class="px-3 py-2">{s.kind}</td>
               <td class="px-3 py-2">
-                <a class="text-slate-950 hover:underline" href={s.homepage} target="_blank" rel="noreferrer noopener">
-                  首页
-                </a>
+                {s.homepage ? (
+                  <a
+                    class="text-slate-950 hover:underline"
+                    href={s.homepage}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                  >
+                    首页
+                  </a>
+                ) : (
+                  <span class="text-slate-600">首页</span>
+                )}
                 <span class="px-2 text-slate-400">·</span>
-                <a class="text-slate-950 hover:underline" href={s.url} target="_blank" rel="noreferrer noopener">
-                  Feed/列表
-                </a>
+                {s.url ? (
+                  <a class="text-slate-950 hover:underline" href={s.url} target="_blank" rel="noreferrer noopener">
+                    Feed/列表
+                  </a>
+                ) : (
+                  <span class="text-slate-600">Feed/列表</span>
+                )}
               </td>
             </tr>
           ))}

@@ -1,5 +1,6 @@
 ---
 import Icon from "./Icon.astro";
+import { safeExternalHttpUrl } from "../lib/safe-url";
 
 type Tone = "light" | "dark";
 
@@ -13,6 +14,7 @@ type Props = {
 };
 
 const { name, url, tone = "light", dotClass, class: className, compact = false } = Astro.props;
+const safeUrl = safeExternalHttpUrl(url);
 
 const base =
   tone === "dark"
@@ -23,8 +25,16 @@ const size = compact ? "px-2.5 py-1 text-[11px]" : "px-3 py-1 text-xs";
 const cls = [base, size, "clickable", className].filter(Boolean).join(" ");
 ---
 
-{url ? (
-  <a class={cls} href={url} target="_blank" rel="noreferrer noopener" title={name} data-source-badge="true" data-source-name={name}>
+{safeUrl ? (
+  <a
+    class={cls}
+    href={safeUrl}
+    target="_blank"
+    rel="noreferrer noopener"
+    title={name}
+    data-source-badge="true"
+    data-source-name={name}
+  >
     {dotClass ? <span class:list={["size-1.5 rounded-full", dotClass]}></span> : null}
     <span class="min-w-0 max-w-[20ch] acg-fade-truncate">{name}</span>
     <span class={tone === "dark" ? "text-white/80" : "text-slate-500"} aria-hidden="true">
