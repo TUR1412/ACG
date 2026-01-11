@@ -17,6 +17,8 @@
 </p>
 
 [![Hourly Sync & Deploy (GitHub Pages)](https://github.com/TUR1412/ACG/actions/workflows/hourly-sync-and-deploy.yml/badge.svg)](https://github.com/TUR1412/ACG/actions/workflows/hourly-sync-and-deploy.yml)
+[![CI](https://github.com/TUR1412/ACG/actions/workflows/ci.yml/badge.svg)](https://github.com/TUR1412/ACG/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/TUR1412/ACG/actions/workflows/codeql.yml/badge.svg)](https://github.com/TUR1412/ACG/actions/workflows/codeql.yml)
 ![MIT](https://img.shields.io/badge/License-MIT-black)
 ![Astro](https://img.shields.io/badge/Astro-5-FF5D01?logo=astro&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)

@@ -5,6 +5,15 @@
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-01-12
+
+### 新增
+- GitHub 自动化：新增 Dependabot（npm + GitHub Actions）与 CodeQL 扫描 workflow。
+- 工程规范：新增 `.editorconfig`，统一换行/缩进/去尾空格规则。
+
+### 变更
+- README：顶部增加 CI/CodeQL badges，便于快速查看仓库健康状态。
+
 ## [0.5.3] - 2026-01-12
 
 ### 新增
