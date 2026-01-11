@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+## [0.5.13] - 2026-01-12
+
+### 新增
+- A11y 语义补齐：Quick chips 同步写入 `aria-pressed`，让读屏设备可感知 toggle 状态。
+- A11y 反馈播报：偏好面板 `#acg-prefs-message` 增加 live region（`role="status"` / `aria-live="polite"`）。
+- A11y 操作语义：关注词/屏蔽词删除按钮补齐 `aria-label`（含中/日文案），降低歧义。
+
 ## [0.5.12] - 2026-01-12
 
 ### 新增

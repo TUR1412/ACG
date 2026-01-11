@@ -44,6 +44,7 @@
 ### 需求: 无障碍与键盘路径
 场景：键盘用户或使用辅助技术的用户希望快速跳过导航并进入主内容。
 - 预期结果：提供 Skip Link（跳到主要内容），并为 `<main>` 提供稳定锚点 `id="main"`（可聚焦），与全局 `:focus-visible` 样式一致。
+- A11y 细节：Quick chips 同步写入 `aria-pressed`；偏好面板提示消息使用 live region（`role="status"` / `aria-live="polite"`）；词条删除动作补齐 `aria-label` 语义。
 
 ### 需求: 分类页首屏性能（体积）
 场景：分类页静态渲染条目较多时，HTML 体积会显著上升并影响移动端加载/解析成本。

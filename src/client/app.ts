@@ -1333,7 +1333,9 @@ function wireQuickToggles() {
                     : quickSort
                       ? quickSort === sort
                       : false;
-      btn.dataset.active = active ? "true" : "false";
+      const activeStr = active ? "true" : "false";
+      btn.dataset.active = activeStr;
+      btn.setAttribute("aria-pressed", activeStr);
     }
   };
 
@@ -3272,8 +3274,8 @@ function wireBookmarkTools(bookmarkIds: Set<string>) {
 function setPrefsMessage(text: string) {
   const el = document.querySelector<HTMLElement>("#acg-prefs-message");
   if (!el) return;
-  el.textContent = text;
   el.classList.remove("hidden");
+  el.textContent = text;
 }
 
 function renderWordChips(params: {
@@ -3303,6 +3305,16 @@ function renderWordChips(params: {
     x.appendChild(createUiIcon({ name: "x", size: 14 }));
     btn.appendChild(x);
     btn.title = isJapanese() ? "クリックで削除" : "点击删除";
+    btn.setAttribute(
+      "aria-label",
+      isJapanese()
+        ? color === "rose"
+          ? `除外から削除: ${word}`
+          : `フォローから削除: ${word}`
+        : color === "rose"
+          ? `删除屏蔽关键词：${word}`
+          : `删除关注关键词：${word}`
+    );
     btn.addEventListener("click", () => onRemove(word));
     container.appendChild(btn);
   }

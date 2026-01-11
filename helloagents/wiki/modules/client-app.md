@@ -17,10 +17,13 @@
 场景：用户希望在不请求后端的前提下，通过组合条件快速定位内容。
 - 预期结果：搜索支持 `tag:` / `source:` / `cat:` / `before:` / `after:` / `is:` 等语法（含 `-` 反选），并与关注词/屏蔽词/已读过滤/来源开关协同。
 - 实现要点：查询解析逻辑在页面内过滤与全站搜索 Worker 之间共享，避免行为差异。
+- 可访问性：关注词/屏蔽词的“删除”按钮补齐 `aria-label`（含中/日文案），避免仅依赖 `title` 造成读屏歧义。
+- 可访问性：偏好面板的即时反馈消息采用 live region（`role="status"` / `aria-live="polite"`），便于读屏及时播报更新。
 
 ### 需求: 时间透镜与热度排序
 场景：用户需要在不同时间窗内聚焦最新趋势，并按热度优先查看重点内容。
 - 预期结果：过滤状态新增 timeLens/sortMode，提供快捷按钮与偏好面板双入口，并持久化到 localStorage；页面内过滤逻辑与 UI 状态保持一致。
+- 可访问性：timeLens/sortMode 等快捷 chips 同步写入 `aria-pressed`，让辅助技术可感知 toggle 状态。
 
 ### 需求: 布局模式与信息密度（View/Density）
 场景：同一批内容在不同用户/设备/场景下需要不同的浏览节奏（桌面端高密度扫读 vs 网格卡片浏览）。
@@ -92,4 +95,3 @@
 - `src/client/utils/monitoring.ts`
 - `src/client/utils/telemetry.ts`
 - `public/sw.js`
-

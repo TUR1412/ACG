@@ -323,5 +323,11 @@ const grouped = CATEGORIES.map((category) => {
   </details>
 
   <p class="mt-3 text-xs leading-relaxed text-slate-600">{t(lang, "prefs.hint")}</p>
-  <p id="acg-prefs-message" class="mt-2 hidden text-xs text-slate-700"></p>
+  <p
+    id="acg-prefs-message"
+    class="mt-2 hidden text-xs text-slate-700"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+  ></p>
 </section>

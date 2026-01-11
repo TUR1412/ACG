@@ -40,6 +40,7 @@
 | 202601120530 | self_host_fonts | 性能/体验 | ✅已完成 | history/2026-01/202601120530_self_host_fonts/ |
 | 202601120601 | perf_vitals_inp_ttfb_font_preload | 性能/可观测性 | ✅已完成 | history/2026-01/202601120601_perf_vitals_inp_ttfb_font_preload/ |
 | 202601120620 | atomic_segmented_a11y | UI/可访问性 | ✅已完成 | history/2026-01/202601120620_atomic_segmented_a11y/ |
+| 202601120638 | a11y_aria_feedback | A11y/体验 | ✅已完成 | history/2026-01/202601120638_a11y_aria_feedback/ |
 
 ## 按月归档
 
@@ -82,3 +83,4 @@
 - 202601120530_self_host_fonts (2026-01/202601120530_self_host_fonts/) - 字体自托管（Outfit/Space Grotesk）+ 移除 Google Fonts 外链
 - 202601120601_perf_vitals_inp_ttfb_font_preload (2026-01/202601120601_perf_vitals_inp_ttfb_font_preload/) - perf_vitals 补齐（TTFB/INP）+ 字体 preload
 - 202601120620_atomic_segmented_a11y (2026-01/202601120620_atomic_segmented_a11y/) - Atomic Segmented + roving tabindex（键盘可访问性）
+- 202601120638_a11y_aria_feedback (2026-01/202601120638_a11y_aria_feedback/) - Quick chips `aria-pressed` + 偏好提示 live region + 删除按钮 `aria-label`
