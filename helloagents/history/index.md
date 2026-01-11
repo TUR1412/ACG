@@ -38,6 +38,7 @@
 | 202601120506 | monitoring_boundary | 工程/稳定性/监控 | ✅已完成 | history/2026-01/202601120506_monitoring_boundary/ |
 | 202601120520 | lhci_step_summary | 工程/质量 | ✅已完成 | history/2026-01/202601120520_lhci_step_summary/ |
 | 202601120530 | self_host_fonts | 性能/体验 | ✅已完成 | history/2026-01/202601120530_self_host_fonts/ |
+| 202601120601 | perf_vitals_inp_ttfb_font_preload | 性能/可观测性 | ✅已完成 | history/2026-01/202601120601_perf_vitals_inp_ttfb_font_preload/ |
 
 ## 按月归档
 
@@ -78,3 +79,4 @@
 - 202601120506_monitoring_boundary (2026-01/202601120506_monitoring_boundary/) - 启动级错误边界（监控先行 + bootstrap_fatal telemetry）+ Hourly Sync Step Summary（同步摘要）
 - 202601120520_lhci_step_summary (2026-01/202601120520_lhci_step_summary/) - Lighthouse CI Job Summary（关键 URL 跑分摘要）
 - 202601120530_self_host_fonts (2026-01/202601120530_self_host_fonts/) - 字体自托管（Outfit/Space Grotesk）+ 移除 Google Fonts 外链
+- 202601120601_perf_vitals_inp_ttfb_font_preload (2026-01/202601120601_perf_vitals_inp_ttfb_font_preload/) - perf_vitals 补齐（TTFB/INP）+ 字体 preload

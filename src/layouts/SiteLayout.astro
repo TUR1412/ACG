@@ -4,6 +4,8 @@ import { t, type Lang } from "../i18n/i18n";
 import { CATEGORIES, categoryLabel, type Category } from "../lib/categories";
 import { href } from "../lib/href";
 import Icon from "../components/Icon.astro";
+import outfitLatinWoff2 from "../assets/fonts/outfit-latin.woff2";
+import spaceGroteskLatinWoff2 from "../assets/fonts/space-grotesk-latin.woff2";
 
 type Props = {
   lang: Lang;
@@ -77,6 +79,8 @@ const swHref = href("/sw.js");
     <meta name="theme-color" content="#f6f7fb" />
     <link rel="manifest" href={manifestHref} />
     <link rel="apple-touch-icon" sizes="180x180" href={href("/icons/apple-touch-icon.png")} />
+    <link rel="preload" as="font" type="font/woff2" href={outfitLatinWoff2} crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href={spaceGroteskLatinWoff2} crossorigin />
     <script is:inline>
       (() => {
         const el = document.documentElement;

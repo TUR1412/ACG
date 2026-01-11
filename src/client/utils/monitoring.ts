@@ -146,13 +146,24 @@ export function wirePerfMonitoring() {
 
   let cls = 0;
   let lcp = 0;
+  let ttfb = 0;
   let longTaskCount = 0;
   let longTaskMax = 0;
   let lastLongTaskAt = 0;
   const LONGTASK_SAMPLE_GAP_MS = low ? 20_000 : 8_000;
+  const interactionMaxById = new Map<number, number>();
+  const MAX_INTERACTIONS = 60;
 
   const canObserve = typeof PerformanceObserver === "function";
   if (!canObserve) return;
+
+  try {
+    const nav = performance.getEntriesByType?.("navigation")?.[0] as any;
+    const rs = typeof nav?.responseStart === "number" ? nav.responseStart : 0;
+    if (Number.isFinite(rs) && rs > 0) ttfb = rs;
+  } catch {
+    // ignore
+  }
 
   try {
     // LCP
@@ -199,17 +210,58 @@ export function wirePerfMonitoring() {
     } catch {
       // ignore
     }
+
+    try {
+      // INP（近似）：基于 event timing entries，按 interactionId 聚合每次交互的最大 duration。
+      const recordInteraction = (interactionId: number, duration: number) => {
+        if (!Number.isFinite(duration) || duration <= 0) return;
+        const prev = interactionMaxById.get(interactionId) ?? 0;
+        if (duration > prev) interactionMaxById.set(interactionId, duration);
+        if (interactionMaxById.size > MAX_INTERACTIONS) {
+          const first = interactionMaxById.keys().next().value;
+          if (typeof first === "number") interactionMaxById.delete(first);
+        }
+      };
+
+      const obs = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries() as any[]) {
+          const id = typeof entry?.interactionId === "number" ? entry.interactionId : 0;
+          if (!id) continue;
+          const dur = typeof entry?.duration === "number" ? entry.duration : 0;
+          if (!Number.isFinite(dur) || dur <= 0) continue;
+          const name = typeof entry?.name === "string" ? entry.name : "";
+          if (name && name !== "click" && name !== "keydown" && name !== "pointerdown" && name !== "pointerup") {
+            continue;
+          }
+          recordInteraction(id, dur);
+        }
+      });
+
+      try {
+        obs.observe({ type: "event", buffered: true, durationThreshold: 40 } as any);
+      } catch {
+        obs.observe({ type: "event", buffered: true } as any);
+      }
+    } catch {
+      // ignore
+    }
   }
 
   const flush = () => {
     try {
       // CLS 保留 3 位小数即可（避免浮点噪音膨胀 telemetry）
       const clsFixed = Math.round(cls * 1000) / 1000;
+      const inpValues = Array.from(interactionMaxById.values()).filter((v) => Number.isFinite(v) && v > 0);
+      inpValues.sort((a, b) => a - b);
+      const inpIdx = inpValues.length > 0 ? Math.min(inpValues.length - 1, Math.ceil(inpValues.length * 0.98) - 1) : -1;
+      const inpMs = inpIdx >= 0 ? inpValues[inpIdx] : 0;
       track({
         type: "perf_vitals",
         data: {
           lcpMs: lcp > 0 ? Math.round(lcp) : undefined,
           cls: clsFixed > 0 ? clsFixed : undefined,
+          ttfbMs: ttfb > 0 ? Math.round(ttfb) : undefined,
+          inpMs: inpMs > 0 ? Math.round(inpMs) : undefined,
           longTaskCount: longTaskCount > 0 ? longTaskCount : undefined,
           longTaskMaxMs: longTaskMax > 0 ? Math.round(longTaskMax) : undefined,
           perf: document.documentElement.dataset.acgPerf ?? undefined
@@ -234,4 +286,3 @@ export function wirePerfMonitoring() {
     // ignore
   }
 }
-

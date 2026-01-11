@@ -67,7 +67,7 @@
 
 ### 需求: 错误与性能观测（Observability）
 场景：当出现“卡住/无响应/掉帧/抖动”等体验问题时，需要在不引入后端的前提下获得可回溯线索。
-- 预期结果：捕获全局 `error` / `unhandledrejection` 并写入本地 telemetry；采集 LCP/CLS/longtask 等基础指标并在页面隐藏/离开时记录；低性能模式下自动降级采样与提示频率。
+- 预期结果：捕获全局 `error` / `unhandledrejection` 并写入本地 telemetry；采集 TTFB/LCP/CLS/INP（近似）/longtask 等基础指标并在页面隐藏/离开时记录；低性能模式下自动降级采样项与提示频率。
 - 隐私约束：默认只本地记录（`acg.telemetry.v1`）；仅当用户显式开启 upload 并设置 http(s) endpoint 时才尝试发送。
 - 自助排障：偏好面板提供本地 telemetry 的导出/清空，并显示事件数与占用体积。
 - 自助排障：提供 Telemetry Viewer 页面（`/zh/telemetry/` / `/ja/telemetry/`），用于本机可视化查看与筛选事件。
@@ -91,4 +91,5 @@
 - `src/client/utils/monitoring.ts`
 - `src/client/utils/telemetry.ts`
 - `public/sw.js`
+
 
