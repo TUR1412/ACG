@@ -69,7 +69,7 @@ ACG Radar 是一个“伪全栈”的 ACG 资讯雷达站点：数据由 GitHub 
 - 搜索聚焦：`/#search`
 - 偏好抽屉：`/#prefs`
 - Command Palette：`Ctrl/⌘ + K`（或深链 `/#cmdk`）
-- 布局切换：打开“偏好” → `视图`（Grid/List）与 `密度`（Comfort/Compact）
+- 布局/密度：首页/分类页 chips 一键切换；或 Command Palette 搜索 `layout`/`density`；也可在“偏好” → `视图`/`密度` 中设置
 
 ---
 
@@ -208,7 +208,7 @@ ACG Radar は、GitHub Actions により **毎時更新**される ACG ニュー
 - 検索：`/#search`
 - 設定（ドロワー）：`/#prefs`
 - Command Palette：`Ctrl/⌘ + K`（または `/#cmdk`）
-- レイアウト：設定 → `表示`（Grid/List）と `密度`（Comfort/Compact）
+- レイアウト/密度：トップ/カテゴリの chips で切替；または Command Palette で `layout`/`density` を検索；設定 → `表示`/`密度` でも設定可能
 
 ### ローカル開発
 

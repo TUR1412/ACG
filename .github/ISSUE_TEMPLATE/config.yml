@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 使用说明 / 使い方（README）
+    url: https://github.com/TUR1412/ACG#readme
+    about: 在提交 Issue 前，请先查看 README（包含架构、功能与常见入口）/ Issue を作成する前に README をご確認ください
+  - name: 安全问题 / セキュリティ（SECURITY）
+    url: https://github.com/TUR1412/ACG/blob/main/SECURITY.md
+    about: 漏洞或敏感信息请按 SECURITY.md 进行私下披露 / 脆弱性や機微情報は SECURITY.md に従って非公開で報告してください
+

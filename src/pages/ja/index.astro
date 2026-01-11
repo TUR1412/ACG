@@ -164,6 +164,48 @@ const spotlight = (() => {
         </button>
         <button
           type="button"
+          class="acg-chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-view-mode="grid"
+          data-active="false"
+          role="radio"
+          aria-checked="false"
+        >
+          <Icon name="grid" size={16} />
+          <span>{t("ja", "prefs.viewGrid")}</span>
+        </button>
+        <button
+          type="button"
+          class="acg-chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-view-mode="list"
+          data-active="false"
+          role="radio"
+          aria-checked="false"
+        >
+          <Icon name="list" size={16} />
+          <span>{t("ja", "prefs.viewList")}</span>
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-density-mode="comfort"
+          data-active="false"
+          role="radio"
+          aria-checked="false"
+        >
+          {t("ja", "prefs.densityComfort")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-density-mode="compact"
+          data-active="false"
+          role="radio"
+          aria-checked="false"
+        >
+          {t("ja", "prefs.densityCompact")}
+        </button>
+        <button
+          type="button"
           class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
           data-quick-lens="2h"
           data-active="false"

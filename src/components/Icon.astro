@@ -1,6 +1,6 @@
 ---
 export type IconName =
-  "arrow-left" | "arrow-right" | "arrow-up" | "chart" | "chevron-right" | "clock" | "external-link" | "info" | "link" | "moon" | "refresh" | "search" | "sliders" | "star" | "sun" | "x";
+  "arrow-left" | "arrow-right" | "arrow-up" | "chart" | "chevron-right" | "clock" | "external-link" | "grid" | "info" | "link" | "list" | "moon" | "refresh" | "search" | "sliders" | "star" | "sun" | "x";
 
 type Props = {
   name: IconName;
@@ -24,6 +24,23 @@ const cls = ["acg-icon", className].filter(Boolean).join(" ");
   data-icon={name}
   class={cls}
 >
+  {name === "grid" ? (
+    <>
+      <rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2" />
+      <rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2" />
+      <rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2" />
+      <rect x="13" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2" />
+    </>
+  ) : null}
+
+  {name === "list" ? (
+    <>
+      <path d="M5 7h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <path d="M5 17h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </>
+  ) : null}
+
   {name === "arrow-left" ? (
     <>
       <path d="M19 12H5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />

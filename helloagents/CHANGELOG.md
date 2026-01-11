@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-01-11
+
+### 新增
+- GitHub 协作入口：新增 Issue Forms（Bug/Feature）、PR 模板，以及 `CONTRIBUTING.md` / `CODE_OF_CONDUCT.md` / `SECURITY.md` / `SUPPORT.md`（中日双语）。
+- 布局/密度快捷入口：首页与分类页新增 View（Grid/List）与 Density（Comfort/Compact）快捷 chips，阅读节奏切换更就地可达。
+- 命令面板增强：Command Palette 新增 `layout` / `density` 命令（toggle + 直达设置），在页面缺少控件时回退为“仅保存偏好”并提示。
+- 图标补齐：`Icon` 组件新增 `grid` / `list` 图标，提升 UI 一致性。
+
+### 变更
+- README 更新“布局/密度”快捷入口说明（chips + Command Palette + 偏好）。
+
 ## [0.3.0] - 2026-01-11
 
 ### 新增

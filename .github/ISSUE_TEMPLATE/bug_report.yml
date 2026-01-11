@@ -1,0 +1,97 @@
+name: Bug 报告 / バグ報告
+description: 报告一个问题，帮助我们改进 ACG Radar / 不具合を報告して ACG Radar の改善に協力してください
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！为了更快定位问题，请尽量填写完整信息。
+        ご報告ありがとうございます。再現と特定のため、できるだけ詳しくご記入ください。
+
+  - type: input
+    id: page_url
+    attributes:
+      label: 页面 URL / ページ URL
+      description: 发生问题的页面链接（例如 /zh/、/ja/c/...、/status 等）/ 不具合が発生したページの URL
+      placeholder: https://tur1412.github.io/ACG/zh/...
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: 现象描述 / 現象
+      description: 实际发生了什么？可以附截图或录屏。/ 実際に何が起きましたか？スクリーンショット/録画も歓迎です。
+      placeholder: 例如：切换到 List 布局后，卡片封面错位...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为 / 期待する挙動
+      description: 你期望发生什么？/ どうなるのが期待ですか？
+      placeholder: 例如：切换布局后，卡片应保持对齐且不抖动...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤 / 再現手順
+      description: 尽量写成可执行步骤（1/2/3）。/ 実行可能な手順で書いてください（1/2/3）。
+      placeholder: |
+        1. 打开 /zh/
+        2. 点击「List」
+        3. 滚动到第二屏...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: lang
+    attributes:
+      label: 语言 / 言語
+      description: 你在哪个语言页面遇到问题？/ どの言語ページで発生しましたか？
+      options:
+        - 中文（/zh/）
+        - 日本語（/ja/）
+        - 两者都发生 / 両方
+        - 不确定 / 不明
+    validations:
+      required: true
+
+  - type: dropdown
+    id: device
+    attributes:
+      label: 设备 / デバイス
+      options:
+        - 桌面端（Desktop）
+        - 手机（Mobile）
+        - 平板（Tablet）
+        - 其他 / Other
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: 浏览器 / ブラウザ
+      description: 例如 Chrome 120 / Safari 17 / Firefox 121 / Edge 120... / 例：Chrome 120 / Safari 17...
+      placeholder: Chrome 120
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 额外信息 / 追加情報
+      description: 其他任何可能有用的信息（控制台错误、网络状态、是否开启 PWA 等）。/ コンソールエラー、ネットワーク状態、PWA 利用有無など
+      placeholder: |
+        - Console error: ...
+        - 是否离线/弱网：...
+        - 复现概率：...
+    validations:
+      required: false
+

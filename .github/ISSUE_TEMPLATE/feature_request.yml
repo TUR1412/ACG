@@ -1,0 +1,59 @@
+name: 功能建议 / 機能提案
+description: 提出一个想法或改进建议 / 改善案・新機能の提案
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        欢迎提出改进想法！为了便于评估，请尽量描述“动机 → 目标 → 方案”。
+        提案ありがとうございます。「動機 → 目的 → 案」を書いていただくと検討しやすいです。
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: 动机 / 背景
+      description: 你遇到了什么问题或痛点？/ どんな課題・痛みがありますか？
+      placeholder: 例如：信息流太密/太松，需要更快切换阅读节奏...
+    validations:
+      required: true
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: 目标 / ゴール
+      description: 你希望达成什么效果？如何判断“做对了”？/ 何を達成したいですか？成功条件は？
+      placeholder: 例如：一键切换布局/密度，并可记住偏好...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 方案建议 / 提案内容
+      description: 你建议怎么做？（可选：UI 草图/交互描述）/ どう実現したいですか？（UI案も歓迎）
+      placeholder: 例如：在首页 chip 区新增“Grid/List”按钮...
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 备选方案 / 代替案
+      description: 是否考虑过其他做法？/ 他の案はありますか？
+      placeholder: 例如：放到偏好面板/命令面板中...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: willing
+    attributes:
+      label: 是否愿意提交 PR？/ PR できますか？
+      options:
+        - 我愿意 / できます
+        - 需要指导 / ガイドが必要
+        - 暂时不行 / できません
+    validations:
+      required: true
+

@@ -27,6 +27,7 @@
 - 预期结果：提供 View Mode（Grid/List）与 Density（Comfort/Compact）两组偏好项，并持久化到 localStorage（`acg.view.v1` / `acg.density.v1`）。
 - 表现层约束：布局/密度仅影响展示（CSS 覆盖 + dataset 开关），不改变数据过滤/排序/收藏/已读等核心逻辑。
 - 实现要点：偏好项使用独立 key（避免与 filters schema 耦合）；根节点注入 `data-acg-view` / `data-acg-density` 驱动样式切换；localStorage 读写统一走容错工具，避免异常阻断交互。
+- 入口补强：首页/分类页提供布局/密度快捷 chip（就地切换）；命令面板新增 `layout` / `density` 相关命令（键盘路径），并在页面缺少控件时回退为“仅保存偏好”提示。
 
 ### 需求: 去重视图与稳定来源
 场景：资讯转发噪音和不稳定来源会干扰阅读节奏。
@@ -35,6 +36,7 @@
 ### 需求: 命令面板（Command Palette）
 场景：重度用户希望通过键盘快速导航与切换常用开关，而无需频繁移动鼠标或滚动到面板。
 - 预期结果：`Ctrl/⌘ + K` 打开命令面板，支持搜索命令（导航/过滤/主题/语言/复制链接等）；命令面板为 lazy chunk，未触发时不影响首屏加载。
+- 能力补强：命令面板覆盖 View/Density（布局/密度）切换（含 toggle 与直达设置），确保不离开键盘即可改变阅读节奏。
 - 深链补强：支持 `/#search` 聚焦搜索、`/#prefs` 打开偏好设置抽屉、`/#cmdk` 直接打开命令面板（与键盘入口一致）。
 - 实现要点：命令面板通过 `acg:toast` 事件桥接复用全局 Toast；剪贴板复制逻辑复用 `src/client/utils/clipboard.ts`（避免重复实现与分叉）；列表支持分组标题与关键词高亮。
 - UI 细节：命令面板入场动效与滚动条样式统一；Toast 增加图标与点击消失动画（低性能模式或滚动期自动降级 backdrop blur）。

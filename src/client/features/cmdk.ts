@@ -1,5 +1,6 @@
 import { href } from "../../lib/href";
 import { normalizeText } from "../../lib/search/query";
+import { STORAGE_KEYS } from "../constants";
 import { copyToClipboard } from "../utils/clipboard";
 import { isJapanese } from "../utils/lang";
 import { track } from "../utils/telemetry";
@@ -279,10 +280,72 @@ function buildCommands(): CommandView[] {
     nav(`/${lang}/#prefs`);
   };
 
+  const getViewMode = (): "grid" | "list" => {
+    try {
+      const raw = document.documentElement.dataset.acgView;
+      if (raw === "grid" || raw === "list") return raw;
+    } catch {
+      // ignore
+    }
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.VIEW_MODE);
+      return raw === "grid" || raw === "list" ? raw : "grid";
+    } catch {
+      return "grid";
+    }
+  };
+
+  const setViewMode = (mode: "grid" | "list"): boolean => {
+    const ok = click(`[data-view-mode="${mode}"]`);
+    if (ok) return true;
+    try {
+      localStorage.setItem(STORAGE_KEYS.VIEW_MODE, mode);
+    } catch {
+      // ignore
+    }
+    try {
+      document.documentElement.dataset.acgView = mode;
+    } catch {
+      // ignore
+    }
+    return false;
+  };
+
+  const getDensityMode = (): "comfort" | "compact" => {
+    try {
+      const raw = document.documentElement.dataset.acgDensity;
+      if (raw === "comfort" || raw === "compact") return raw;
+    } catch {
+      // ignore
+    }
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.DENSITY);
+      return raw === "comfort" || raw === "compact" ? raw : "comfort";
+    } catch {
+      return "comfort";
+    }
+  };
+
+  const setDensityMode = (mode: "comfort" | "compact"): boolean => {
+    const ok = click(`[data-density-mode="${mode}"]`);
+    if (ok) return true;
+    try {
+      localStorage.setItem(STORAGE_KEYS.DENSITY, mode);
+    } catch {
+      // ignore
+    }
+    try {
+      document.documentElement.dataset.acgDensity = mode;
+    } catch {
+      // ignore
+    }
+    return false;
+  };
+
   const toggleLang = () => {
     const ok = click('a[aria-label="Switch language"]');
     if (ok) return;
-    const rest = location.pathname.replace(/^\/(zh|ja)(\/|$)/, "/");
+    const rest = location.pathname.replace(/^\/(zh|ja)(\/|$)/, "/");     
     nav(`/${otherLang}${rest}${location.search}${location.hash}`);
   };
 
@@ -412,6 +475,138 @@ function buildCommands(): CommandView[] {
         const ok = toggleCheckbox("#acg-hide-read");
         close();
         if (!ok) openPrefs();
+      })
+    },
+    {
+      id: "toggle_layout",
+      group: "system",
+      title: isJapanese() ? "レイアウトを切替（グリッド/リスト）" : "切换布局（网格/列表）",
+      desc: isJapanese() ? "Grid / List" : "Grid / List",
+      keywords: ["layout", "view", "grid", "list", "レイアウト", "グリッド", "リスト", "布局", "网格", "列表"],
+      run: action(() => {
+        const next = getViewMode() === "grid" ? "list" : "grid";
+        const ok = setViewMode(next);
+        close();
+        toast({
+          title: isJapanese()
+            ? `レイアウト：${next === "grid" ? "グリッド" : "リスト"}`
+            : `布局：${next === "grid" ? "网格" : "列表"}`,
+          desc: ok
+            ? undefined
+            : isJapanese()
+              ? "このページでは UI がないため、設定のみ保存しました。"
+              : "当前页无对应控件，已仅保存偏好设置。",
+          variant: "success",
+          timeoutMs: 1400
+        });
+      })
+    },
+    {
+      id: "layout_grid",
+      group: "system",
+      title: isJapanese() ? "レイアウト：グリッド" : "布局：网格",
+      desc: isJapanese() ? "Grid view" : "Grid view",
+      keywords: ["layout", "grid", "view", "グリッド", "网格"],
+      run: action(() => {
+        const ok = setViewMode("grid");
+        close();
+        toast({
+          title: isJapanese() ? "レイアウト：グリッド" : "布局：网格",
+          desc: ok
+            ? undefined
+            : isJapanese()
+              ? "このページでは UI がないため、設定のみ保存しました。"
+              : "当前页无对应控件，已仅保存偏好设置。",
+          variant: "success",
+          timeoutMs: 1400
+        });
+      })
+    },
+    {
+      id: "layout_list",
+      group: "system",
+      title: isJapanese() ? "レイアウト：リスト" : "布局：列表",
+      desc: isJapanese() ? "List view" : "List view",
+      keywords: ["layout", "list", "view", "リスト", "列表"],
+      run: action(() => {
+        const ok = setViewMode("list");
+        close();
+        toast({
+          title: isJapanese() ? "レイアウト：リスト" : "布局：列表",
+          desc: ok
+            ? undefined
+            : isJapanese()
+              ? "このページでは UI がないため、設定のみ保存しました。"
+              : "当前页无对应控件，已仅保存偏好设置。",
+          variant: "success",
+          timeoutMs: 1400
+        });
+      })
+    },
+    {
+      id: "toggle_density",
+      group: "system",
+      title: isJapanese() ? "密度を切替（ゆったり/コンパクト）" : "切换密度（舒适/紧凑）",
+      desc: isJapanese() ? "Comfort / Compact" : "Comfort / Compact",
+      keywords: ["density", "compact", "comfort", "密度", "紧凑", "舒适", "コンパクト", "ゆったり"],
+      run: action(() => {
+        const next = getDensityMode() === "comfort" ? "compact" : "comfort";
+        const ok = setDensityMode(next);
+        close();
+        toast({
+          title: isJapanese()
+            ? `密度：${next === "comfort" ? "ゆったり" : "コンパクト"}`
+            : `密度：${next === "comfort" ? "舒适" : "紧凑"}`,
+          desc: ok
+            ? undefined
+            : isJapanese()
+              ? "このページでは UI がないため、設定のみ保存しました。"
+              : "当前页无对应控件，已仅保存偏好设置。",
+          variant: "success",
+          timeoutMs: 1400
+        });
+      })
+    },
+    {
+      id: "density_comfort",
+      group: "system",
+      title: isJapanese() ? "密度：ゆったり" : "密度：舒适",
+      desc: isJapanese() ? "Comfort density" : "Comfort density",
+      keywords: ["density", "comfort", "ゆったり", "舒适"],
+      run: action(() => {
+        const ok = setDensityMode("comfort");
+        close();
+        toast({
+          title: isJapanese() ? "密度：ゆったり" : "密度：舒适",
+          desc: ok
+            ? undefined
+            : isJapanese()
+              ? "このページでは UI がないため、設定のみ保存しました。"
+              : "当前页无对应控件，已仅保存偏好设置。",
+          variant: "success",
+          timeoutMs: 1400
+        });
+      })
+    },
+    {
+      id: "density_compact",
+      group: "system",
+      title: isJapanese() ? "密度：コンパクト" : "密度：紧凑",
+      desc: isJapanese() ? "Compact density" : "Compact density",
+      keywords: ["density", "compact", "コンパクト", "紧凑"],
+      run: action(() => {
+        const ok = setDensityMode("compact");
+        close();
+        toast({
+          title: isJapanese() ? "密度：コンパクト" : "密度：紧凑",
+          desc: ok
+            ? undefined
+            : isJapanese()
+              ? "このページでは UI がないため、設定のみ保存しました。"
+              : "当前页无对应控件，已仅保存偏好设置。",
+          variant: "success",
+          timeoutMs: 1400
+        });
       })
     },
     {
