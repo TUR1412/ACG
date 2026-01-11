@@ -2,7 +2,7 @@
   "name": "acg",
   "private": true,
   "type": "module",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "engines": {
     "node": ">=20"
   },
@@ -13,6 +13,7 @@
     "sync": "tsx scripts/sync.ts",
     "sync:dry": "tsx scripts/sync.ts --dry-run",
     "validate": "tsx scripts/validate-generated-data.ts",
+    "summary": "tsx scripts/step-summary.ts",
     "budget": "tsx scripts/perf-budget.ts",
     "check": "astro check",
     "test": "node --import tsx --test tests/index.test.ts"

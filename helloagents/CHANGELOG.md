@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+## [0.5.8] - 2026-01-12
+
+### 新增
+- 启动级错误边界：前端初始化链“监控先行”，并在 init 抛错时记录 `bootstrap_fatal` telemetry + toast 轻提示。
+- 同步日志摘要：新增 `npm run summary`（Step Summary），Hourly Sync workflow 自动输出抓取摘要，便于快速排障。
+
 ## [0.5.7] - 2026-01-12
 
 ### 新增

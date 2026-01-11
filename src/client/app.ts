@@ -9,7 +9,12 @@ import { copyToClipboard } from "./utils/clipboard";
 import { createVirtualGrid, type VirtualGridController } from "./utils/virtual-grid";
 import { maybeStartHealthMonitor } from "./utils/health";
 import { track, wireTelemetry } from "./utils/telemetry";
-import { wireGlobalErrorMonitoring, wirePerfMonitoring } from "./utils/monitoring";
+import {
+  sanitizeOneLine,
+  sanitizeStack,
+  wireGlobalErrorMonitoring,
+  wirePerfMonitoring
+} from "./utils/monitoring";
 import { loadIds, loadWords, normalizeWord, safeJsonParse, saveIds, saveWords } from "./state/storage";
 import { wireTelemetryPrefs } from "./features/telemetry-prefs";
 
@@ -3917,16 +3922,39 @@ function wirePageTransitions() {
   );
 }
 
-function main() {
+function bootstrapMonitoring() {
   window.__acgCoverError = handleCoverError;
   window.__acgCoverLoad = handleCoverLoad;
 
-  wireTelemetry();
-  wireToastBridge();
-  wireGlobalErrorMonitoring();
-  wirePerfMonitoring();
-  wireNetworkStatusToasts();
+  // 监控优先：确保初始化链后续任何异常都能被记录/感知。
+  try {
+    wireTelemetry();
+  } catch {
+    // ignore
+  }
+  try {
+    wireToastBridge();
+  } catch {
+    // ignore
+  }
+  try {
+    wireGlobalErrorMonitoring();
+  } catch {
+    // ignore
+  }
+  try {
+    wirePerfMonitoring();
+  } catch {
+    // ignore
+  }
+  try {
+    wireNetworkStatusToasts();
+  } catch {
+    // ignore
+  }
+}
 
+function initApp() {
   const bookmarkIds = loadIds(BOOKMARK_KEY);
   const readIds = loadIds(READ_KEY);
   const follows = loadWords(FOLLOWS_KEY);
@@ -3978,6 +4006,50 @@ function main() {
   openPrefsFromHash();
   openCmdkFromHash();
   focusSearchFromHash();
+}
+
+function main() {
+  bootstrapMonitoring();
+
+  try {
+    initApp();
+  } catch (err) {
+    try {
+      document.documentElement.dataset.acgBoot = "failed";
+    } catch {
+      // ignore
+    }
+
+    try {
+      const e = err instanceof Error ? err : new Error(String(err ?? "unknown error"));
+      track({
+        type: "bootstrap_fatal",
+        data: {
+          message: sanitizeOneLine(e.message, 220),
+          stack: sanitizeStack(e.stack, 900)
+        }
+      });
+    } catch {
+      // ignore
+    }
+
+    try {
+      document.dispatchEvent(
+        new CustomEvent("acg:toast", {
+          detail: {
+            title: isJapanese() ? "初期化に失敗しました" : "初始化失败",
+            desc: isJapanese()
+              ? "ページを再読み込みしてください。"
+              : "页面脚本初始化失败，建议刷新重试。",
+            variant: "error",
+            timeoutMs: 4200
+          }
+        })
+      );
+    } catch {
+      // ignore
+    }
+  }
 }
 
 if (document.readyState === "loading") {

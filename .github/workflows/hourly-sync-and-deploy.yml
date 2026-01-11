@@ -65,6 +65,10 @@ jobs:
       - name: Validate Generated Data
         run: npm run validate
 
+      - name: Sync Summary
+        if: always()
+        run: npm run summary
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 

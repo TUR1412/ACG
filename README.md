@@ -159,6 +159,9 @@ npm run validate
 npm run budget
 ```
 
+- 同步摘要（CI 可观测性）：`npm run summary`（GitHub Actions 中写入 Step Summary；本地执行则输出到 stdout）<br/>
+  同期サマリー（CI 可観測性）：`npm run summary`（GitHub Actions では Step Summary に出力、ローカルは stdout）
+
 ---
 
 ## 质量与性能（建议 PR 前） / 品質とパフォーマンス（PR前推奨）
