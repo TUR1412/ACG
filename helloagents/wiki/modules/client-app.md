@@ -28,6 +28,7 @@
 - 表现层约束：布局/密度仅影响展示（CSS 覆盖 + dataset 开关），不改变数据过滤/排序/收藏/已读等核心逻辑。
 - 实现要点：偏好项使用独立 key（避免与 filters schema 耦合）；根节点注入 `data-acg-view` / `data-acg-density` 驱动样式切换；localStorage 读写统一走容错工具，避免异常阻断交互。
 - 入口补强：首页/分类页提供布局/密度快捷 chip（就地切换）；命令面板新增 `layout` / `density` 相关命令（键盘路径），并在页面缺少控件时回退为“仅保存偏好”提示。
+- 可访问性：View/Density 使用 `radiogroup` + roving tabindex，并支持方向键/Home/End 切换（触发 click 复用既有逻辑）。
 
 ### 需求: 去重视图与稳定来源
 场景：资讯转发噪音和不稳定来源会干扰阅读节奏。
@@ -91,5 +92,4 @@
 - `src/client/utils/monitoring.ts`
 - `src/client/utils/telemetry.ts`
 - `public/sw.js`
-
 

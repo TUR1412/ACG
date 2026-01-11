@@ -1,0 +1,15 @@
+---
+type Props = {
+  label: string;
+  class?: string;
+} & Record<string, unknown>;
+
+const { label, class: className, ...rest } = Astro.props as Props;
+
+const cls = ["acg-seg", className].filter(Boolean).join(" ");
+---
+
+<div class={cls} role="radiogroup" aria-label={label} {...rest}>
+  <slot />
+</div>
+

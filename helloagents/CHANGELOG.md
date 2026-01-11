@@ -5,6 +5,14 @@
 
 ## [Unreleased]
 
+## [0.5.12] - 2026-01-12
+
+### 新增
+- 键盘可访问性：分段控件与 View/Density 快捷入口补齐 roving tabindex，并支持方向键/Home/End 切换（触发 click 复用既有逻辑）。
+
+### 变更
+- Atomic UI：新增 `Segmented` / `SegmentedItem` atoms，并用于偏好面板分段控件，降低重复与后续迭代风险。
+
 ## [0.5.11] - 2026-01-12
 
 ### 新增

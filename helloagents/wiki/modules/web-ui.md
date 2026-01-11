@@ -30,7 +30,8 @@
 
 ### 需求: Atomic UI（Atoms）
 场景：信息流页面的 chips/按钮标记重复，后续做视觉与交互升级时成本偏高、容易不一致。
-- 预期结果：提供 `src/components/atoms/` 目录作为原子组件库（例如 `Chip.astro`），页面与更大组件通过组合 atoms 获得一致的结构与样式；采用增量替换策略，避免一次性重构带来风险。
+- 预期结果：提供 `src/components/atoms/` 目录作为原子组件库（例如 `Chip.astro` / `Segmented.astro` / `SegmentedItem.astro`），页面与更大组件通过组合 atoms 获得一致的结构与样式语义；采用增量替换策略，避免一次性重构带来风险。
+- 可访问性约束：分段控件遵循 `role="radiogroup"` / `role="radio"` 语义，并支持 roving tabindex + 方向键切换（提升键盘路径体验）。
 
 ### 需求: 首页信号板与洞察
 场景：首页首屏需要在不滚动的情况下给出趋势概览，并提供一键可执行的快捷动作。
@@ -72,4 +73,3 @@
 - `src/components/*`
 - `src/lib/feeds.ts`
 - `src/lib/source-config.ts`
-

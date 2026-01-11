@@ -98,32 +98,36 @@ const theme = getCategoryTheme(category);
         <Chip data-quick-toggle="dedup" data-active="false">
           {t("zh", "prefs.dedupView")}
         </Chip>
-        <Chip
-          icon="grid"
-          iconSize={16}
-          data-view-mode="grid"
-          data-active="false"
-          role="radio"
-          aria-checked="false"
-        >
-          <span>{t("zh", "prefs.viewGrid")}</span>
-        </Chip>
-        <Chip
-          icon="list"
-          iconSize={16}
-          data-view-mode="list"
-          data-active="false"
-          role="radio"
-          aria-checked="false"
-        >
-          <span>{t("zh", "prefs.viewList")}</span>
-        </Chip>
-        <Chip data-density-mode="comfort" data-active="false" role="radio" aria-checked="false">
-          {t("zh", "prefs.densityComfort")}
-        </Chip>
-        <Chip data-density-mode="compact" data-active="false" role="radio" aria-checked="false">
-          {t("zh", "prefs.densityCompact")}
-        </Chip>
+        <div class="flex gap-2" role="radiogroup" aria-label={t("zh", "prefs.view")}>
+          <Chip
+            icon="grid"
+            iconSize={16}
+            data-view-mode="grid"
+            data-active="false"
+            role="radio"
+            aria-checked="false"
+          >
+            <span>{t("zh", "prefs.viewGrid")}</span>
+          </Chip>
+          <Chip
+            icon="list"
+            iconSize={16}
+            data-view-mode="list"
+            data-active="false"
+            role="radio"
+            aria-checked="false"
+          >
+            <span>{t("zh", "prefs.viewList")}</span>
+          </Chip>
+        </div>
+        <div class="flex gap-2" role="radiogroup" aria-label={t("zh", "prefs.density")}>
+          <Chip data-density-mode="comfort" data-active="false" role="radio" aria-checked="false">
+            {t("zh", "prefs.densityComfort")}
+          </Chip>
+          <Chip data-density-mode="compact" data-active="false" role="radio" aria-checked="false">
+            {t("zh", "prefs.densityCompact")}
+          </Chip>
+        </div>
         <Chip data-quick-lens="2h" data-active="false">
           {t("zh", "prefs.timeLens2h")}
         </Chip>
