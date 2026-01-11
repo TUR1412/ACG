@@ -1,0 +1,38 @@
+# Normalize all text files to LF in the repository.
+* text=auto eol=lf
+
+# Common text formats
+*.md text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.astro text eol=lf
+*.svg text eol=lf
+*.sh text eol=lf
+*.ps1 text eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.tgz binary
+*.7z binary
+
