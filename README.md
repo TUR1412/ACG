@@ -1,18 +1,20 @@
 ```text
    ___   _______   _______           ____            __
-  / _ | / ___/ /  / ___/ /  ___ ____/ __ \\___ ____  / /__
- / __ |/ /__/ /__/ /__/ _ \\/ -_) __/ /_/ / _ `/ _ \\/  '_/
-/_/ |_|\\___/____/\\___/_//_/\\__/_/  \\____/\\_,_/_//_/_/\\
+  / _ | / ___/ /  / ___/ /  ___ ____/ __ \___ ____  / /__
+ / __ |/ /__/ /__/ /__/ _ \/ -_) __/ /_/ / _ `/ _ \/  '_/
+/_/ |_|\___/____/\___/_//_/\__/_/  \____/\_,_/_//_/_/\_\
 ```
 
 <p align="center">
   <img src="docs/readme-banner.svg?raw=1" alt="ACG Radar / ACGレーダー" />
 </p>
 
-# ACG Radar / ACGレーダー
+<h1 align="center">ACG Radar / ACGレーダー</h1>
 
-> **每小时更新**的 ACG 资讯雷达：抓取 → 静态构建 → GitHub Pages 部署。
-> **毎時更新**の ACG ニュースレーダー：取得 → 静的ビルド → GitHub Pages へデプロイ。
+<p align="center">
+  <b>每小时更新</b>的 ACG 资讯雷达：抓取 → 静态构建 → GitHub Pages 部署<br/>
+  <b>毎時更新</b>の ACG ニュースレーダー：取得 → 静的ビルド → GitHub Pages へデプロイ
+</p>
 
 [![Hourly Sync & Deploy (GitHub Pages)](https://github.com/TUR1412/ACG/actions/workflows/hourly-sync-and-deploy.yml/badge.svg)](https://github.com/TUR1412/ACG/actions/workflows/hourly-sync-and-deploy.yml)
 ![MIT](https://img.shields.io/badge/License-MIT-black)
@@ -21,43 +23,57 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06b6d4?logo=tailwindcss&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-ready-22c55e)
 
-**在线预览 / Demo**
-- https://tur1412.github.io/ACG/
+<p align="center">
+  <a href="https://tur1412.github.io/ACG/">Demo</a> ·
+  <a href="#中文">中文</a> ·
+  <a href="#日本語">日本語</a>
+</p>
 
-**快速入口 / クイックリンク**
+---
+
+## 中文
+
+### 在线预览 / 快速入口
+
+- Demo：https://tur1412.github.io/ACG/
 - 中文：`/zh/` → https://tur1412.github.io/ACG/zh/
 - 日本語：`/ja/` → https://tur1412.github.io/ACG/ja/
-- 状态页：`/status/` → https://tur1412.github.io/ACG/zh/status/（中文） / https://tur1412.github.io/ACG/ja/status/（日本語）
-- RSS：`/zh/feed.xml`（中文） / `/ja/feed.xml`（日本語）
-- JSON Feed：`/zh/feed.json`（中文） / `/ja/feed.json`（日本語）
-- OPML：`/zh/opml.xml`（中文） / `/ja/opml.xml`（日本語）
+- 状态页：`/status/`
+  - 中文：https://tur1412.github.io/ACG/zh/status/
+  - 日本語：https://tur1412.github.io/ACG/ja/status/
+- 订阅导出：
+  - RSS：`/zh/feed.xml` / `/ja/feed.xml`
+  - JSON Feed：`/zh/feed.json` / `/ja/feed.json`
+  - OPML：`/zh/opml.xml` / `/ja/opml.xml`
+
+### TL;DR（这是什么）
+
+ACG Radar 是一个“伪全栈”的 ACG 资讯雷达站点：数据由 GitHub Actions **每小时抓取**并清洗，生成静态站点后部署到 GitHub Pages。
+
+核心目标：更快识别热点、更少重复噪音、更轻的阅读成本，且保持 **无后端常驻**、低运维、可长期跑。
+
+### Highlights（你会用到的能力）
+
+- **Pulse Ranking**：热度分聚合热点，快速定位最值得看的内容
+- **Time Lens**：2h / 6h / 24h 一键聚焦最新趋势
+- **Smart Dedup**：相似标题去重，降低转发噪音
+- **Read Depth**：预计阅读时长，让浏览节奏更可控
+- **Source Trust**：来源健康度可视化，支持“只看稳定来源”
+- **全站搜索**：标题/摘要/标签/来源快速过滤，支持 `tag:` / `source:` / `cat:` / `before:` / `after:` / `is:` 语法（含 `-` 反选）
+- **Command Palette**：`Ctrl/⌘ + K` 快速切换过滤、主题、语言、复制链接等
+- **Layout Modes**：Grid/List 视图 + Comfort/Compact 密度，一键适配“扫读 / 浏览”
+- **PWA / 离线兜底**：弱网或离线时回退到最近缓存页面
+
+### 快捷键 & 深链（效率入口）
+
+- 搜索聚焦：`/#search`
+- 偏好抽屉：`/#prefs`
+- Command Palette：`Ctrl/⌘ + K`（或深链 `/#cmdk`）
+- 布局切换：打开“偏好” → `视图`（Grid/List）与 `密度`（Comfort/Compact）
 
 ---
 
-## 核心亮点 / Highlights
-
-- **Pulse Ranking / パルスランキング**：热度分聚合热点，快速定位最值得看的内容。
-- **Time Lens / タイムレンズ**：2h / 6h / 24h 一键聚焦最新趋势。
-- **Smart Dedup / 重複除外**：相似标题去重，降低转发噪音。
-- **Read Depth / 読了時間**：预计阅读时长，让浏览节奏更可控。
-- **Source Trust / ソース信頼度**：来源健康度可视化，支持“只看稳定来源”。
-- **全站搜索**：标题 / 摘要 / 标签 / 来源快速过滤，支持 `tag:` / `source:` / `cat:` / `before:` / `after:` / `is:` 语法。
-- **Command Palette**：`Ctrl/⌘ + K` 快速切换过滤、主题、语言。
-- **Layout Modes / レイアウト切替**：Grid / List 视图 + Comfort / Compact 密度，一键适配“扫读/浏览”。
-- **PWA / 离线兜底**：弱网或离线时回退到最近缓存页面。
-
----
-
-## 视觉与体验 / UI & UX
-
-- **未来感视觉系统**：霓虹边界 + 极简玻璃拟态 + 信号化信息层级。
-- **可访问性优化**：清晰的层级对比、可读的字体系统、Reduced Motion 支持。
-- **可调节布局密度**：桌面支持 Grid/List 切换，Compact 模式更省滚动、更轻负担。
-- **性能优先策略**：低性能设备自动降级重渲染效果，保持滚动流畅。
-
----
-
-## 架构 / Architecture
+## 架构（静态站 + 定时同步）
 
 <p align="center">
   <img src="docs/architecture.svg?raw=1" alt="ACG Radar Architecture" />
@@ -98,22 +114,23 @@ flowchart TB
     Fulltext --> Reader[r.jina.ai\n阅读模式]
   end
 ```
+
 </details>
 
 ---
 
-## 本地开发 / ローカル開発
+## 本地开发
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-- Node.js: `>= 20`
+- Node.js：`>= 20`
 
 ---
 
-## 数据同步 / データ同期
+## 数据同步（抓取 / 清洗 / 生成）
 
 ```bash
 npm run sync
@@ -123,7 +140,7 @@ npm run budget
 
 ---
 
-## 质量与性能 / Quality & Performance
+## 质量与性能（建议 PR 前）
 
 ```bash
 npm run check
@@ -133,13 +150,72 @@ npm run build
 
 ---
 
+## 环境变量（可选）
+
+<details>
+  <summary><b>展开：常用环境变量一览</b></summary>
+
+| 变量 | 用途 | 默认 |
+|---|---|---|
+| `ACG_BASE` | GitHub Pages base path（本地一般用 `/`） | `/` |
+| `ACG_SOURCE_CONCURRENCY` | 同步抓取阶段并发数（更保守=更稳） | `3` |
+| `ACG_TRANSLATE_MAX_POSTS` | 同步阶段翻译覆盖上限（标题/摘要/预览等字段） | `220` |
+| `ACG_TRANSLATE_TIMEOUT_MS` | 翻译请求超时（毫秒） | `18000` |
+| `ACG_BUDGET_JS_KB` | `dist/` JS 预算门禁（KB） | `450` |
+| `ACG_BUDGET_CSS_KB` | `dist/` CSS 预算门禁（KB） | `650` |
+| `ACG_BUDGET_HTML_KB` | 入口页 HTML/XML/JSON(core) 预算门禁（KB） | `5000` |
+| `ACG_BUDGET_DATA_GZ_KB` | `dist/data/*.json.gz` 预算门禁（KB） | `4500` |
+| `ACG_BUDGET_COVERS_MB` | `covers/` 预算门禁（MB） | `160` |
+
+</details>
+
+---
+
 ## 隐私 / Privacy
 
 - 所有偏好与收藏默认仅保存在本机浏览器（localStorage）。
-- 站点仅聚合信息并跳转原站，版权归原站。
+- 站点仅聚合信息并跳转原站；详情页“全文预览”为实验能力，版权归原站。
 
 ---
 
 ## License
 
 MIT
+
+---
+
+## 日本語
+
+### デモ / クイックリンク
+
+- Demo：https://tur1412.github.io/ACG/
+- 中文：`/zh/` → https://tur1412.github.io/ACG/zh/
+- 日本語：`/ja/` → https://tur1412.github.io/ACG/ja/
+- ステータス：`/status/`
+  - 中文：https://tur1412.github.io/ACG/zh/status/
+  - 日本語：https://tur1412.github.io/ACG/ja/status/
+- フィード：
+  - RSS：`/zh/feed.xml` / `/ja/feed.xml`
+  - JSON Feed：`/zh/feed.json` / `/ja/feed.json`
+  - OPML：`/zh/opml.xml` / `/ja/opml.xml`
+
+### 概要
+
+ACG Radar は、GitHub Actions により **毎時更新**される ACG ニュースレーダーです。取得 → クリーニング → 静的ビルド → GitHub Pages へデプロイ、という構成で **常駐バックエンド不要**の運用を目指します。
+
+### 便利な入口
+
+- 検索：`/#search`
+- 設定（ドロワー）：`/#prefs`
+- Command Palette：`Ctrl/⌘ + K`（または `/#cmdk`）
+- レイアウト：設定 → `表示`（Grid/List）と `密度`（Comfort/Compact）
+
+### ローカル開発
+
+```bash
+npm ci
+npm run dev
+```
+
+- Node.js：`>= 20`
+
