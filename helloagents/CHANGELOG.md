@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-01-12
+
+### 新增
+- 可观测性增强：新增全局错误捕获（`error`/`unhandledrejection`）与 Web Vitals（LCP/CLS/longtask）采集，默认写入本地 telemetry，便于排障与体验回溯。
+- Telemetry 偏好：偏好面板新增可选上报开关与 endpoint 配置（默认关闭），页面离开/后台化时以 sendBeacon/fetch(keepalive) 尝试发送。
+- Atomic UI：新增 `src/components/atoms/Chip.astro`，并在首页/分类页/信号板增量替换 chips，统一结构与样式语义。
+- 单元测试：补齐 monitoring 相关纯函数测试（归一化/截断/URL query/hash 剥离/去噪 key）。
+
+### 修复
+- 修复 `Chip` 组件 props 类型过窄导致的 `astro check` 报错。
+
 ## [0.4.0] - 2026-01-11
 
 ### 新增

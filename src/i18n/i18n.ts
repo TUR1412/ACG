@@ -72,6 +72,10 @@ export type I18nKey =
   | "prefs.enableAllSources"
   | "prefs.disableAllSources"
   | "prefs.hint"
+  | "prefs.telemetry"
+  | "prefs.telemetryUpload"
+  | "prefs.telemetryEndpoint"
+  | "prefs.telemetryHint"
   | "common.loading"
   | "common.noData"
   | "common.updatedAt"
@@ -172,6 +176,10 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "prefs.enableAllSources": "启用全部来源",
     "prefs.disableAllSources": "全部禁用",
     "prefs.hint": "以上设置仅保存在本机浏览器（localStorage）。",
+    "prefs.telemetry": "可观测性（Telemetry）",
+    "prefs.telemetryUpload": "允许上报（可选）",
+    "prefs.telemetryEndpoint": "上报地址（Endpoint）",
+    "prefs.telemetryHint": "默认仅本地记录（不上传）。仅当你开启“允许上报”且填写 http(s) endpoint 时，才会在页面隐藏/离开时尝试 sendBeacon/fetch 上报。",
     "common.loading": "加载中…",
     "common.noData": "暂无数据，稍后将自动更新。",
     "common.updatedAt": "更新于",
@@ -271,6 +279,10 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "prefs.enableAllSources": "すべて有効化",
     "prefs.disableAllSources": "すべて無効化",
     "prefs.hint": "設定はこのブラウザ内のみ（localStorage）。",
+    "prefs.telemetry": "可観測性（Telemetry）",
+    "prefs.telemetryUpload": "送信を許可（任意）",
+    "prefs.telemetryEndpoint": "送信先（Endpoint）",
+    "prefs.telemetryHint": "既定はローカル記録のみ（送信しません）。「送信を許可」+ http(s) endpoint を設定した場合のみ、ページ離脱時に sendBeacon/fetch で送信を試みます。",
     "common.loading": "読み込み中…",
     "common.noData": "データがまだありません。自動更新をお待ちください。",
     "common.updatedAt": "更新",

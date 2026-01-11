@@ -9,7 +9,9 @@ import { copyToClipboard } from "./utils/clipboard";
 import { createVirtualGrid, type VirtualGridController } from "./utils/virtual-grid";
 import { maybeStartHealthMonitor } from "./utils/health";
 import { track, wireTelemetry } from "./utils/telemetry";
+import { wireGlobalErrorMonitoring, wirePerfMonitoring } from "./utils/monitoring";
 import { loadIds, loadWords, normalizeWord, safeJsonParse, saveIds, saveWords } from "./state/storage";
+import { wireTelemetryPrefs } from "./features/telemetry-prefs";
 
 const BOOKMARK_KEY = STORAGE_KEYS.BOOKMARKS;
 const READ_KEY = STORAGE_KEYS.READ;
@@ -3921,6 +3923,8 @@ function main() {
 
   wireTelemetry();
   wireToastBridge();
+  wireGlobalErrorMonitoring();
+  wirePerfMonitoring();
   wireNetworkStatusToasts();
 
   const bookmarkIds = loadIds(BOOKMARK_KEY);
@@ -3948,6 +3952,7 @@ function main() {
   wireBookmarksPage(bookmarkIds, readIds);
   wireBookmarkTools(bookmarkIds);
   wirePreferences({ follows, blocklist, filters });
+  wireTelemetryPrefs();
   wireSourceToggles(disabledSources);
   wireSourceFollows(followedSources);
   createListFilter({ readIds, follows, blocklist, disabledSources, followedSources, filters });

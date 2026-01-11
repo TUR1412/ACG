@@ -1,0 +1,36 @@
+---
+import Icon, { type IconName } from "../Icon.astro";
+
+type Props = {
+  as?: "button" | "a";
+  href?: string;
+  icon?: IconName;
+  iconSize?: number;
+  class?: string;
+  title?: string;
+  ariaLabel?: string;
+} & Record<string, unknown>;
+
+const { as = "button", href, icon, iconSize = 16, class: className, title, ariaLabel, ...rest } = Astro.props as Props;
+
+const cls = [
+  "acg-chip",
+  icon ? "inline-flex items-center gap-1.5" : "",
+  "rounded-full px-3 py-1 text-xs font-semibold clickable",
+  className
+]
+  .filter(Boolean)
+  .join(" ");
+---
+
+{as === "a" ? (
+  <a href={href} class={cls} title={title} aria-label={ariaLabel} {...rest}>
+    {icon ? <Icon name={icon} size={iconSize} /> : null}
+    <slot />
+  </a>
+) : (
+  <button type="button" class={cls} title={title} aria-label={ariaLabel} {...rest}>
+    {icon ? <Icon name={icon} size={iconSize} /> : null}
+    <slot />
+  </button>
+)}

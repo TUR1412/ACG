@@ -3,6 +3,7 @@ import test from "node:test";
 import { safeExternalHttpUrl } from "../src/lib/safe-url";
 import { parseQuery, tokenizeQuery } from "../src/lib/search/query";
 import { buildSourceHealthMap, computePulseScore, estimateReadMinutes, normalizeForDedup } from "../src/lib/metrics";
+import { makeErrorKey, sanitizeOneLine, sanitizeStack } from "../src/client/utils/monitoring";
 
 test("safeExternalHttpUrl: 仅允许 http(s)", () => {
   assert.equal(safeExternalHttpUrl("https://example.com/a?b=1"), "https://example.com/a?b=1");
@@ -57,5 +58,35 @@ test("buildSourceHealthMap: 生成健康度", () => {
   ]);
   assert.equal(map.get("a")?.level, "excellent");
   assert.equal(map.get("b")?.level, "down");
+});
+
+test("sanitizeOneLine: 归一空白并截断", () => {
+  assert.equal(sanitizeOneLine("  hello   world \n ok "), "hello world ok");
+  const long = "x".repeat(500);
+  const out = sanitizeOneLine(long, 20);
+  assert.ok(out.length <= 20);
+  assert.ok(out.endsWith("…"));
+});
+
+test("sanitizeStack: 去除 URL query/hash（避免隐私泄露）", () => {
+  const stack = [
+    "Error: boom",
+    "    at https://example.com/a?token=secret#x:1:2",
+    "    at https://example.com/b?utm_source=abc:3:4"
+  ].join("\n");
+  const out = sanitizeStack(stack);
+  assert.ok(typeof out === "string");
+  assert.ok(!out.includes("token=secret"));
+  assert.ok(!out.includes("utm_source=abc"));
+});
+
+test("makeErrorKey: 包含 type/message/stackHead", () => {
+  const key = makeErrorKey({
+    type: "error",
+    message: "boom",
+    stack: "Error: boom\n    at foo:1:2\n    at bar:3:4"
+  });
+  assert.ok(key.startsWith("error:boom:"));
+  assert.ok(key.includes("Error: boom"));
 });
 

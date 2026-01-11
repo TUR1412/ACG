@@ -60,9 +60,18 @@ ACG Radar 是一个“伪全栈”的 ACG 资讯雷达站点：数据由 GitHub 
 - **Read Depth**：预计阅读时长，让浏览节奏更可控
 - **Source Trust**：来源健康度可视化，支持“只看稳定来源”
 - **全站搜索**：标题/摘要/标签/来源快速过滤，支持 `tag:` / `source:` / `cat:` / `before:` / `after:` / `is:` 语法（含 `-` 反选）
-- **Command Palette**：`Ctrl/⌘ + K` 快速切换过滤、主题、语言、复制链接等
+- **Command Palette**：`Ctrl/⌘ + K` 快速切换过滤、主题、语言、复制链接等        
 - **Layout Modes**：Grid/List 视图 + Comfort/Compact 密度，一键适配“扫读 / 浏览”
 - **PWA / 离线兜底**：弱网或离线时回退到最近缓存页面
+- **Telemetry（可观测性）**：本地优先记录未捕获异常与性能线索（LCP/CLS/longtask），支持用户显式开启上报
+- **Atomic UI（Atoms）**：Chips 等基础 UI 原子组件化，统一样式与交互语义，便于持续迭代
+
+### 可观测性（Telemetry）
+
+- 默认 **只在本机记录**（localStorage），不会自动向任何服务器上传。
+- 可选开启：打开“偏好” → `Telemetry` → 勾选“允许上报”，并填写 `http(s)` endpoint。
+- 采集范围（轻量/可降级）：未捕获异常（`error`/`unhandledrejection`）+ Web Vitals（LCP/CLS）+ 抽样 longtask。
+- 隐私保护：栈信息会截断并剥离 URL query/hash；错误提示做去重/节流，避免“雪崩式 toast”。
 
 ### 快捷键 & 深链（效率入口）
 
@@ -202,6 +211,13 @@ MIT
 ### 概要
 
 ACG Radar は、GitHub Actions により **毎時更新**される ACG ニュースレーダーです。取得 → クリーニング → 静的ビルド → GitHub Pages へデプロイ、という構成で **常駐バックエンド不要**の運用を目指します。
+
+### 可観測性（Telemetry）
+
+- 既定は **ローカル記録のみ**（localStorage、送信しません）。
+- 任意で送信：設定 → `Telemetry` → 「送信を許可」+ `http(s)` endpoint を設定すると、ページ離脱時に sendBeacon/fetch で送信を試みます。
+- 収集対象（軽量/可降級）：未捕捉エラー（`error`/`unhandledrejection`）+ Web Vitals（LCP/CLS）+ longtask（サンプリング）。
+- プライバシー：スタックは短縮し、URL の query/hash を除去。通知は間引き/重複排除で低ノイズに保ちます。
 
 ### 便利な入口
 

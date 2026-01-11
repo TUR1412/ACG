@@ -6,7 +6,7 @@
 ## 模块概述
 - 职责：收藏/已读/过滤/搜索/封面治理/全文预览等交互增强；PWA 与缓存策略协作
 - 状态：✅稳定
-- 最后更新：2026-01-11
+- 最后更新：2026-01-12
 
 ## 规范
 ### 需求: 弱网与离线体验
@@ -62,8 +62,14 @@
 - 状态存储：使用 localStorage `acg.search.scope.v1` 记忆用户上次选择的搜索范围。
 
 ### 需求: 用户行为埋点（本地优先）
-场景：希望在不引入后端复杂度的情况下，获得“可观测性”来定位体验瓶颈。
+场景：希望在不引入后端复杂度的情况下，获得“可观测性”来定位体验瓶颈。      
 - 预期结果：关键交互记录到本地队列；默认不上传，仅在用户显式开启且配置 endpoint 后才尝试 sendBeacon/fetch 上报。
+
+### 需求: 错误与性能观测（Observability）
+场景：当出现“卡住/无响应/掉帧/抖动”等体验问题时，需要在不引入后端的前提下获得可回溯线索。
+- 预期结果：捕获全局 `error` / `unhandledrejection` 并写入本地 telemetry；采集 LCP/CLS/longtask 等基础指标并在页面隐藏/离开时记录；低性能模式下自动降级采样与提示频率。
+- 隐私约束：默认只本地记录（`acg.telemetry.v1`）；仅当用户显式开启 upload 并设置 http(s) endpoint 时才尝试发送。
+- 实现要点：错误提示走 `acg:toast` 事件桥接（轻提示 + 去重/节流）；性能观测通过 `PerformanceObserver` 惰性注册并可降级。
 
 ## 依赖
 - `src/client/app.ts`
@@ -78,7 +84,9 @@
 - `src/client/workers/fulltext.worker.ts`
 - `src/client/features/cmdk.ts`
 - `src/client/features/fulltext.ts`
+- `src/client/features/telemetry-prefs.ts`
 - `src/client/utils/http.ts`
+- `src/client/utils/monitoring.ts`
 - `src/client/utils/telemetry.ts`
 - `public/sw.js`
 

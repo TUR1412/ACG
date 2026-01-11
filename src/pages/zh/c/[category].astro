@@ -3,6 +3,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
 import PostList from "../../../components/PostList.astro";
 import PreferencesDrawer from "../../../components/PreferencesDrawer.astro";
 import Icon from "../../../components/Icon.astro";
+import Chip from "../../../components/atoms/Chip.astro";
 import { readGeneratedPosts, readGeneratedStatus } from "../../../lib/generated-data";
 import { CATEGORIES, categoryLabel, type Category } from "../../../lib/categories";
 import { getCategoryTheme } from "../../../lib/category-theme";
@@ -82,139 +83,71 @@ const theme = getCategoryTheme(category);
       </div>
 
       <div class="acg-hscroll relative mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-        <button
-          type="button"
-          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
-          data-quick-toggle="only-followed"
-          data-active="false"
-        >
+        <Chip data-quick-toggle="only-followed" data-active="false">
           {t("zh", "prefs.followOnly")}
-        </button>
-        <button
-          type="button"
-          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
-          data-quick-toggle="only-followed-sources"
-          data-active="false"
-        >
+        </Chip>
+        <Chip data-quick-toggle="only-followed-sources" data-active="false">
           {t("zh", "prefs.followedSourcesOnly")}
-        </button>
-        <button
-          type="button"
-          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
-          data-quick-toggle="hide-read"
-          data-active="false"
-        >
+        </Chip>
+        <Chip data-quick-toggle="hide-read" data-active="false">
           {t("zh", "prefs.hideRead")}
-        </button>
-        <button
-          type="button"
-          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
-          data-quick-toggle="only-stable"
-          data-active="false"
-        >
+        </Chip>
+        <Chip data-quick-toggle="only-stable" data-active="false">
           {t("zh", "prefs.onlyStableSources")}
-        </button>
-        <button
-          type="button"
-          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
-          data-quick-toggle="dedup"
-          data-active="false"
-        >
+        </Chip>
+        <Chip data-quick-toggle="dedup" data-active="false">
           {t("zh", "prefs.dedupView")}
-        </button>
-        <button
-          type="button"
-          class="acg-chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold clickable"
+        </Chip>
+        <Chip
+          icon="grid"
+          iconSize={16}
           data-view-mode="grid"
           data-active="false"
           role="radio"
           aria-checked="false"
         >
-          <Icon name="grid" size={16} />
           <span>{t("zh", "prefs.viewGrid")}</span>
-        </button>
-        <button
-          type="button"
-          class="acg-chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold clickable"
+        </Chip>
+        <Chip
+          icon="list"
+          iconSize={16}
           data-view-mode="list"
           data-active="false"
           role="radio"
           aria-checked="false"
         >
-          <Icon name="list" size={16} />
           <span>{t("zh", "prefs.viewList")}</span>
-        </button>
-        <button
-          type="button"
-          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
-          data-density-mode="comfort"
-          data-active="false"
-          role="radio"
-          aria-checked="false"
-        >
+        </Chip>
+        <Chip data-density-mode="comfort" data-active="false" role="radio" aria-checked="false">
           {t("zh", "prefs.densityComfort")}
-        </button>
-        <button
-          type="button"
-          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
-          data-density-mode="compact"
-          data-active="false"
-          role="radio"
-          aria-checked="false"
-        >
+        </Chip>
+        <Chip data-density-mode="compact" data-active="false" role="radio" aria-checked="false">
           {t("zh", "prefs.densityCompact")}
-        </button>
-        <button
-          type="button"
-          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
-          data-quick-lens="2h"
-          data-active="false"
-        >
+        </Chip>
+        <Chip data-quick-lens="2h" data-active="false">
           {t("zh", "prefs.timeLens2h")}
-        </button>
-        <button
-          type="button"
-          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
-          data-quick-lens="6h"
-          data-active="false"
-        >
+        </Chip>
+        <Chip data-quick-lens="6h" data-active="false">
           {t("zh", "prefs.timeLens6h")}
-        </button>
-        <button
-          type="button"
-          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
-          data-quick-lens="24h"
-          data-active="false"
-        >
+        </Chip>
+        <Chip data-quick-lens="24h" data-active="false">
           {t("zh", "prefs.timeLens24h")}
-        </button>
-        <button
-          type="button"
-          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
-          data-quick-sort="pulse"
-          data-active="false"
-        >
+        </Chip>
+        <Chip data-quick-sort="pulse" data-active="false">
           {t("zh", "prefs.sortPulse")}
-        </button>
-        <button
-          type="button"
-          class="acg-chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold clickable"
+        </Chip>
+        <Chip
+          icon="search"
+          iconSize={16}
           data-search-preset={`cat:${category}`}
           title={`cat:${category}`}
           aria-label={t("zh", "search.scopeAllCategory")}
         >
-          <Icon name="search" size={16} />
           <span>{t("zh", "search.scopeAllCategory")}</span>
-        </button>
-        <button
-          type="button"
-          class="acg-chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold clickable"
-          data-open-prefs
-          data-active="false"
-        >
-          <Icon name="sliders" size={16} />
+        </Chip>
+        <Chip icon="sliders" iconSize={16} data-open-prefs data-active="false">
           <span>{t("zh", "prefs.title")}</span>
-        </button>
+        </Chip>
       </div>
     </div>
 
