@@ -5,6 +5,11 @@
 
 ## [Unreleased]
 
+## [0.5.10] - 2026-01-12
+
+### 变更
+- 字体自托管：Outfit / Space Grotesk 改为本地 woff2（带 `unicode-range` 子集与 `font-display: swap`），并移除 Google Fonts 外链依赖，减少三方请求以提升性能与稳定性。
+
 ## [0.5.9] - 2026-01-12
 
 ### 新增
