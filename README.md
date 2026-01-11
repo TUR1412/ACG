@@ -82,16 +82,22 @@ ACG Radar 是一个“伪全栈”的 ACG 资讯雷达站点：数据由 GitHub 
 - Command Palette：`Ctrl/⌘ + K`（或深链 `/#cmdk`）
 - 布局/密度：首页/分类页 chips 一键切换；或 Command Palette 搜索 `layout`/`density`；也可在“偏好” → `视图`/`密度` 中设置
 
+### 协作 / 参与贡献
+
+- 提 Issue：本仓库启用了 Issue Forms（Bug / Feature），更利于结构化收集信息。
+- 提 PR：请先阅读 `CONTRIBUTING.md`，并遵循 `CODE_OF_CONDUCT.md`。
+- 安全/隐私：请遵循 `SECURITY.md`（不要在公开 Issue 中披露密钥、个人信息或漏洞利用细节）。
+
 ---
 
-## 架构（静态站 + 定时同步）
+## 架构（静态站 + 定时同步） / アーキテクチャ（静的サイト + 定期同期）
 
 <p align="center">
   <img src="docs/architecture.svg?raw=1" alt="ACG Radar Architecture" />
 </p>
 
 <details>
-  <summary><b>Mermaid 架构图（可复制/可编辑）</b></summary>
+  <summary><b>Mermaid 架构图（可复制/可编辑） / Mermaid（コピー/編集可）</b></summary>
 
 ```mermaid
 flowchart TB
@@ -130,7 +136,7 @@ flowchart TB
 
 ---
 
-## 本地开发
+## 本地开发 / ローカル開発
 
 ```bash
 npm ci
@@ -141,7 +147,7 @@ npm run dev
 
 ---
 
-## 数据同步（抓取 / 清洗 / 生成）
+## 数据同步（抓取 / 清洗 / 生成） / データ同期（取得 / クリーニング / 生成）
 
 ```bash
 npm run sync
@@ -151,7 +157,7 @@ npm run budget
 
 ---
 
-## 质量与性能（建议 PR 前）
+## 质量与性能（建议 PR 前） / 品質とパフォーマンス（PR前推奨）
 
 ```bash
 npm run check
@@ -161,31 +167,31 @@ npm run build
 
 ---
 
-## 环境变量（可选）
+## 环境变量（可选） / 環境変数（任意）
 
 <details>
-  <summary><b>展开：常用环境变量一览</b></summary>
+  <summary><b>展开：常用环境变量一览 / 展開：主な環境変数</b></summary>
 
-| 变量 | 用途 | 默认 |
+| 变量 / 変数 | 用途 / 用途 | 默认 / 既定 |
 |---|---|---|
-| `ACG_BASE` | GitHub Pages base path（本地一般用 `/`） | `/` |
-| `ACG_SOURCE_CONCURRENCY` | 同步抓取阶段并发数（更保守=更稳） | `3` |
-| `ACG_TRANSLATE_MAX_POSTS` | 同步阶段翻译覆盖上限（标题/摘要/预览等字段） | `220` |
-| `ACG_TRANSLATE_TIMEOUT_MS` | 翻译请求超时（毫秒） | `18000` |
-| `ACG_BUDGET_JS_KB` | `dist/` JS 预算门禁（KB） | `450` |
-| `ACG_BUDGET_CSS_KB` | `dist/` CSS 预算门禁（KB） | `650` |
-| `ACG_BUDGET_HTML_KB` | 入口页 HTML/XML/JSON(core) 预算门禁（KB） | `5000` |
-| `ACG_BUDGET_DATA_GZ_KB` | `dist/data/*.json.gz` 预算门禁（KB） | `4500` |
-| `ACG_BUDGET_COVERS_MB` | `covers/` 预算门禁（MB） | `160` |
+| `ACG_BASE` | GitHub Pages base path（本地一般用 `/`）<br/>GitHub Pages の base path（ローカルは通常 `/`） | `/` |
+| `ACG_SOURCE_CONCURRENCY` | 同步抓取阶段并发数（更保守=更稳）<br/>同期取得の並列数（保守的=安定） | `3` |
+| `ACG_TRANSLATE_MAX_POSTS` | 同步阶段翻译覆盖上限（标题/摘要/预览等字段）<br/>同期翻訳の上限（タイトル/要約/プレビュー等） | `220` |
+| `ACG_TRANSLATE_TIMEOUT_MS` | 翻译请求超时（毫秒）<br/>翻訳リクエストのタイムアウト（ms） | `18000` |
+| `ACG_BUDGET_JS_KB` | `dist/` JS 预算门禁（KB）<br/>`dist/` JS サイズ上限（KB） | `450` |
+| `ACG_BUDGET_CSS_KB` | `dist/` CSS 预算门禁（KB）<br/>`dist/` CSS サイズ上限（KB） | `650` |
+| `ACG_BUDGET_HTML_KB` | 入口页 HTML/XML/JSON(core) 预算门禁（KB）<br/>入口 HTML/XML/JSON(core) サイズ上限（KB） | `5000` |
+| `ACG_BUDGET_DATA_GZ_KB` | `dist/data/*.json.gz` 预算门禁（KB）<br/>`dist/data/*.json.gz` サイズ上限（KB） | `4500` |
+| `ACG_BUDGET_COVERS_MB` | `covers/` 预算门禁（MB）<br/>`covers/` サイズ上限（MB） | `160` |
 
 </details>
 
 ---
 
-## 隐私 / Privacy
+## 隐私 / Privacy / プライバシー
 
-- 所有偏好与收藏默认仅保存在本机浏览器（localStorage）。
-- 站点仅聚合信息并跳转原站；详情页“全文预览”为实验能力，版权归原站。
+- 所有偏好与收藏默认仅保存在本机浏览器（localStorage）。<br/>設定とブックマークは既定でローカル（localStorage）のみに保存されます。
+- 站点仅聚合信息并跳转原站；详情页“全文预览”为实验能力，版权归原站。<br/>本サイトは情報を集約して元サイトへ遷移します。「全文プレビュー」は実験機能で、著作権は元サイトに帰属します。
 
 ---
 
@@ -220,7 +226,7 @@ ACG Radar は、GitHub Actions により **毎時更新**される ACG ニュー
 - 任意で送信：設定 → `Telemetry` → 「送信を許可」+ `http(s)` endpoint を設定すると、ページ離脱時に sendBeacon/fetch で送信を試みます。
 - 管理：ローカル telemetry のエクスポート/クリアに対応（設定 → `Telemetry`）。
 - Telemetry Viewer：ローカルイベント閲覧ページ `/zh/telemetry/` / `/ja/telemetry/`（localStorage のみ、送信しません）。
-- 収集対象（軽量/可降級）：未捕捉エラー（`error`/`unhandledrejection`）+ Web Vitals（LCP/CLS）+ longtask（サンプリング）。
+- 収集対象（軽量/段階的に無効化可能）：未捕捉エラー（`error`/`unhandledrejection`）+ Web Vitals（LCP/CLS）+ longtask（サンプリング）。
 - プライバシー：スタックは短縮し、URL の query/hash を除去。通知は間引き/重複排除で低ノイズに保ちます。
 
 ### 便利な入口
@@ -230,12 +236,11 @@ ACG Radar は、GitHub Actions により **毎時更新**される ACG ニュー
 - Command Palette：`Ctrl/⌘ + K`（または `/#cmdk`）
 - レイアウト/密度：トップ/カテゴリの chips で切替；または Command Palette で `layout`/`density` を検索；設定 → `表示`/`密度` でも設定可能
 
-### ローカル開発
+### コントリビューション
 
-```bash
-npm ci
-npm run dev
-```
+- PR/Issue などは `CONTRIBUTING.md` をご参照ください（行動規範は `CODE_OF_CONDUCT.md`）。
 
-- Node.js：`>= 20`
+### 開発 / 同期
+
+ローカル開発・定期同期・環境変数などは、上記の共通セクション（アーキテクチャ / ローカル開発 / データ同期 / 環境変数）をご参照ください。
 

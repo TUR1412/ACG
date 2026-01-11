@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from "../constants";
+import { copyToClipboard } from "../utils/clipboard";
 
 type RawEvent = Record<string, unknown>;
 
@@ -11,6 +12,16 @@ type ViewEvent = {
   data?: Record<string, unknown>;
   raw: RawEvent;
 };
+
+type ToastVariant = "info" | "success" | "error";
+
+function emitToast(params: { title: string; desc?: string; variant?: ToastVariant; timeoutMs?: number }) {
+  try {
+    document.dispatchEvent(new CustomEvent("acg:toast", { detail: params }));
+  } catch {
+    // ignore
+  }
+}
 
 function safeJsonParse<T>(raw: string): T | null {
   try {
@@ -61,12 +72,19 @@ function normalizeText(raw: unknown): string {
   return typeof raw === "string" ? raw : String(raw ?? "");
 }
 
+function isJapaneseUi(): boolean {
+  try {
+    return (document.documentElement.lang || "").toLowerCase().startsWith("ja");
+  } catch {
+    return false;
+  }
+}
+
 function formatAtIso(iso: string): string {
   try {
     const d = new Date(iso);
     if (!Number.isFinite(d.getTime())) return iso;
-    const isJa = (document.documentElement.lang || "").toLowerCase().startsWith("ja");
-    const locale = isJa ? "ja-JP" : "zh-CN";
+    const locale = isJapaneseUi() ? "ja-JP" : "zh-CN";
     return new Intl.DateTimeFormat(locale, {
       year: "numeric",
       month: "2-digit",
@@ -145,6 +163,16 @@ function renderEvent(ev: ViewEvent): HTMLElement {
   const body = document.createElement("div");
   body.className = "mt-3 grid gap-2";
 
+  const actions = document.createElement("div");
+  actions.className = "flex flex-wrap items-center justify-end gap-2";
+
+  const copyBtn = document.createElement("button");
+  copyBtn.type = "button";
+  copyBtn.className = "glass rounded-xl px-3 py-2 text-[11px] font-medium text-slate-950 clickable";
+  copyBtn.textContent = isJapaneseUi() ? "JSONをコピー" : "复制 JSON";
+  actions.appendChild(copyBtn);
+  body.appendChild(actions);
+
   const pre = document.createElement("pre");
   pre.className = "overflow-x-auto rounded-xl border border-slate-900/10 bg-white/60 p-3 text-[11px] leading-relaxed text-slate-900";
   pre.textContent = (() => {
@@ -155,6 +183,20 @@ function renderEvent(ev: ViewEvent): HTMLElement {
     }
   })();
   body.appendChild(pre);
+
+  copyBtn.addEventListener("click", (clickEv) => {
+    clickEv.preventDefault();
+    clickEv.stopPropagation();
+    const text = pre.textContent ?? "";
+    void copyToClipboard(text).then((ok) => {
+      emitToast({
+        title: ok ? (isJapaneseUi() ? "コピーしました" : "已复制") : isJapaneseUi() ? "コピー失敗" : "复制失败",
+        desc: ok ? ev.type : undefined,
+        variant: ok ? "success" : "error",
+        timeoutMs: ok ? 1400 : 1600
+      });
+    });
+  });
 
   details.appendChild(body);
   return details;
