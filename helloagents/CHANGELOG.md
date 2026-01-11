@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+## [0.5.7] - 2026-01-12
+
+### 新增
+- PWA Icons：新增 PNG icons（192/512 + maskable）与 apple-touch-icon，并更新 `manifest.webmanifest`。
+- SEO 基线：新增 `robots.txt` 与 `sitemap.xml` 输出，减少 Lighthouse SEO 审计的硬性扣分项（有生成数据时可增量覆盖文章页）。
+
 ## [0.5.6] - 2026-01-12
 
 ### 新增

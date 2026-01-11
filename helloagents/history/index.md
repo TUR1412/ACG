@@ -34,6 +34,7 @@
 | 202601120216 | github_automation | 工程/安全 | ✅已完成 | history/2026-01/202601120216_github_automation/ |
 | 202601120225 | repo_hygiene | 工程/协作 | ✅已完成 | history/2026-01/202601120225_repo_hygiene/ |
 | 202601120235 | lighthouse_ci | 工程/性能 | ✅已完成 | history/2026-01/202601120235_lighthouse_ci/ |
+| 202601120307 | pwa_seo_baseline | 工程/PWA/SEO | ✅已完成 | history/2026-01/202601120307_pwa_seo_baseline/ |
 
 ## 按月归档
 
@@ -70,3 +71,4 @@
 - 202601120216_github_automation (2026-01/202601120216_github_automation/) - Dependabot（依赖更新）+ CodeQL（安全扫描）+ .editorconfig（协作格式统一）
 - 202601120225_repo_hygiene (2026-01/202601120225_repo_hygiene/) - `.gitattributes`（统一 LF）+ CODEOWNERS（默认评审责任归属）
 - 202601120235_lighthouse_ci (2026-01/202601120235_lighthouse_ci/) - Lighthouse CI（性能/SEO/A11y 回归门禁 + 报告构件）
+- 202601120307_pwa_seo_baseline (2026-01/202601120307_pwa_seo_baseline/) - PWA PNG icons（192/512 + maskable）+ robots.txt/sitemap.xml（SEO 基线）
