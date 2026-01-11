@@ -5,6 +5,11 @@
 
 ## [Unreleased]
 
+## [0.5.6] - 2026-01-12
+
+### 新增
+- Lighthouse CI：新增 `.lighthouserc.json` 与 `Lighthouse CI` workflow，在 PR/手动触发时产出报告构件，作为性能/SEO/可访问性回归门禁基础。
+
 ## [0.5.5] - 2026-01-12
 
 ### 新增
@@ -164,4 +169,3 @@
 
 ### 移除
 - N/A
-

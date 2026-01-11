@@ -33,6 +33,7 @@
 | 202601120202 | github_md_refine | 文档/体验 | ✅已完成 | history/2026-01/202601120202_github_md_refine/ |
 | 202601120216 | github_automation | 工程/安全 | ✅已完成 | history/2026-01/202601120216_github_automation/ |
 | 202601120225 | repo_hygiene | 工程/协作 | ✅已完成 | history/2026-01/202601120225_repo_hygiene/ |
+| 202601120235 | lighthouse_ci | 工程/性能 | ✅已完成 | history/2026-01/202601120235_lighthouse_ci/ |
 
 ## 按月归档
 
@@ -68,4 +69,4 @@
 - 202601120202_github_md_refine (2026-01/202601120202_github_md_refine/) - README 公共章节双语化（中日）+ Telemetry Viewer 复制 JSON 快捷操作
 - 202601120216_github_automation (2026-01/202601120216_github_automation/) - Dependabot（依赖更新）+ CodeQL（安全扫描）+ .editorconfig（协作格式统一）
 - 202601120225_repo_hygiene (2026-01/202601120225_repo_hygiene/) - `.gitattributes`（统一 LF）+ CODEOWNERS（默认评审责任归属）
-
+- 202601120235_lighthouse_ci (2026-01/202601120235_lighthouse_ci/) - Lighthouse CI（性能/SEO/A11y 回归门禁 + 报告构件）

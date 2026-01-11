@@ -18,6 +18,7 @@
 
 [![Hourly Sync & Deploy (GitHub Pages)](https://github.com/TUR1412/ACG/actions/workflows/hourly-sync-and-deploy.yml/badge.svg)](https://github.com/TUR1412/ACG/actions/workflows/hourly-sync-and-deploy.yml)
 [![CI](https://github.com/TUR1412/ACG/actions/workflows/ci.yml/badge.svg)](https://github.com/TUR1412/ACG/actions/workflows/ci.yml)
+[![Lighthouse CI](https://github.com/TUR1412/ACG/actions/workflows/lighthouse.yml/badge.svg)](https://github.com/TUR1412/ACG/actions/workflows/lighthouse.yml)
 [![CodeQL](https://github.com/TUR1412/ACG/actions/workflows/codeql.yml/badge.svg)](https://github.com/TUR1412/ACG/actions/workflows/codeql.yml)
 ![MIT](https://img.shields.io/badge/License-MIT-black)
 ![Astro](https://img.shields.io/badge/Astro-5-FF5D01?logo=astro&logoColor=white)
@@ -245,4 +246,3 @@ ACG Radar は、GitHub Actions により **毎時更新**される ACG ニュー
 ### 開発 / 同期
 
 ローカル開発・定期同期・環境変数などは、上記の共通セクション（アーキテクチャ / ローカル開発 / データ同期 / 環境変数）をご参照ください。
-

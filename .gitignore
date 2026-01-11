@@ -3,6 +3,8 @@ dist/
 .astro/
 .cache/
 .cache/**/*
+.lighthouseci/
+lhci_reports/
 .DS_Store
 
 # 本地环境
