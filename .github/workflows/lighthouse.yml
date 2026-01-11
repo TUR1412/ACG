@@ -32,10 +32,13 @@ jobs:
       - name: Lighthouse CI (LHCI)
         run: npx --yes @lhci/cli@0.15.1 autorun --config .lighthouserc.json
 
+      - name: Lighthouse Summary
+        if: always()
+        run: npm run lhci:summary
+
       - name: Upload Lighthouse Reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: lhci-reports
           path: lhci_reports
-

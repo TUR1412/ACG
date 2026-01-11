@@ -36,6 +36,7 @@
 | 202601120235 | lighthouse_ci | 工程/性能 | ✅已完成 | history/2026-01/202601120235_lighthouse_ci/ |
 | 202601120307 | pwa_seo_baseline | 工程/PWA/SEO | ✅已完成 | history/2026-01/202601120307_pwa_seo_baseline/ |
 | 202601120506 | monitoring_boundary | 工程/稳定性/监控 | ✅已完成 | history/2026-01/202601120506_monitoring_boundary/ |
+| 202601120520 | lhci_step_summary | 工程/质量 | ✅已完成 | history/2026-01/202601120520_lhci_step_summary/ |
 
 ## 按月归档
 
@@ -74,3 +75,4 @@
 - 202601120235_lighthouse_ci (2026-01/202601120235_lighthouse_ci/) - Lighthouse CI（性能/SEO/A11y 回归门禁 + 报告构件）
 - 202601120307_pwa_seo_baseline (2026-01/202601120307_pwa_seo_baseline/) - PWA PNG icons（192/512 + maskable）+ robots.txt/sitemap.xml（SEO 基线）
 - 202601120506_monitoring_boundary (2026-01/202601120506_monitoring_boundary/) - 启动级错误边界（监控先行 + bootstrap_fatal telemetry）+ Hourly Sync Step Summary（同步摘要）
+- 202601120520_lhci_step_summary (2026-01/202601120520_lhci_step_summary/) - Lighthouse CI Job Summary（关键 URL 跑分摘要）

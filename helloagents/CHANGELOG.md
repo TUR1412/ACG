@@ -5,6 +5,11 @@
 
 ## [Unreleased]
 
+## [0.5.9] - 2026-01-12
+
+### 新增
+- Lighthouse CI Summary：新增 `npm run lhci:summary` 并集成到 Lighthouse workflow，在 Actions Job Summary 中展示关键 URL 跑分摘要（便于快速 review）。
+
 ## [0.5.8] - 2026-01-12
 
 ### 新增
