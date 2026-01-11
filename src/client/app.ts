@@ -9,30 +9,18 @@ import { copyToClipboard } from "./utils/clipboard";
 import { createVirtualGrid, type VirtualGridController } from "./utils/virtual-grid";
 import { maybeStartHealthMonitor } from "./utils/health";
 import { track, wireTelemetry } from "./utils/telemetry";
-
-type BookmarkStore = {
-  version: 1;
-  ids: string[];
-};
-
-type ReadStore = {
-  version: 1;
-  ids: string[];
-};
+import { loadIds, loadWords, normalizeWord, safeJsonParse, saveIds, saveWords } from "./state/storage";
 
 const BOOKMARK_KEY = STORAGE_KEYS.BOOKMARKS;
 const READ_KEY = STORAGE_KEYS.READ;
 const FOLLOWS_KEY = STORAGE_KEYS.FOLLOWS;
 const BLOCKLIST_KEY = STORAGE_KEYS.BLOCKLIST;
 const FILTERS_KEY = STORAGE_KEYS.FILTERS;
+const VIEW_MODE_KEY = STORAGE_KEYS.VIEW_MODE;
+const DENSITY_KEY = STORAGE_KEYS.DENSITY;
 const DISABLED_SOURCES_KEY = STORAGE_KEYS.DISABLED_SOURCES;
 const FOLLOWED_SOURCES_KEY = STORAGE_KEYS.FOLLOWED_SOURCES;
 const THEME_KEY = STORAGE_KEYS.THEME;
-
-type WordStore = {
-  version: 1;
-  words: string[];
-};
 
 type FilterStore = {
   version: 3;
@@ -48,6 +36,10 @@ type FilterStore = {
 type ThemeMode = "auto" | "light" | "dark";
 
 type SearchScope = "page" | "all";
+
+type ViewMode = "grid" | "list";
+
+type DensityMode = "comfort" | "compact";
 
 type TimeLens = "all" | "2h" | "6h" | "24h";
 
@@ -108,59 +100,6 @@ declare global {
   interface Window {
     __acgCoverError?: (img: HTMLImageElement) => void;
     __acgCoverLoad?: (img: HTMLImageElement) => void;
-  }
-}
-
-function safeJsonParse<T>(raw: string | null): T | null {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
-}
-
-function loadIds(key: string): Set<string> {
-  try {
-    const parsed = safeJsonParse<{ version?: number; ids?: unknown }>(localStorage.getItem(key));
-    const ids = Array.isArray(parsed?.ids) ? parsed?.ids.filter((x) => typeof x === "string") : [];
-    return new Set(ids);
-  } catch {
-    return new Set();
-  }
-}
-
-function saveIds(key: string, ids: Set<string>) {
-  try {
-    const value = { version: 1, ids: [...ids] } satisfies BookmarkStore | ReadStore;
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // ignore
-  }
-}
-
-function normalizeWord(word: string): string {
-  return word.toLowerCase().replace(/\s+/g, " ").trim();
-}
-
-function loadWords(key: string): Set<string> {
-  try {
-    const parsed = safeJsonParse<{ version?: number; words?: unknown }>(localStorage.getItem(key));
-    const words = Array.isArray(parsed?.words)
-      ? parsed?.words.filter((x) => typeof x === "string").map((x) => normalizeWord(x))
-      : [];
-    return new Set(words.filter(Boolean));
-  } catch {
-    return new Set();
-  }
-}
-
-function saveWords(key: string, words: Set<string>) {
-  try {
-    const value = { version: 1, words: [...words] } satisfies WordStore;
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // ignore
   }
 }
 
@@ -617,6 +556,116 @@ function wireThemeMode() {
     // Safari（legacy API）
     const legacy = (mq as unknown as { addListener?: (cb: () => void) => void }).addListener;
     if (typeof legacy === "function") legacy.call(mq, onChange);
+  }
+}
+
+function loadViewMode(): ViewMode {
+  try {
+    const raw = localStorage.getItem(VIEW_MODE_KEY);
+    return raw === "grid" || raw === "list" ? raw : "grid";
+  } catch {
+    return "grid";
+  }
+}
+
+function saveViewMode(mode: ViewMode) {
+  try {
+    localStorage.setItem(VIEW_MODE_KEY, mode);
+  } catch {
+    // ignore
+  }
+}
+
+function applyViewMode(mode: ViewMode) {
+  try {
+    document.documentElement.dataset.acgView = mode;
+  } catch {
+    // ignore
+  }
+}
+
+function wireViewMode() {
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>("[data-view-mode]")];
+
+  const apply = (mode: ViewMode) => {
+    applyViewMode(mode);
+    for (const btn of buttons) {
+      const active = (btn.dataset.viewMode ?? "") === mode;
+      btn.dataset.active = active ? "true" : "false";
+      btn.setAttribute("aria-checked", active ? "true" : "false");
+    }
+  };
+
+  const mode = loadViewMode();
+  apply(mode);
+
+  if (buttons.length > 0) {
+    document.addEventListener("click", (e) => {
+      if (e.defaultPrevented) return;
+      if (!(e.target instanceof HTMLElement)) return;
+      const el = e.target.closest<HTMLButtonElement>("[data-view-mode]");
+      if (!el) return;
+      const next = el.dataset.viewMode;
+      if (next !== "grid" && next !== "list") return;
+      e.preventDefault();
+      saveViewMode(next);
+      apply(next);
+    });
+  }
+}
+
+function loadDensityMode(): DensityMode {
+  try {
+    const raw = localStorage.getItem(DENSITY_KEY);
+    return raw === "comfort" || raw === "compact" ? raw : "comfort";
+  } catch {
+    return "comfort";
+  }
+}
+
+function saveDensityMode(mode: DensityMode) {
+  try {
+    localStorage.setItem(DENSITY_KEY, mode);
+  } catch {
+    // ignore
+  }
+}
+
+function applyDensityMode(mode: DensityMode) {
+  try {
+    document.documentElement.dataset.acgDensity = mode;
+  } catch {
+    // ignore
+  }
+}
+
+function wireDensityMode() {
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>("[data-density-mode]")];
+
+  const apply = (mode: DensityMode) => {
+    applyDensityMode(mode);
+    for (const btn of buttons) {
+      const active = (btn.dataset.densityMode ?? "") === mode;
+      btn.dataset.active = active ? "true" : "false";
+      btn.setAttribute("aria-checked", active ? "true" : "false");
+    }
+  };
+
+  const mode = loadDensityMode();
+  apply(mode);
+
+  if (buttons.length > 0) {
+    document.addEventListener("click", (e) => {
+      if (e.defaultPrevented) return;
+      if (!(e.target instanceof HTMLElement)) return;
+      const el = e.target.closest<HTMLButtonElement>("[data-density-mode]");
+      if (!el) return;
+      const next = el.dataset.densityMode;
+      if (next !== "comfort" && next !== "compact") return;
+      e.preventDefault();
+      saveDensityMode(next);
+      apply(next);
+    });
   }
 }
 
@@ -3884,6 +3933,8 @@ function main() {
   const followedSources = loadIds(FOLLOWED_SOURCES_KEY);
   wirePageTransitions();
   wireThemeMode();
+  wireViewMode();
+  wireDensityMode();
   maybeAutoTunePerfMode();
   wireScrollPerfHints();
   wireCardInViewAnimations();

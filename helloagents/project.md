@@ -10,6 +10,7 @@
 ## 开发约定
 - 代码风格：优先保持现有风格；修改以“可读性 + 可维护性 + 可验证”为目标。
 - 命名约定：TypeScript 使用 camelCase；常量使用 UPPER_SNAKE_CASE。
+- 本地存储：localStorage key 集中在 `src/client/constants.ts`（`STORAGE_KEYS`），读写使用 `src/client/state/storage.ts` 做容错与序列化，避免异常阻断交互。
 - 目录约定：
   - `src/`：站点源码（页面/组件/客户端逻辑/共享库）
   - `scripts/`：同步与抓取管线（仅在 CI/本地执行，不下发到浏览器）

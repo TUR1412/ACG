@@ -38,6 +38,14 @@ export type I18nKey =
   | "prefs.themeLight"
   | "prefs.themeDark"
   | "prefs.themeHint"
+  | "prefs.view"
+  | "prefs.viewGrid"
+  | "prefs.viewList"
+  | "prefs.viewHint"
+  | "prefs.density"
+  | "prefs.densityComfort"
+  | "prefs.densityCompact"
+  | "prefs.densityHint"
   | "prefs.followOnly"
   | "prefs.followedSourcesOnly"
   | "prefs.hideRead"
@@ -129,7 +137,15 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "prefs.themeAuto": "自动",
     "prefs.themeLight": "浅色",
     "prefs.themeDark": "深色",
-    "prefs.themeHint": "自动 = 跟随系统外观（可在系统设置中切换深色/浅色）。",
+    "prefs.themeHint": "自动 = 跟随系统外观（可在系统设置中切换深色/浅色）。",  
+    "prefs.view": "视图",
+    "prefs.viewGrid": "网格",
+    "prefs.viewList": "列表",
+    "prefs.viewHint": "列表更适合快速扫读；网格更适合浏览封面与摘要。",
+    "prefs.density": "密度",
+    "prefs.densityComfort": "舒适",
+    "prefs.densityCompact": "紧凑",
+    "prefs.densityHint": "紧凑会减少留白与摘要/标签占比，让滚动更省。",
     "prefs.followOnly": "只看关注",
     "prefs.followedSourcesOnly": "只看关注源",
     "prefs.hideRead": "隐藏已读",
@@ -220,7 +236,15 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "prefs.themeAuto": "自動",
     "prefs.themeLight": "ライト",
     "prefs.themeDark": "ダーク",
-    "prefs.themeHint": "自動 = OSの外観設定（ライト/ダーク）に追従します。",
+    "prefs.themeHint": "自動 = OSの外観設定（ライト/ダーク）に追従します。",    
+    "prefs.view": "表示",
+    "prefs.viewGrid": "グリッド",
+    "prefs.viewList": "リスト",
+    "prefs.viewHint": "リストは高速スキャン向け、グリッドはカバー/要約重視。",
+    "prefs.density": "密度",
+    "prefs.densityComfort": "ゆったり",
+    "prefs.densityCompact": "コンパクト",
+    "prefs.densityHint": "コンパクトは要約/タグ表示を抑え、スクロール量を減らします。",
     "prefs.followOnly": "フォローのみ",
     "prefs.followedSourcesOnly": "フォローしたソースのみ",
     "prefs.hideRead": "既読を隠す",

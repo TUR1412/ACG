@@ -1959,6 +1959,54 @@ html[data-acg-device="tablet"] .acg-post-grid {
   }
 }
 
+/* 用户偏好：视图模式 / 信息密度
+   - data-acg-view="list": 桌面也强制走“媒体卡片列表”节奏（更高信息吞吐）
+   - data-acg-density="compact": 减少留白与摘要/标签占比（更省滚动） */
+html[data-acg-view="list"] .acg-post-grid {
+  grid-template-columns: 1fr !important;
+}
+
+html[data-acg-view="list"] .acg-post-card-body {
+  display: flex !important;
+  padding: 12px !important;
+}
+
+html[data-acg-view="list"] .acg-post-card-cover {
+  width: 9rem !important;
+}
+
+html[data-acg-view="list"] .acg-post-card-cover-link {
+  aspect-ratio: 4 / 3 !important;
+  border-radius: 12px !important;
+}
+
+html[data-acg-view="list"] .acg-post-card-cover-badges,
+html[data-acg-view="list"] .acg-post-card-cover-when {
+  display: none !important;
+}
+
+html[data-acg-view="list"] .acg-post-card-content {
+  padding: 4px 0 !important;
+}
+
+@media (min-width: 640px) {
+  html[data-acg-view="list"] .acg-post-card-cover {
+    width: 10rem !important;
+  }
+}
+
+html[data-acg-density="compact"] .acg-post-grid {
+  gap: 0.75rem !important;
+}
+
+html[data-acg-density="compact"] .acg-post-card-content p {
+  -webkit-line-clamp: 1 !important;
+}
+
+html[data-acg-density="compact"] .acg-post-card-content .acg-hscroll {
+  display: none !important;
+}
+
 /* Icon 基础：统一 SVG 图标风格（替换符号/emoji） */
 .acg-icon {
   display: inline-block;

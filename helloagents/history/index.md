@@ -25,6 +25,7 @@
 | 202601030729 | evolution_v0_18_fulltext_content_visibility | 性能/体验 | ✅已完成 | history/2026-01/202601030729_evolution_v0_18_fulltext_content_visibility/ |
 | 202601030845 | evolution_v0_19_sync_concurrency_and_yield | 稳定性/扩量/性能 | ✅已完成 | history/2026-01/202601030845_evolution_v0_19_sync_concurrency_and_yield/ |
 | 202601111940 | acg_quantum_refresh | UI/功能 | ✅已完成 | history/2026-01/202601111940_acg_quantum_refresh/ |
+| 202601112152 | evolution_v0_3_layout_modes | UI/体验/重构 | ✅已完成 | history/2026-01/202601112152_evolution_v0_3_layout_modes/ |
 
 ## 按月归档
 
@@ -52,4 +53,5 @@
 - 202601030729_evolution_v0_18_fulltext_content_visibility (2026-01/202601030729_evolution_v0_18_fulltext_content_visibility/) - 全文预览滚动优化（content-visibility 分块渲染，降低离屏渲染开销）
 - 202601030845_evolution_v0_19_sync_concurrency_and_yield (2026-01/202601030845_evolution_v0_19_sync_concurrency_and_yield/) - 同步抓取有限并发 + cache 统一落盘 + 放宽低产出来源过滤以提升数量性
 - 202601111940_acg_quantum_refresh (2026-01/202601111940_acg_quantum_refresh/) - 信号板/时间透镜/派生指标/热度排序/卡片元信息与视觉重塑
+- 202601112152_evolution_v0_3_layout_modes (2026-01/202601112152_evolution_v0_3_layout_modes/) - View Mode（Grid/List）+ Density（Comfort/Compact）+ localStorage 工具抽离
 

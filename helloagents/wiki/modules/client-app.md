@@ -22,6 +22,12 @@
 场景：用户需要在不同时间窗内聚焦最新趋势，并按热度优先查看重点内容。
 - 预期结果：过滤状态新增 timeLens/sortMode，提供快捷按钮与偏好面板双入口，并持久化到 localStorage；页面内过滤逻辑与 UI 状态保持一致。
 
+### 需求: 布局模式与信息密度（View/Density）
+场景：同一批内容在不同用户/设备/场景下需要不同的浏览节奏（桌面端高密度扫读 vs 网格卡片浏览）。
+- 预期结果：提供 View Mode（Grid/List）与 Density（Comfort/Compact）两组偏好项，并持久化到 localStorage（`acg.view.v1` / `acg.density.v1`）。
+- 表现层约束：布局/密度仅影响展示（CSS 覆盖 + dataset 开关），不改变数据过滤/排序/收藏/已读等核心逻辑。
+- 实现要点：偏好项使用独立 key（避免与 filters schema 耦合）；根节点注入 `data-acg-view` / `data-acg-density` 驱动样式切换；localStorage 读写统一走容错工具，避免异常阻断交互。
+
 ### 需求: 去重视图与稳定来源
 场景：资讯转发噪音和不稳定来源会干扰阅读节奏。
 - 预期结果：客户端支持 dedup 与 onlyStableSources 过滤，与派生指标层的去重键与来源健康度联动。
@@ -60,6 +66,7 @@
 ## 依赖
 - `src/client/app.ts`
 - `src/client/constants.ts`
+- `src/client/state/storage.ts`
 - `src/client/utils/virtual-grid.ts`
 - `src/lib/metrics.ts`
 - `src/lib/format.ts`

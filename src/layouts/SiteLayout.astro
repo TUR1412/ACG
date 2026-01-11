@@ -111,8 +111,36 @@ const swHref = href("/sw.js");
         }
 
         try {
-          const meta = document.querySelector('meta[name="theme-color"]');
+          const meta = document.querySelector('meta[name="theme-color"]');      
           meta?.setAttribute("content", isDark ? DARK : LIGHT);
+        } catch {
+          // ignore
+        }
+      })();
+    </script>
+    <script is:inline>
+      (() => {
+        const el = document.documentElement;
+        let view = "grid";
+        let density = "comfort";
+
+        try {
+          const raw = localStorage.getItem("acg.view.v1");
+          if (raw === "grid" || raw === "list") view = raw;
+        } catch {
+          // ignore
+        }
+
+        try {
+          const raw = localStorage.getItem("acg.density.v1");
+          if (raw === "comfort" || raw === "compact") density = raw;
+        } catch {
+          // ignore
+        }
+
+        try {
+          el.dataset.acgView = view;
+          el.dataset.acgDensity = density;
         } catch {
           // ignore
         }

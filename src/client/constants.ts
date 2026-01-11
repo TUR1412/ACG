@@ -11,6 +11,8 @@ export const STORAGE_KEYS = {
   FOLLOWS: "acg.follows.v1",
   BLOCKLIST: "acg.blocklist.v1",
   FILTERS: "acg.filters.v1",
+  VIEW_MODE: "acg.view.v1",
+  DENSITY: "acg.density.v1",
   DISABLED_SOURCES: "acg.sourcesDisabled.v1",
   FOLLOWED_SOURCES: "acg.sourcesFollowed.v1",
   BOOKMARK_META: "acg.bookmarks.meta.v1",
