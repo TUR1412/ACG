@@ -76,6 +76,10 @@ export type I18nKey =
   | "prefs.telemetryUpload"
   | "prefs.telemetryEndpoint"
   | "prefs.telemetryHint"
+  | "prefs.telemetryExport"
+  | "prefs.telemetryClear"
+  | "prefs.telemetryCount"
+  | "prefs.telemetrySize"
   | "common.loading"
   | "common.noData"
   | "common.updatedAt"
@@ -180,6 +184,10 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "prefs.telemetryUpload": "允许上报（可选）",
     "prefs.telemetryEndpoint": "上报地址（Endpoint）",
     "prefs.telemetryHint": "默认仅本地记录（不上传）。仅当你开启“允许上报”且填写 http(s) endpoint 时，才会在页面隐藏/离开时尝试 sendBeacon/fetch 上报。",
+    "prefs.telemetryExport": "导出",
+    "prefs.telemetryClear": "清空",
+    "prefs.telemetryCount": "事件",
+    "prefs.telemetrySize": "大小",
     "common.loading": "加载中…",
     "common.noData": "暂无数据，稍后将自动更新。",
     "common.updatedAt": "更新于",
@@ -283,6 +291,10 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "prefs.telemetryUpload": "送信を許可（任意）",
     "prefs.telemetryEndpoint": "送信先（Endpoint）",
     "prefs.telemetryHint": "既定はローカル記録のみ（送信しません）。「送信を許可」+ http(s) endpoint を設定した場合のみ、ページ離脱時に sendBeacon/fetch で送信を試みます。",
+    "prefs.telemetryExport": "エクスポート",
+    "prefs.telemetryClear": "クリア",
+    "prefs.telemetryCount": "イベント",
+    "prefs.telemetrySize": "サイズ",
     "common.loading": "読み込み中…",
     "common.noData": "データがまだありません。自動更新をお待ちください。",
     "common.updatedAt": "更新",

@@ -54,10 +54,69 @@ function isHttpUrl(raw: string): boolean {
   }
 }
 
+function readTelemetryRaw(): string {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.TELEMETRY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function getTelemetryCount(raw: string): number {
+  if (!raw) return 0;
+  try {
+    const parsed = JSON.parse(raw) as { version?: unknown; events?: unknown };
+    const version = typeof parsed?.version === "number" ? parsed.version : 0;
+    if (version !== 1) return 0;
+    return Array.isArray(parsed?.events) ? parsed.events.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function getTelemetryBytes(raw: string): number {
+  if (!raw) return 0;
+  try {
+    return new Blob([raw]).size;
+  } catch {
+    return raw.length;
+  }
+}
+
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  if (bytes < 1024) return `${Math.round(bytes)} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${Math.round(kb * 10) / 10} KB`;
+  const mb = kb / 1024;
+  return `${Math.round(mb * 10) / 10} MB`;
+}
+
 export function wireTelemetryPrefs() {
   const upload = document.querySelector<HTMLInputElement>("#acg-telemetry-upload");
   const endpoint = document.querySelector<HTMLInputElement>("#acg-telemetry-endpoint");
-  if (!upload && !endpoint) return;
+  const exportBtn = document.querySelector<HTMLButtonElement>("#acg-telemetry-export");
+  const clearBtn = document.querySelector<HTMLButtonElement>("#acg-telemetry-clear");
+  const countEl = document.querySelector<HTMLElement>("#acg-telemetry-count");
+  const sizeEl = document.querySelector<HTMLElement>("#acg-telemetry-size");
+
+  if (!upload && !endpoint && !exportBtn && !clearBtn && !countEl && !sizeEl) return;
+
+  const syncSummary = () => {
+    const raw = readTelemetryRaw();
+    const count = getTelemetryCount(raw);
+    const bytes = getTelemetryBytes(raw);
+    try {
+      if (countEl) countEl.textContent = String(count);
+    } catch {
+      // ignore
+    }
+    try {
+      if (sizeEl) sizeEl.textContent = formatBytes(bytes);
+    } catch {
+      // ignore
+    }
+  };
 
   const apply = () => {
     try {
@@ -70,6 +129,7 @@ export function wireTelemetryPrefs() {
     } catch {
       // ignore
     }
+    syncSummary();
   };
 
   apply();
@@ -107,6 +167,67 @@ export function wireTelemetryPrefs() {
       desc: value && !isHttpUrl(value) ? (isJapanese() ? "http/https の URL のみ有効です。" : "仅 http/https URL 会被用于上报。") : undefined,
       variant: value && !isHttpUrl(value) ? "error" : "success",
       timeoutMs: 1600
+    });
+  });
+
+  exportBtn?.addEventListener("click", () => {
+    const raw = readTelemetryRaw();
+    const count = getTelemetryCount(raw);
+    if (!raw || count <= 0) {
+      emitToast({
+        title: isJapanese() ? "ログはありません" : "暂无可导出的记录",
+        desc: isJapanese() ? "しばらく使ってから再度お試しください。" : "使用一段时间后再试。",
+        variant: "info",
+        timeoutMs: 1600
+      });
+      return;
+    }
+
+    try {
+      const d = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+      const name = `acg-telemetry-${stamp}.json`;
+      const blob = new Blob([raw], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      a.rel = "noopener";
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      track({ type: "telemetry_export", data: { count } });
+      emitToast({
+        title: isJapanese() ? "ログを書き出しました" : "已导出 telemetry",
+        desc: isJapanese() ? `${count} 件` : `${count} 条`,
+        variant: "success",
+        timeoutMs: 1400
+      });
+    } catch {
+      emitToast({
+        title: isJapanese() ? "書き出しに失敗しました" : "导出失败",
+        variant: "error",
+        timeoutMs: 1600
+      });
+    } finally {
+      syncSummary();
+    }
+  });
+
+  clearBtn?.addEventListener("click", () => {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.TELEMETRY);
+    } catch {
+      // ignore
+    }
+    syncSummary();
+    emitToast({
+      title: isJapanese() ? "ログをクリアしました" : "已清空 telemetry",
+      variant: "success",
+      timeoutMs: 1400
     });
   });
 }

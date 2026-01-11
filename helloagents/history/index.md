@@ -28,6 +28,7 @@
 | 202601112152 | evolution_v0_3_layout_modes | UI/体验/重构 | ✅已完成 | history/2026-01/202601112152_evolution_v0_3_layout_modes/ |
 | 202601112339 | github_md_and_layout_cmdk | 文档/协作/体验 | ✅已完成 | history/2026-01/202601112339_github_md_and_layout_cmdk/ |
 | 202601120009 | observability_atomic_ui | 可观测性/UI | ✅已完成 | history/2026-01/202601120009_observability_atomic_ui/ |
+| 202601120110 | telemetry_tools | 可观测性/体验 | ✅已完成 | history/2026-01/202601120110_telemetry_tools/ |
 
 ## 按月归档
 
@@ -58,4 +59,5 @@
 - 202601112152_evolution_v0_3_layout_modes (2026-01/202601112152_evolution_v0_3_layout_modes/) - View Mode（Grid/List）+ Density（Comfort/Compact）+ localStorage 工具抽离
 - 202601112339_github_md_and_layout_cmdk (2026-01/202601112339_github_md_and_layout_cmdk/) - GitHub Issue/PR 模板与协作文档（中日双语）+ Layout/Density 快捷 chips + Cmdk 命令补强
 - 202601120009_observability_atomic_ui (2026-01/202601120009_observability_atomic_ui/) - 端侧错误捕获 + Web Vitals 埋点 + Telemetry 偏好 + Atomic UI（Chip）
+- 202601120110_telemetry_tools (2026-01/202601120110_telemetry_tools/) - Telemetry 导出/清空 + 事件数/体积展示
 
