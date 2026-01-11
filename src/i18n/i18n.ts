@@ -105,6 +105,11 @@ export type I18nKey =
   | "status.sources"
   | "status.ok"
   | "status.error"
+  | "telemetry.title"
+  | "telemetry.hint"
+  | "telemetry.filter"
+  | "telemetry.filterPlaceholder"
+  | "telemetry.empty"
   | "health.excellent"
   | "health.good"
   | "health.warn"
@@ -213,6 +218,11 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "status.sources": "来源健康度",
     "status.ok": "正常",
     "status.error": "异常",
+    "telemetry.title": "Telemetry（本机）",
+    "telemetry.hint": "本页仅从本机浏览器 localStorage 读取与展示 telemetry，不会自动上传。可用于排障/自检。",
+    "telemetry.filter": "过滤",
+    "telemetry.filterPlaceholder": "按 type / path / data 过滤…",
+    "telemetry.empty": "暂无 telemetry 事件（或已被清空）。",
     "health.excellent": "极稳",
     "health.good": "稳定",
     "health.warn": "波动",
@@ -320,6 +330,11 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "status.sources": "ソースの健康状態",
     "status.ok": "OK",
     "status.error": "エラー",
+    "telemetry.title": "Telemetry（ローカル）",
+    "telemetry.hint": "このページはブラウザの localStorage から telemetry を読み取り表示するだけです（自動送信しません）。調査/自己診断に利用できます。",
+    "telemetry.filter": "フィルター",
+    "telemetry.filterPlaceholder": "type / path / data で絞り込み…",
+    "telemetry.empty": "telemetry イベントがありません（またはクリア済み）。",
     "health.excellent": "安定",
     "health.good": "良好",
     "health.warn": "不安定",

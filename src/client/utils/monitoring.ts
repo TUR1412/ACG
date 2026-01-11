@@ -27,7 +27,8 @@ function clampText(text: string, maxLen: number): string {
 
 export function sanitizeOneLine(raw: unknown, maxLen = 220): string {
   const s = typeof raw === "string" ? raw : raw instanceof Error ? raw.message : String(raw ?? "");
-  return clampText(s.replace(/\s+/g, " ").trim(), maxLen);
+  const oneLine = stripUrlQuery(s).replace(/\s+/g, " ").trim();
+  return clampText(oneLine, maxLen);
 }
 
 function stripUrlQuery(text: string): string {

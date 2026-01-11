@@ -3963,7 +3963,10 @@ function main() {
   wireSearchClear();
   wirePrefsDrawer();
   if (document.querySelector("[data-fulltext]")) {
-    void import("./features/fulltext").then((m) => m.wireFullTextReader());     
+    void import("./features/fulltext").then((m) => m.wireFullTextReader());
+  }
+  if (document.querySelector("[data-telemetry-viewer]")) {
+    void import("./features/telemetry-viewer").then((m) => m.wireTelemetryViewer());
   }
   wireTagChips();
   wireDailyBriefCopy();

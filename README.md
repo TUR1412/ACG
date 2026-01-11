@@ -71,6 +71,7 @@ ACG Radar 是一个“伪全栈”的 ACG 资讯雷达站点：数据由 GitHub 
 - 默认 **只在本机记录**（localStorage），不会自动向任何服务器上传。
 - 可选开启：打开“偏好” → `Telemetry` → 勾选“允许上报”，并填写 `http(s)` endpoint。
 - 管理工具：支持导出/清空本地 telemetry（偏好 → `Telemetry` → 导出/清空）。
+- Telemetry Viewer：本机事件查看页 `/zh/telemetry/` / `/ja/telemetry/`（只读 localStorage，不自动上传）。
 - 采集范围（轻量/可降级）：未捕获异常（`error`/`unhandledrejection`）+ Web Vitals（LCP/CLS）+ 抽样 longtask。
 - 隐私保护：栈信息会截断并剥离 URL query/hash；错误提示做去重/节流，避免“雪崩式 toast”。
 
@@ -218,6 +219,7 @@ ACG Radar は、GitHub Actions により **毎時更新**される ACG ニュー
 - 既定は **ローカル記録のみ**（localStorage、送信しません）。
 - 任意で送信：設定 → `Telemetry` → 「送信を許可」+ `http(s)` endpoint を設定すると、ページ離脱時に sendBeacon/fetch で送信を試みます。
 - 管理：ローカル telemetry のエクスポート/クリアに対応（設定 → `Telemetry`）。
+- Telemetry Viewer：ローカルイベント閲覧ページ `/zh/telemetry/` / `/ja/telemetry/`（localStorage のみ、送信しません）。
 - 収集対象（軽量/可降級）：未捕捉エラー（`error`/`unhandledrejection`）+ Web Vitals（LCP/CLS）+ longtask（サンプリング）。
 - プライバシー：スタックは短縮し、URL の query/hash を除去。通知は間引き/重複排除で低ノイズに保ちます。
 

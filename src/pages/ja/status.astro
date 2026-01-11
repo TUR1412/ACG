@@ -3,6 +3,7 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
 import { readGeneratedStatus, readGeneratedStatusHistory } from "../../lib/generated-data";
 import { formatDateTime } from "../../lib/format";
 import { t } from "../../i18n/i18n";
+import { href } from "../../lib/href";
 import { safeExternalHttpUrl } from "../../lib/safe-url";
 
 const status = await readGeneratedStatus();
@@ -110,6 +111,14 @@ function suggest(s: (typeof status.sources)[number]): string {
     <p class="mt-2 text-sm text-slate-700">
       {t("ja", "status.lastRun")}: {updatedAt} · {status.durationMs}ms
     </p>
+    <div class="mt-3 flex flex-wrap gap-2">
+      <a
+        class="glass inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable"
+        href={href("/ja/telemetry/")}
+      >
+        {t("ja", "telemetry.title")}
+      </a>
+    </div>
   </div>
 
   {showTrend ? (

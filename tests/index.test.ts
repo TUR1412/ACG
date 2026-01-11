@@ -61,7 +61,10 @@ test("buildSourceHealthMap: 生成健康度", () => {
 });
 
 test("sanitizeOneLine: 归一空白并截断", () => {
-  assert.equal(sanitizeOneLine("  hello   world \n ok "), "hello world ok");
+  assert.equal(sanitizeOneLine("  hello   world \n ok "), "hello world ok");    
+  const msg = sanitizeOneLine("fetch https://example.com/a?token=secret#x failed");
+  assert.ok(!msg.includes("token=secret"));
+  assert.ok(!msg.includes("#x"));
   const long = "x".repeat(500);
   const out = sanitizeOneLine(long, 20);
   assert.ok(out.length <= 20);

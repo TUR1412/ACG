@@ -5,6 +5,15 @@
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-01-12
+
+### 新增
+- Telemetry Viewer：新增 `/zh/telemetry/` / `/ja/telemetry/` 本地事件查看页，支持过滤、导出、清空与事件详情查看。
+- 状态页入口：`/status` 增加 Telemetry Viewer 快捷入口。
+
+### 变更
+- 隐私加固：telemetry `path` 不再包含 query/hash；`page_view.referrer` 剥离 query/hash；错误一行文本同样剥离 URL query/hash。
+
 ## [0.5.1] - 2026-01-12
 
 ### 新增

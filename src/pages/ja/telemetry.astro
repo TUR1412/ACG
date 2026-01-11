@@ -1,0 +1,74 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import Icon from "../../components/Icon.astro";
+import { t } from "../../i18n/i18n";
+import { href } from "../../lib/href";
+---
+
+<SiteLayout lang="ja" title={t("ja", "telemetry.title")} currentPath="/telemetry/">
+  <section class="glass rounded-2xl p-5">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="min-w-0">
+        <h1 class="m-0 text-2xl font-semibold leading-tight tracking-tight text-slate-950 md:text-3xl">
+          {t("ja", "telemetry.title")}
+        </h1>
+        <p class="mt-2 text-sm text-slate-700">{t("ja", "telemetry.hint")}</p>
+      </div>
+
+      <a
+        class="glass inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable"
+        href={href("/ja/status/")}
+      >
+        <Icon name="arrow-left" size={16} />
+        <span>{t("ja", "nav.status")}</span>
+      </a>
+    </div>
+
+    <div class="mt-3 flex flex-wrap items-center gap-2">
+      <span class="glass rounded-full px-3 py-1 text-xs text-slate-700">
+        {t("ja", "prefs.telemetryCount")} <span id="acg-telemetry-count">-</span>
+      </span>
+      <span class="glass rounded-full px-3 py-1 text-xs text-slate-700">
+        {t("ja", "prefs.telemetrySize")} <span id="acg-telemetry-size">-</span>
+      </span>
+
+      <div class="ml-auto flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          id="acg-telemetry-export"
+          class="glass rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable"
+        >
+          {t("ja", "prefs.telemetryExport")}
+        </button>
+        <button
+          type="button"
+          id="acg-telemetry-clear"
+          class="rounded-xl border border-rose-600/20 bg-rose-500/10 px-3 py-2 text-xs font-medium text-rose-800 clickable"
+        >
+          {t("ja", "prefs.telemetryClear")}
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="mt-4 glass rounded-2xl p-5" data-telemetry-viewer>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <label class="text-xs font-semibold text-slate-950" for="acg-telemetry-filter">
+        {t("ja", "telemetry.filter")}
+      </label>
+      <input
+        id="acg-telemetry-filter"
+        class="w-full rounded-xl border border-slate-900/10 bg-white/60 px-3 py-2 text-xs text-slate-950 outline-none focus:border-slate-900/20 focus:bg-white/70 sm:w-[360px]"
+        type="search"
+        inputmode="search"
+        placeholder={t("ja", "telemetry.filterPlaceholder")}
+      />
+    </div>
+
+    <p id="acg-telemetry-empty" class="mt-3 hidden text-sm text-slate-700">
+      {t("ja", "telemetry.empty")}
+    </p>
+    <div id="acg-telemetry-events" class="mt-3 grid gap-2"></div>
+  </section>
+</SiteLayout>
+

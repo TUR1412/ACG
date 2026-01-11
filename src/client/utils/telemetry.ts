@@ -102,13 +102,27 @@ function isHttpUrl(raw: string): boolean {
   }
 }
 
+function stripUrlQueryHash(raw: string): string {
+  const s = raw.trim();
+  if (!s) return "";
+  try {
+    const u = new URL(s);
+    u.search = "";
+    u.hash = "";
+    return u.toString();
+  } catch {
+    return s.split("?")[0].split("#")[0];
+  }
+}
+
 export function track(params: { type: string; data?: Record<string, unknown> }) {
   const type = params.type.trim();
   if (!type) return;
 
   const path = (() => {
     try {
-      return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      // 隐私优先：不记录 query/hash，避免 token/追踪参数进入 telemetry。
+      return window.location.pathname || "";
     } catch {
       return "";
     }
@@ -180,7 +194,7 @@ export function wireTelemetry() {
     data: {
       referrer: (() => {
         try {
-          return document.referrer || "";
+          return stripUrlQueryHash(document.referrer || "");
         } catch {
           return "";
         }
