@@ -3,6 +3,7 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
 import PostList from "../../components/PostList.astro";
 import PreferencesDrawer from "../../components/PreferencesDrawer.astro";
 import SpotlightGrid from "../../components/SpotlightGrid.astro";
+import SignalBoard from "../../components/SignalBoard.astro";
 import CategoryIcon from "../../components/CategoryIcon.astro";
 import Icon from "../../components/Icon.astro";
 import { t } from "../../i18n/i18n";
@@ -12,16 +13,24 @@ import { CATEGORY_THEME } from "../../lib/category-theme";
 import { formatDateTime } from "../../lib/format";
 import { href } from "../../lib/href";
 import { resolveCover } from "../../lib/cover";
+import {
+  applyDerivedMetrics,
+  buildSourceHealthMap,
+  computeTimeLensCounts,
+  summarizeSourceHealth
+} from "../../lib/metrics";
 
 const posts = await readGeneratedPosts();
 const status = await readGeneratedStatus();
+const healthMap = buildSourceHealthMap(status.sources ?? []);
+const enriched = applyDerivedMetrics(posts, healthMap);
 
-const latest = posts.slice(0, 60);
+const latest = enriched.slice(0, 60);
 
 const updatedAt = status.generatedAt ? formatDateTime("zh", status.generatedAt) : "-";
 
 const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
-const recent24h = posts.filter((p) => new Date(p.publishedAt).getTime() >= cutoff24h);
+const recent24h = enriched.filter((p) => new Date(p.publishedAt).getTime() >= cutoff24h);
 
 const tagCount = new Map<string, number>();
 for (const p of recent24h) {
@@ -32,19 +41,29 @@ const hotTags = [...tagCount.entries()]
   .slice(0, 12)
   .map(([tag, count]) => ({ tag, count }));
 
+const lensCounts = computeTimeLensCounts(enriched);
+const healthSummary = summarizeSourceHealth(status.sources ?? [], healthMap);
+
 const categoryCount = new Map<Category, number>();
 for (const c of CATEGORIES) categoryCount.set(c, 0);
 for (const p of recent24h) categoryCount.set(p.category, (categoryCount.get(p.category) ?? 0) + 1);
 
 const brief = recent24h.slice(0, 10);
-const randomPick = posts.length > 0 ? posts[Math.floor(Math.random() * Math.min(200, posts.length))] : null;
+const randomPick =
+  enriched.length > 0 ? enriched[Math.floor(Math.random() * Math.min(200, enriched.length))] : null;
 const randomPickCover = resolveCover(randomPick?.cover, 960);
 const randomPickCoverOriginal = randomPick?.coverOriginal ?? randomPickCover?.original;
 
+const pulseTop = [...recent24h]
+  .sort((a, b) => (b.pulseScore ?? 0) - (a.pulseScore ?? 0))
+  .slice(0, 6);
+
 const spotlight = (() => {
-  const withCover = recent24h.filter((p) => Boolean(p.cover));
+  const byPulse = (a: typeof recent24h[number], b: typeof recent24h[number]) =>
+    (b.pulseScore ?? 0) - (a.pulseScore ?? 0);
+  const withCover = recent24h.filter((p) => Boolean(p.cover)).sort(byPulse);
   const used = new Set(withCover.map((p) => p.id));
-  const rest = recent24h.filter((p) => !used.has(p.id));
+  const rest = recent24h.filter((p) => !used.has(p.id)).sort(byPulse);
   return [...withCover, ...rest].slice(0, 6);
 })();
 ---
@@ -63,7 +82,7 @@ const spotlight = (() => {
             {t("zh", "nav.latest")}
           </h1>
           <p class="mt-1 text-xs text-slate-600">
-            {t("zh", "common.updatedAt")} {updatedAt} · {posts.length} 条
+            {t("zh", "common.updatedAt")} {updatedAt} · {enriched.length} 条
           </p>
         </div>
 
@@ -127,6 +146,54 @@ const spotlight = (() => {
           data-active="false"
         >
           {t("zh", "prefs.hideRead")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-toggle="only-stable"
+          data-active="false"
+        >
+          {t("zh", "prefs.onlyStableSources")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-toggle="dedup"
+          data-active="false"
+        >
+          {t("zh", "prefs.dedupView")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-lens="2h"
+          data-active="false"
+        >
+          {t("zh", "prefs.timeLens2h")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-lens="6h"
+          data-active="false"
+        >
+          {t("zh", "prefs.timeLens6h")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-lens="24h"
+          data-active="false"
+        >
+          {t("zh", "prefs.timeLens24h")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-sort="pulse"
+          data-active="false"
+        >
+          {t("zh", "prefs.sortPulse")}
         </button>
         <button
           type="button"
@@ -240,27 +307,15 @@ const spotlight = (() => {
       </div>
     </div>
 
-    <aside class="glass rounded-2xl p-6 md:col-span-4">
-      <h2 class="m-0 text-sm font-semibold text-slate-950">{t("zh", "home.hotTags")}</h2>
-      {hotTags.length === 0 ? (
-        <p class="mt-2 text-sm text-slate-700">{t("zh", "common.noData")}</p>
-      ) : (
-        <div class="acg-hscroll mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-          {hotTags.map(({ tag, count }) => (
-            <button
-              type="button"
-              class="inline-flex max-w-[26ch] shrink-0 items-center gap-2 rounded-full border border-slate-900/10 bg-white/55 px-3 py-1 text-xs text-slate-700 hover:bg-white/75 clickable"
-              data-tag={tag}
-              title={`${tag} · ${count}`}
-            >
-              <span class="max-w-[20ch] truncate">{tag}</span>
-              <span class="rounded-full bg-slate-900/5 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
-                {count}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
+    <aside class="md:col-span-4">
+      <SignalBoard
+        lang="zh"
+        pulseTop={pulseTop}
+        hotTags={hotTags}
+        lensCounts={lensCounts}
+        healthSummary={healthSummary}
+        totalPosts={enriched.length}
+      />
     </aside>
   </section>
 

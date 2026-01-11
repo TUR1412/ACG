@@ -24,7 +24,21 @@ export type Post = {
   sourceId: string;
   sourceName: string;
   sourceUrl: string;
+  /** 派生指标：热度分 */
+  pulseScore?: number;
+  /** 派生指标：预计阅读分钟 */
+  readMinutes?: number;
+  /** 去重 key */
+  dedupKey?: string;
+  /** 重复计数 */
+  duplicateCount?: number;
+  /** 来源健康度等级 */
+  sourceHealth?: SourceHealthLevel;
+  /** 来源健康度评分 */
+  sourceHealthScore?: number;
 };
+
+export type SourceHealthLevel = "excellent" | "good" | "warn" | "down";
 
 export type SourceStatus = {
   id: string;

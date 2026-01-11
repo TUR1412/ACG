@@ -1,11 +1,12 @@
 ---
-import type { Post } from "../lib/types";
+import type { Post, SourceHealthLevel } from "../lib/types";
 import { t, type Lang } from "../i18n/i18n";
 import { categoryLabel } from "../lib/categories";
 import { getCategoryTheme } from "../lib/category-theme";
 import { href } from "../lib/href";
-import { formatDateTime, formatRelativeHours } from "../lib/format";
+import { formatDateTime, formatReadMinutes, formatRelativeHours } from "../lib/format";
 import { resolveCover } from "../lib/cover";
+import { estimateReadMinutes } from "../lib/metrics";
 import CategoryIcon from "./CategoryIcon.astro";
 import Icon from "./Icon.astro";
 import SourceBadge from "./SourceBadge.astro";
@@ -14,9 +15,10 @@ type Props = {
   post: Post;
   lang: Lang;
   animateIndex?: number;
+  index?: number;
 };
 
-const { post, lang, animateIndex } = Astro.props;
+const { post, lang, animateIndex, index } = Astro.props;
 const detailHref = href(`/${lang}/p/${post.id}/`);
 const when = formatRelativeHours(lang, post.publishedAt) ?? formatDateTime(lang, post.publishedAt);
 
@@ -30,6 +32,19 @@ const snippet =
   lang === "zh"
     ? post.summaryZh ?? post.previewZh ?? post.summary ?? post.preview
     : post.summaryJa ?? post.previewJa ?? post.summary ?? post.preview;
+const readMinutes =
+  typeof post.readMinutes === "number" ? post.readMinutes : estimateReadMinutes(`${title} ${snippet ?? ""}`);
+const readLabel = formatReadMinutes(lang, readMinutes);
+const pulseScore = typeof post.pulseScore === "number" ? post.pulseScore : null;
+const duplicateCount = typeof post.duplicateCount === "number" ? post.duplicateCount : 0;
+const health = post.sourceHealth ?? null;
+const healthLabels: Record<SourceHealthLevel, string> = {
+  excellent: t(lang, "health.excellent"),
+  good: t(lang, "health.good"),
+  warn: t(lang, "health.warn"),
+  down: t(lang, "health.down")
+};
+const healthLabel = health ? healthLabels[health] : undefined;
 const publishedAtMs = new Date(post.publishedAt).getTime();
 const isFresh = Number.isFinite(publishedAtMs) && Date.now() - publishedAtMs >= 0 && Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
 const freshLabel = lang === "ja" ? "新着" : "NEW";
@@ -47,6 +62,12 @@ const bookmarkLabel = t(lang, "nav.bookmarks");
   data-source-id={post.sourceId}
   data-published-at={post.publishedAt}
   data-has-cover={post.cover ? "true" : "false"}
+  data-pulse={pulseScore ?? ""}
+  data-read-min={readMinutes ?? ""}
+  data-dedup={post.dedupKey ?? ""}
+  data-dup-count={duplicateCount ?? ""}
+  data-source-health={health ?? ""}
+  data-order={typeof index === "number" ? index : ""}
 >
   <div class="acg-post-card-body flex gap-3 p-3 sm:block sm:p-0">
     <div class="acg-post-card-cover relative w-32 shrink-0 sm:w-full">
@@ -138,7 +159,14 @@ const bookmarkLabel = t(lang, "nav.bookmarks");
           </div>
 
           <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-            <SourceBadge name={post.sourceName} url={post.sourceUrl} dotClass={theme.dot} compact />
+            <SourceBadge
+              name={post.sourceName}
+              url={post.sourceUrl}
+              dotClass={theme.dot}
+              compact
+              health={health ?? undefined}
+              healthLabel={healthLabel}
+            />
           </div>
         </div>
 
@@ -157,6 +185,22 @@ const bookmarkLabel = t(lang, "nav.bookmarks");
       </div>
 
       {snippet && <p class="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-600 sm:line-clamp-3">{snippet}</p>}
+
+      <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-600">
+        {pulseScore != null ? (
+          <span class="acg-metric acg-metric-pulse" title={`${t(lang, "home.pulseScore")}: ${pulseScore}`}>
+            <Icon name="chart" size={14} />
+            <span>{pulseScore}</span>
+          </span>
+        ) : null}
+        <span class="acg-metric" title={`${t(lang, "home.readTime")}: ${readLabel}`}>
+          <Icon name="clock" size={14} />
+          <span>{readLabel}</span>
+        </span>
+        {duplicateCount > 1 ? (
+          <span class="acg-metric acg-metric-dup" title={t(lang, "home.dedup")}>x{duplicateCount}</span>
+        ) : null}
+      </div>
 
       {post.tags?.length > 0 && (
         <div class="acg-hscroll mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">

@@ -35,19 +35,27 @@ type WordStore = {
 };
 
 type FilterStore = {
-  version: 2;
+  version: 3;
   onlyFollowed: boolean;
   onlyFollowedSources: boolean;
   hideRead: boolean;
+  onlyStableSources: boolean;
+  dedup: boolean;
+  timeLens: TimeLens;
+  sortMode: SortMode;
 };
 
 type ThemeMode = "auto" | "light" | "dark";
 
 type SearchScope = "page" | "all";
 
+type TimeLens = "all" | "2h" | "6h" | "24h";
+
+type SortMode = "latest" | "pulse";
+
 const THEME_COLOR = {
-  LIGHT: "#f2f4f8",
-  DARK: "#05070b"
+  LIGHT: "#f6f7fb",
+  DARK: "#04070f"
 } as const;
 
 function loadSearchScope(): SearchScope {
@@ -156,23 +164,56 @@ function saveWords(key: string, words: Set<string>) {
   }
 }
 
+function normalizeTimeLens(value: unknown): TimeLens {
+  return value === "2h" || value === "6h" || value === "24h" || value === "all" ? value : "all";
+}
+
+function normalizeSortMode(value: unknown): SortMode {
+  return value === "pulse" || value === "latest" ? value : "latest";
+}
+
 function loadFilters(): FilterStore {
   try {
     const parsed = safeJsonParse<Partial<FilterStore>>(localStorage.getItem(FILTERS_KEY));
     return {
-      version: 2,
+      version: 3,
       onlyFollowed: Boolean(parsed?.onlyFollowed),
       onlyFollowedSources: Boolean((parsed as any)?.onlyFollowedSources),
-      hideRead: Boolean(parsed?.hideRead)
+      hideRead: Boolean(parsed?.hideRead),
+      onlyStableSources: Boolean((parsed as any)?.onlyStableSources),
+      dedup: Boolean((parsed as any)?.dedup),
+      timeLens: normalizeTimeLens((parsed as any)?.timeLens),
+      sortMode: normalizeSortMode((parsed as any)?.sortMode)
     };
   } catch {
-    return { version: 2, onlyFollowed: false, onlyFollowedSources: false, hideRead: false };
+    return {
+      version: 3,
+      onlyFollowed: false,
+      onlyFollowedSources: false,
+      hideRead: false,
+      onlyStableSources: false,
+      dedup: false,
+      timeLens: "all",
+      sortMode: "latest"
+    };
   }
 }
 
 function saveFilters(filters: FilterStore) {
   try {
     localStorage.setItem(FILTERS_KEY, JSON.stringify(filters));
+  } catch {
+    // ignore
+  }
+}
+
+function syncFilterDataset(filters: FilterStore) {
+  try {
+    const root = document.documentElement;
+    root.dataset.acgLens = filters.timeLens;
+    root.dataset.acgSort = filters.sortMode;
+    root.dataset.acgDedup = filters.dedup ? "1" : "0";
+    root.dataset.acgStable = filters.onlyStableSources ? "1" : "0";
   } catch {
     // ignore
   }
@@ -1109,19 +1150,38 @@ function wirePrefsDrawer() {
 }
 
 function wireQuickToggles() {
-  const buttons = [...document.querySelectorAll<HTMLButtonElement>("button[data-quick-toggle]")];
+  const buttons = [
+    ...document.querySelectorAll<HTMLButtonElement>(
+      "button[data-quick-toggle],button[data-quick-lens],button[data-quick-sort]"
+    )
+  ];
   if (buttons.length === 0) return;
 
   const onlyFollowed = document.querySelector<HTMLInputElement>("#acg-only-followed");
   const onlyFollowedSources = document.querySelector<HTMLInputElement>("#acg-only-followed-sources");
   const hideRead = document.querySelector<HTMLInputElement>("#acg-hide-read");
+  const onlyStable = document.querySelector<HTMLInputElement>("#acg-only-stable-sources");
+  const dedup = document.querySelector<HTMLInputElement>("#acg-dedup-view");
+  const lensButtons = [...document.querySelectorAll<HTMLButtonElement>("button[data-time-lens]")];
+  const sortButtons = [...document.querySelectorAll<HTMLButtonElement>("button[data-sort-mode]")];
+
+  const getLens = (): TimeLens =>
+    (document.documentElement.dataset.acgLens as TimeLens | undefined) ?? "all";
+  const getSort = (): SortMode =>
+    (document.documentElement.dataset.acgSort as SortMode | undefined) ?? "latest";
 
   const apply = () => {
     const only = Boolean(onlyFollowed?.checked);
     const onlySources = Boolean(onlyFollowedSources?.checked);
     const hide = Boolean(hideRead?.checked);
+    const stable = Boolean(onlyStable?.checked);
+    const dedupEnabled = Boolean(dedup?.checked);
+    const lens = getLens();
+    const sort = getSort();
     for (const btn of buttons) {
       const kind = btn.dataset.quickToggle ?? "";
+      const quickLens = btn.dataset.quickLens;
+      const quickSort = btn.dataset.quickSort;
       const active =
         kind === "only-followed"
           ? only
@@ -1129,12 +1189,20 @@ function wireQuickToggles() {
             ? onlySources
             : kind === "hide-read"
               ? hide
-              : false;
+              : kind === "only-stable"
+                ? stable
+                : kind === "dedup"
+                  ? dedupEnabled
+                  : quickLens
+                    ? quickLens === lens
+                    : quickSort
+                      ? quickSort === sort
+                      : false;
       btn.dataset.active = active ? "true" : "false";
     }
   };
 
-  const toggle = (kind: "only-followed" | "only-followed-sources" | "hide-read") => {
+  const toggle = (kind: "only-followed" | "only-followed-sources" | "hide-read" | "only-stable" | "dedup") => {
     if (kind === "only-followed" && onlyFollowed) {
       onlyFollowed.checked = !onlyFollowed.checked;
       onlyFollowed.dispatchEvent(new Event("change", { bubbles: true }));
@@ -1147,25 +1215,75 @@ function wireQuickToggles() {
       hideRead.checked = !hideRead.checked;
       hideRead.dispatchEvent(new Event("change", { bubbles: true }));
     }
+    if (kind === "only-stable" && onlyStable) {
+      onlyStable.checked = !onlyStable.checked;
+      onlyStable.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    if (kind === "dedup" && dedup) {
+      dedup.checked = !dedup.checked;
+      dedup.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  };
+
+  const setLens = (lens: TimeLens) => {
+    const btn = lensButtons.find((b) => (b.dataset.timeLens ?? "") === lens);
+    btn?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+  };
+
+  const setSort = (sort: SortMode) => {
+    const btn = sortButtons.find((b) => (b.dataset.sortMode ?? "") === sort);
+    btn?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
   };
 
   document.addEventListener("click", (e) => {
     if (e.defaultPrevented) return;
     if (!(e.target instanceof HTMLElement)) return;
-    const el = e.target.closest("button[data-quick-toggle]");
+    const el = e.target.closest("button[data-quick-toggle],button[data-quick-lens],button[data-quick-sort]");
     if (!(el instanceof HTMLButtonElement)) return;
 
-    const kind = el.dataset.quickToggle;
-    if (kind !== "only-followed" && kind !== "only-followed-sources" && kind !== "hide-read") return;
-    toggle(kind);
-    apply();
-    const enabled =
-      kind === "only-followed"
-        ? Boolean(onlyFollowed?.checked)
-        : kind === "only-followed-sources"
-          ? Boolean(onlyFollowedSources?.checked)
-          : Boolean(hideRead?.checked);
-    track({ type: "quick_toggle", data: { kind, enabled } });
+    const kind = el.dataset.quickToggle ?? "";
+    const lens = el.dataset.quickLens as TimeLens | undefined;
+    const sort = el.dataset.quickSort as SortMode | undefined;
+    if (kind) {
+      if (
+        kind !== "only-followed" &&
+        kind !== "only-followed-sources" &&
+        kind !== "hide-read" &&
+        kind !== "only-stable" &&
+        kind !== "dedup"
+      ) {
+        return;
+      }
+      toggle(kind);
+      apply();
+      const enabled =
+        kind === "only-followed"
+          ? Boolean(onlyFollowed?.checked)
+          : kind === "only-followed-sources"
+            ? Boolean(onlyFollowedSources?.checked)
+            : kind === "hide-read"
+              ? Boolean(hideRead?.checked)
+              : kind === "only-stable"
+                ? Boolean(onlyStable?.checked)
+                : Boolean(dedup?.checked);
+      track({ type: "quick_toggle", data: { kind, enabled } });
+      return;
+    }
+
+    if (lens) {
+      const current = getLens();
+      setLens(lens === current ? "all" : lens);
+      apply();
+      track({ type: "quick_lens", data: { lens: lens === current ? "all" : lens } });
+      return;
+    }
+
+    if (sort) {
+      const current = getSort();
+      setSort(sort === current ? "latest" : sort);
+      apply();
+      track({ type: "quick_sort", data: { sort: sort === current ? "latest" : sort } });
+    }
   });
 
   document.addEventListener("acg:filters-changed", apply);
@@ -1298,6 +1416,10 @@ function createListFilter(params: {
   let sourceNames: string[] = [];
   let categories: string[] = [];
   let publishedAtMs: (number | null)[] = [];
+  let pulseScores: number[] = [];
+  let dedupKeys: string[] = [];
+  let sourceHealth: string[] = [];
+  let orderIndex: number[] = [];
   let hiddenState: boolean[] = [];
   let initialized = false;
 
@@ -1312,7 +1434,7 @@ function createListFilter(params: {
   const initIfNeeded = () => {
     if (initialized) return;
     cards = [...document.querySelectorAll<HTMLElement>("[data-post-id]")];
-    haystacks = cards.map((card) => {
+    haystacks = cards.map((card, index) => {
       const title = bestTitleText(card);
       const summary = card.querySelector("p")?.textContent ?? "";
 
@@ -1331,10 +1453,22 @@ function createListFilter(params: {
       const ts = publishedAtRaw ? Date.parse(publishedAtRaw) : NaN;
       const published = Number.isFinite(ts) ? ts : null;
 
+      const pulseRaw = Number.parseFloat(card.dataset.pulse ?? "");
+      const pulse = Number.isFinite(pulseRaw) ? pulseRaw : 0;
+      const dedupKey = card.dataset.dedup ?? "";
+      const health = (card.dataset.sourceHealth ?? "").toLowerCase();
+      const orderRaw = Number.parseInt(card.dataset.order ?? "", 10);
+      const order = Number.isFinite(orderRaw) ? orderRaw : index;
+
       tagsByCard.push(tags);
       sourceNames.push(sourceName);
       categories.push(category);
       publishedAtMs.push(published);
+      pulseScores.push(pulse);
+      dedupKeys.push(dedupKey);
+      sourceHealth.push(health);
+      orderIndex.push(order);
+      card.dataset.idx = String(index);
 
       return normalizeText(`${title} ${summary} ${tags.join(" ")} ${sourceName}`);
     });
@@ -1349,6 +1483,30 @@ function createListFilter(params: {
     toast({ title: isJapanese() ? "検索をクリアしました" : "已清空搜索", variant: "info" });
   });
 
+  const isStableHealth = (level: string) => level === "excellent" || level === "good";
+
+  const applySort = () => {
+    const container = cards[0]?.parentElement;
+    if (!container) return;
+    const mode = filters.sortMode ?? "latest";
+    const sorted = [...cards].sort((a, b) => {
+      const ia = Number.parseInt(a.dataset.idx ?? "", 10);
+      const ib = Number.parseInt(b.dataset.idx ?? "", 10);
+      const idxA = Number.isFinite(ia) ? ia : 0;
+      const idxB = Number.isFinite(ib) ? ib : 0;
+      if (mode === "pulse") {
+        const pa = pulseScores[idxA] ?? 0;
+        const pb = pulseScores[idxB] ?? 0;
+        if (pb !== pa) return pb - pa;
+        const ta = publishedAtMs[idxA] ?? 0;
+        const tb = publishedAtMs[idxB] ?? 0;
+        if (tb !== ta) return tb - ta;
+      }
+      return (orderIndex[idxA] ?? 0) - (orderIndex[idxB] ?? 0);
+    });
+    for (const el of sorted) container.appendChild(el);
+  };
+
   const applyNow = () => {
     if (getSearchScope() === "all") return;
     initIfNeeded();
@@ -1358,8 +1516,106 @@ function createListFilter(params: {
     const followOnlyEnabled = filters.onlyFollowed;
     const followSourcesOnlyEnabled = filters.onlyFollowedSources;
     const hideReadEnabled = filters.hideRead;
+    const stableOnlyEnabled = filters.onlyStableSources;
+    const dedupEnabled = filters.dedup;
+    const lens = filters.timeLens ?? "all";
+    const lensMs =
+      lens === "2h" ? UI.LENS_2H_MS : lens === "6h" ? UI.LENS_6H_MS : lens === "24h" ? UI.LENS_24H_MS : null;
     const followWords = followOnlyEnabled ? [...follows].map((w) => normalizeText(w)).filter(Boolean) : [];
     const blockWords = blocklist.size > 0 ? [...blocklist].map((w) => normalizeText(w)).filter(Boolean) : [];
+    const now = Date.now();
+
+    let dedupLeader: Map<string, number> | null = null;
+    if (dedupEnabled) {
+      dedupLeader = new Map<string, number>();
+      for (let i = 0; i < cards.length; i += 1) {
+        const id = cards[i].dataset.postId ?? "";
+        const sourceId = cards[i].dataset.sourceId ?? "";
+        const hay = haystacks[i];
+        const tags = tagsByCard[i] ?? [];
+        const sourceName = sourceNames[i] ?? "";
+        const category = categories[i] ?? "";
+        const published = publishedAtMs[i] ?? null;
+        const key = dedupKeys[i] ?? "";
+        const health = sourceHealth[i] ?? "";
+
+        const matchText = parsed.text.length === 0 ? true : parsed.text.every((t) => t && hay.includes(t));
+        const matchNotText =
+          parsed.notText.length === 0 ? true : parsed.notText.every((t) => t && !hay.includes(t));
+        const matchTags =
+          parsed.tags.length === 0 ? true : parsed.tags.every((t) => t && tags.some((x) => x.includes(t)));
+        const matchNotTags =
+          parsed.notTags.length === 0 ? true : parsed.notTags.every((t) => t && !tags.some((x) => x.includes(t)));
+        const matchSources =
+          parsed.sources.length === 0
+            ? true
+            : parsed.sources.every((t) => t && (sourceName.includes(t) || (sourceId ? normalizeText(sourceId).includes(t) : false)));
+        const matchNotSources =
+          parsed.notSources.length === 0
+            ? true
+            : parsed.notSources.every((t) => t && !(sourceName.includes(t) || (sourceId ? normalizeText(sourceId).includes(t) : false)));
+        const matchCats = parsed.categories.length === 0 ? true : parsed.categories.some((c) => c && category === c);
+        const matchNotCats =
+          parsed.notCategories.length === 0 ? true : parsed.notCategories.every((c) => c && category !== c);
+        const matchAfter = parsed.afterMs == null ? true : published != null ? published >= parsed.afterMs : false;
+        const matchBefore = parsed.beforeMs == null ? true : published != null ? published <= parsed.beforeMs : false;
+        const matchFollow = !followOnlyEnabled
+          ? true
+          : followWords.length === 0
+            ? false
+            : followWords.some((w) => w && hay.includes(w));
+        const matchFollowSources = !followSourcesOnlyEnabled ? true : sourceId ? followedSources.has(sourceId) : false;
+        const read = id ? readIds.has(id) : false;
+        const matchIsRead = parsed.isRead == null ? true : parsed.isRead ? read : !read;
+        const matchIsUnread = parsed.isUnread == null ? true : parsed.isUnread ? !read : read;
+        const matchIsFresh =
+          parsed.isFresh == null
+            ? true
+            : published != null
+              ? parsed.isFresh
+                ? now - published >= 0 && now - published < UI.FRESH_WINDOW_MS
+                : !(now - published >= 0 && now - published < UI.FRESH_WINDOW_MS)
+              : false;
+        const matchLens = lensMs == null ? true : published != null ? now - published <= lensMs : false;
+        const matchStable = !stableOnlyEnabled ? true : isStableHealth(health);
+
+        const blocked = blockWords.some((w) => w && hay.includes(w));
+        const hideByRead = hideReadEnabled && read;
+        const sourceEnabled = !sourceId || !disabledSources.has(sourceId);
+
+        const ok =
+          matchText &&
+          matchNotText &&
+          matchTags &&
+          matchNotTags &&
+          matchSources &&
+          matchNotSources &&
+          matchCats &&
+          matchNotCats &&
+          matchAfter &&
+          matchBefore &&
+          matchIsRead &&
+          matchIsUnread &&
+          matchIsFresh &&
+          matchLens &&
+          matchFollow &&
+          matchFollowSources &&
+          matchStable &&
+          !blocked &&
+          !hideByRead &&
+          sourceEnabled;
+        if (!ok) continue;
+        if (!key) continue;
+        const existing = dedupLeader.get(key);
+        if (existing == null) {
+          dedupLeader.set(key, i);
+          continue;
+        }
+        const currentPulse = pulseScores[i] ?? 0;
+        const existingPulse = pulseScores[existing] ?? 0;
+        if (currentPulse > existingPulse) dedupLeader.set(key, i);
+      }
+    }
 
     let shown = 0;
     let unreadShown = 0;
@@ -1371,6 +1627,8 @@ function createListFilter(params: {
       const sourceName = sourceNames[i] ?? "";
       const category = categories[i] ?? "";
       const published = publishedAtMs[i] ?? null;
+      const health = sourceHealth[i] ?? "";
+      const key = dedupKeys[i] ?? "";
 
       const matchText = parsed.text.length === 0 ? true : parsed.text.every((t) => t && hay.includes(t));
       const matchNotText = parsed.notText.length === 0 ? true : parsed.notText.every((t) => t && !hay.includes(t));
@@ -1402,9 +1660,11 @@ function createListFilter(params: {
           ? true
           : published != null
             ? parsed.isFresh
-              ? Date.now() - published >= 0 && Date.now() - published < UI.FRESH_WINDOW_MS
-              : !(Date.now() - published >= 0 && Date.now() - published < UI.FRESH_WINDOW_MS)
+              ? now - published >= 0 && now - published < UI.FRESH_WINDOW_MS
+              : !(now - published >= 0 && now - published < UI.FRESH_WINDOW_MS)
             : false;
+      const matchLens = lensMs == null ? true : published != null ? now - published <= lensMs : false;
+      const matchStable = !stableOnlyEnabled ? true : isStableHealth(health);
 
       const blocked = blockWords.some((w) => w && hay.includes(w));
       const hideByRead = hideReadEnabled && read;
@@ -1424,11 +1684,14 @@ function createListFilter(params: {
         matchIsRead &&
         matchIsUnread &&
         matchIsFresh &&
+        matchLens &&
         matchFollow &&
         matchFollowSources &&
+        matchStable &&
         !blocked &&
         !hideByRead &&
-        sourceEnabled;
+        sourceEnabled &&
+        (!dedupEnabled || !key || dedupLeader?.get(key) === i);
       const hidden = !ok;
       if (hiddenState[i] !== hidden) {
         cards[i].classList.toggle("hidden", hidden);
@@ -1448,6 +1711,7 @@ function createListFilter(params: {
       if (unreadCount.textContent !== next) unreadCount.textContent = next;
     }
     if (empty) empty.classList.toggle("hidden", shown > 0);
+    applySort();
   };
 
   let scheduled = false;
@@ -1485,7 +1749,11 @@ function createListFilter(params: {
       data: {
         onlyFollowed: Boolean(filters.onlyFollowed),
         onlyFollowedSources: Boolean(filters.onlyFollowedSources),
-        hideRead: Boolean(filters.hideRead)
+        hideRead: Boolean(filters.hideRead),
+        onlyStableSources: Boolean(filters.onlyStableSources),
+        dedup: Boolean(filters.dedup),
+        timeLens: filters.timeLens,
+        sortMode: filters.sortMode
       }
     });
   });
@@ -1495,6 +1763,10 @@ function createListFilter(params: {
     filters.onlyFollowed ||
     filters.onlyFollowedSources ||
     filters.hideRead ||
+    filters.onlyStableSources ||
+    filters.dedup ||
+    filters.timeLens !== "all" ||
+    filters.sortMode !== "latest" ||
     blocklist.size > 0 ||
     disabledSources.size > 0;
 
@@ -2911,6 +3183,10 @@ function wirePreferences(params: {
   const onlyFollowed = document.querySelector<HTMLInputElement>("#acg-only-followed");
   const onlyFollowedSources = document.querySelector<HTMLInputElement>("#acg-only-followed-sources");
   const hideRead = document.querySelector<HTMLInputElement>("#acg-hide-read");
+  const onlyStable = document.querySelector<HTMLInputElement>("#acg-only-stable-sources");
+  const dedup = document.querySelector<HTMLInputElement>("#acg-dedup-view");
+  const lensButtons = [...document.querySelectorAll<HTMLButtonElement>("button[data-time-lens]")];
+  const sortButtons = [...document.querySelectorAll<HTMLButtonElement>("button[data-sort-mode]")];
   const followInput = document.querySelector<HTMLInputElement>("#acg-follow-input");
   const followAdd = document.querySelector<HTMLButtonElement>("#acg-follow-add");
   const followList = document.querySelector<HTMLElement>("#acg-follow-list");
@@ -2922,6 +3198,8 @@ function wirePreferences(params: {
     !onlyFollowed ||
     !onlyFollowedSources ||
     !hideRead ||
+    !onlyStable ||
+    !dedup ||
     !followInput ||
     !followAdd ||
     !followList ||
@@ -2935,8 +3213,29 @@ function wirePreferences(params: {
   onlyFollowed.checked = filters.onlyFollowed;
   onlyFollowedSources.checked = filters.onlyFollowedSources;
   hideRead.checked = filters.hideRead;
+  onlyStable.checked = filters.onlyStableSources;
+  dedup.checked = filters.dedup;
 
-  const emit = () => document.dispatchEvent(new CustomEvent("acg:filters-changed"));
+  const syncSegments = () => {
+    for (const btn of lensButtons) {
+      const lens = normalizeTimeLens(btn.dataset.timeLens);
+      const active = lens === filters.timeLens;
+      btn.dataset.active = active ? "true" : "false";
+      btn.setAttribute("aria-checked", active ? "true" : "false");
+    }
+    for (const btn of sortButtons) {
+      const mode = normalizeSortMode(btn.dataset.sortMode);
+      const active = mode === filters.sortMode;
+      btn.dataset.active = active ? "true" : "false";
+      btn.setAttribute("aria-checked", active ? "true" : "false");
+    }
+  };
+
+  const emit = () => {
+    syncFilterDataset(filters);
+    syncSegments();
+    document.dispatchEvent(new CustomEvent("acg:filters-changed"));
+  };
 
   const saveAll = () => {
     saveWords(FOLLOWS_KEY, follows);
@@ -2971,6 +3270,7 @@ function wirePreferences(params: {
   };
 
   render();
+  syncSegments();
 
   onlyFollowed.addEventListener("change", () => {
     filters.onlyFollowed = onlyFollowed.checked;
@@ -2987,6 +3287,34 @@ function wirePreferences(params: {
     saveFilters(filters);
     emit();
   });
+  onlyStable.addEventListener("change", () => {
+    filters.onlyStableSources = onlyStable.checked;
+    saveFilters(filters);
+    emit();
+  });
+  dedup.addEventListener("change", () => {
+    filters.dedup = dedup.checked;
+    saveFilters(filters);
+    emit();
+  });
+
+  for (const btn of lensButtons) {
+    btn.addEventListener("click", () => {
+      const lens = normalizeTimeLens(btn.dataset.timeLens);
+      filters.timeLens = lens;
+      saveFilters(filters);
+      emit();
+    });
+  }
+
+  for (const btn of sortButtons) {
+    btn.addEventListener("click", () => {
+      const mode = normalizeSortMode(btn.dataset.sortMode);
+      filters.sortMode = mode;
+      saveFilters(filters);
+      emit();
+    });
+  }
 
   const addFollow = () => {
     const raw = followInput.value;
@@ -3551,6 +3879,7 @@ function main() {
   const follows = loadWords(FOLLOWS_KEY);
   const blocklist = loadWords(BLOCKLIST_KEY);
   const filters = loadFilters();
+  syncFilterDataset(filters);
   const disabledSources = loadIds(DISABLED_SOURCES_KEY);
   const followedSources = loadIds(FOLLOWED_SOURCES_KEY);
   wirePageTransitions();

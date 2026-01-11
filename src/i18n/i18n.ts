@@ -16,6 +16,13 @@ export type I18nKey =
   | "home.dailyBrief"
   | "home.spotlight"
   | "home.randomPick"
+  | "home.pulseTop"
+  | "home.timeLens"
+  | "home.sourceTrust"
+  | "home.pulseScore"
+  | "home.readTime"
+  | "home.dedup"
+  | "home.stableSources"
   | "home.copyBrief"
   | "home.copied"
   | "home.unread"
@@ -34,6 +41,16 @@ export type I18nKey =
   | "prefs.followOnly"
   | "prefs.followedSourcesOnly"
   | "prefs.hideRead"
+  | "prefs.onlyStableSources"
+  | "prefs.dedupView"
+  | "prefs.timeLens"
+  | "prefs.timeLensAll"
+  | "prefs.timeLens2h"
+  | "prefs.timeLens6h"
+  | "prefs.timeLens24h"
+  | "prefs.sort"
+  | "prefs.sortLatest"
+  | "prefs.sortPulse"
   | "prefs.followPlaceholder"
   | "prefs.followAdd"
   | "prefs.blockPlaceholder"
@@ -71,7 +88,11 @@ export type I18nKey =
   | "status.lastRun"
   | "status.sources"
   | "status.ok"
-  | "status.error";
+  | "status.error"
+  | "health.excellent"
+  | "health.good"
+  | "health.warn"
+  | "health.down";
 
 const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
   zh: {
@@ -87,6 +108,13 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "home.dailyBrief": "今日快报",
     "home.spotlight": "今日精选",
     "home.randomPick": "随机安利",
+    "home.pulseTop": "脉冲热榜",
+    "home.timeLens": "时间透镜",
+    "home.sourceTrust": "来源健康度",
+    "home.pulseScore": "热度",
+    "home.readTime": "阅读时长",
+    "home.dedup": "去重视图",
+    "home.stableSources": "稳定来源",
     "home.copyBrief": "复制快报",
     "home.copied": "已复制到剪贴板",
     "home.unread": "未读",
@@ -105,6 +133,16 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "prefs.followOnly": "只看关注",
     "prefs.followedSourcesOnly": "只看关注源",
     "prefs.hideRead": "隐藏已读",
+    "prefs.onlyStableSources": "只看稳定来源",
+    "prefs.dedupView": "去重视图",
+    "prefs.timeLens": "时间透镜",
+    "prefs.timeLensAll": "全部",
+    "prefs.timeLens2h": "近2小时",
+    "prefs.timeLens6h": "近6小时",
+    "prefs.timeLens24h": "近24小时",
+    "prefs.sort": "排序",
+    "prefs.sortLatest": "最新优先",
+    "prefs.sortPulse": "热度优先",
     "prefs.followPlaceholder": "关注关键词（作品/角色/声优）",
     "prefs.followAdd": "添加",
     "prefs.blockPlaceholder": "屏蔽关键词（不想看到的）",
@@ -142,7 +180,11 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "status.lastRun": "上次更新",
     "status.sources": "来源健康度",
     "status.ok": "正常",
-    "status.error": "异常"
+    "status.error": "异常",
+    "health.excellent": "极稳",
+    "health.good": "稳定",
+    "health.warn": "波动",
+    "health.down": "异常"
   },
   ja: {
     "site.name": "ACG Radar",
@@ -157,6 +199,13 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "home.dailyBrief": "今日のまとめ",
     "home.spotlight": "ピックアップ",
     "home.randomPick": "ランダム推薦",
+    "home.pulseTop": "パルスランキング",
+    "home.timeLens": "タイムレンズ",
+    "home.sourceTrust": "ソース信頼度",
+    "home.pulseScore": "熱度",
+    "home.readTime": "読了時間",
+    "home.dedup": "重複除外",
+    "home.stableSources": "安定ソース",
     "home.copyBrief": "コピー",
     "home.copied": "クリップボードにコピーしました",
     "home.unread": "未読",
@@ -175,6 +224,16 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "prefs.followOnly": "フォローのみ",
     "prefs.followedSourcesOnly": "フォローしたソースのみ",
     "prefs.hideRead": "既読を隠す",
+    "prefs.onlyStableSources": "安定ソースのみ",
+    "prefs.dedupView": "重複除外",
+    "prefs.timeLens": "タイムレンズ",
+    "prefs.timeLensAll": "すべて",
+    "prefs.timeLens2h": "2時間以内",
+    "prefs.timeLens6h": "6時間以内",
+    "prefs.timeLens24h": "24時間以内",
+    "prefs.sort": "並び替え",
+    "prefs.sortLatest": "新着優先",
+    "prefs.sortPulse": "熱度優先",
     "prefs.followPlaceholder": "フォロー（作品/声優など）",
     "prefs.followAdd": "追加",
     "prefs.blockPlaceholder": "除外キーワード",
@@ -212,7 +271,11 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "status.lastRun": "最終更新",
     "status.sources": "ソースの健康状態",
     "status.ok": "OK",
-    "status.error": "エラー"
+    "status.error": "エラー",
+    "health.excellent": "安定",
+    "health.good": "良好",
+    "health.warn": "不安定",
+    "health.down": "障害"
   }
 };
 

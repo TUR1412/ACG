@@ -22,6 +22,12 @@
 - `sourceId`: string（来源 ID）
 - `sourceName`: string
 - `sourceUrl`: string（来源 feed/list URL）
+- `pulseScore?`: number（派生热度分）
+- `readMinutes?`: number（派生阅读时长，分钟）
+- `dedupKey?`: string（派生去重键）
+- `duplicateCount?`: number（重复计数）
+- `sourceHealth?`: "excellent" | "good" | "warn" | "down"（来源健康度等级）
+- `sourceHealthScore?`: number（来源健康度评分）
 
 ## SearchPack（全站搜索包）
 

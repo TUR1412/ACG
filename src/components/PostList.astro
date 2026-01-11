@@ -11,8 +11,11 @@ type Props = {
 const { posts, lang } = Astro.props;
 ---
 
-<div class="acg-post-grid grid gap-3 sm:grid-cols-2 sm:gap-4 lg:gap-5 xl:grid-cols-3 2xl:grid-cols-4">
+<div
+  class="acg-post-grid grid gap-3 sm:grid-cols-2 sm:gap-4 lg:gap-5 xl:grid-cols-3 2xl:grid-cols-4"
+  data-post-grid
+>
   {posts.map((p, i) => (
-    <PostCard post={p} lang={lang} animateIndex={i < 24 ? i : undefined} />
+    <PostCard post={p} lang={lang} animateIndex={i < 24 ? i : undefined} index={i} />
   ))}
 </div>

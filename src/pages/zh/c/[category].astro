@@ -3,18 +3,22 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
 import PostList from "../../../components/PostList.astro";
 import PreferencesDrawer from "../../../components/PreferencesDrawer.astro";
 import Icon from "../../../components/Icon.astro";
-import { readGeneratedPosts } from "../../../lib/generated-data";
+import { readGeneratedPosts, readGeneratedStatus } from "../../../lib/generated-data";
 import { CATEGORIES, categoryLabel, type Category } from "../../../lib/categories";
 import { getCategoryTheme } from "../../../lib/category-theme";
 import { t } from "../../../i18n/i18n";
+import { applyDerivedMetrics, buildSourceHealthMap } from "../../../lib/metrics";
 
 export function getStaticPaths() {
   return CATEGORIES.map((category) => ({ params: { category } }));
 }
 
 const posts = await readGeneratedPosts();
+const status = await readGeneratedStatus();
+const healthMap = buildSourceHealthMap(status.sources ?? []);
+const enriched = applyDerivedMetrics(posts, healthMap);
 const category = Astro.params.category as Category;
-const inCategory = posts.filter((p) => p.category === category);
+const inCategory = enriched.filter((p) => p.category === category);
 const total = inCategory.length;
 const filtered = inCategory.slice(0, 60);
 const theme = getCategoryTheme(category);
@@ -101,6 +105,54 @@ const theme = getCategoryTheme(category);
           data-active="false"
         >
           {t("zh", "prefs.hideRead")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-toggle="only-stable"
+          data-active="false"
+        >
+          {t("zh", "prefs.onlyStableSources")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-toggle="dedup"
+          data-active="false"
+        >
+          {t("zh", "prefs.dedupView")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-lens="2h"
+          data-active="false"
+        >
+          {t("zh", "prefs.timeLens2h")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-lens="6h"
+          data-active="false"
+        >
+          {t("zh", "prefs.timeLens6h")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-lens="24h"
+          data-active="false"
+        >
+          {t("zh", "prefs.timeLens24h")}
+        </button>
+        <button
+          type="button"
+          class="acg-chip rounded-full px-3 py-1 text-xs font-semibold clickable"
+          data-quick-sort="pulse"
+          data-active="false"
+        >
+          {t("zh", "prefs.sortPulse")}
         </button>
         <button
           type="button"

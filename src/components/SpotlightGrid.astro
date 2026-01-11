@@ -33,6 +33,12 @@ const helpId = "acg-spotlight-help";
 const retryCoverLabel = lang === "ja" ? "画像を再試行" : "重试封面";
 const freshLabel = lang === "ja" ? "新着" : "NEW";
 const bookmarkLabel = t(lang, "nav.bookmarks");
+const healthLabels = {
+  excellent: t(lang, "health.excellent"),
+  good: t(lang, "health.good"),
+  warn: t(lang, "health.warn"),
+  down: t(lang, "health.down")
+} as const;
 
 function postHref(post: Post): string {
   return href(`/${lang}/p/${post.id}/`);
@@ -96,6 +102,8 @@ function whenLabel(post: Post): string {
             Number.isFinite(publishedAtMs) &&
             Date.now() - publishedAtMs >= 0 &&
             Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
+          const pulseScore = typeof post.pulseScore === "number" ? post.pulseScore : null;
+          const health = post.sourceHealth ?? null;
           return (
             <article
               class="acg-carousel-slide"
@@ -143,6 +151,12 @@ function whenLabel(post: Post): string {
                       <span>{freshLabel}</span>
                     </span>
                   ) : null}
+                  {pulseScore != null ? (
+                    <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-md">
+                      <Icon name="chart" size={14} />
+                      <span>{pulseScore}</span>
+                    </span>
+                  ) : null}
                   <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-white">
                     <span class:list={["size-1.5 rounded-full", theme.dot]}></span>
                     <span>{categoryLabel(lang, post.category)}</span>
@@ -157,7 +171,14 @@ function whenLabel(post: Post): string {
                     {postTitle(post)}
                   </div>
                   <div class="mt-2">
-                    <SourceBadge name={post.sourceName} tone="dark" dotClass={theme.dot} compact />
+                    <SourceBadge
+                      name={post.sourceName}
+                      tone="dark"
+                      dotClass={theme.dot}
+                      compact
+                      health={health ?? undefined}
+                      healthLabel={health ? healthLabels[health] : undefined}
+                    />
                   </div>
                 </div>
               </div>

@@ -25,3 +25,8 @@ export function formatRelativeHours(lang: Lang, iso: string): string | null {
   return lang === "ja" ? `${days}日前` : `${days}天前`;
 }
 
+export function formatReadMinutes(lang: Lang, minutes: number): string {
+  const value = Math.max(1, Math.round(minutes));
+  return lang === "ja" ? `${value}分` : `${value}分钟`;
+}
+

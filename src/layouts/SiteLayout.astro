@@ -74,13 +74,19 @@ const swHref = href("/sw.js");
     <meta name="twitter:description" content={pageDescription} />
     {resolvedOgImage ? <meta name="twitter:image" content={resolvedOgImage} /> : null}
     <link rel="alternate" type="application/rss+xml" title={lang === "ja" ? "ACGレーダー RSS" : "ACG Radar RSS"} href={withLang("/feed.xml")} />
-    <meta name="theme-color" content="#f2f4f8" />
+    <meta name="theme-color" content="#f6f7fb" />
     <link rel="manifest" href={manifestHref} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    />
     <script is:inline>
       (() => {
         const el = document.documentElement;
-        const LIGHT = "#f2f4f8";
-        const DARK = "#05070b";
+        const LIGHT = "#f6f7fb";
+        const DARK = "#04070f";
         let mode = "auto";
         try {
           const raw = localStorage.getItem("acg.theme.v1");
