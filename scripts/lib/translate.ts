@@ -1,4 +1,5 @@
 import { readJsonFile, sha1, writeJsonFile } from "./http-cache";
+import { createLogger } from "./logger";
 
 export type TranslateTarget = "zh" | "ja";
 
@@ -46,6 +47,7 @@ export async function translateTextCached(params: {
   persistCache: boolean;
 }): Promise<string> {
   const { text, target, cache, cachePath, timeoutMs, verbose, persistCache } = params;
+  const log = createLogger({ verbose });
   const input = text.trim();
   if (!input) return text;
 
@@ -66,7 +68,7 @@ export async function translateTextCached(params: {
       headers: { accept: "application/json,text/plain,*/*" }
     });
     if (!res.ok) {
-      if (verbose) console.log(`[TRANSLATE:ERR] ${target} HTTP ${res.status}`);
+      log.debug(`[TRANSLATE:ERR] ${target} HTTP ${res.status}`);
       return text;
     }
 
@@ -77,13 +79,10 @@ export async function translateTextCached(params: {
     if (persistCache) await writeTranslateCache(cachePath, cache);
     return out;
   } catch (err) {
-    if (verbose) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.log(`[TRANSLATE:ERR] ${target} ${message}`);
-    }
+    const message = err instanceof Error ? err.message : String(err);
+    log.debug(`[TRANSLATE:ERR] ${target} ${message}`);
     return text;
   } finally {
     clearTimeout(timer);
   }
 }
-

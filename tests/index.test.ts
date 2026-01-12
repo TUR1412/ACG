@@ -1,9 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { safeExternalHttpUrl } from "../src/lib/safe-url";
 import { parseQuery, tokenizeQuery } from "../src/lib/search/query";
 import { buildSourceHealthMap, computePulseScore, estimateReadMinutes, normalizeForDedup } from "../src/lib/metrics";
 import { makeErrorKey, sanitizeOneLine, sanitizeStack } from "../src/client/utils/monitoring";
+import { findChromePath } from "../scripts/lib/chrome-path";
 
 test("safeExternalHttpUrl: 仅允许 http(s)", () => {
   assert.equal(safeExternalHttpUrl("https://example.com/a?b=1"), "https://example.com/a?b=1");
@@ -93,3 +97,18 @@ test("makeErrorKey: 包含 type/message/stackHead", () => {
   assert.ok(key.includes("Error: boom"));
 });
 
+test("findChromePath: env LHCI_CHROME_PATH 优先", async () => {
+  const prev = process.env.LHCI_CHROME_PATH;
+  const file = join(tmpdir(), `acg-test-chrome-${Date.now()}-${Math.random().toString(16).slice(2)}.exe`);
+
+  await writeFile(file, "test");
+  process.env.LHCI_CHROME_PATH = file;
+
+  try {
+    assert.equal(findChromePath(), file);
+  } finally {
+    if (prev == null) delete process.env.LHCI_CHROME_PATH;
+    else process.env.LHCI_CHROME_PATH = prev;
+    await rm(file, { force: true });
+  }
+});

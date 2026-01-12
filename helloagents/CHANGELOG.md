@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+## [0.5.16] - 2026-01-13
+
+### 变更
+- Pipeline 日志一致性：`scripts/sync.ts`、`scripts/lib/http-cache.ts`、`scripts/lib/translate.ts` 的 verbose 日志统一切换到 `scripts/lib/logger.ts`（减少散落 `console.*`，CI/本地语义一致）。
+- 测试补强：新增 `scripts/lib/chrome-path.ts` 的环境变量优先级单测，避免本地 LHCI 路径探测回归。
+
 ## [0.5.15] - 2026-01-13
 
 ### 新增

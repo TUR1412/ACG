@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
+import { createLogger } from "./logger";
 
 export type HttpCacheEntry = {
   etag?: string;
@@ -145,6 +146,7 @@ export async function fetchTextWithCache(params: {
   retries?: number;
 }): Promise<FetchResult> {
   const { url, cache, cachePath, timeoutMs, verbose } = params;
+  const log = createLogger({ verbose });
   const force = params.force ?? false;
   const persistCache = params.persistCache ?? true;
   const retries = Math.min(2, Math.max(0, params.retries ?? 1));
@@ -168,7 +170,7 @@ export async function fetchTextWithCache(params: {
 
       const res = await fetch(url, { headers, signal: controller.signal, redirect: "follow" });
       if (res.status === 304) {
-        if (verbose) console.log(`[304] ${url}`);
+        log.debug(`[304] ${url}`);
         const next: HttpCacheEntry = {
           ...entry,
           etag: res.headers.get("etag") ?? entry.etag,
@@ -194,7 +196,7 @@ export async function fetchTextWithCache(params: {
         const retryable = shouldRetryStatus(res.status);
         if (retryable && attempt < retries) {
           const delay = Math.floor(260 * (attempt + 1) + Math.random() * 240);
-          if (verbose) console.log(`[RETRY] ${url} ${error} wait=${delay}ms`);
+          log.debug(`[RETRY] ${url} ${error} wait=${delay}ms`);
           waitMs += delay;
           await sleep(delay);
           continue;
@@ -224,7 +226,7 @@ export async function fetchTextWithCache(params: {
       const retryable = shouldRetryError(message);
       if (retryable && attempt < retries) {
         const delay = Math.floor(260 * (attempt + 1) + Math.random() * 240);
-        if (verbose) console.log(`[RETRY] ${url} ${message} wait=${delay}ms`);
+        log.debug(`[RETRY] ${url} ${message} wait=${delay}ms`);
         waitMs += delay;
         await sleep(delay);
         continue;

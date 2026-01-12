@@ -616,6 +616,7 @@ async function cacheCoverThumbnails(params: {
   verbose: boolean;
 }): Promise<{ attempted: number; cached: number; max: number }> {
   const { posts, root, verbose } = params;
+  const log = createLogger({ verbose });
 
   // 目标：让“首页/最近”尽量都能稳定显示封面（不依赖热链），同时控制体积与抓取压力。
   const max = parseNonNegativeInt(process.env.ACG_COVER_CACHE_MAX, 260);
@@ -690,17 +691,17 @@ async function cacheCoverThumbnails(params: {
         headers: attempt.kind === "direct" ? { ...commonHeaders, referer: post.url } : commonHeaders
       });
       if (!res.ok) {
-        if (verbose) console.log(`[COVER:CACHE:ERR] ${post.sourceId} ${post.id} ${attempt.kind} ${res.error}`);
+        log.debug(`[COVER:CACHE:ERR] ${post.sourceId} ${post.id} ${attempt.kind} ${res.error}`);
         continue;
       }
 
       const ext = contentTypeToExt(res.contentType);
       if (!ext) {
-        if (verbose) console.log(`[COVER:CACHE:SKIP] ${post.sourceId} ${post.id} non-image ${res.contentType ?? "-"}`);
+        log.debug(`[COVER:CACHE:SKIP] ${post.sourceId} ${post.id} non-image ${res.contentType ?? "-"}`);
         continue;
       }
       if (res.bytes.length <= 0 || res.bytes.length > maxBytes) {
-        if (verbose) console.log(`[COVER:CACHE:SKIP] ${post.sourceId} ${post.id} bytes=${res.bytes.length}`);
+        log.debug(`[COVER:CACHE:SKIP] ${post.sourceId} ${post.id} bytes=${res.bytes.length}`);
         continue;
       }
 
@@ -709,11 +710,11 @@ async function cacheCoverThumbnails(params: {
       post.coverOriginal = post.coverOriginal ?? original;
       post.cover = `/covers/${post.id}.${ext}`;
       cached += 1;
-      if (verbose) console.log(`[COVER:CACHE:OK] ${post.sourceId} ${post.id} -> ${post.cover}`);
+      log.debug(`[COVER:CACHE:OK] ${post.sourceId} ${post.id} -> ${post.cover}`);
       return;
     }
 
-    if (verbose) console.log(`[COVER:CACHE:MISS] ${post.sourceId} ${post.id}`);
+    log.debug(`[COVER:CACHE:MISS] ${post.sourceId} ${post.id}`);
   });
 
   return { attempted, cached, max };
@@ -729,8 +730,9 @@ async function enrichCoversFromArticlePages(params: {
   cachePath: string;
   verbose: boolean;
   persistCache: boolean;
-}): Promise<{ attempted: number; enriched: number; maxTotal: number }> {
+}): Promise<{ attempted: number; enriched: number; maxTotal: number }> {        
   const { posts, cache, cachePath, verbose, persistCache } = params;
+  const log = createLogger({ verbose });
 
   // 偏激进默认值：优先让“最新可见内容”尽量都有封面。
   // 仍可通过环境变量一键调回保守/关闭（设为 0）。
@@ -798,7 +800,7 @@ async function enrichCoversFromArticlePages(params: {
 
     // 如果当前“需要做的事情”都在 TTL 内刚失败过，就跳过，避免每小时轰炸同一页面。
     if ((wantCover ? coverRecentMiss : true) && (wantPreview ? previewRecentMiss : true)) {
-      if (verbose) console.log(`[ENRICH:SKIP] ${post.sourceId} ${post.url} recent-miss`);
+      log.debug(`[ENRICH:SKIP] ${post.sourceId} ${post.url} recent-miss`);
       continue;
     }
 
@@ -818,7 +820,7 @@ async function enrichCoversFromArticlePages(params: {
     });
 
     if (!res.ok) {
-      if (verbose) console.log(`[ENRICH:ERR] ${post.sourceId} ${post.url} ${res.error}`);
+      log.debug(`[ENRICH:ERR] ${post.sourceId} ${post.url} ${res.error}`);
       continue;
     }
 
@@ -826,7 +828,7 @@ async function enrichCoversFromArticlePages(params: {
     if (wantCover) {
       const cover = extractCoverFromHtml({ html: res.text, baseUrl: post.url });
       if (!cover) {
-        if (verbose) console.log(`[COVER:MISS] ${post.sourceId} ${post.url}`);
+        log.debug(`[COVER:MISS] ${post.sourceId} ${post.url}`);
         const next = cache[post.url] ?? {};
         next.coverMissAt = new Date().toISOString();
         cache[post.url] = next;
@@ -834,7 +836,7 @@ async function enrichCoversFromArticlePages(params: {
       } else {
         post.cover = cover;
         enriched += 1;
-        if (verbose) console.log(`[COVER:OK] ${post.sourceId} ${post.url}`);
+        log.debug(`[COVER:OK] ${post.sourceId} ${post.url}`);
 
         const next = cache[post.url] ?? {};
         next.coverOkAt = new Date().toISOString();
@@ -848,14 +850,14 @@ async function enrichCoversFromArticlePages(params: {
     if (wantPreview) {
       const preview = extractPreviewFromHtml({ html: res.text, baseUrl: post.url, maxLen: previewMaxLen });
       if (!preview) {
-        if (verbose) console.log(`[PREVIEW:MISS] ${post.sourceId} ${post.url}`);
+        log.debug(`[PREVIEW:MISS] ${post.sourceId} ${post.url}`);
         const next = cache[post.url] ?? {};
         next.previewMissAt = new Date().toISOString();
         cache[post.url] = next;
         if (persistCache) await writeJsonFile(cachePath, cache);
       } else {
         post.preview = stripAndTruncate(preview, previewMaxLen);
-        if (verbose) console.log(`[PREVIEW:OK] ${post.sourceId} ${post.url}`);
+        log.debug(`[PREVIEW:OK] ${post.sourceId} ${post.url}`);
 
         const next = cache[post.url] ?? {};
         next.previewOkAt = new Date().toISOString();
