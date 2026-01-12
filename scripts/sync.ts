@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 import { parseSourceToItems, SOURCES } from "./sources/index";
 import { parseArgs } from "./lib/args";
+import { createLogger } from "./lib/logger";
 import {
   cacheFilePath,
   fetchTextWithCache,
@@ -870,6 +871,7 @@ async function enrichCoversFromArticlePages(params: {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  const log = createLogger({ verbose: args.verbose });
   const root = process.cwd();
 
   const outPostsPath = resolve(root, "src", "data", "generated", "posts.json");
@@ -1021,7 +1023,7 @@ async function main() {
 
     sourceStatuses.push(status);
     allPosts.push(...posts);
-    console.log(
+    log.info(
       `[${status.ok ? "OK" : "ERR"}] ${source.id} items=${status.itemCount} http=${status.httpStatus ?? "-"} used=${status.used}`
     );
   }
@@ -1052,10 +1054,10 @@ async function main() {
       verbose: args.verbose,
       persistCache: true
     });
-    console.log(`[COVER] enriched=${enriched}/${attempted} max=${maxTotal}`);
+    log.info(`[COVER] enriched=${enriched}/${attempted} max=${maxTotal}`);
 
     const cacheRes = await cacheCoverThumbnails({ posts: pruned, root, verbose: args.verbose });
-    console.log(`[COVER:CACHE] cached=${cacheRes.cached}/${cacheRes.attempted} max=${cacheRes.max}`);
+    log.info(`[COVER:CACHE] cached=${cacheRes.cached}/${cacheRes.attempted} max=${cacheRes.max}`);
 
     // 语言转换：为 /zh 与 /ja 预生成标题/摘要翻译（避免用户在信息流里看不懂）
     const translateRes = await translatePosts({
@@ -1065,16 +1067,18 @@ async function main() {
       verbose: args.verbose,
       persistCache: true
     });
-    console.log(`[TRANSLATE] applied=${translateRes.translated}/${translateRes.attempted} maxPosts=${process.env.ACG_TRANSLATE_MAX_POSTS ?? "220"}`);
+    log.info(
+      `[TRANSLATE] applied=${translateRes.translated}/${translateRes.attempted} maxPosts=${process.env.ACG_TRANSLATE_MAX_POSTS ?? "220"}`
+    );
   } else {
-    console.log(`[COVER] skipped (dry-run)`);
+    log.info(`[COVER] skipped (dry-run)`);
   }
 
   const generatedAt = new Date().toISOString();
   const status: SyncStatus = { generatedAt, durationMs: Date.now() - start, sources: sourceStatuses };
 
   if (args.dryRun) {
-    console.log(`[DRY] posts=${pruned.length} sources=${sourceStatuses.length}`);
+    log.info(`[DRY] posts=${pruned.length} sources=${sourceStatuses.length}`);
     return;
   }
 
@@ -1211,11 +1215,12 @@ async function main() {
   const searchPack = buildSearchPack(pruned, generatedAt);
   await writeJsonMinified(outSearchPackPath, searchPack);
   await writePublicJsonAndGzip(publicSearchPackPath, searchPack);
-  console.log(`[DONE] posts=${pruned.length} generatedAt=${generatedAt}`);      
+  log.info(`[DONE] posts=${pruned.length} generatedAt=${generatedAt}`);
 }
 
 main().catch((err) => {
+  const log = createLogger();
   const message = err instanceof Error ? err.stack ?? err.message : String(err);
-  console.error(message);
+  log.error(message);
   process.exitCode = 1;
 });

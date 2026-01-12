@@ -67,8 +67,9 @@ ACG Radar 是一个“伪全栈”的 ACG 资讯雷达站点：数据由 GitHub 
 - **Layout Modes**：Grid/List 视图 + Comfort/Compact 密度，一键适配“扫读 / 浏览”
 - **PWA / 离线兜底**：弱网或离线时回退到最近缓存页面
 - **SEO Baseline**：生成 `robots.txt` + `sitemap.xml`，让搜索引擎与 Lighthouse SEO 审计更稳定（有生成数据时可增量覆盖更多页面）
+- **Friendly 404**：生成 `404.html`（语言选择 + 快捷入口），降低“空白页”与迷路成本
 - **Telemetry（可观测性）**：本地优先记录未捕获异常与性能线索（LCP/CLS/longtask），支持用户显式开启上报
-- **Atomic UI（Atoms）**：Chips 等基础 UI 原子组件化，统一样式与交互语义，便于持续迭代
+- **Atomic UI（Atomic Design）**：Atoms / Molecules / Organisms 分层，统一样式与交互语义，便于持续迭代
 
 ### 可观测性（Telemetry）
 

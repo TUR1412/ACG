@@ -1,5 +1,6 @@
 import { readdir, stat } from "node:fs/promises";
 import { resolve, posix } from "node:path";
+import { createLogger } from "./lib/logger";
 
 type Budget = {
   jsKb: number;
@@ -61,6 +62,7 @@ function isPostDetailHtml(rel: string): boolean {
 }
 
 async function main() {
+  const log = createLogger();
   const root = process.cwd();
   const dist = resolve(root, "dist");
 
@@ -109,22 +111,22 @@ async function main() {
     }
   }
 
-  console.log(`[BUDGET] dist=${bytesToMb(totalBytes)}MB files=${report.length}`);
-  console.log(`[BUDGET] js=${bytesToKb(jsBytes)}KB (limit ${budget.jsKb}KB)`);
-  console.log(`[BUDGET] css=${bytesToKb(cssBytes)}KB (limit ${budget.cssKb}KB)`);
-  console.log(
+  log.info(`[BUDGET] dist=${bytesToMb(totalBytes)}MB files=${report.length}`);
+  log.info(`[BUDGET] js=${bytesToKb(jsBytes)}KB (limit ${budget.jsKb}KB)`);
+  log.info(`[BUDGET] css=${bytesToKb(cssBytes)}KB (limit ${budget.cssKb}KB)`);
+  log.info(
     `[BUDGET] html/xml/json(core)=${bytesToKb(htmlCoreBytes)}KB (limit ${budget.htmlKb}KB), total=${bytesToKb(htmlBytes)}KB`
   );
-  console.log(
+  log.info(
     `[BUDGET] data.json=${bytesToKb(dataJsonBytes)}KB (limit ${budget.dataJsonKb > 0 ? `${budget.dataJsonKb}KB` : "off"})`
   );
-  console.log(`[BUDGET] data.gz=${bytesToKb(dataGzBytes)}KB (limit ${budget.dataGzKb}KB)`);
-  console.log(`[BUDGET] covers=${bytesToMb(coversBytes)}MB (limit ${budget.coversMb}MB)`);
+  log.info(`[BUDGET] data.gz=${bytesToKb(dataGzBytes)}KB (limit ${budget.dataGzKb}KB)`);
+  log.info(`[BUDGET] covers=${bytesToMb(coversBytes)}MB (limit ${budget.coversMb}MB)`);
 
   const top = report.slice(0, 12);
   if (top.length > 0) {
-    console.log("[BUDGET] top files:");
-    for (const f of top) console.log(`- ${f.rel} (${bytesToKb(f.size)}KB)`);
+    log.info("[BUDGET] top files:");
+    for (const f of top) log.info(`- ${f.rel} (${bytesToKb(f.size)}KB)`);
   }
 
   const failures: string[] = [];
@@ -146,15 +148,15 @@ async function main() {
   if (budget.totalMb > 0 && totalMb > budget.totalMb) failures.push(`dist 总体积超标: ${totalMb}MB > ${budget.totalMb}MB`);
 
   if (failures.length > 0) {
-    console.error(`[BUDGET] 失败：共 ${failures.length} 项`);
-    for (const f of failures) console.error(`- ${f}`);
+    const lines = [`[BUDGET] 失败：共 ${failures.length} 项`, ...failures.map((f) => `- ${f}`)];
+    log.error(lines.join("\n"));
     process.exitCode = 1;
   }
 }
 
 main().catch((err) => {
-  const msg = err instanceof Error ? err.stack ?? err.message : String(err);
-  console.error(msg);
+  const log = createLogger();
+  const msg = err instanceof Error ? err.stack ?? err.message : String(err);    
+  log.error(msg);
   process.exitCode = 1;
 });
-

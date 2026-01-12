@@ -1,0 +1,157 @@
+---
+import "../styles/global.css";
+import { href } from "../lib/href";
+import Icon from "../components/Icon.astro";
+
+const zhHome = href("/zh/");
+const jaHome = href("/ja/");
+const landing = href("/");
+const zhStatus = href("/zh/status/");
+const jaStatus = href("/ja/status/");
+const repo = "https://github.com/TUR1412/ACG";
+---
+
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>404 · ACG Radar</title>
+    <meta name="description" content="页面不存在 / ページが見つかりません" />
+    <meta name="theme-color" content="#f2f4f8" />
+    <link rel="icon" type="image/svg+xml" href={href("/favicon.svg")} />
+  </head>
+  <body>
+    <main class="mx-auto max-w-3xl px-4 py-12">
+      <div class="glass relative overflow-hidden rounded-2xl p-8">
+        <div class="pointer-events-none absolute inset-0">
+          <div class="absolute -left-28 -top-28 h-80 w-80 rounded-full bg-violet-500/10 blur-3xl"></div>
+          <div class="absolute -right-28 -bottom-28 h-80 w-80 rounded-full bg-sky-500/10 blur-3xl"></div>
+        </div>
+
+        <div class="relative flex items-center gap-3">
+          <span class="radar grid size-12 place-items-center shadow-sm">
+            <span class="text-[11px] font-bold text-white/90">ACG</span>
+          </span>
+          <div>
+            <h1 class="m-0 text-2xl font-semibold leading-tight tracking-tight text-slate-950 md:text-3xl">
+              404 Not Found
+            </h1>
+            <p class="mt-1 text-sm text-slate-700">页面不存在 / ページが見つかりません</p>
+          </div>
+        </div>
+
+        <p class="relative mt-4 text-xs text-slate-600">
+          URL：
+          <code id="acg-404-path" class="rounded-md bg-white/60 px-2 py-1 font-mono text-[11px] text-slate-700">
+            /
+          </code>
+        </p>
+
+        <div class="relative mt-6 grid gap-3 sm:grid-cols-2">
+          <a href={zhHome} class="glass clickable group relative overflow-hidden rounded-2xl p-5">
+            <div class="absolute inset-0 bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-sky-500/15"></div>
+            <div class="relative flex items-center justify-between">
+              <div>
+                <div class="text-sm font-semibold text-slate-950">中文</div>
+                <div class="mt-1 text-xs text-slate-600">返回首页</div>
+              </div>
+              <Icon
+                name="chevron-right"
+                size={18}
+                class="text-slate-700 transition-transform duration-200 group-hover:translate-x-0.5"
+              />
+            </div>
+          </a>
+          <a href={jaHome} class="glass clickable group relative overflow-hidden rounded-2xl p-5">
+            <div class="absolute inset-0 bg-gradient-to-br from-sky-500/20 via-cyan-500/10 to-emerald-500/12"></div>
+            <div class="relative flex items-center justify-between">
+              <div>
+                <div class="text-sm font-semibold text-slate-950">日本語</div>
+                <div class="mt-1 text-xs text-slate-600">ホームへ</div>
+              </div>
+              <Icon
+                name="chevron-right"
+                size={18}
+                class="text-slate-700 transition-transform duration-200 group-hover:translate-x-0.5"
+              />
+            </div>
+          </a>
+        </div>
+
+        <div class="relative mt-5 flex flex-wrap items-center gap-2 text-xs">
+          <a
+            href={zhStatus}
+            class="glass clickable inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-slate-700"
+            title="中文状态页"
+          >
+            <Icon name="info" size={14} class="text-slate-600" />
+            <span>中文状态页</span>
+          </a>
+          <a
+            href={jaStatus}
+            class="glass clickable inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-slate-700"
+            title="ステータス"
+          >
+            <Icon name="info" size={14} class="text-slate-600" />
+            <span>ステータス</span>
+          </a>
+          <a
+            href={landing}
+            class="glass clickable inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-slate-700"
+            title="语言选择 / 言語選択"
+          >
+            <Icon name="grid" size={14} class="text-slate-600" />
+            <span>语言选择 / 言語選択</span>
+          </a>
+          <a
+            href={repo}
+            class="glass clickable inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-slate-700"
+            target="_blank"
+            rel="noreferrer noopener"
+            title="GitHub"
+          >
+            <Icon name="external-link" size={14} class="text-slate-600" />
+            <span>GitHub</span>
+          </a>
+        </div>
+
+        <p class="relative mt-6 text-xs leading-relaxed text-slate-600">
+          如果你是通过收藏或外部链接来到这里，可能是页面路径变更；可返回首页或查看状态页。
+          <br />
+          ブックマーク/外部リンクから来た場合、URLが変更された可能性があります。ホームかステータスへ戻ってください。
+        </p>
+
+        <div class="relative mt-6">
+          <button
+            type="button"
+            id="acg-404-back"
+            class="glass clickable inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold text-slate-950"
+          >
+            <Icon name="arrow-left" size={18} class="text-slate-700" />
+            <span>返回 / 戻る</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <script is:inline>
+      (() => {
+        try {
+          const el = document.querySelector("#acg-404-path");
+          if (el) el.textContent = window.location?.pathname || "/";
+          document.querySelector("#acg-404-back")?.addEventListener("click", () => {
+            try {
+              history.back();
+            } catch {
+              // ignore
+            }
+          });
+        } catch {
+          // ignore
+        }
+      })();
+    </script>
+  </body>
+</html>
+

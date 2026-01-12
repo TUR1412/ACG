@@ -1,21 +1,5 @@
 ---
-import type { Post } from "../lib/types";
-import type { Lang } from "../i18n/i18n";
-import PostCard from "./PostCard.astro";
-
-type Props = {
-  posts: Post[];
-  lang: Lang;
-};
-
-const { posts, lang } = Astro.props;
+import OrganismPostList from "./organisms/PostList.astro";
 ---
 
-<div
-  class="acg-post-grid grid gap-3 sm:grid-cols-2 sm:gap-4 lg:gap-5 xl:grid-cols-3 2xl:grid-cols-4"
-  data-post-grid
->
-  {posts.map((p, i) => (
-    <PostCard post={p} lang={lang} animateIndex={i < 24 ? i : undefined} index={i} />
-  ))}
-</div>
+<OrganismPostList {...(Astro.props as any)} />

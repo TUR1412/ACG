@@ -13,11 +13,16 @@
 - 本地存储：localStorage key 集中在 `src/client/constants.ts`（`STORAGE_KEYS`），读写使用 `src/client/state/storage.ts` 做容错与序列化，避免异常阻断交互。
 - 目录约定：
   - `src/`：站点源码（页面/组件/客户端逻辑/共享库）
+  - `src/components/`：UI 组件库（Atomic Design）
+    - `atoms/`：原子组件
+    - `molecules/`：组合组件
+    - `organisms/`：页面级/模块级组件
+    - `*.astro`：兼容入口（薄封装，保持 import 路径稳定）
   - `scripts/`：同步与抓取管线（仅在 CI/本地执行，不下发到浏览器）
   - `public/`：静态资源（会原样进入站点根目录）
 
 ## 错误与日志
-- 同步脚本：以 `console.log` 输出关键路径结果；失败以 `process.exitCode=1` 终止。
+- 同步脚本：通过 `scripts/lib/logger.ts` 输出关键路径结果；在 GitHub Actions 中可附加 annotations/group，失败以 `process.exitCode=1` 终止。
 - 站点运行时：客户端错误尽量降级（不影响列表浏览），必要时以 Toast 提示用户。
 
 ## 隐私与埋点
@@ -34,4 +39,3 @@
 - 质量门禁：
   - `npm run validate`：校验生成数据的结构与关键不变量
   - `npm run budget`：校验 `dist/` 产物体积预算
-

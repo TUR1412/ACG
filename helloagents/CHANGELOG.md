@@ -5,6 +5,15 @@
 
 ## [Unreleased]
 
+## [0.5.14] - 2026-01-12
+
+### 新增
+- Friendly 404：新增 `src/pages/404.astro`，构建产出 `404.html`（语言选择 + 快捷入口 + 返回按钮）。
+- Pipeline Logger：新增 `scripts/lib/logger.ts`，并在关键脚本中接入（sync/validate/budget），在 GitHub Actions 下支持 annotations/group。
+
+### 变更
+- Atomic Design：`src/components/` 按 atoms/molecules/organisms 分层；同时保留 `src/components/*.astro` 兼容入口，保证既有 import 路径稳定（开闭原则：增量演进）。
+
 ## [0.5.13] - 2026-01-12
 
 ### 新增

@@ -28,9 +28,19 @@
 - 预期结果：偏好面板提供上报开关/endpoint，以及本地 telemetry 的事件数/体积展示与导出/清空入口。
 - 入口补强：提供 Telemetry Viewer 页面（`/zh/telemetry/` / `/ja/telemetry/`），用于本机可视化查看与筛选事件。
 
-### 需求: Atomic UI（Atoms）
+### 需求: Friendly 404
+场景：用户打开旧链接/错误链接时，需要明确的“下一步”引导，而不是空白页或难以理解的默认 404。
+- 预期结果：生成 `404.html`（语言选择 + 快捷入口），并尽量降低迷路成本。
+- 实现要点：通过 `src/pages/404.astro` 生成 `dist/404.html`；链接统一走 `href()` 适配 GitHub Pages base path。
+
+### 需求: Atomic UI（Atomic Design）
 场景：信息流页面的 chips/按钮标记重复，后续做视觉与交互升级时成本偏高、容易不一致。
-- 预期结果：提供 `src/components/atoms/` 目录作为原子组件库（例如 `Chip.astro` / `Segmented.astro` / `SegmentedItem.astro`），页面与更大组件通过组合 atoms 获得一致的结构与样式语义；采用增量替换策略，避免一次性重构带来风险。
+- 预期结果：按 Atomic Design 分层：
+  - `src/components/atoms/`：最小 UI 原子（Chip / Segmented / Icon 等）
+  - `src/components/molecules/`：组合型组件（例如徽章）
+  - `src/components/organisms/`：页面级/模块级组件（卡片、面板、网格等）
+  - `src/components/*.astro`：兼容入口（薄封装），用于保持既有 import 路径稳定，符合“开闭原则”的增量演进策略
+- 可维护性约束：采用增量替换策略，避免一次性大重构带来风险；优先通过“新增目录 + 兼容层”的方式迁移。
 - 可访问性约束：分段控件遵循 `role="radiogroup"` / `role="radio"` 语义，并支持 roving tabindex + 方向键切换（提升键盘路径体验）。
 
 ### 需求: 首页信号板与洞察
@@ -71,6 +81,9 @@
 - `src/styles/global.css`
 - `src/layouts/SiteLayout.astro`
 - `src/pages/*`
-- `src/components/*`
+- `src/components/atoms/*`
+- `src/components/molecules/*`
+- `src/components/organisms/*`
+- `src/components/*.astro`
 - `src/lib/feeds.ts`
 - `src/lib/source-config.ts`

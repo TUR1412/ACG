@@ -1,0 +1,16 @@
+---
+import type { Lang } from "../../i18n/i18n";
+import PreferencesPanel from "./PreferencesPanel.astro";
+
+type Props = {
+  lang: Lang;
+};
+
+const { lang } = Astro.props;
+---
+
+<div id="acg-prefs" class="acg-prefs-drawer" data-prefs-drawer>
+  <div class="acg-prefs-drawer-panel">
+    <PreferencesPanel lang={lang} closable />
+  </div>
+</div>

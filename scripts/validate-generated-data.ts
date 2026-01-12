@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { createLogger } from "./lib/logger";
 import { SOURCE_CONFIGS } from "../src/lib/source-config";
 import { isCategory } from "../src/lib/categories";
 
@@ -310,6 +311,7 @@ function validateStatusHistory(json: unknown, errors: ValidationError[]) {
 }
 
 async function main() {
+  const log = createLogger();
   const root = process.cwd();
 
   const srcPosts = resolve(root, "src", "data", "generated", "posts.json");     
@@ -337,8 +339,8 @@ async function main() {
   ];
   const missing = mustExist.filter((p) => !existsSync(p));
   if (missing.length > 0) {
-    console.error("[VALIDATE] 缺少生成文件：");
-    for (const p of missing) console.error(`- ${p}`);
+    const lines = ["[VALIDATE] 缺少生成文件：", ...missing.map((p) => `- ${p}`)];
+    log.error(lines.join("\n"));
     process.exitCode = 1;
     return;
   }
@@ -426,19 +428,22 @@ async function main() {
   }
 
   if (errors.length > 0) {
-    console.error(`[VALIDATE] 失败：共 ${errors.length} 个问题`);
-    for (const e of errors.slice(0, 60)) console.error(`- ${e.path}: ${e.message}`);
-    if (errors.length > 60) console.error(`- ... 以及其他 ${errors.length - 60} 个问题`);
+    const lines: string[] = [];
+    lines.push(`[VALIDATE] 失败：共 ${errors.length} 个问题`);
+    for (const e of errors.slice(0, 60)) lines.push(`- ${e.path}: ${e.message}`);
+    if (errors.length > 60) lines.push(`- ... 以及其他 ${errors.length - 60} 个问题`);
+    log.error(lines.join("\n"));
     process.exitCode = 1;
     return;
   }
 
   const count = Array.isArray(postsJson) ? postsJson.length : 0;
-  console.log(`[VALIDATE] OK posts=${count} sources=${SOURCE_CONFIGS.length}`);
+  log.info(`[VALIDATE] OK posts=${count} sources=${SOURCE_CONFIGS.length}`);
 }
 
 main().catch((err) => {
-  const msg = err instanceof Error ? err.stack ?? err.message : String(err);
-  console.error(msg);
+  const log = createLogger();
+  const msg = err instanceof Error ? err.stack ?? err.message : String(err);    
+  log.error(msg);
   process.exitCode = 1;
 });
