@@ -171,7 +171,11 @@ npm run budget
 npm run check
 npm test
 npm run build
+npm run lhci
 ```
+
+- Lighthouse CI（本地）：如本机未安装 Chrome/Edge，可先设置 `LHCI_CHROME_PATH`，或使用 `npm run lhci:local`（自动探测 `chromePath`，且在缺少 `dist/` 时自动 build）。<br/>
+  Lighthouse CI（ローカル）：Chrome/Edge が無い場合は `LHCI_CHROME_PATH` を設定、または `npm run lhci:local`（`chromePath` 自動検出 + `dist/` が無ければ build）を使用してください。
 
 ---
 
@@ -191,6 +195,7 @@ npm run build
 | `ACG_BUDGET_HTML_KB` | 入口页 HTML/XML/JSON(core) 预算门禁（KB）<br/>入口 HTML/XML/JSON(core) サイズ上限（KB） | `5000` |
 | `ACG_BUDGET_DATA_GZ_KB` | `dist/data/*.json.gz` 预算门禁（KB）<br/>`dist/data/*.json.gz` サイズ上限（KB） | `4500` |
 | `ACG_BUDGET_COVERS_MB` | `covers/` 预算门禁（MB）<br/>`covers/` サイズ上限（MB） | `160` |
+| `LHCI_CHROME_PATH` | 本地运行 Lighthouse CI 时指定 Chrome/Edge 可执行文件路径<br/>Lighthouse CI をローカル実行するための Chrome/Edge 実行ファイルのパス | - |
 
 </details>
 

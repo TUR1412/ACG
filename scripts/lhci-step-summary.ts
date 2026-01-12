@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { createLogger } from "./lib/logger";
 
 type LhciManifestEntry = {
   url: string;
@@ -44,17 +45,18 @@ async function safeReadJson<T>(path: string): Promise<T | null> {
 
 async function appendSummary(markdown: string): Promise<void> {
   const file = process.env.GITHUB_STEP_SUMMARY;
+  const log = createLogger();
   if (!file) {
-    console.log(markdown);
+    log.info(markdown);
     return;
   }
 
   try {
     const prev = await readFile(file, "utf-8").catch(() => "");
-    const next = prev ? `${prev.trimEnd()}\n\n${markdown}\n` : `${markdown}\n`;
+    const next = prev ? `${prev.trimEnd()}\n\n${markdown}\n` : `${markdown}\n`;  
     await writeFile(file, next, "utf-8");
   } catch {
-    console.log(markdown);
+    log.info(markdown);
   }
 }
 
@@ -131,4 +133,3 @@ async function main() {
 }
 
 void main();
-

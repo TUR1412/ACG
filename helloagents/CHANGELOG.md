@@ -5,6 +5,16 @@
 
 ## [Unreleased]
 
+## [0.5.15] - 2026-01-13
+
+### 新增
+- LHCI Local Runner：新增 `scripts/lhci-local.ts` 与 `scripts/lib/chrome-path.ts`，支持本地自动探测 Chrome/Edge 路径（或通过 `LHCI_CHROME_PATH` 显式指定）。
+- LHCI 快捷脚本：新增 `npm run lhci` / `npm run lhci:local`，便于本地与 CI 统一跑分入口。
+
+### 变更
+- Step Summary 输出：`scripts/step-summary.ts` 与 `scripts/lhci-step-summary.ts` 接入 `scripts/lib/logger.ts`，在 Actions/本地保持一致输出语义。
+- 文档：README 与知识库补充本地运行 Lighthouse CI 的前置条件与路径配置说明。
+
 ## [0.5.14] - 2026-01-12
 
 ### 新增

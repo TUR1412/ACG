@@ -33,8 +33,9 @@
 
 ## 测试与流程
 - 类型检查：`npm run check`（Astro Check + TS）
-- 单元测试：`npm test`（Node test runner + tsx，仅覆盖关键纯函数与安全边界）
+- 单元测试：`npm test`（Node test runner + tsx，仅覆盖关键纯函数与安全边界）    
 - 构建：`npm run build`
+- Lighthouse CI：`npm run lhci`（需要可用的 Chrome/Edge；本地可用 `LHCI_CHROME_PATH` 或 `npm run lhci:local` 自动探测）
 - 数据同步：`npm run sync`
 - 质量门禁：
   - `npm run validate`：校验生成数据的结构与关键不变量

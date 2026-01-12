@@ -23,6 +23,7 @@ ACG Radar 是一个“伪全栈”的 ACG 资讯雷达站点：通过 GitHub Act
 | 模块名称 | 职责 | 状态 | 文档 |
 |---------|------|------|------|
 | pipeline-sync | CI 同步抓取/清洗/产物生成 | ✅稳定 | modules/pipeline-sync.md |
+| pipeline-lighthouse | PR/手动触发跑分门禁（LHCI） | ✅稳定 | modules/pipeline-lighthouse.md |
 | web-ui | Astro 页面/组件与信号化展示层 | ✅稳定 | modules/web-ui.md |
 | client-app | 浏览器端交互增强、本地状态与筛选管线 | ✅稳定 | modules/client-app.md |
 | shared-lib | 类型、格式化与指标计算等共享库 | ✅稳定 | modules/shared-lib.md |
