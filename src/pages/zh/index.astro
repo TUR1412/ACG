@@ -26,7 +26,7 @@ const status = await readGeneratedStatus();
 const healthMap = buildSourceHealthMap(status.sources ?? []);
 const enriched = applyDerivedMetrics(posts, healthMap);
 
-const latest = enriched.slice(0, 60);
+const latest = enriched.slice(0, 42);
 
 const updatedAt = status.generatedAt ? formatDateTime("zh", status.generatedAt) : "-";
 

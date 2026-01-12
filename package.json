@@ -2,7 +2,7 @@
   "name": "acg",
   "private": true,
   "type": "module",
-  "version": "0.5.16",
+  "version": "0.5.17",
   "engines": {
     "node": ">=20"
   },

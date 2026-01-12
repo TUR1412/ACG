@@ -1,0 +1,43 @@
+---
+import type { Post } from "../../lib/types";
+import type { Lang } from "../../i18n/i18n";
+import { categoryLabel } from "../../lib/categories";
+import { getCategoryTheme } from "../../lib/category-theme";
+import { href } from "../../lib/href";
+import { formatDateTime, formatRelativeHours } from "../../lib/format";
+
+type Props = {
+  post: Post;
+  lang: Lang;
+};
+
+const { post, lang } = Astro.props;
+const detailHref = href(`/${lang}/p/${post.id}/`);
+const when = formatRelativeHours(lang, post.publishedAt) ?? formatDateTime(lang, post.publishedAt);
+const title = lang === "zh" ? post.titleZh ?? post.title : post.titleJa ?? post.title;
+const theme = getCategoryTheme(post.category);
+---
+
+<article class="glass rounded-2xl p-4">
+  <div class="flex items-start gap-3">
+    <span
+      class="inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-900/10 bg-white/55 px-2.5 py-1 text-[11px] font-semibold text-slate-700"
+      title={categoryLabel(lang, post.category)}
+    >
+      <span class:list={["size-1.5 rounded-full", theme.dot]}></span>
+      <span class="max-w-[16ch] truncate">{categoryLabel(lang, post.category)}</span>
+    </span>
+
+    <div class="min-w-0 flex-1">
+      <a href={detailHref} class="block text-sm font-semibold leading-snug text-slate-950 hover:underline line-clamp-2">
+        {title}
+      </a>
+      <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
+        <span class="whitespace-nowrap">{when}</span>
+        <span class="text-slate-400">·</span>
+        <span class="min-w-0 truncate">{post.sourceName}</span>
+      </div>
+    </div>
+  </div>
+</article>
+

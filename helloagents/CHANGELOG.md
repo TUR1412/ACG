@@ -5,6 +5,14 @@
 
 ## [Unreleased]
 
+## [0.5.17] - 2026-01-13
+
+### 变更
+- LHCI workflow：`Lighthouse CI` GitHub Actions 使用 `npm run lhci` 统一入口，减少重复配置漂移风险。
+- 测试补强：新增 `normalizeHttpUrl` 单测，覆盖追踪参数剥离与 hash 清理，提升数据去重/安全边界的可验证性。
+- 详情页体积优化：详情页“相关推荐”改为轻量列表（`PostList variant="compact"` + `PostLinkItem`），显著降低 HTML 体积并提升构建/加载性能。
+- 首屏体积控制：首页/分类页 SSR 默认渲染条目数 60 → 42，确保 `perf-budget` 的 HTML(core) 门禁在“有生成数据”场景下稳定通过。
+
 ## [0.5.16] - 2026-01-13
 
 ### 变更

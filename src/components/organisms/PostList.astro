@@ -2,20 +2,30 @@
 import type { Post } from "../../lib/types";
 import type { Lang } from "../../i18n/i18n";
 import PostCard from "./PostCard.astro";
+import PostLinkItem from "../molecules/PostLinkItem.astro";
 
 type Props = {
   posts: Post[];
   lang: Lang;
+  variant?: "card" | "compact";
 };
 
-const { posts, lang } = Astro.props;
+const { posts, lang, variant = "card" } = Astro.props;
 ---
 
-<div
-  class="acg-post-grid grid gap-3 sm:grid-cols-2 sm:gap-4 lg:gap-5 xl:grid-cols-3 2xl:grid-cols-4"
-  data-post-grid
->
-  {posts.map((p, i) => (
-    <PostCard post={p} lang={lang} animateIndex={i < 24 ? i : undefined} index={i} />
-  ))}
-</div>
+{variant === "compact" ? (
+  <div class="grid gap-3 sm:grid-cols-2 lg:gap-4 xl:grid-cols-3">
+    {posts.map((p) => (
+      <PostLinkItem post={p} lang={lang} />
+    ))}
+  </div>
+) : (
+  <div
+    class="acg-post-grid grid gap-3 sm:grid-cols-2 sm:gap-4 lg:gap-5 xl:grid-cols-3 2xl:grid-cols-4"
+    data-post-grid
+  >
+    {posts.map((p, i) => (
+      <PostCard post={p} lang={lang} animateIndex={i < 24 ? i : undefined} index={i} />
+    ))}
+  </div>
+)}

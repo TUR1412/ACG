@@ -8,6 +8,7 @@ import { parseQuery, tokenizeQuery } from "../src/lib/search/query";
 import { buildSourceHealthMap, computePulseScore, estimateReadMinutes, normalizeForDedup } from "../src/lib/metrics";
 import { makeErrorKey, sanitizeOneLine, sanitizeStack } from "../src/client/utils/monitoring";
 import { findChromePath } from "../scripts/lib/chrome-path";
+import { normalizeHttpUrl } from "../scripts/lib/http-cache";
 
 test("safeExternalHttpUrl: 仅允许 http(s)", () => {
   assert.equal(safeExternalHttpUrl("https://example.com/a?b=1"), "https://example.com/a?b=1");
@@ -111,4 +112,13 @@ test("findChromePath: env LHCI_CHROME_PATH 优先", async () => {
     else process.env.LHCI_CHROME_PATH = prev;
     await rm(file, { force: true });
   }
+});
+
+test("normalizeHttpUrl: 去 hash/追踪参数（保留必要 query）", () => {
+  assert.equal(normalizeHttpUrl(""), null);
+  assert.equal(normalizeHttpUrl("javascript:alert(1)"), null);
+  assert.equal(normalizeHttpUrl("data:text/plain,hi"), null);
+
+  assert.equal(normalizeHttpUrl("https://example.com/a?utm_source=abc&x=1#frag"), "https://example.com/a?x=1");
+  assert.equal(normalizeHttpUrl("https://example.com/a?fbclid=123&utm_medium=social"), "https://example.com/a");
 });

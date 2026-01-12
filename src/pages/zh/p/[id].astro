@@ -269,7 +269,7 @@ const safeSourceUrl = safeExternalHttpUrl(post.url);
         <div class="text-xs text-slate-600">同分类 · 标签相近 · 同来源优先</div>
       </div>
       <div class="mt-3">
-        <PostList posts={related ?? []} lang="zh" />
+        <PostList posts={related ?? []} lang="zh" variant="compact" />
       </div>
     </section>
   )}

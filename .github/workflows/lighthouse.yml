@@ -30,7 +30,7 @@ jobs:
         run: npm run build
 
       - name: Lighthouse CI (LHCI)
-        run: npx --yes @lhci/cli@0.15.1 autorun --config .lighthouserc.json
+        run: npm run lhci
 
       - name: Lighthouse Summary
         if: always()
