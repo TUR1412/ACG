@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+## [0.5.23] - 2026-01-13
+
+### 变更
+- LHCI 门禁收紧：将 `categories:*` 的断言阈值提升为 `minScore: 1` 且改为 `error`，确保 PR/CI 不再“带病绿灯”。
+- CI 数据校验：`CI` workflow 新增 `npm run validate`，更早发现生成数据异常与不一致问题。
+
 ## [0.5.22] - 2026-01-13
 
 ### 变更
