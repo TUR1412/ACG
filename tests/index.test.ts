@@ -3,22 +3,121 @@ import test from "node:test";
 import { rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createLogger } from "../scripts/lib/logger";
+import {
+  cacheFilePath,
+  fetchTextWithCache,
+  readJsonFile,
+  sha1,
+  stripAndTruncate,
+  writeJsonFile
+} from "../scripts/lib/http-cache";
 import { resolveCover, toWeservImageUrl } from "../src/lib/cover";
 import { categoryLabel, isCategory } from "../src/lib/categories";
 import { getCategoryTheme } from "../src/lib/category-theme";
 import { safeExternalHttpUrl } from "../src/lib/safe-url";
+import { renderOpml } from "../src/lib/opml";
+import { renderRss } from "../src/lib/rss";
+import { buildSearchIndex, normalizeSearchPackIndexRow } from "../src/lib/search/pack";
 import { parseQuery, tokenizeQuery } from "../src/lib/search/query";
 import {
+  applyDerivedMetrics,
   buildSourceHealthMap,
   computePulseScore,
+  computeTimeLensCounts,
   estimateReadMinutes,
-  normalizeForDedup
+  normalizeForDedup,
+  summarizeSourceHealth
 } from "../src/lib/metrics";
 import { formatReadMinutes, formatRelativeHours } from "../src/lib/format";
 import { href } from "../src/lib/href";
-import { makeErrorKey, sanitizeOneLine, sanitizeStack } from "../src/client/utils/monitoring";
+import { isJapanese } from "../src/client/utils/lang";
+import {
+  makeErrorKey,
+  sanitizeOneLine,
+  sanitizeStack,
+  wireGlobalErrorMonitoring,
+  wirePerfMonitoring
+} from "../src/client/utils/monitoring";
+import { STORAGE_KEYS } from "../src/client/constants";
+import { flushTelemetry, track, wireTelemetry } from "../src/client/utils/telemetry";
 import { findChromePath } from "../scripts/lib/chrome-path";
 import { normalizeHttpUrl } from "../scripts/lib/http-cache";
+
+function createMemoryStorage() {
+  const store = new Map<string, string>();
+  return {
+    getItem(key: string) {
+      return store.has(key) ? (store.get(key) ?? null) : null;
+    },
+    setItem(key: string, value: string) {
+      store.set(key, String(value));
+    },
+    removeItem(key: string) {
+      store.delete(key);
+    },
+    clear() {
+      store.clear();
+    }
+  };
+}
+
+function patchGlobal<T>(t: test.TestContext, key: string, value: T) {
+  const g = globalThis as any;
+  const prevDesc = Object.getOwnPropertyDescriptor(g, key);
+
+  Object.defineProperty(g, key, {
+    value,
+    configurable: true,
+    enumerable: true,
+    writable: true
+  });
+
+  t.after(() => {
+    if (prevDesc) Object.defineProperty(g, key, prevDesc);
+    else delete g[key];
+  });
+}
+
+function patchEnv(t: test.TestContext, key: string, value: string | undefined) {
+  const prev = process.env[key];
+  if (value == null) delete process.env[key];
+  else process.env[key] = value;
+  t.after(() => {
+    if (prev == null) delete process.env[key];
+    else process.env[key] = prev;
+  });
+}
+
+function patchConsole(t: test.TestContext) {
+  const logs: string[] = [];
+  const warns: string[] = [];
+  const errors: string[] = [];
+
+  const prevLog = console.log;
+  const prevWarn = console.warn;
+  const prevError = console.error;
+
+  console.log = (...args: unknown[]) => {
+    logs.push(args.map(String).join(" "));
+  };
+  console.warn = (...args: unknown[]) => {
+    warns.push(args.map(String).join(" "));
+  };
+  console.error = (...args: unknown[]) => {
+    errors.push(args.map(String).join(" "));
+  };
+
+  t.after(() => {
+    console.log = prevLog;
+    console.warn = prevWarn;
+    console.error = prevError;
+  });
+
+  return { logs, warns, errors };
+}
+
+type AnyListener = (...args: any[]) => unknown;
 
 test("safeExternalHttpUrl: 仅允许 http(s)", () => {
   assert.equal(safeExternalHttpUrl("https://example.com/a?b=1"), "https://example.com/a?b=1");
@@ -74,6 +173,28 @@ test("computePulseScore: 新内容分数更高", () => {
   assert.ok(recent > old);
 });
 
+test("computePulseScore: health/cover/summary 分支影响", () => {
+  const nowMs = Date.now();
+  const base = {
+    publishedAt: new Date(nowMs - 6 * 60 * 60 * 1000).toISOString(),
+    tags: ["a"],
+    cover: "",
+    summary: "x",
+    preview: ""
+  };
+
+  const ex = computePulseScore(base, "excellent", nowMs);
+  const good = computePulseScore(base, "good", nowMs);
+  const warn = computePulseScore(base, "warn", nowMs);
+  const down = computePulseScore(base, "down", nowMs);
+  const none = computePulseScore(base, null, nowMs);
+
+  assert.ok(ex > good);
+  assert.ok(good >= none);
+  assert.ok(warn >= down);
+  assert.ok(down < none);
+});
+
 test("buildSourceHealthMap: 生成健康度", () => {
   const map = buildSourceHealthMap([
     { id: "a", name: "A", kind: "rss", url: "x", ok: true, durationMs: 800, itemCount: 1, used: "fetched" },
@@ -81,6 +202,96 @@ test("buildSourceHealthMap: 生成健康度", () => {
   ]);
   assert.equal(map.get("a")?.level, "excellent");
   assert.equal(map.get("b")?.level, "down");
+});
+
+test("summarizeSourceHealth: 汇总 stable/excellent/warn/down", () => {
+  const sources = [
+    { id: "a", name: "A", kind: "rss", url: "x", ok: true, durationMs: 800, itemCount: 1, used: "fetched" },
+    {
+      id: "b",
+      name: "B",
+      kind: "rss",
+      url: "x",
+      ok: true,
+      durationMs: 2000,
+      itemCount: 1,
+      used: "fetched",
+      consecutiveFails: 2
+    },
+    { id: "c", name: "C", kind: "rss", url: "x", ok: false, durationMs: 500, itemCount: 0, used: "fetched" },
+    { id: "d", name: "D", kind: "rss", url: "x", ok: true, durationMs: 500, itemCount: 1, used: "fallback" }
+  ];
+  const map = buildSourceHealthMap(sources as any);
+  const sum = summarizeSourceHealth(sources as any, map);
+  assert.equal(sum.total, 4);
+  assert.equal(sum.excellent, 1);
+  assert.equal(sum.warn, 2);
+  assert.equal(sum.down, 1);
+  assert.equal(sum.stable, 1);
+});
+
+test("computeTimeLensCounts: 2h/6h/24h 统计边界", () => {
+  const nowMs = Date.now();
+  const iso = (ms: number) => new Date(ms).toISOString();
+  const posts = [
+    { publishedAt: iso(nowMs - 60 * 60 * 1000) },
+    { publishedAt: iso(nowMs - 5 * 60 * 60 * 1000) },
+    { publishedAt: iso(nowMs - 23 * 60 * 60 * 1000) },
+    { publishedAt: iso(nowMs - 30 * 60 * 60 * 1000) },
+    { publishedAt: iso(nowMs + 60 * 60 * 1000) },
+    { publishedAt: "invalid" }
+  ];
+  const counts = computeTimeLensCounts(posts as any, nowMs);
+  assert.equal(counts["2h"], 1);
+  assert.equal(counts["6h"], 2);
+  assert.equal(counts["24h"], 3);
+});
+
+test("applyDerivedMetrics: dedup/duplicateCount/sourceHealth/readMinutes", () => {
+  const nowMs = Date.now();
+  const prevNow = Date.now;
+  Date.now = () => nowMs;
+  try {
+    const posts = [
+      {
+        id: "1",
+        title: "Hello World",
+        titleZh: "你好世界",
+        url: "https://example.com/p/1",
+        publishedAt: new Date(nowMs - 60 * 60 * 1000).toISOString(),
+        category: "anime",
+        tags: ["foo"],
+        sourceId: "a",
+        sourceName: "A",
+        sourceUrl: "https://example.com/a"
+      },
+      {
+        id: "2",
+        title: "Hello World",
+        titleZh: "你好世界",
+        url: "https://example.com/p/2",
+        publishedAt: new Date(nowMs - 60 * 60 * 1000).toISOString(),
+        category: "anime",
+        tags: ["foo"],
+        sourceId: "a",
+        sourceName: "A",
+        sourceUrl: "https://example.com/a"
+      }
+    ];
+
+    const healthMap = new Map<string, any>([["a", { level: "excellent", score: 4 }]]);
+    const out = applyDerivedMetrics(posts as any, healthMap as any);
+
+    assert.equal(out.length, 2);
+    assert.equal(out[0].dedupKey, out[1].dedupKey);
+    assert.equal(out[0].duplicateCount, 2);
+    assert.equal(out[1].duplicateCount, 2);
+    assert.equal(out[0].sourceHealth, "excellent");
+    assert.ok(typeof out[0].readMinutes === "number" && out[0].readMinutes >= 1);
+    assert.ok(typeof out[0].pulseScore === "number" && out[0].pulseScore >= 0);
+  } finally {
+    Date.now = prevNow;
+  }
 });
 
 test("sanitizeOneLine: 归一空白并截断", () => {
@@ -202,4 +413,480 @@ test("formatRelativeHours/formatReadMinutes: 基础语义稳定", () => {
 
   assert.equal(formatReadMinutes("zh", 0.2), "1分钟");
   assert.equal(formatReadMinutes("ja", 2.2), "2分");
+});
+
+test("renderRss: 转义 + CDATA 清理 + ttl 下限", () => {
+  const xml = renderRss({
+    title: `A&B <x> "y" 'z'`,
+    siteUrl: "https://example.com/",
+    feedUrl: "https://example.com/feed.xml",
+    description: "desc",
+    language: "zh",
+    ttlMinutes: 1,
+    items: [
+      {
+        title: "hello",
+        url: "https://example.com/p/1",
+        publishedAt: "2026-01-13T00:00:00.000Z",
+        description: "hi ]]> ok"
+      }
+    ]
+  });
+
+  assert.ok(xml.includes("<ttl>5</ttl>"));
+  assert.ok(xml.includes("A&amp;B"));
+  assert.ok(xml.includes("&lt;x&gt;"));
+  assert.ok(xml.includes("&quot;y&quot;"));
+  assert.ok(xml.includes("&apos;z&apos;"));
+  assert.ok(xml.includes('<atom:link href="https://example.com/feed.xml"'));
+  assert.ok(xml.includes("<pubDate>"));
+  assert.ok(xml.includes("<description><![CDATA[hi ]]&gt; ok]]></description>"));
+});
+
+test("renderRss: pubDate/description/language 可省略（保持 XML 合法）", () => {
+  const xml = renderRss({
+    title: "t",
+    siteUrl: "https://example.com/",
+    feedUrl: "https://example.com/feed.xml",
+    ttlMinutes: NaN,
+    items: [{ title: "x", url: "https://example.com/x", publishedAt: "not-a-date" }]
+  } as any);
+
+  assert.ok(xml.includes("<ttl>60</ttl>"));
+  assert.ok(!xml.includes("<pubDate>"));
+  assert.ok(!xml.includes("<description>"));
+  assert.ok(!xml.includes("<language>"));
+});
+
+test("renderOpml: 分类分组 + 排序 + 属性转义", () => {
+  const xml = renderOpml({
+    title: 'ACG "Radar"&',
+    dateCreated: "2026-01-13",
+    ownerName: 'me & "you"',
+    language: "zh",
+    lang: "zh",
+    sources: [
+      {
+        id: "b",
+        name: 'B & "1"',
+        kind: "feed",
+        url: "https://example.com/rss.xml",
+        homepage: "https://example.com/",
+        category: "anime"
+      },
+      {
+        id: "a",
+        name: "A",
+        kind: "html",
+        url: "https://example.com/list",
+        category: "game"
+      }
+    ]
+  });
+
+  assert.ok(xml.includes('<opml version="2.0">'));
+  assert.ok(xml.includes("<title>ACG &quot;Radar&quot;&amp;</title>"));
+  assert.ok(xml.includes("<ownerName>me &amp; &quot;you&quot;</ownerName>"));
+  assert.ok(xml.includes('<outline text="动画"'));
+  assert.ok(xml.includes('<outline text="游戏联动"'));
+  assert.ok(xml.includes('type="rss"'));
+  assert.ok(xml.includes('xmlUrl="https://example.com/rss.xml"'));
+  assert.ok(xml.includes('htmlUrl="https://example.com/"'));
+  assert.ok(xml.includes('type="link"'));
+  assert.ok(xml.includes('htmlUrl="https://example.com/list"'));
+});
+
+test("buildSearchIndex/normalizeSearchPackIndexRow: 结构归一与边界", () => {
+  const posts = [
+    {
+      id: "1",
+      title: "Hello World",
+      titleZh: "你好世界",
+      url: "https://example.com/p/1",
+      publishedAt: "2026-01-13T00:00:00.000Z",
+      category: "anime",
+      tags: [" Foo ", "Bar"],
+      sourceId: "ANN",
+      sourceName: "Anime News Network",
+      sourceUrl: "https://example.com/ann"
+    }
+  ];
+
+  const index = buildSearchIndex(posts as any);
+  assert.equal(index.length, 1);
+  assert.equal(index[0].i, 0);
+  assert.deepEqual(index[0].tags, ["foo", "bar"]);
+  assert.equal(index[0].sourceIdNorm, "ann");
+  assert.equal(index[0].category, "anime");
+  assert.equal(typeof index[0].publishedAtMs, "number");
+  assert.ok(index[0].hay.includes("hello"));
+  assert.ok(index[0].hay.includes("你好世界"));
+
+  assert.equal(normalizeSearchPackIndexRow(null, 1), null);
+  assert.equal(normalizeSearchPackIndexRow({ i: 9, hay: "x" }, 1), null);
+  assert.equal(normalizeSearchPackIndexRow({ i: 0, hay: "" }, 1), null);
+
+  const row = normalizeSearchPackIndexRow(
+    {
+      i: 0,
+      hay: "Hello",
+      tags: ["A", 1, null, " "],
+      sourceName: "Anime News Network",
+      sourceId: "ANN",
+      category: "anime",
+      publishedAtMs: 123
+    },
+    10
+  );
+  assert.ok(row);
+  assert.deepEqual(row.tags, ["a"]);
+  assert.equal(row.sourceIdNorm, "ann");
+  assert.equal(row.publishedAtMs, 123);
+});
+
+test("scripts/lib/logger: debug/annotation/group 语义稳定", async (t) => {
+  patchEnv(t, "GITHUB_ACTIONS", "true");
+  patchEnv(t, "ACG_LOG_VERBOSE", undefined);
+  const { logs, warns, errors } = patchConsole(t);
+
+  const log = createLogger();
+  log.debug("debug:off");
+  log.warn("warn&1");
+  log.error("err&2");
+
+  const out = await log.group("Group Title", async () => {
+    log.info("inside");
+    return 42;
+  });
+
+  assert.equal(out, 42);
+  assert.ok(warns.some((x) => x.includes("warn&1")));
+  assert.ok(errors.some((x) => x.includes("err&2")));
+  assert.ok(logs.some((x) => x.includes("::warning::")));
+  assert.ok(logs.some((x) => x.includes("::error::")));
+  assert.ok(logs.some((x) => x.startsWith("::group::")));
+  assert.ok(logs.some((x) => x === "::endgroup::"));
+  assert.ok(!logs.some((x) => x.includes("debug:off")));
+});
+
+test("scripts/lib/http-cache: sha1/读写/截断/缓存路径", async () => {
+  assert.equal(sha1("abc"), "a9993e364706816aba3e25717850c26c9cd0d89d");
+  assert.equal(stripAndTruncate("  hello   world \n ok ", 12), "hello world…");
+  assert.equal(cacheFilePath("C:\\root"), "C:\\root\\.cache\\http.json");
+
+  const dir = join(tmpdir(), `acg-http-cache-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  const file = join(dir, "a.json");
+
+  const fallback = { ok: false };
+  assert.deepEqual(await readJsonFile(file, fallback), fallback);
+
+  await writeJsonFile(file, { ok: true, v: 1 });
+  assert.deepEqual(await readJsonFile(file, fallback), { ok: true, v: 1 });
+
+  await rm(dir, { recursive: true, force: true });
+});
+
+test("fetchTextWithCache: 200/304/重试 语义稳定", async (t) => {
+  const store = createMemoryStorage();
+  patchGlobal(t, "localStorage", store);
+
+  const dir = join(tmpdir(), `acg-fetch-cache-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  const cachePath = join(dir, "http.json");
+  const url = "https://example.com/a";
+  const cache: Record<string, any> = {};
+
+  let call = 0;
+  let seenIfNoneMatch = "";
+
+  const prevRandom = Math.random;
+  Math.random = () => 0;
+  t.after(() => {
+    Math.random = prevRandom;
+  });
+
+  patchGlobal(t, "fetch", async (_input: any, init?: any) => {
+    call += 1;
+    const headers = (init?.headers ?? {}) as Record<string, string>;
+    if (typeof headers["if-none-match"] === "string") seenIfNoneMatch = headers["if-none-match"];
+
+    if (call === 1) return new Response("oops", { status: 500 });
+    if (call === 2)
+      return new Response("hello", { status: 200, headers: { etag: "E2", "last-modified": "L2" } });
+    return new Response(null, { status: 304, headers: { etag: "E3" } });
+  });
+
+  const first = await fetchTextWithCache({
+    url,
+    cache,
+    cachePath,
+    timeoutMs: 8000,
+    verbose: false,
+    retries: 1,
+    persistCache: false
+  });
+  assert.ok(first.ok);
+  assert.equal(first.status, 200);
+  assert.equal(first.text, "hello");
+  assert.equal(first.attempts, 2);
+  assert.ok(first.waitMs >= 260);
+  assert.equal(cache[url]?.etag, "E2");
+
+  const second = await fetchTextWithCache({
+    url,
+    cache,
+    cachePath,
+    timeoutMs: 8000,
+    verbose: false,
+    retries: 0,
+    persistCache: false
+  });
+  assert.ok(second.ok);
+  assert.equal(second.status, 304);
+  assert.equal(second.fromCache, true);
+  assert.equal(seenIfNoneMatch, "E2");
+  assert.equal(cache[url]?.etag, "E3");
+  assert.ok(typeof cache[url]?.lastOkAt === "string" && cache[url].lastOkAt.includes("T"));
+
+  await rm(dir, { recursive: true, force: true });
+});
+
+test("telemetry: track/flushTelemetry/sendBeacon/fetch fallback", async (t) => {
+  const storage = createMemoryStorage();
+  patchGlobal(t, "localStorage", storage);
+
+  const dispatched: any[] = [];
+  patchGlobal(t, "document", {
+    hidden: false,
+    referrer: "https://ref.example.com/a?token=secret#x",
+    documentElement: { dataset: { acgDevice: "desktop" } },
+    addEventListener: () => {},
+    dispatchEvent: (ev: any) => dispatched.push(ev)
+  });
+
+  patchGlobal(t, "window", {
+    location: { pathname: "/zh/" },
+    addEventListener: () => {}
+  });
+
+  track({ type: "hello", data: { a: 1 } });
+  const raw1 = storage.getItem(STORAGE_KEYS.TELEMETRY);
+  assert.ok(raw1);
+  const store1 = JSON.parse(raw1);
+  assert.equal(store1.events.length, 1);
+  assert.equal(store1.events[0].path, "/zh/");
+  assert.equal(store1.events[0].lang, "zh");
+  assert.equal(store1.events[0].device, "desktop");
+
+  storage.setItem(STORAGE_KEYS.TELEMETRY_UPLOAD, "true");
+  storage.setItem(STORAGE_KEYS.TELEMETRY_ENDPOINT, "https://example.com/telemetry");
+
+  patchGlobal(t, "navigator", {
+    sendBeacon: () => true
+  });
+
+  await flushTelemetry();
+  const raw2 = storage.getItem(STORAGE_KEYS.TELEMETRY);
+  assert.ok(raw2);
+  const store2 = JSON.parse(raw2);
+  assert.equal(store2.events.length, 0);
+
+  track({ type: "hello2" });
+
+  patchGlobal(t, "navigator", {
+    sendBeacon: () => false
+  });
+  patchGlobal(t, "fetch", async () => new Response("ok", { status: 200 }));
+
+  await flushTelemetry();
+  const raw3 = storage.getItem(STORAGE_KEYS.TELEMETRY);
+  assert.ok(raw3);
+  const store3 = JSON.parse(raw3);
+  assert.equal(store3.events.length, 0);
+
+  assert.equal(dispatched.length, 0);
+});
+
+test("wireTelemetry: 注册监听 + 记录 page_view", async (t) => {
+  const storage = createMemoryStorage();
+  patchGlobal(t, "localStorage", storage);
+
+  const winListeners: Record<string, AnyListener[]> = {};
+  const docListeners: Record<string, AnyListener[]> = {};
+
+  patchGlobal(t, "window", {
+    location: { pathname: "/ja/" },
+    addEventListener: (type: string, fn: AnyListener) => {
+      (winListeners[type] ??= []).push(fn);
+    }
+  });
+
+  patchGlobal(t, "document", {
+    hidden: false,
+    referrer: "",
+    documentElement: { dataset: {} },
+    addEventListener: (type: string, fn: AnyListener) => {
+      (docListeners[type] ??= []).push(fn);
+    }
+  });
+
+  wireTelemetry();
+
+  const raw = storage.getItem(STORAGE_KEYS.TELEMETRY);
+  assert.ok(raw);
+  const store = JSON.parse(raw);
+  assert.ok(store.events.some((e: any) => e.type === "page_view"));
+  assert.ok(winListeners.pagehide?.length === 1);
+  assert.ok(docListeners.visibilitychange?.length === 1);
+});
+
+test("wireGlobalErrorMonitoring: error 事件会记录 telemetry 并 toast（中文）", async (t) => {
+  const storage = createMemoryStorage();
+  patchGlobal(t, "localStorage", storage);
+
+  const winListeners: Record<string, AnyListener[]> = {};
+  const toasts: any[] = [];
+
+  patchGlobal(t, "window", {
+    location: { pathname: "/zh/" },
+    addEventListener: (type: string, fn: AnyListener) => {
+      (winListeners[type] ??= []).push(fn);
+    }
+  });
+
+  patchGlobal(t, "document", {
+    hidden: false,
+    documentElement: { lang: "zh-CN", dataset: { acgPerf: "high", acgDevice: "desktop" } },
+    addEventListener: () => {},
+    dispatchEvent: (ev: any) => {
+      if (ev?.type === "acg:toast") toasts.push(ev.detail);
+      return true;
+    }
+  });
+
+  wireGlobalErrorMonitoring();
+  assert.ok(winListeners.error?.length === 1);
+
+  await winListeners.error[0]({
+    message: "boom https://example.com/a?token=secret#x",
+    error: new Error("boom"),
+    filename: "https://example.com/a?token=secret#x",
+    lineno: 1,
+    colno: 2
+  });
+
+  const raw = storage.getItem(STORAGE_KEYS.TELEMETRY);
+  assert.ok(raw);
+  const store = JSON.parse(raw);
+  assert.ok(store.events.some((e: any) => e.type === "error_global"));
+  assert.ok(toasts.some((x) => x.title === "发生了错误"));
+});
+
+test("wireGlobalErrorMonitoring: unhandledrejection 会记录 telemetry 并 toast", async (t) => {
+  const storage = createMemoryStorage();
+  patchGlobal(t, "localStorage", storage);
+
+  const winListeners: Record<string, AnyListener[]> = {};
+  const toasts: any[] = [];
+
+  patchGlobal(t, "window", {
+    location: { pathname: "/zh/" },
+    addEventListener: (type: string, fn: AnyListener) => {
+      (winListeners[type] ??= []).push(fn);
+    }
+  });
+
+  patchGlobal(t, "document", {
+    hidden: false,
+    documentElement: { lang: "zh-CN", dataset: { acgPerf: "high" } },
+    addEventListener: () => {},
+    dispatchEvent: (ev: any) => {
+      if (ev?.type === "acg:toast") toasts.push(ev.detail);
+      return true;
+    }
+  });
+
+  wireGlobalErrorMonitoring();
+  assert.ok(winListeners.unhandledrejection?.length === 1);
+
+  await winListeners.unhandledrejection[0]({
+    reason: new Error("network failed")
+  });
+
+  const raw = storage.getItem(STORAGE_KEYS.TELEMETRY);
+  assert.ok(raw);
+  const store = JSON.parse(raw);
+  assert.ok(store.events.some((e: any) => e.type === "error_unhandledrejection"));
+  assert.ok(toasts.some((x) => x.title === "操作未完成"));
+});
+
+test("wirePerfMonitoring: perf_vitals 会写入 telemetry（可在无浏览器环境下模拟）", async (t) => {
+  const storage = createMemoryStorage();
+  patchGlobal(t, "localStorage", storage);
+
+  const winListeners: Record<string, AnyListener[]> = {};
+  const docListeners: Record<string, AnyListener[]> = {};
+
+  patchGlobal(t, "window", {
+    location: { pathname: "/zh/" },
+    addEventListener: (type: string, fn: AnyListener) => {
+      (winListeners[type] ??= []).push(fn);
+    }
+  });
+
+  patchGlobal(t, "document", {
+    hidden: false,
+    documentElement: { lang: "zh-CN", dataset: { acgPerf: "high", acgDevice: "desktop" } },
+    addEventListener: (type: string, fn: AnyListener) => {
+      (docListeners[type] ??= []).push(fn);
+    }
+  });
+
+  patchGlobal(t, "performance", {
+    getEntriesByType: (type: string) => (type === "navigation" ? [{ responseStart: 123 }] : []),
+    now: () => 1000
+  });
+
+  const observers: any[] = [];
+  class PerformanceObserverMock {
+    cb: AnyListener;
+    opts: any;
+    constructor(cb: AnyListener) {
+      this.cb = cb;
+      observers.push(this);
+    }
+    observe(opts: any) {
+      this.opts = opts;
+    }
+  }
+  patchGlobal(t, "PerformanceObserver", PerformanceObserverMock as any);
+
+  wirePerfMonitoring();
+
+  const lcp = observers.find((o) => o.opts?.type === "largest-contentful-paint");
+  const cls = observers.find((o) => o.opts?.type === "layout-shift");
+  const longtask = observers.find((o) => o.opts?.type === "longtask");
+  const event = observers.find((o) => o.opts?.type === "event");
+
+  lcp?.cb({ getEntries: () => [{ startTime: 456 }] });
+  cls?.cb({ getEntries: () => [{ value: 0.12, hadRecentInput: false }] });
+  longtask?.cb({ getEntries: () => [{ duration: 60 }] });
+  event?.cb({ getEntries: () => [{ interactionId: 1, duration: 123, name: "click" }] });
+
+  assert.ok(winListeners.pagehide?.length === 1);
+  await winListeners.pagehide[0]();
+
+  const raw = storage.getItem(STORAGE_KEYS.TELEMETRY);
+  assert.ok(raw);
+  const store = JSON.parse(raw);
+  const vitals = store.events.find((e: any) => e.type === "perf_vitals");
+  assert.ok(vitals);
+  assert.equal(vitals.data?.ttfbMs, 123);
+  assert.equal(vitals.data?.lcpMs, 456);
+  assert.equal(vitals.data?.inpMs, 123);
+  assert.equal(vitals.data?.longTaskCount, 1);
+});
+
+test("isJapanese: 语言判定稳定", (t) => {
+  patchGlobal(t, "document", { documentElement: { lang: "ja-JP" } });
+  assert.equal(isJapanese(), true);
 });

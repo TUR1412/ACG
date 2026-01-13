@@ -5,6 +5,16 @@
 
 ## [Unreleased]
 
+## [0.5.31] - 2026-01-13
+
+### 新增
+
+- 覆盖率补强：单测补齐 RSS/OPML、Search Pack、metrics 以及客户端 telemetry/monitoring 的关键分支（通过 Node 下的最小浏览器 stub 进行验证）。
+
+### 变更
+
+- 覆盖率门禁：将 `test:coverage` 的阈值提升为 lines/statements ≥ 85%、functions ≥ 89%、branches ≥ 60%（基于当前用例与 c8 summary 校验）。
+
 ## [0.5.30] - 2026-01-13
 
 ### 新增
