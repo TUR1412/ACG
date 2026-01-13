@@ -4,6 +4,8 @@
 
 站点核心数据由同步脚本生成，为纯 JSON 文件，供 Astro 构建与浏览器运行时使用。
 
+读取方式：Node 环境（构建/SSR/测试）通过 `src/lib/generated-data.ts` 从 `src/data/generated/` 读取；路径基于调用时 `process.cwd()`（通常应为项目根目录），以便在测试中可临时切换到隔离的工作目录进行验证。
+
 ## Post（资讯条目）
 
 字段（与 `src/lib/types.ts` 保持一致）：
