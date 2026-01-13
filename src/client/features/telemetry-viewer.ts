@@ -133,7 +133,8 @@ function renderEvent(ev: ViewEvent): HTMLElement {
   left.className = "flex min-w-0 flex-wrap items-center gap-2";
 
   const chip = document.createElement("span");
-  chip.className = "acg-chip inline-flex max-w-[28ch] items-center truncate rounded-full px-3 py-1 text-[11px] font-semibold";
+  chip.className =
+    "acg-chip inline-flex max-w-[28ch] items-center truncate rounded-full px-3 py-1 text-[11px] font-semibold";
   chip.textContent = ev.type;
   left.appendChild(chip);
 
@@ -174,7 +175,8 @@ function renderEvent(ev: ViewEvent): HTMLElement {
   body.appendChild(actions);
 
   const pre = document.createElement("pre");
-  pre.className = "overflow-x-auto rounded-xl border border-slate-900/10 bg-white/60 p-3 text-[11px] leading-relaxed text-slate-900";
+  pre.className =
+    "overflow-x-auto rounded-xl border border-slate-900/10 bg-white/60 p-3 text-[11px] leading-relaxed text-slate-900";
   pre.textContent = (() => {
     try {
       return JSON.stringify(ev.raw, null, 2);
@@ -190,7 +192,13 @@ function renderEvent(ev: ViewEvent): HTMLElement {
     const text = pre.textContent ?? "";
     void copyToClipboard(text).then((ok) => {
       emitToast({
-        title: ok ? (isJapaneseUi() ? "コピーしました" : "已复制") : isJapaneseUi() ? "コピー失敗" : "复制失败",
+        title: ok
+          ? isJapaneseUi()
+            ? "コピーしました"
+            : "已复制"
+          : isJapaneseUi()
+            ? "コピー失敗"
+            : "复制失败",
         desc: ok ? ev.type : undefined,
         variant: ok ? "success" : "error",
         timeoutMs: ok ? 1400 : 1600

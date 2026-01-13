@@ -19,8 +19,7 @@ export type HttpCacheEntry = {
 
 export type HttpCache = Record<string, HttpCacheEntry>;
 
-export const DEFAULT_USER_AGENT =
-  "Mozilla/5.0 (ACG-FeedBot/0.1; +https://github.com/TUR1412/ACG)";
+export const DEFAULT_USER_AGENT = "Mozilla/5.0 (ACG-FeedBot/0.1; +https://github.com/TUR1412/ACG)";
 
 export async function readJsonFile<T>(filePath: string, fallback: T): Promise<T> {
   try {
@@ -44,15 +43,7 @@ export function sha1(input: string): string {
 function stripTrackingParams(parsed: URL) {
   // 数据质量：剥离常见追踪参数，减少重复条目与噪声。
   // 原则：保守删除（仅移除“明显不影响内容定位”的参数）。
-  const trackingKeys = new Set([
-    "fbclid",
-    "gclid",
-    "igshid",
-    "mc_cid",
-    "mc_eid",
-    "mkt_tok",
-    "yclid"
-  ]);
+  const trackingKeys = new Set(["fbclid", "gclid", "igshid", "mc_cid", "mc_eid", "mkt_tok", "yclid"]);
   for (const key of [...parsed.searchParams.keys()]) {
     const k = key.toLowerCase();
     if (k.startsWith("utm_") || trackingKeys.has(k)) parsed.searchParams.delete(key);
@@ -88,7 +79,7 @@ export function normalizeUrl(url: string): string {
   }
 }
 
-export function stripAndTruncate(text: string, maxLen: number): string {        
+export function stripAndTruncate(text: string, maxLen: number): string {
   const compact = text.replace(/\s+/g, " ").trim();
   if (compact.length <= maxLen) return compact;
   return compact.slice(0, Math.max(0, maxLen - 1)).trimEnd() + "…";

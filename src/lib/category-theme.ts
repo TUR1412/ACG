@@ -37,4 +37,3 @@ export const CATEGORY_THEME: Record<Category, CategoryTheme> = {
 export function getCategoryTheme(category: Category): CategoryTheme {
   return CATEGORY_THEME[category];
 }
-

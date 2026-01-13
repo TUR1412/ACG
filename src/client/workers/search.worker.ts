@@ -1,5 +1,9 @@
 import { normalizeText, parseQuery } from "../../lib/search/query";
-import { buildSearchIndex, normalizeSearchPackIndexRow, type SearchPackIndexRow } from "../../lib/search/pack";
+import {
+  buildSearchIndex,
+  normalizeSearchPackIndexRow,
+  type SearchPackIndexRow
+} from "../../lib/search/pack";
 import type { Post } from "../../lib/types";
 
 type BookmarkCategory = "anime" | "game" | "goods" | "seiyuu";
@@ -131,7 +135,7 @@ function normalizePost(value: unknown): BookmarkPost | null {
 
 function supportsGzipDecompression(): boolean {
   try {
-    return typeof (globalThis as any).DecompressionStream === "function";       
+    return typeof (globalThis as any).DecompressionStream === "function";
   } catch {
     return false;
   }
@@ -146,7 +150,11 @@ async function gunzipToText(res: Response): Promise<string> {
   return await new Response(stream).text();
 }
 
-async function fetchWithTimeout(url: string, init: RequestInit | undefined, timeoutMs: number): Promise<Response> {
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit | undefined,
+  timeoutMs: number
+): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), Math.max(0, timeoutMs));
   try {
@@ -293,7 +301,9 @@ async function ensureDataLoaded(): Promise<void> {
     }
 
     if (v === 1 && Array.isArray((cached as any).posts)) {
-      const list = ((cached as any).posts as unknown[]).map(normalizePost).filter((x): x is BookmarkPost => Boolean(x));
+      const list = ((cached as any).posts as unknown[])
+        .map(normalizePost)
+        .filter((x): x is BookmarkPost => Boolean(x));
       if (list.length > 0) {
         posts = list;
         indexed = buildSearchIndex(list);
@@ -310,7 +320,9 @@ async function ensureDataLoaded(): Promise<void> {
       const pack = json as any;
       const v = pack && typeof pack === "object" ? pack.v : 0;
       if ((v === 1 || v === 2) && Array.isArray(pack.posts) && Array.isArray(pack.index)) {
-        const list = (pack.posts as unknown[]).map(normalizePost).filter((x): x is BookmarkPost => Boolean(x));
+        const list = (pack.posts as unknown[])
+          .map(normalizePost)
+          .filter((x): x is BookmarkPost => Boolean(x));
         const idx = pack.index
           .map((x: unknown) => normalizeSearchPackIndexRow(x, list.length))
           .filter((x: IndexedPost | null): x is IndexedPost => Boolean(x));
@@ -397,23 +409,50 @@ async function runSearch(params: { requestId: number; q: string; freshWindowMs: 
     const read = id ? state.readIds.has(id) : false;
 
     const matchText = parsed.text.length === 0 ? true : parsed.text.every((t) => t && row.hay.includes(t));
-    const matchNotText = parsed.notText.length === 0 ? true : parsed.notText.every((t) => t && !row.hay.includes(t));
-    const matchTags = parsed.tags.length === 0 ? true : parsed.tags.every((t) => t && row.tags.some((x) => x.includes(t)));
-    const matchNotTags = parsed.notTags.length === 0 ? true : parsed.notTags.every((t) => t && !row.tags.some((x) => x.includes(t)));
+    const matchNotText =
+      parsed.notText.length === 0 ? true : parsed.notText.every((t) => t && !row.hay.includes(t));
+    const matchTags =
+      parsed.tags.length === 0 ? true : parsed.tags.every((t) => t && row.tags.some((x) => x.includes(t)));
+    const matchNotTags =
+      parsed.notTags.length === 0
+        ? true
+        : parsed.notTags.every((t) => t && !row.tags.some((x) => x.includes(t)));
     const matchSources =
       parsed.sources.length === 0
         ? true
-        : parsed.sources.every((t) => t && (row.sourceName.includes(t) || (row.sourceIdNorm ? row.sourceIdNorm.includes(t) : false)));
+        : parsed.sources.every(
+            (t) =>
+              t && (row.sourceName.includes(t) || (row.sourceIdNorm ? row.sourceIdNorm.includes(t) : false))
+          );
     const matchNotSources =
       parsed.notSources.length === 0
         ? true
-        : parsed.notSources.every((t) => t && !(row.sourceName.includes(t) || (row.sourceIdNorm ? row.sourceIdNorm.includes(t) : false)));
-    const matchCats = parsed.categories.length === 0 ? true : parsed.categories.some((c) => c && row.category === c);
-    const matchNotCats = parsed.notCategories.length === 0 ? true : parsed.notCategories.every((c) => c && row.category !== c);
-    const matchAfter = parsed.afterMs == null ? true : row.publishedAtMs != null ? row.publishedAtMs >= parsed.afterMs : false;
-    const matchBefore = parsed.beforeMs == null ? true : row.publishedAtMs != null ? row.publishedAtMs <= parsed.beforeMs : false;
-    const matchFollow = !followOnlyEnabled ? true : followWords.length === 0 ? false : followWords.some((w) => w && row.hay.includes(w));
-    const matchFollowSources = !followSourcesOnlyEnabled ? true : row.sourceId ? state.followedSources.has(row.sourceId) : false;
+        : parsed.notSources.every(
+            (t) =>
+              t && !(row.sourceName.includes(t) || (row.sourceIdNorm ? row.sourceIdNorm.includes(t) : false))
+          );
+    const matchCats =
+      parsed.categories.length === 0 ? true : parsed.categories.some((c) => c && row.category === c);
+    const matchNotCats =
+      parsed.notCategories.length === 0 ? true : parsed.notCategories.every((c) => c && row.category !== c);
+    const matchAfter =
+      parsed.afterMs == null ? true : row.publishedAtMs != null ? row.publishedAtMs >= parsed.afterMs : false;
+    const matchBefore =
+      parsed.beforeMs == null
+        ? true
+        : row.publishedAtMs != null
+          ? row.publishedAtMs <= parsed.beforeMs
+          : false;
+    const matchFollow = !followOnlyEnabled
+      ? true
+      : followWords.length === 0
+        ? false
+        : followWords.some((w) => w && row.hay.includes(w));
+    const matchFollowSources = !followSourcesOnlyEnabled
+      ? true
+      : row.sourceId
+        ? state.followedSources.has(row.sourceId)
+        : false;
     const matchIsRead = parsed.isRead == null ? true : parsed.isRead ? read : !read;
     const matchIsUnread = parsed.isUnread == null ? true : parsed.isUnread ? !read : read;
 

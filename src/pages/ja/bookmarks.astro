@@ -40,15 +40,15 @@ import Icon from "../../components/Icon.astro";
     <p class="mt-3 text-xs text-slate-600">{t("ja", "bookmarks.hint")}</p>
     <p id="acg-bookmarks-message" class="mt-2 hidden text-xs text-slate-700"></p>
     <noscript>
-      <p class="mt-2 text-sm text-slate-700">このページは JavaScript が必要です（ローカルのブックマークを読むため）。</p>
+      <p class="mt-2 text-sm text-slate-700">
+        このページは JavaScript が必要です（ローカルのブックマークを読むため）。
+      </p>
     </noscript>
   </div>
 
   <div class="mt-6" id="acg-bookmarks" hidden>
-    <div
-      id="acg-bookmarks-grid"
-      class="grid gap-4 sm:grid-cols-2 lg:gap-5 xl:grid-cols-3 2xl:grid-cols-4"
-    ></div>
+    <div id="acg-bookmarks-grid" class="grid gap-4 sm:grid-cols-2 lg:gap-5 xl:grid-cols-3 2xl:grid-cols-4">
+    </div>
   </div>
 
   <div class="mt-6 glass shine rounded-2xl p-8" id="acg-bookmarks-empty">
@@ -58,9 +58,14 @@ import Icon from "../../components/Icon.astro";
       </div>
       <div>
         <p class="m-0 text-sm font-medium text-slate-950">{t("ja", "bookmarks.empty")}</p>
-        <p class="mt-2 text-xs leading-relaxed text-slate-600">気になる記事は右上のブックマークボタンで保存できます。</p>
+        <p class="mt-2 text-xs leading-relaxed text-slate-600">
+          気になる記事は右上のブックマークボタンで保存できます。
+        </p>
       </div>
-      <a class="rounded-xl bg-slate-950 px-4 py-2 text-xs font-medium text-white clickable" href={href("/ja/")}>
+      <a
+        class="rounded-xl bg-slate-950 px-4 py-2 text-xs font-medium text-white clickable"
+        href={href("/ja/")}
+      >
         最新へ
       </a>
     </div>

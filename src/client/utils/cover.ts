@@ -17,4 +17,3 @@ export function bestInitialCoverSrc(original: string, width = 1200): string {
   }
   return original;
 }
-

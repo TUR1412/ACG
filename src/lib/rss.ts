@@ -21,7 +21,7 @@ function escapeXml(input: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 }
 
@@ -50,7 +50,7 @@ export function renderRss(channel: RssChannel): string {
         "<item>",
         `<title>${escapeXml(item.title)}</title>`,
         `<link>${escapeXml(item.url)}</link>`,
-        `<guid isPermaLink=\"true\">${escapeXml(guid)}</guid>`,
+        `<guid isPermaLink="true">${escapeXml(guid)}</guid>`,
         pubDate ? `<pubDate>${escapeXml(pubDate)}</pubDate>` : "",
         desc ? `<description><![CDATA[${desc}]]></description>` : "",
         "</item>"
@@ -61,12 +61,12 @@ export function renderRss(channel: RssChannel): string {
     .join("\n");
 
   return [
-    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-    "<rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">",
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
     "<channel>",
     `<title>${escapeXml(channel.title)}</title>`,
     `<link>${escapeXml(channel.siteUrl)}</link>`,
-    `<atom:link href=\"${escapeXml(channel.feedUrl)}\" rel=\"self\" type=\"application/rss+xml\" />`,
+    `<atom:link href="${escapeXml(channel.feedUrl)}" rel="self" type="application/rss+xml" />`,
     channel.description ? `<description>${escapeXml(channel.description)}</description>` : "",
     channel.language ? `<language>${escapeXml(channel.language)}</language>` : "",
     `<ttl>${ttl}</ttl>`,
@@ -78,4 +78,3 @@ export function renderRss(channel: RssChannel): string {
     .filter(Boolean)
     .join("\n");
 }
-

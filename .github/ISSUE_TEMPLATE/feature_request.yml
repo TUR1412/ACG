@@ -56,4 +56,3 @@ body:
         - 暂时不行 / できません
     validations:
       required: true
-

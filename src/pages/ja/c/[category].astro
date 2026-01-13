@@ -40,7 +40,9 @@ const theme = getCategoryTheme(category);
 
       <div class="relative flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 class="m-0 text-phi-xl font-semibold leading-tight tracking-tight text-slate-950 md:text-phi-2xl">
+          <h1
+            class="m-0 text-phi-xl font-semibold leading-tight tracking-tight text-slate-950 md:text-phi-2xl"
+          >
             {categoryLabel("ja", category)}
           </h1>
           <p class="mt-1 text-xs text-slate-600">{t("ja", "nav.latest")} · {filtered.length}/{total} 件</p>
@@ -48,10 +50,12 @@ const theme = getCategoryTheme(category);
 
         <div class="flex flex-wrap items-center gap-2 text-xs text-slate-700">
           <span class="glass rounded-full px-3 py-1">
-            {t("ja", "search.result")} <span id="acg-search-count">-</span>
+            {t("ja", "search.result")}
+            <span id="acg-search-count">-</span>
           </span>
           <span class="glass rounded-full px-3 py-1">
-            {t("ja", "home.unread")} <span id="acg-unread-count">-</span>
+            {t("ja", "home.unread")}
+            <span id="acg-unread-count">-</span>
           </span>
         </div>
       </div>
@@ -82,7 +86,9 @@ const theme = getCategoryTheme(category);
         </div>
       </div>
 
-      <div class="acg-hscroll relative mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+      <div
+        class="acg-hscroll relative mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+      >
         <Chip data-quick-toggle="only-followed" data-active="false">
           {t("ja", "prefs.followOnly")}
         </Chip>

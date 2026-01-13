@@ -87,11 +87,9 @@ function defaultInstallPaths(): string[] {
 
 export function findChromePath(): string | null {
   const envCandidates = unique(
-    [
-      fromEnv("LHCI_CHROME_PATH"),
-      fromEnv("CHROME_PATH"),
-      fromEnv("PUPPETEER_EXECUTABLE_PATH")
-    ].filter((x): x is string => Boolean(x))
+    [fromEnv("LHCI_CHROME_PATH"), fromEnv("CHROME_PATH"), fromEnv("PUPPETEER_EXECUTABLE_PATH")].filter(
+      (x): x is string => Boolean(x)
+    )
   );
 
   for (const p of envCandidates) {
@@ -111,4 +109,3 @@ export function findChromePath(): string | null {
 
   return null;
 }
-

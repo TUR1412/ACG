@@ -1,0 +1,15 @@
+dist/
+node_modules/
+.astro/
+.cache/
+.lighthouseci/
+lhci_reports/
+lhci_reports_simulate/
+
+# generated data / artifacts
+src/data/generated/
+public/data/
+public/covers/
+
+# helloagents history (keep as snapshots)
+helloagents/history/

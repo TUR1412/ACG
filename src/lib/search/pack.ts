@@ -103,4 +103,3 @@ export function normalizeSearchPackIndexRow(value: unknown, maxPosts: number): S
 
   return { i, hay, tags, sourceName, sourceId, sourceIdNorm, category, publishedAtMs };
 }
-

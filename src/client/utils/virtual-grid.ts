@@ -58,8 +58,7 @@ export function createVirtualGrid<T>(opts: VirtualGridOptions<T>): VirtualGridCo
   let items = opts.items;
   const renderItem = opts.renderItem;
   const baseOverscan = Math.max(1, Math.floor(opts.overscanRows ?? 4));
-  const perfLow =
-    typeof document !== "undefined" && document.documentElement?.dataset?.acgPerf === "low";
+  const perfLow = typeof document !== "undefined" && document.documentElement?.dataset?.acgPerf === "low";
   const overscanRows = perfLow ? Math.min(2, baseOverscan) : baseOverscan;
 
   let destroyed = false;

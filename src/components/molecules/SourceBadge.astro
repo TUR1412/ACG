@@ -16,8 +16,16 @@ type Props = {
   healthLabel?: string;
 };
 
-const { name, url, tone = "light", dotClass, class: className, compact = false, health, healthLabel } =
-  Astro.props;
+const {
+  name,
+  url,
+  tone = "light",
+  dotClass,
+  class: className,
+  compact = false,
+  health,
+  healthLabel
+} = Astro.props;
 const safeUrl = safeExternalHttpUrl(url);
 
 const base =
@@ -28,48 +36,58 @@ const base =
 const size = compact ? "px-2.5 py-1 text-[11px]" : "px-3 py-1 text-xs";
 const cls = [base, size, "clickable", className].filter(Boolean).join(" ");
 const healthShort =
-  health === "excellent" ? "A" : health === "good" ? "B" : health === "warn" ? "C" : health === "down" ? "D" : "";
+  health === "excellent"
+    ? "A"
+    : health === "good"
+      ? "B"
+      : health === "warn"
+        ? "C"
+        : health === "down"
+          ? "D"
+          : "";
 ---
 
-{safeUrl ? (
-  <a
-    class={cls}
-    href={safeUrl}
-    target="_blank"
-    rel="noreferrer noopener"
-    title={name}
-    data-source-badge="true"
-    data-source-name={name}
-  >
-    {dotClass ? <span class:list={["size-1.5 rounded-full", dotClass]}></span> : null}
-    <span class="min-w-0 max-w-[20ch] acg-fade-truncate">{name}</span>
-    {health ? (
-      <span
-        class:list={["acg-health-pill", `acg-health-${health}`]}
-        title={healthLabel ?? ""}
-        aria-label={healthLabel ?? ""}
-      >
-        <span class="acg-health-dot" aria-hidden="true"></span>
-        <span class="acg-health-text">{healthShort}</span>
+{
+  safeUrl ? (
+    <a
+      class={cls}
+      href={safeUrl}
+      target="_blank"
+      rel="noreferrer noopener"
+      title={name}
+      data-source-badge="true"
+      data-source-name={name}
+    >
+      {dotClass ? <span class:list={["size-1.5 rounded-full", dotClass]} /> : null}
+      <span class="min-w-0 max-w-[20ch] acg-fade-truncate">{name}</span>
+      {health ? (
+        <span
+          class:list={["acg-health-pill", `acg-health-${health}`]}
+          title={healthLabel ?? ""}
+          aria-label={healthLabel ?? ""}
+        >
+          <span class="acg-health-dot" aria-hidden="true" />
+          <span class="acg-health-text">{healthShort}</span>
+        </span>
+      ) : null}
+      <span class={tone === "dark" ? "text-white/80" : "text-slate-500"} aria-hidden="true">
+        <Icon name="external-link" size={14} />
       </span>
-    ) : null}
-    <span class={tone === "dark" ? "text-white/80" : "text-slate-500"} aria-hidden="true">
-      <Icon name="external-link" size={14} />
+    </a>
+  ) : (
+    <span class={cls} title={name} data-source-badge="true" data-source-name={name}>
+      {dotClass ? <span class:list={["size-1.5 rounded-full", dotClass]} /> : null}
+      <span class="min-w-0 max-w-[20ch] acg-fade-truncate">{name}</span>
+      {health ? (
+        <span
+          class:list={["acg-health-pill", `acg-health-${health}`]}
+          title={healthLabel ?? ""}
+          aria-label={healthLabel ?? ""}
+        >
+          <span class="acg-health-dot" aria-hidden="true" />
+          <span class="acg-health-text">{healthShort}</span>
+        </span>
+      ) : null}
     </span>
-  </a>
-) : (
-  <span class={cls} title={name} data-source-badge="true" data-source-name={name}>
-    {dotClass ? <span class:list={["size-1.5 rounded-full", dotClass]}></span> : null}
-    <span class="min-w-0 max-w-[20ch] acg-fade-truncate">{name}</span>
-    {health ? (
-      <span
-        class:list={["acg-health-pill", `acg-health-${health}`]}
-        title={healthLabel ?? ""}
-        aria-label={healthLabel ?? ""}
-      >
-        <span class="acg-health-dot" aria-hidden="true"></span>
-        <span class="acg-health-text">{healthShort}</span>
-      </span>
-    ) : null}
-  </span>
-)}
+  )
+}

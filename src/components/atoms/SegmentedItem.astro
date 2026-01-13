@@ -10,7 +10,14 @@ const { class: className, title, ariaLabel, ...rest } = Astro.props as Props;
 const cls = ["acg-seg-item", className].filter(Boolean).join(" ");
 ---
 
-<button type="button" class={cls} title={title} aria-label={ariaLabel} role="radio" aria-checked="false" {...rest}>
+<button
+  type="button"
+  class={cls}
+  title={title}
+  aria-label={ariaLabel}
+  role="radio"
+  aria-checked="false"
+  {...rest}
+>
   <slot />
 </button>
-

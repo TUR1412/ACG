@@ -53,7 +53,7 @@ async function appendSummary(markdown: string): Promise<void> {
 
   try {
     const prev = await readFile(file, "utf-8").catch(() => "");
-    const next = prev ? `${prev.trimEnd()}\n\n${markdown}\n` : `${markdown}\n`;  
+    const next = prev ? `${prev.trimEnd()}\n\n${markdown}\n` : `${markdown}\n`;
     await writeFile(file, next, "utf-8");
   } catch {
     log.info(markdown);
@@ -65,7 +65,16 @@ function pickScore(report: LhciReport, key: LhciReportCategoryKey): number | nul
   return typeof score === "number" && Number.isFinite(score) ? score : null;
 }
 
-function renderMarkdown(rows: Array<{ url: string; perf: number | null; a11y: number | null; bp: number | null; seo: number | null; htmlPath: string | null }>): string {
+function renderMarkdown(
+  rows: Array<{
+    url: string;
+    perf: number | null;
+    a11y: number | null;
+    bp: number | null;
+    seo: number | null;
+    htmlPath: string | null;
+  }>
+): string {
   const lines: string[] = [];
   lines.push(`## Lighthouse CI Summary`);
   lines.push("");
@@ -78,7 +87,9 @@ function renderMarkdown(rows: Array<{ url: string; perf: number | null; a11y: nu
     );
   }
   lines.push("");
-  lines.push(`> 注：分数为 Lighthouse categories 的 score×100（四舍五入）。阈值以 workflow/assertions 为准。`);
+  lines.push(
+    `> 注：分数为 Lighthouse categories 的 score×100（四舍五入）。阈值以 workflow/assertions 为准。`
+  );
   lines.push("");
   return lines.join("\n");
 }
@@ -151,7 +162,14 @@ async function main() {
     return;
   }
 
-  const rows: Array<{ url: string; perf: number | null; a11y: number | null; bp: number | null; seo: number | null; htmlPath: string | null }> = [];
+  const rows: Array<{
+    url: string;
+    perf: number | null;
+    a11y: number | null;
+    bp: number | null;
+    seo: number | null;
+    htmlPath: string | null;
+  }> = [];
 
   for (const it of entries) {
     const jsonPath = it.jsonPath ? resolve(root, it.jsonPath) : null;

@@ -58,7 +58,8 @@ function validatePosts(json: unknown, errors: ValidationError[]) {
     else ids.add(id);
 
     if (!isNonEmptyString(p.title)) pushError(errors, `${base}.title`, "title 缺失或为空");
-    if (!isNonEmptyString(p.url) || !isHttpUrl(p.url)) pushError(errors, `${base}.url`, "url 缺失或不是 http(s)");
+    if (!isNonEmptyString(p.url) || !isHttpUrl(p.url))
+      pushError(errors, `${base}.url`, "url 缺失或不是 http(s)");
 
     if (!isNonEmptyString(p.publishedAt)) pushError(errors, `${base}.publishedAt`, "publishedAt 缺失或为空");
     else {
@@ -71,17 +72,20 @@ function validatePosts(json: unknown, errors: ValidationError[]) {
       }
     }
 
-    if (!isNonEmptyString(p.category) || !isCategory(p.category)) pushError(errors, `${base}.category`, "category 缺失或非法");
+    if (!isNonEmptyString(p.category) || !isCategory(p.category))
+      pushError(errors, `${base}.category`, "category 缺失或非法");
 
     if (!Array.isArray(p.tags) || !p.tags.every((x: unknown) => typeof x === "string")) {
       pushError(errors, `${base}.tags`, "tags 缺失或不是 string[]");
     }
 
     if (!isNonEmptyString(p.sourceId)) pushError(errors, `${base}.sourceId`, "sourceId 缺失或为空");
-    else if (!allowedSources.has(p.sourceId)) pushError(errors, `${base}.sourceId`, `未知来源: ${p.sourceId}`);
+    else if (!allowedSources.has(p.sourceId))
+      pushError(errors, `${base}.sourceId`, `未知来源: ${p.sourceId}`);
 
     if (!isNonEmptyString(p.sourceName)) pushError(errors, `${base}.sourceName`, "sourceName 缺失或为空");
-    if (!isNonEmptyString(p.sourceUrl) || !isHttpUrl(p.sourceUrl)) pushError(errors, `${base}.sourceUrl`, "sourceUrl 缺失或不是 http(s)");
+    if (!isNonEmptyString(p.sourceUrl) || !isHttpUrl(p.sourceUrl))
+      pushError(errors, `${base}.sourceUrl`, "sourceUrl 缺失或不是 http(s)");
 
     if (p.cover != null && (!isNonEmptyString(p.cover) || !isHttpOrRootRelativeUrl(p.cover))) {
       pushError(errors, `${base}.cover`, "cover 存在但不是有效 URL（需为 http(s) 或以 / 开头的根相对路径）");
@@ -96,7 +100,8 @@ function validateStatus(json: unknown, errors: ValidationError[]) {
   }
 
   const s = json as any;
-  if (s.generatedAt != null && !isNonEmptyString(s.generatedAt)) pushError(errors, "status.generatedAt", "generatedAt 类型非法");
+  if (s.generatedAt != null && !isNonEmptyString(s.generatedAt))
+    pushError(errors, "status.generatedAt", "generatedAt 类型非法");
   if (toNumber(s.durationMs) == null) pushError(errors, "status.durationMs", "durationMs 缺失或不是数字");
   if (!Array.isArray(s.sources)) {
     pushError(errors, "status.sources", "sources 缺失或不是数组");
@@ -122,7 +127,8 @@ function validateStatus(json: unknown, errors: ValidationError[]) {
 
     if (!isNonEmptyString(it.name)) pushError(errors, `${base}.name`, "name 缺失或为空");
     if (!isNonEmptyString(it.kind)) pushError(errors, `${base}.kind`, "kind 缺失或为空");
-    if (!isNonEmptyString(it.url) || !isHttpUrl(it.url)) pushError(errors, `${base}.url`, "url 缺失或不是 http(s)");
+    if (!isNonEmptyString(it.url) || !isHttpUrl(it.url))
+      pushError(errors, `${base}.url`, "url 缺失或不是 http(s)");
 
     if (typeof it.ok !== "boolean") pushError(errors, `${base}.ok`, "ok 缺失或不是 boolean");
     if (toNumber(it.itemCount) == null) pushError(errors, `${base}.itemCount`, "itemCount 缺失或不是数字");
@@ -131,19 +137,25 @@ function validateStatus(json: unknown, errors: ValidationError[]) {
     const usedOk = it.used === "fetched" || it.used === "cached" || it.used === "fallback";
     if (!usedOk) pushError(errors, `${base}.used`, "used 非法（应为 fetched/cached/fallback）");
 
-    if (it.httpStatus != null && toNumber(it.httpStatus) == null) pushError(errors, `${base}.httpStatus`, "httpStatus 不是数字");
-    if (it.attempts != null && toNumber(it.attempts) == null) pushError(errors, `${base}.attempts`, "attempts 不是数字");
-    if (it.waitMs != null && toNumber(it.waitMs) == null) pushError(errors, `${base}.waitMs`, "waitMs 不是数字");
-    if (it.rawItemCount != null && toNumber(it.rawItemCount) == null) pushError(errors, `${base}.rawItemCount`, "rawItemCount 不是数字");
+    if (it.httpStatus != null && toNumber(it.httpStatus) == null)
+      pushError(errors, `${base}.httpStatus`, "httpStatus 不是数字");
+    if (it.attempts != null && toNumber(it.attempts) == null)
+      pushError(errors, `${base}.attempts`, "attempts 不是数字");
+    if (it.waitMs != null && toNumber(it.waitMs) == null)
+      pushError(errors, `${base}.waitMs`, "waitMs 不是数字");
+    if (it.rawItemCount != null && toNumber(it.rawItemCount) == null)
+      pushError(errors, `${base}.rawItemCount`, "rawItemCount 不是数字");
     if (it.filteredItemCount != null && toNumber(it.filteredItemCount) == null)
       pushError(errors, `${base}.filteredItemCount`, "filteredItemCount 不是数字");
-    if (it.newItemCount != null && toNumber(it.newItemCount) == null) pushError(errors, `${base}.newItemCount`, "newItemCount 不是数字");
+    if (it.newItemCount != null && toNumber(it.newItemCount) == null)
+      pushError(errors, `${base}.newItemCount`, "newItemCount 不是数字");
     if (it.visibleItemCount != null && toNumber(it.visibleItemCount) == null)
       pushError(errors, `${base}.visibleItemCount`, "visibleItemCount 不是数字");
     if (it.consecutiveFails != null && toNumber(it.consecutiveFails) == null)
       pushError(errors, `${base}.consecutiveFails`, "consecutiveFails 不是数字");
     if (it.latestPublishedAt != null) {
-      if (!isNonEmptyString(it.latestPublishedAt)) pushError(errors, `${base}.latestPublishedAt`, "latestPublishedAt 类型非法");
+      if (!isNonEmptyString(it.latestPublishedAt))
+        pushError(errors, `${base}.latestPublishedAt`, "latestPublishedAt 类型非法");
       else if (!Number.isFinite(Date.parse(it.latestPublishedAt)))
         pushError(errors, `${base}.latestPublishedAt`, "latestPublishedAt 不是可解析的时间");
     }
@@ -197,7 +209,8 @@ function validateSearchPack(json: unknown, errors: ValidationError[]) {
     }
     if (!isNonEmptyString(row.sourceName)) pushError(errors, `${base}.sourceName`, "sourceName 缺失或为空");
     if (!isNonEmptyString(row.sourceId)) pushError(errors, `${base}.sourceId`, "sourceId 缺失或为空");
-    if (!isNonEmptyString(row.sourceIdNorm)) pushError(errors, `${base}.sourceIdNorm`, "sourceIdNorm 缺失或为空");
+    if (!isNonEmptyString(row.sourceIdNorm))
+      pushError(errors, `${base}.sourceIdNorm`, "sourceIdNorm 缺失或为空");
     if (!isNonEmptyString(row.category)) pushError(errors, `${base}.category`, "category 缺失或为空");
     if (row.publishedAtMs != null && toNumber(row.publishedAtMs) == null) {
       pushError(errors, `${base}.publishedAtMs`, "publishedAtMs 类型非法（应为 number|null）");
@@ -247,7 +260,8 @@ function validateSearchPackV2(json: unknown, errors: ValidationError[]) {
     }
     if (!isNonEmptyString(row.sourceName)) pushError(errors, `${base}.sourceName`, "sourceName 缺失或为空");
     if (!isNonEmptyString(row.sourceId)) pushError(errors, `${base}.sourceId`, "sourceId 缺失或为空");
-    if (!isNonEmptyString(row.sourceIdNorm)) pushError(errors, `${base}.sourceIdNorm`, "sourceIdNorm 缺失或为空");
+    if (!isNonEmptyString(row.sourceIdNorm))
+      pushError(errors, `${base}.sourceIdNorm`, "sourceIdNorm 缺失或为空");
     if (!isNonEmptyString(row.category)) pushError(errors, `${base}.category`, "category 缺失或为空");
     if (row.publishedAtMs != null && toNumber(row.publishedAtMs) == null) {
       pushError(errors, `${base}.publishedAtMs`, "publishedAtMs 类型非法（应为 number|null）");
@@ -284,11 +298,13 @@ function validateStatusHistory(json: unknown, errors: ValidationError[]) {
       continue;
     }
 
-    if (!isNonEmptyString(row.generatedAt)) pushError(errors, `${base}.generatedAt`, "generatedAt 缺失或为空");
+    if (!isNonEmptyString(row.generatedAt))
+      pushError(errors, `${base}.generatedAt`, "generatedAt 缺失或为空");
     else {
       const t = Date.parse(row.generatedAt);
       if (!Number.isFinite(t)) pushError(errors, `${base}.generatedAt`, "generatedAt 不是可解析的时间");
-      if (last && row.generatedAt < last) pushError(errors, `${base}.generatedAt`, "entries 疑似未按时间升序排列");
+      if (last && row.generatedAt < last)
+        pushError(errors, `${base}.generatedAt`, "entries 疑似未按时间升序排列");
       last = row.generatedAt;
     }
 
@@ -314,8 +330,8 @@ async function main() {
   const log = createLogger();
   const root = process.cwd();
 
-  const srcPosts = resolve(root, "src", "data", "generated", "posts.json");     
-  const srcStatus = resolve(root, "src", "data", "generated", "status.json");   
+  const srcPosts = resolve(root, "src", "data", "generated", "posts.json");
+  const srcStatus = resolve(root, "src", "data", "generated", "status.json");
   const srcStatusHistory = resolve(root, "src", "data", "generated", "status-history.v1.json");
   const srcSearchPack = resolve(root, "src", "data", "generated", "search-pack.v1.json");
   const srcSearchPackV2 = resolve(root, "src", "data", "generated", "search-pack.v2.json");
@@ -385,7 +401,8 @@ async function main() {
       pushError(errors, "public/data/status-history.v1.json", "public status-history.v1.json 不是对象");
     } else {
       const v = typeof (pubHistory as any).v === "number" ? (pubHistory as any).v : 0;
-      if (v !== 1) pushError(errors, "public/data/status-history.v1.json", "public status-history 版本非法（应为 1）");
+      if (v !== 1)
+        pushError(errors, "public/data/status-history.v1.json", "public status-history 版本非法（应为 1）");
     }
   } catch {
     pushError(errors, "public/data/status-history.v1.json", "public status-history.v1.json 无法解析");
@@ -402,7 +419,11 @@ async function main() {
           : -1;
       const b = Array.isArray((pubPack as any).posts) ? (pubPack as any).posts.length : -1;
       if (a >= 0 && b >= 0 && a !== b) {
-        pushError(errors, "public/data/search-pack.v1.json", `public search pack posts 数量与 src 不一致: ${b} vs ${a}`);
+        pushError(
+          errors,
+          "public/data/search-pack.v1.json",
+          `public search pack posts 数量与 src 不一致: ${b} vs ${a}`
+        );
       }
     }
   } catch {
@@ -415,12 +436,18 @@ async function main() {
       pushError(errors, "public/data/search-pack.v2.json", "public search pack v2 不是对象");
     } else {
       const a =
-        searchPackV2Json && typeof searchPackV2Json === "object" && Array.isArray((searchPackV2Json as any).posts)
+        searchPackV2Json &&
+        typeof searchPackV2Json === "object" &&
+        Array.isArray((searchPackV2Json as any).posts)
           ? (searchPackV2Json as any).posts.length
           : -1;
       const b = Array.isArray((pubPack as any).posts) ? (pubPack as any).posts.length : -1;
       if (a >= 0 && b >= 0 && a !== b) {
-        pushError(errors, "public/data/search-pack.v2.json", `public search pack v2 posts 数量与 src 不一致: ${b} vs ${a}`);
+        pushError(
+          errors,
+          "public/data/search-pack.v2.json",
+          `public search pack v2 posts 数量与 src 不一致: ${b} vs ${a}`
+        );
       }
     }
   } catch {
@@ -443,7 +470,7 @@ async function main() {
 
 main().catch((err) => {
   const log = createLogger();
-  const msg = err instanceof Error ? err.stack ?? err.message : String(err);    
+  const msg = err instanceof Error ? (err.stack ?? err.message) : String(err);
   log.error(msg);
   process.exitCode = 1;
 });

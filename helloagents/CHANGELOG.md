@@ -5,25 +5,44 @@
 
 ## [Unreleased]
 
+## [0.5.25] - 2026-01-13
+
+### 新增
+
+- 工程规范：新增 ESLint（Flat Config）与 Prettier（含 Astro plugin），并提供 `npm run lint` / `npm run format` / `npm run format:check`。
+
+### 变更
+
+- CI 门禁：`CI` workflow 新增 `lint` + `format:check`，确保基础规范与格式一致性在 PR/CI 侧可验证。
+- 代码风格：全仓库执行 Prettier 统一格式（不改变既有业务逻辑与核心架构）。
+
+### 修复
+
+- 构建修复：修复 `Icon.astro` 的 type union 在 esbuild 下触发解析失败的问题（保持 Prettier check 通过）。
+
 ## [0.5.24] - 2026-01-13
 
 ### 新增
+
 - 模拟节流跑分：新增 `.lighthouserc.simulate.json`（`throttlingMethod: "simulate"`），输出到 `lhci_reports_simulate/`，用于更贴近真实移动端网络/CPU 的对比审计。
 - 模拟跑分工作流：新增 `Lighthouse CI (Simulated)` 手动工作流（workflow_dispatch），产出独立报告 artifact。
 
 ### 变更
+
 - 本地 LHCI runner：`scripts/lhci-local.ts` 支持 `--simulate` 与 `--config FILE`（开闭原则：默认行为不变）。
 - LHCI Summary：`scripts/lhci-step-summary.ts` 支持 `LHCI_OUTPUT_DIR` 指定读取的报告目录，便于并行维护多套输出。
 
 ## [0.5.23] - 2026-01-13
 
 ### 变更
+
 - LHCI 门禁收紧：将 `categories:*` 的断言阈值提升为 `minScore: 1` 且改为 `error`，确保 PR/CI 不再“带病绿灯”。
 - CI 数据校验：`CI` workflow 新增 `npm run validate`，更早发现生成数据异常与不一致问题。
 
 ## [0.5.22] - 2026-01-13
 
 ### 变更
+
 - LHCI 门禁：`.lighthouserc.json` 使用 `throttlingMethod: "provided"`，以“无节流基线”方式稳定输出满分结果（减少模拟节流导致的漂移）。
 - 首屏连接提示：移除对第三方图片代理（weserv/wsrv）的 `preconnect`，减少不必要的连接竞争。
 - 启动期渲染：在 `data-acg-boot="1"` 下禁用 `.blur-*` 的 `filter: blur(...)`，并在低性能模式保持禁用，降低首屏 paint 成本。
@@ -31,22 +50,26 @@
 ## [0.5.21] - 2026-01-13
 
 ### 新增
+
 - 启动失败兜底：当启动级脚本初始化失败时，页面展示静态提示条与刷新入口（`data-acg-boot="failed"`），避免白屏/无响应体验。
 
 ## [0.5.20] - 2026-01-13
 
 ### 变更
+
 - LHCI 性能：Spotlight 标题层级更紧凑（`text-lg` + `line-clamp-2`），降低渲染延迟并减少离屏大标题成为 LCP 候选的概率。
 - 资源优先级：首页“快报”缩略图增加 `fetchpriority="low"`，减少与首屏关键资源竞争，提升分数稳定性。
 
 ## [0.5.19] - 2026-01-13
 
 ### 修复
+
 - 可访问性：Spotlight 标题/提示区块提高 chip 背景不透明度（`bg-white/80`），修复 `color-contrast` 审计导致的首页 A11y 97 分问题（/zh/、/ja/）。
 
 ## [0.5.18] - 2026-01-13
 
 ### 变更
+
 - 首屏 LCP 稳定性：Spotlight 区块启用 `content-visibility`（配合 `contain-intrinsic-size`），降低离屏大块内容参与首屏渲染导致的 LCP 漂移。
 - 封面渲染策略：Spotlight/RandomPick 在 SSR 阶段仅对本地可缓存 cover 输出 `<img>`；外链封面使用占位并由客户端渐进增强，降低外链波动对 LHCI 的影响。
 - 首屏体积与 DOM：首页/分类页 SSR 默认条目数 42 → 36，并默认使用 `PostList variant="compact"`，进一步降低 DOM/解析开销。
@@ -56,6 +79,7 @@
 ## [0.5.17] - 2026-01-13
 
 ### 变更
+
 - LHCI workflow：`Lighthouse CI` GitHub Actions 使用 `npm run lhci` 统一入口，减少重复配置漂移风险。
 - 测试补强：新增 `normalizeHttpUrl` 单测，覆盖追踪参数剥离与 hash 清理，提升数据去重/安全边界的可验证性。
 - 详情页体积优化：详情页“相关推荐”改为轻量列表（`PostList variant="compact"` + `PostLinkItem`），显著降低 HTML 体积并提升构建/加载性能。
@@ -64,31 +88,37 @@
 ## [0.5.16] - 2026-01-13
 
 ### 变更
+
 - Pipeline 日志一致性：`scripts/sync.ts`、`scripts/lib/http-cache.ts`、`scripts/lib/translate.ts` 的 verbose 日志统一切换到 `scripts/lib/logger.ts`（减少散落 `console.*`，CI/本地语义一致）。
 - 测试补强：新增 `scripts/lib/chrome-path.ts` 的环境变量优先级单测，避免本地 LHCI 路径探测回归。
 
 ## [0.5.15] - 2026-01-13
 
 ### 新增
+
 - LHCI Local Runner：新增 `scripts/lhci-local.ts` 与 `scripts/lib/chrome-path.ts`，支持本地自动探测 Chrome/Edge 路径（或通过 `LHCI_CHROME_PATH` 显式指定）。
 - LHCI 快捷脚本：新增 `npm run lhci` / `npm run lhci:local`，便于本地与 CI 统一跑分入口。
 
 ### 变更
+
 - Step Summary 输出：`scripts/step-summary.ts` 与 `scripts/lhci-step-summary.ts` 接入 `scripts/lib/logger.ts`，在 Actions/本地保持一致输出语义。
 - 文档：README 与知识库补充本地运行 Lighthouse CI 的前置条件与路径配置说明。
 
 ## [0.5.14] - 2026-01-12
 
 ### 新增
+
 - Friendly 404：新增 `src/pages/404.astro`，构建产出 `404.html`（语言选择 + 快捷入口 + 返回按钮）。
 - Pipeline Logger：新增 `scripts/lib/logger.ts`，并在关键脚本中接入（sync/validate/budget），在 GitHub Actions 下支持 annotations/group。
 
 ### 变更
+
 - Atomic Design：`src/components/` 按 atoms/molecules/organisms 分层；同时保留 `src/components/*.astro` 兼容入口，保证既有 import 路径稳定（开闭原则：增量演进）。
 
 ## [0.5.13] - 2026-01-12
 
 ### 新增
+
 - A11y 语义补齐：Quick chips 同步写入 `aria-pressed`，让读屏设备可感知 toggle 状态。
 - A11y 反馈播报：偏好面板 `#acg-prefs-message` 增加 live region（`role="status"` / `aria-live="polite"`）。
 - A11y 操作语义：关注词/屏蔽词删除按钮补齐 `aria-label`（含中/日文案），降低歧义。
@@ -96,107 +126,129 @@
 ## [0.5.12] - 2026-01-12
 
 ### 新增
+
 - 键盘可访问性：分段控件与 View/Density 快捷入口补齐 roving tabindex，并支持方向键/Home/End 切换（触发 click 复用既有逻辑）。
 
 ### 变更
+
 - Atomic UI：新增 `Segmented` / `SegmentedItem` atoms，并用于偏好面板分段控件，降低重复与后续迭代风险。
 
 ## [0.5.11] - 2026-01-12
 
 ### 新增
+
 - perf_vitals：增量补齐 `ttfbMs` 与 `inpMs`（INP 为近似值，低性能模式自动降级/关闭），提升端侧可观测性与排障效率。
 
 ### 变更
+
 - 首屏性能：对自托管字体（Outfit/Space Grotesk 的 latin 子集）增加 `preload`，降低首屏渲染波动并提升可预期性。
 
 ## [0.5.10] - 2026-01-12
 
 ### 变更
+
 - 字体自托管：Outfit / Space Grotesk 改为本地 woff2（带 `unicode-range` 子集与 `font-display: swap`），并移除 Google Fonts 外链依赖，减少三方请求以提升性能与稳定性。
 
 ## [0.5.9] - 2026-01-12
 
 ### 新增
+
 - Lighthouse CI Summary：新增 `npm run lhci:summary` 并集成到 Lighthouse workflow，在 Actions Job Summary 中展示关键 URL 跑分摘要（便于快速 review）。
 
 ## [0.5.8] - 2026-01-12
 
 ### 新增
+
 - 启动级错误边界：前端初始化链“监控先行”，并在 init 抛错时记录 `bootstrap_fatal` telemetry + toast 轻提示。
 - 同步日志摘要：新增 `npm run summary`（Step Summary），Hourly Sync workflow 自动输出抓取摘要，便于快速排障。
 
 ## [0.5.7] - 2026-01-12
 
 ### 新增
+
 - PWA Icons：新增 PNG icons（192/512 + maskable）与 apple-touch-icon，并更新 `manifest.webmanifest`。
 - SEO 基线：新增 `robots.txt` 与 `sitemap.xml` 输出，减少 Lighthouse SEO 审计的硬性扣分项（有生成数据时可增量覆盖文章页）。
 
 ## [0.5.6] - 2026-01-12
 
 ### 新增
+
 - Lighthouse CI：新增 `.lighthouserc.json` 与 `Lighthouse CI` workflow，在 PR/手动触发时产出报告构件，作为性能/SEO/可访问性回归门禁基础。
 
 ## [0.5.5] - 2026-01-12
 
 ### 新增
+
 - Repo 协作基线：新增 `.gitattributes`（统一 LF、标注二进制）与 `.github/CODEOWNERS`（默认评审责任归属）。
 
 ## [0.5.4] - 2026-01-12
 
 ### 新增
+
 - GitHub 自动化：新增 Dependabot（npm + GitHub Actions）与 CodeQL 扫描 workflow。
 - 工程规范：新增 `.editorconfig`，统一换行/缩进/去尾空格规则。
 
 ### 变更
+
 - README：顶部增加 CI/CodeQL badges，便于快速查看仓库健康状态。
 
 ## [0.5.3] - 2026-01-12
 
 ### 新增
+
 - Telemetry Viewer：事件详情新增“一键复制 JSON”，便于排障与分享。
 
 ### 变更
+
 - README：公共章节升级为中日双语标题与说明（架构/开发/同步/环境变量/隐私），并补充协作入口。
 
 ## [0.5.2] - 2026-01-12
 
 ### 新增
+
 - Telemetry Viewer：新增 `/zh/telemetry/` / `/ja/telemetry/` 本地事件查看页，支持过滤、导出、清空与事件详情查看。
 - 状态页入口：`/status` 增加 Telemetry Viewer 快捷入口。
 
 ### 变更
+
 - 隐私加固：telemetry `path` 不再包含 query/hash；`page_view.referrer` 剥离 query/hash；错误一行文本同样剥离 URL query/hash。
 
 ## [0.5.1] - 2026-01-12
 
 ### 新增
+
 - Telemetry 管理工具：偏好面板新增本地 telemetry 的导出/清空，并显示事件数与占用体积，便于自助排障与隐私可控。
 
 ## [0.5.0] - 2026-01-12
 
 ### 新增
+
 - 可观测性增强：新增全局错误捕获（`error`/`unhandledrejection`）与 Web Vitals（LCP/CLS/longtask）采集，默认写入本地 telemetry，便于排障与体验回溯。
 - Telemetry 偏好：偏好面板新增可选上报开关与 endpoint 配置（默认关闭），页面离开/后台化时以 sendBeacon/fetch(keepalive) 尝试发送。
 - Atomic UI：新增 `src/components/atoms/Chip.astro`，并在首页/分类页/信号板增量替换 chips，统一结构与样式语义。
 - 单元测试：补齐 monitoring 相关纯函数测试（归一化/截断/URL query/hash 剥离/去噪 key）。
 
 ### 修复
+
 - 修复 `Chip` 组件 props 类型过窄导致的 `astro check` 报错。
 
 ## [0.4.0] - 2026-01-11
 
 ### 新增
+
 - GitHub 协作入口：新增 Issue Forms（Bug/Feature）、PR 模板，以及 `CONTRIBUTING.md` / `CODE_OF_CONDUCT.md` / `SECURITY.md` / `SUPPORT.md`（中日双语）。
 - 布局/密度快捷入口：首页与分类页新增 View（Grid/List）与 Density（Comfort/Compact）快捷 chips，阅读节奏切换更就地可达。
 - 命令面板增强：Command Palette 新增 `layout` / `density` 命令（toggle + 直达设置），在页面缺少控件时回退为“仅保存偏好”并提示。
 - 图标补齐：`Icon` 组件新增 `grid` / `list` 图标，提升 UI 一致性。
 
 ### 变更
+
 - README 更新“布局/密度”快捷入口说明（chips + Command Palette + 偏好）。
 
 ## [0.3.0] - 2026-01-11
 
 ### 新增
+
 - 布局模式与密度：新增 View Mode（Grid/List）与 Density（Comfort/Compact）偏好项，桌面端也可一键切换“扫读/浏览”节奏。
 - 信号层升级：首页新增 SignalBoard（脉冲热榜/时间透镜/来源健康度/快捷操作），首屏信息更集中。
 - 派生指标层：新增 Pulse 热度、阅读时长、去重键与来源健康度计算，并为列表输出统计摘要。
@@ -216,6 +268,7 @@
 - 分类页快捷入口：新增“全站·本分类”按钮，一键切换全站搜索并预填 `cat:<category>`。
 
 ### 变更
+
 - 客户端可维护性：抽离 localStorage 容错读写与 Set 持久化工具到 `src/client/state/storage.ts`，减少 `src/client/app.ts` 重复代码与变更风险。
 - 过滤状态升级为 v3，统一 timeLens/sortMode/dedup/onlyStableSources 的持久化与 UI 联动。
 - 分类页首屏瘦身：分类页静态渲染条目数 120→60，显著降低 HTML 体积与解析成本；全量内容可通过“全站·本分类”一键进入。
@@ -257,10 +310,12 @@
 ## [0.2.2] - 2026-01-06
 
 ### 新增
+
 - 单元测试：新增 `npm test`（Node test runner + tsx），覆盖搜索查询解析与外链安全等关键纯函数。
 - CI 质量门禁：CI 与定时部署 workflow 统一执行 `npm test`；本地 `scripts/genesis.ps1` 默认加入测试步骤。
 
 ### 变更
+
 - 外链安全：站点渲染外部链接前统一执行 `http(s)` 协议白名单校验，非 `http(s)` 外链降级为不可点击；详情页全文预览在 URL 无效时自动禁用 autoload。
 - 同步数据质量：同步阶段丢弃非 `http(s)` 的条目 URL，并继续保守剥离常见追踪参数以提升去重稳定性。
 - 工程对齐：Node 运行时约束声明为 `>=20`，并将 `@types/node` 固定到 20.x，避免类型版本与 CI 运行时漂移。
@@ -268,19 +323,23 @@
 ## [0.2.1] - 2025-12-29
 
 ### 新增
+
 - 新增命令面板（Command Palette）：`Ctrl/⌘ + K` 快速导航/切换过滤/主题/语言，并支持一键复制当前页链接（按需懒加载）。
 - 新增 `/#prefs` 深链：在首页/分类页可直接打开偏好设置抽屉（与 `/#search` 聚焦搜索一致）。
 
 ### 变更
+
 - 搜索查询解析逻辑统一：页面内过滤与全站搜索 Worker 共享 `src/lib/search/query.ts`，减少冗余并提升行为一致性。
 - Perf Budget 更贴合：HTML/XML/JSON 预算默认仅统计“核心入口页”（排除 `/p/<id>/` 详情页），默认阈值调整为 5000KB（可用 `ACG_BUDGET_HTML_KB` 覆盖）。
 
 ### 修复
+
 - 修复 `astro check` 的未使用变量/参数提示（OPML endpoint、性能探测中的 RAF 变量）。
 
 ## [0.2.0] - 2025-12-25
 
 ### 新增
+
 - 增加来源配置的单一事实来源（SSOT），用于同步脚本与站点页面共用。
 - 新增 OPML 导出（/zh/opml.xml、/ja/opml.xml），便于导入阅读器。
 - 新增 JSON Feed（/zh/feed.json、/ja/feed.json），便于程序化订阅。
@@ -288,10 +347,13 @@
 - 新增同步产物校验与构建体积预算脚本，作为 CI 质量门禁。
 
 ### 变更
+
 - 重构 About 页的来源列表数据来源，避免站点侧依赖 scripts 目录实现细节。
 
 ### 修复
+
 - N/A
 
 ### 移除
+
 - N/A

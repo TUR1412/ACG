@@ -31,7 +31,12 @@ let lastFocus: HTMLElement | null = null;
 let allCommands: CommandView[] = [];
 let filtered: CommandView[] = [];
 
-function toast(params: { title: string; desc?: string; variant?: "info" | "success" | "error"; timeoutMs?: number }) {
+function toast(params: {
+  title: string;
+  desc?: string;
+  variant?: "info" | "success" | "error";
+  timeoutMs?: number;
+}) {
   try {
     document.dispatchEvent(new CustomEvent("acg:toast", { detail: params }));
   } catch {
@@ -482,7 +487,18 @@ function buildCommands(): CommandView[] {
       group: "system",
       title: isJapanese() ? "レイアウトを切替（グリッド/リスト）" : "切换布局（网格/列表）",
       desc: isJapanese() ? "Grid / List" : "Grid / List",
-      keywords: ["layout", "view", "grid", "list", "レイアウト", "グリッド", "リスト", "布局", "网格", "列表"],
+      keywords: [
+        "layout",
+        "view",
+        "grid",
+        "list",
+        "レイアウト",
+        "グリッド",
+        "リスト",
+        "布局",
+        "网格",
+        "列表"
+      ],
       run: action(() => {
         const next = getViewMode() === "grid" ? "list" : "grid";
         const ok = setViewMode(next);

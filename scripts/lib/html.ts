@@ -192,7 +192,8 @@ export function extractCoverFromHtml(params: { html: string; baseUrl: string }):
     if (!abs) continue;
     const lower = abs.toLowerCase();
     if (isProbablyNonCoverImageUrl(lower)) continue;
-    if (kind === "img" && !isLikelyImageUrl(lower) && !lower.includes("image") && !lower.includes("img")) continue;
+    if (kind === "img" && !isLikelyImageUrl(lower) && !lower.includes("image") && !lower.includes("img"))
+      continue;
     return abs;
   }
 

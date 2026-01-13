@@ -36,7 +36,9 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     } catch {
       // ignore
     }
-    return (document as unknown as { execCommand?: (commandId: string) => boolean }).execCommand?.("copy") ?? false;
+    return (
+      (document as unknown as { execCommand?: (commandId: string) => boolean }).execCommand?.("copy") ?? false
+    );
   } catch {
     return false;
   } finally {

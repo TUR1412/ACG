@@ -105,7 +105,11 @@ export function wireGlobalErrorMonitoring() {
 
       maybeToast(
         isJapanese() ? "エラーが発生しました" : "发生了错误",
-        isLowPerfMode() ? undefined : isJapanese() ? "一部の機能が動かない可能性があります。" : "部分功能可能受影响。"
+        isLowPerfMode()
+          ? undefined
+          : isJapanese()
+            ? "一部の機能が動かない可能性があります。"
+            : "部分功能可能受影响。"
       );
     } catch {
       // ignore
@@ -132,7 +136,10 @@ export function wireGlobalErrorMonitoring() {
 
       // Promise rejection 往往会被业务逻辑兜底；默认不打断用户，只在非低性能模式下给轻提示。
       if (!isLowPerfMode()) {
-        maybeToast(isJapanese() ? "処理に失敗しました" : "操作未完成", isJapanese() ? "ネットワーク状況を確認してください。" : "可检查网络后重试。");
+        maybeToast(
+          isJapanese() ? "処理に失敗しました" : "操作未完成",
+          isJapanese() ? "ネットワーク状況を確認してください。" : "可检查网络后重试。"
+        );
       }
     } catch {
       // ignore
@@ -230,7 +237,13 @@ export function wirePerfMonitoring() {
           const dur = typeof entry?.duration === "number" ? entry.duration : 0;
           if (!Number.isFinite(dur) || dur <= 0) continue;
           const name = typeof entry?.name === "string" ? entry.name : "";
-          if (name && name !== "click" && name !== "keydown" && name !== "pointerdown" && name !== "pointerup") {
+          if (
+            name &&
+            name !== "click" &&
+            name !== "keydown" &&
+            name !== "pointerdown" &&
+            name !== "pointerup"
+          ) {
             continue;
           }
           recordInteraction(id, dur);
@@ -253,7 +266,8 @@ export function wirePerfMonitoring() {
       const clsFixed = Math.round(cls * 1000) / 1000;
       const inpValues = Array.from(interactionMaxById.values()).filter((v) => Number.isFinite(v) && v > 0);
       inpValues.sort((a, b) => a - b);
-      const inpIdx = inpValues.length > 0 ? Math.min(inpValues.length - 1, Math.ceil(inpValues.length * 0.98) - 1) : -1;
+      const inpIdx =
+        inpValues.length > 0 ? Math.min(inpValues.length - 1, Math.ceil(inpValues.length * 0.98) - 1) : -1;
       const inpMs = inpIdx >= 0 ? inpValues[inpIdx] : 0;
       track({
         type: "perf_vitals",

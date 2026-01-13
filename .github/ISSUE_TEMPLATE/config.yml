@@ -6,4 +6,3 @@ contact_links:
   - name: 安全问题 / セキュリティ（SECURITY）
     url: https://github.com/TUR1412/ACG/blob/main/SECURITY.md
     about: 漏洞或敏感信息请按 SECURITY.md 进行私下披露 / 脆弱性や機微情報は SECURITY.md に従って非公開で報告してください
-

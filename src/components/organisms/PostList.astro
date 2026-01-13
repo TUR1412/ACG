@@ -13,19 +13,21 @@ type Props = {
 const { posts, lang, variant = "card" } = Astro.props;
 ---
 
-{variant === "compact" ? (
-  <div class="acg-post-grid grid gap-3 sm:grid-cols-2 lg:gap-4 xl:grid-cols-3" data-post-grid>
-    {posts.map((p, i) => (
-      <PostLinkItem post={p} lang={lang} index={i} />
-    ))}
-  </div>
-) : (
-  <div
-    class="acg-post-grid grid gap-3 sm:grid-cols-2 sm:gap-4 lg:gap-5 xl:grid-cols-3 2xl:grid-cols-4"
-    data-post-grid
-  >
-    {posts.map((p, i) => (
-      <PostCard post={p} lang={lang} animateIndex={i < 24 ? i : undefined} index={i} />
-    ))}
-  </div>
-)}
+{
+  variant === "compact" ? (
+    <div class="acg-post-grid grid gap-3 sm:grid-cols-2 lg:gap-4 xl:grid-cols-3" data-post-grid>
+      {posts.map((p, i) => (
+        <PostLinkItem post={p} lang={lang} index={i} />
+      ))}
+    </div>
+  ) : (
+    <div
+      class="acg-post-grid grid gap-3 sm:grid-cols-2 sm:gap-4 lg:gap-5 xl:grid-cols-3 2xl:grid-cols-4"
+      data-post-grid
+    >
+      {posts.map((p, i) => (
+        <PostCard post={p} lang={lang} animateIndex={i < 24 ? i : undefined} index={i} />
+      ))}
+    </div>
+  )
+}

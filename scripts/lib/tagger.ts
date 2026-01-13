@@ -20,4 +20,3 @@ export function deriveTags(input: { title: string; summary?: string; category: C
   }
   return tags.slice(0, 6);
 }
-

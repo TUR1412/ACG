@@ -13,4 +13,3 @@ export function parseDate(input: string | undefined): Date | null {
 export function toIso(date: Date): string {
   return date.toISOString();
 }
-

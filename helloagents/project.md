@@ -1,6 +1,7 @@
 # 项目技术约定
 
 ## 技术栈
+
 - 核心：Astro（静态站点）+ TypeScript
 - 样式：Tailwind CSS + 自定义全局 CSS（玻璃拟态/主题变量）
 - 客户端：命令面板（`src/client/features/cmdk.ts`，`Ctrl/⌘ + K` 触发懒加载）+ 全站搜索 Worker（查询解析共享）
@@ -8,6 +9,7 @@
 - 部署：GitHub Pages（Actions 产物上传并发布）
 
 ## 开发约定
+
 - 代码风格：优先保持现有风格；修改以“可读性 + 可维护性 + 可验证”为目标。
 - 命名约定：TypeScript 使用 camelCase；常量使用 UPPER_SNAKE_CASE。
 - 本地存储：localStorage key 集中在 `src/client/constants.ts`（`STORAGE_KEYS`），读写使用 `src/client/state/storage.ts` 做容错与序列化，避免异常阻断交互。
@@ -22,18 +24,21 @@
   - `public/`：静态资源（会原样进入站点根目录）
 
 ## 错误与日志
+
 - 同步脚本：通过 `scripts/lib/logger.ts` 输出关键路径结果；在 GitHub Actions 中可附加 annotations/group，失败以 `process.exitCode=1` 终止。
 - 站点运行时：客户端错误尽量降级（不影响列表浏览），必要时以 Toast 提示用户。
 
 ## 隐私与埋点
+
 - 默认：仅在本地记录事件队列（`localStorage`），不做任何上传。
 - 可选上报：仅当用户显式配置并开启上传时才尝试上报：
   - `acg.telemetry.upload.v1=true`
   - `acg.telemetry.endpoint.v1=https://<your-endpoint>`
 
 ## 测试与流程
+
 - 类型检查：`npm run check`（Astro Check + TS）
-- 单元测试：`npm test`（Node test runner + tsx，仅覆盖关键纯函数与安全边界）    
+- 单元测试：`npm test`（Node test runner + tsx，仅覆盖关键纯函数与安全边界）
 - 构建：`npm run build`
 - Lighthouse CI：`npm run lhci`（需要可用的 Chrome/Edge；本地可用 `LHCI_CHROME_PATH` 或 `npm run lhci:local` 自动探测）
 - 数据同步：`npm run sync`

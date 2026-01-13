@@ -172,4 +172,3 @@ export const SOURCE_CONFIGS: SourceConfig[] = [
     category: "goods"
   }
 ];
-

@@ -62,4 +62,3 @@ export function saveWords(key: string, words: Set<string>) {
     // ignore
   }
 }
-

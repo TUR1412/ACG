@@ -27,11 +27,11 @@ const animateStyle = typeof animateIndex === "number" ? `--i: ${animateIndex};` 
 const retryCoverLabel = lang === "ja" ? "画像を再試行" : "重试封面";
 const cover = resolveCover(post.cover, 960);
 const coverOriginal = post.coverOriginal ?? cover?.original;
-const title = lang === "zh" ? post.titleZh ?? post.title : post.titleJa ?? post.title;
+const title = lang === "zh" ? (post.titleZh ?? post.title) : (post.titleJa ?? post.title);
 const snippet =
   lang === "zh"
-    ? post.summaryZh ?? post.previewZh ?? post.summary ?? post.preview
-    : post.summaryJa ?? post.previewJa ?? post.summary ?? post.preview;
+    ? (post.summaryZh ?? post.previewZh ?? post.summary ?? post.preview)
+    : (post.summaryJa ?? post.previewJa ?? post.summary ?? post.preview);
 const readMinutes =
   typeof post.readMinutes === "number" ? post.readMinutes : estimateReadMinutes(`${title} ${snippet ?? ""}`);
 const readLabel = formatReadMinutes(lang, readMinutes);
@@ -46,7 +46,10 @@ const healthLabels: Record<SourceHealthLevel, string> = {
 };
 const healthLabel = health ? healthLabels[health] : undefined;
 const publishedAtMs = new Date(post.publishedAt).getTime();
-const isFresh = Number.isFinite(publishedAtMs) && Date.now() - publishedAtMs >= 0 && Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
+const isFresh =
+  Number.isFinite(publishedAtMs) &&
+  Date.now() - publishedAtMs >= 0 &&
+  Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
 const freshLabel = lang === "ja" ? "新着" : "NEW";
 const bookmarkLabel = t(lang, "nav.bookmarks");
 ---
@@ -87,38 +90,49 @@ const bookmarkLabel = t(lang, "nav.bookmarks");
             <div class="acg-cover-fallback-meta">{categoryLabel(lang, post.category)}</div>
           </div>
         </div>
-        {cover ? (
-          <img
-            src={cover.src}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            referrerpolicy="no-referrer"
-            data-acg-cover
-            data-acg-cover-original-src={coverOriginal ?? ""}
-            class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-            onload="window.__acgCoverLoad?.(this)"
-            onerror="this.closest('[data-post-id]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
-          />
-        ) : null}
-        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/45 via-slate-950/10 to-transparent"></div>
+        {
+          cover ? (
+            <img
+              src={cover.src}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              referrerpolicy="no-referrer"
+              data-acg-cover
+              data-acg-cover-original-src={coverOriginal ?? ""}
+              class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+              onload="window.__acgCoverLoad?.(this)"
+              onerror="this.closest('[data-post-id]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
+            />
+          ) : null
+        }
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/45 via-slate-950/10 to-transparent">
+        </div>
 
-        <div class="acg-post-card-cover-badges absolute left-3 top-3 hidden flex-wrap items-center gap-2 sm:flex">
-          <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white">
+        <div
+          class="acg-post-card-cover-badges absolute left-3 top-3 hidden flex-wrap items-center gap-2 sm:flex"
+        >
+          <span
+            class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white"
+          >
             <span class:list={["size-1.5 rounded-full", theme.dot]}></span>
             <span>{categoryLabel(lang, post.category)}</span>
           </span>
 
-          {isFresh ? (
-            <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/90">
-              <span class="acg-dot-pulse size-1.5 rounded-full bg-emerald-400"></span>
-              <span>{freshLabel}</span>
-            </span>
-          ) : null}
+          {
+            isFresh ? (
+              <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/90">
+                <span class="acg-dot-pulse size-1.5 rounded-full bg-emerald-400" />
+                <span>{freshLabel}</span>
+              </span>
+            ) : null
+          }
         </div>
 
         <div class="acg-post-card-cover-when absolute bottom-3 left-3 hidden sm:block">
-          <span class="inline-flex max-w-[22ch] truncate rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/90">
+          <span
+            class="inline-flex max-w-[22ch] truncate rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/90"
+          >
             {when}
           </span>
         </div>
@@ -152,12 +166,14 @@ const bookmarkLabel = t(lang, "nav.bookmarks");
             </span>
             <span class="text-slate-400">·</span>
             <span>{when}</span>
-            {isFresh ? (
-              <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 font-semibold text-emerald-800">
-                <span class="acg-dot-pulse size-1.5 rounded-full bg-emerald-500"></span>
-                <span>{freshLabel}</span>
-              </span>
-            ) : null}
+            {
+              isFresh ? (
+                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 font-semibold text-emerald-800">
+                  <span class="acg-dot-pulse size-1.5 rounded-full bg-emerald-500" />
+                  <span>{freshLabel}</span>
+                </span>
+              ) : null
+            }
           </div>
 
           <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
@@ -186,41 +202,53 @@ const bookmarkLabel = t(lang, "nav.bookmarks");
         </button>
       </div>
 
-      {snippet && <p class="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-600 sm:line-clamp-3">{snippet}</p>}
+      {
+        snippet && (
+          <p class="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-600 sm:line-clamp-3">{snippet}</p>
+        )
+      }
 
       <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-600">
-        {pulseScore != null ? (
-          <span class="acg-metric acg-metric-pulse" title={`${t(lang, "home.pulseScore")}: ${pulseScore}`}>
-            <Icon name="chart" size={14} />
-            <span>{pulseScore}</span>
-          </span>
-        ) : null}
+        {
+          pulseScore != null ? (
+            <span class="acg-metric acg-metric-pulse" title={`${t(lang, "home.pulseScore")}: ${pulseScore}`}>
+              <Icon name="chart" size={14} />
+              <span>{pulseScore}</span>
+            </span>
+          ) : null
+        }
         <span class="acg-metric" title={`${t(lang, "home.readTime")}: ${readLabel}`}>
           <Icon name="clock" size={14} />
           <span>{readLabel}</span>
         </span>
-        {duplicateCount > 1 ? (
-          <span class="acg-metric acg-metric-dup" title={t(lang, "home.dedup")}>x{duplicateCount}</span>
-        ) : null}
+        {
+          duplicateCount > 1 ? (
+            <span class="acg-metric acg-metric-dup" title={t(lang, "home.dedup")}>
+              x{duplicateCount}
+            </span>
+          ) : null
+        }
       </div>
 
-      {post.tags?.length > 0 && (
-        <div class="acg-hscroll mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-          {post.tags.slice(0, 4).map((tag) => (
-            <button
-              type="button"
-              class:list={[
-                "shrink-0 whitespace-nowrap rounded-full border border-slate-900/10 bg-white/50 px-2.5 py-1 text-xs hover:bg-white/70 clickable",
-                theme.ink
-              ]}
-              data-tag={tag}
-              title="Filter"
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
-      )}
+      {
+        post.tags?.length > 0 && (
+          <div class="acg-hscroll mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+            {post.tags.slice(0, 4).map((tag) => (
+              <button
+                type="button"
+                class:list={[
+                  "shrink-0 whitespace-nowrap rounded-full border border-slate-900/10 bg-white/50 px-2.5 py-1 text-xs hover:bg-white/70 clickable",
+                  theme.ink
+                ]}
+                data-tag={tag}
+                title="Filter"
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        )
+      }
     </div>
   </div>
 </article>

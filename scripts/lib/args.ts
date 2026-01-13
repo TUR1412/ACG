@@ -41,4 +41,3 @@ export function parseArgs(argv: string[]): SyncArgs {
 
   return args;
 }
-

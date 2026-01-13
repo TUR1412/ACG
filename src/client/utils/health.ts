@@ -4,13 +4,11 @@ export type HealthSnapshot = {
   at: string;
   fps: number | null;
   longTasks: { count: number; totalMs: number; maxMs: number } | null;
-  memory:
-    | {
-        usedJsHeapSize: number;
-        totalJsHeapSize: number;
-        jsHeapSizeLimit: number;
-      }
-    | null;
+  memory: {
+    usedJsHeapSize: number;
+    totalJsHeapSize: number;
+    jsHeapSizeLimit: number;
+  } | null;
   domNodes: number | null;
   requests: RequestState;
 };
@@ -56,7 +54,10 @@ function getMemory(): HealthSnapshot["memory"] {
   }
 }
 
-function observeLongTasks(): { get: () => { count: number; totalMs: number; maxMs: number } | null; stop: () => void } {
+function observeLongTasks(): {
+  get: () => { count: number; totalMs: number; maxMs: number } | null;
+  stop: () => void;
+} {
   let count = 0;
   let totalMs = 0;
   let maxMs = 0;
@@ -173,7 +174,9 @@ export function startHealthMonitor(params?: { intervalMs?: number }): () => void
       "Requests.active": String(s.requests.active),
       "Requests.net": net,
       "Requests.lastSlowMs": s.requests.lastSlowMs != null ? `${round(s.requests.lastSlowMs)}ms` : "-",
-      "Requests.lastError": s.requests.lastError ? `${s.requests.lastError.status ?? "-"} ${s.requests.lastError.url}` : "-"
+      "Requests.lastError": s.requests.lastError
+        ? `${s.requests.lastError.status ?? "-"} ${s.requests.lastError.url}`
+        : "-"
     };
     if (s.longTasks) {
       rows["LongTasks.count"] = String(s.longTasks.count);
@@ -239,4 +242,3 @@ export function maybeStartHealthMonitor() {
   if (!enabled) return;
   startHealthMonitor();
 }
-

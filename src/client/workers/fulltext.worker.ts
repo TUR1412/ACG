@@ -1,4 +1,8 @@
-import { renderMarkdownToHtmlBlocks, stripInternalPlaceholdersFromHtml, translateViaGtx } from "../features/fulltext";
+import {
+  renderMarkdownToHtmlBlocks,
+  stripInternalPlaceholdersFromHtml,
+  translateViaGtx
+} from "../features/fulltext";
 
 type FullTextLang = "zh" | "ja";
 

@@ -141,4 +141,3 @@ export function parseQuery(raw: string): ParsedQuery {
 
   return out;
 }
-

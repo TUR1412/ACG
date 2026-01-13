@@ -38,4 +38,3 @@ export function parseAnimeAnimeList(html: string): RawItem[] {
 
   return items;
 }
-

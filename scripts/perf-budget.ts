@@ -140,12 +140,16 @@ async function main() {
 
   if (budget.jsKb > 0 && jsKb > budget.jsKb) failures.push(`JS 超标: ${jsKb}KB > ${budget.jsKb}KB`);
   if (budget.cssKb > 0 && cssKb > budget.cssKb) failures.push(`CSS 超标: ${cssKb}KB > ${budget.cssKb}KB`);
-  if (budget.htmlKb > 0 && htmlKb > budget.htmlKb) failures.push(`HTML/XML/JSON 超标: ${htmlKb}KB > ${budget.htmlKb}KB`);
+  if (budget.htmlKb > 0 && htmlKb > budget.htmlKb)
+    failures.push(`HTML/XML/JSON 超标: ${htmlKb}KB > ${budget.htmlKb}KB`);
   if (budget.dataJsonKb > 0 && dataJsonKb > budget.dataJsonKb)
     failures.push(`data.json 超标: ${dataJsonKb}KB > ${budget.dataJsonKb}KB`);
-  if (budget.dataGzKb > 0 && dataGzKb > budget.dataGzKb) failures.push(`data.gz 超标: ${dataGzKb}KB > ${budget.dataGzKb}KB`);
-  if (budget.coversMb > 0 && coversMb > budget.coversMb) failures.push(`covers 超标: ${coversMb}MB > ${budget.coversMb}MB`);
-  if (budget.totalMb > 0 && totalMb > budget.totalMb) failures.push(`dist 总体积超标: ${totalMb}MB > ${budget.totalMb}MB`);
+  if (budget.dataGzKb > 0 && dataGzKb > budget.dataGzKb)
+    failures.push(`data.gz 超标: ${dataGzKb}KB > ${budget.dataGzKb}KB`);
+  if (budget.coversMb > 0 && coversMb > budget.coversMb)
+    failures.push(`covers 超标: ${coversMb}MB > ${budget.coversMb}MB`);
+  if (budget.totalMb > 0 && totalMb > budget.totalMb)
+    failures.push(`dist 总体积超标: ${totalMb}MB > ${budget.totalMb}MB`);
 
   if (failures.length > 0) {
     const lines = [`[BUDGET] 失败：共 ${failures.length} 项`, ...failures.map((f) => `- ${f}`)];
@@ -156,7 +160,7 @@ async function main() {
 
 main().catch((err) => {
   const log = createLogger();
-  const msg = err instanceof Error ? err.stack ?? err.message : String(err);    
+  const msg = err instanceof Error ? (err.stack ?? err.message) : String(err);
   log.error(msg);
   process.exitCode = 1;
 });

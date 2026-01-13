@@ -14,4 +14,3 @@ export function GET(context: APIContext): Response {
     }
   });
 }
-

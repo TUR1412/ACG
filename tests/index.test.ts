@@ -5,7 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { safeExternalHttpUrl } from "../src/lib/safe-url";
 import { parseQuery, tokenizeQuery } from "../src/lib/search/query";
-import { buildSourceHealthMap, computePulseScore, estimateReadMinutes, normalizeForDedup } from "../src/lib/metrics";
+import {
+  buildSourceHealthMap,
+  computePulseScore,
+  estimateReadMinutes,
+  normalizeForDedup
+} from "../src/lib/metrics";
 import { makeErrorKey, sanitizeOneLine, sanitizeStack } from "../src/client/utils/monitoring";
 import { findChromePath } from "../scripts/lib/chrome-path";
 import { normalizeHttpUrl } from "../scripts/lib/http-cache";
@@ -21,12 +26,14 @@ test("safeExternalHttpUrl: 仅允许 http(s)", () => {
 
 test("tokenizeQuery: 支持引号与空白归一", () => {
   assert.deepEqual(tokenizeQuery("  hello  world "), ["hello", "world"]);
-  assert.deepEqual(tokenizeQuery("tag:anime \"foo bar\""), ["tag:anime", "foo bar"]);
+  assert.deepEqual(tokenizeQuery('tag:anime "foo bar"'), ["tag:anime", "foo bar"]);
   assert.deepEqual(tokenizeQuery("tag:'bad quote'"), ["tag:'bad", "quote'"]);
 });
 
 test("parseQuery: 支持负向筛选与 is:", () => {
-  const q = parseQuery("tag:anime -tag:bad source:ann-all -source:foo cat:アニメ after:2025-12-01 is:read -is:fresh");
+  const q = parseQuery(
+    "tag:anime -tag:bad source:ann-all -source:foo cat:アニメ after:2025-12-01 is:read -is:fresh"
+  );
   assert.deepEqual(q.tags, ["anime"]);
   assert.deepEqual(q.notTags, ["bad"]);
   assert.deepEqual(q.sources, ["ann-all"]);
@@ -51,8 +58,14 @@ test("estimateReadMinutes: 返回合理范围", () => {
 
 test("computePulseScore: 新内容分数更高", () => {
   const nowIso = new Date().toISOString();
-  const recent = computePulseScore({ publishedAt: nowIso, tags: [], cover: "", summary: "", preview: "" }, null);
-  const old = computePulseScore({ publishedAt: "2000-01-01T00:00:00.000Z", tags: [], cover: "", summary: "", preview: "" }, null);
+  const recent = computePulseScore(
+    { publishedAt: nowIso, tags: [], cover: "", summary: "", preview: "" },
+    null
+  );
+  const old = computePulseScore(
+    { publishedAt: "2000-01-01T00:00:00.000Z", tags: [], cover: "", summary: "", preview: "" },
+    null
+  );
   assert.ok(recent > old);
 });
 
@@ -66,7 +79,7 @@ test("buildSourceHealthMap: 生成健康度", () => {
 });
 
 test("sanitizeOneLine: 归一空白并截断", () => {
-  assert.equal(sanitizeOneLine("  hello   world \n ok "), "hello world ok");    
+  assert.equal(sanitizeOneLine("  hello   world \n ok "), "hello world ok");
   const msg = sanitizeOneLine("fetch https://example.com/a?token=secret#x failed");
   assert.ok(!msg.includes("token=secret"));
   assert.ok(!msg.includes("#x"));
@@ -119,6 +132,12 @@ test("normalizeHttpUrl: 去 hash/追踪参数（保留必要 query）", () => {
   assert.equal(normalizeHttpUrl("javascript:alert(1)"), null);
   assert.equal(normalizeHttpUrl("data:text/plain,hi"), null);
 
-  assert.equal(normalizeHttpUrl("https://example.com/a?utm_source=abc&x=1#frag"), "https://example.com/a?x=1");
-  assert.equal(normalizeHttpUrl("https://example.com/a?fbclid=123&utm_medium=social"), "https://example.com/a");
+  assert.equal(
+    normalizeHttpUrl("https://example.com/a?utm_source=abc&x=1#frag"),
+    "https://example.com/a?x=1"
+  );
+  assert.equal(
+    normalizeHttpUrl("https://example.com/a?fbclid=123&utm_medium=social"),
+    "https://example.com/a"
+  );
 });

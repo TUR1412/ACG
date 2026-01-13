@@ -56,29 +56,22 @@ function dataRequestKind(reqUrl) {
   ) {
     return { kind: "status-history", gz };
   }
-  if (
-    pathname.endsWith("/data/search-pack.v1.json") ||
-    pathname.endsWith("/data/search-pack.v1.json.gz")
-  ) {
+  if (pathname.endsWith("/data/search-pack.v1.json") || pathname.endsWith("/data/search-pack.v1.json.gz")) {
     return { kind: "search-pack", gz };
   }
-  if (
-    pathname.endsWith("/data/search-pack.v2.json") ||
-    pathname.endsWith("/data/search-pack.v2.json.gz")
-  ) {
+  if (pathname.endsWith("/data/search-pack.v2.json") || pathname.endsWith("/data/search-pack.v2.json.gz")) {
     return { kind: "search-pack-v2", gz };
   }
 
   return null;
 }
 
-function isDataRequest(reqUrl) {
-  return Boolean(dataRequestKind(reqUrl));
-}
-
 function isAssetRequest(reqUrl) {
   if (!reqUrl) return false;
-  return reqUrl.pathname.includes("/_astro/") || /\.(css|js|mjs|map|txt|svg|ico|webmanifest)$/i.test(reqUrl.pathname);
+  return (
+    reqUrl.pathname.includes("/_astro/") ||
+    /\.(css|js|mjs|map|txt|svg|ico|webmanifest)$/i.test(reqUrl.pathname)
+  );
 }
 
 function isImageRequest(request) {
@@ -96,7 +89,7 @@ function offlineHtml() {
     <title>ACG Radar - Offline</title>
     <style>
       :root { color-scheme: light; }
-      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"; margin: 0; background: #f2f4f8; color: #0b0f14; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; margin: 0; background: #f2f4f8; color: #0b0f14; }
       .wrap { max-width: 720px; margin: 0 auto; padding: 36px 18px; }
       .card { background: rgba(255,255,255,0.72); border: 1px solid rgba(15,23,42,0.10); border-radius: 18px; padding: 20px; box-shadow: 0 18px 55px rgba(2,6,23,0.12); }
       h1 { font-size: 20px; margin: 0; }
@@ -271,13 +264,19 @@ self.addEventListener("fetch", (event) => {
         const headers = { "content-type": "application/json; charset=utf-8" };
         if (dk.kind === "posts") return new Response("[]\n", { headers });
         if (dk.kind === "status") {
-          return new Response(JSON.stringify({ generatedAt: null, durationMs: 0, sources: [] }) + "\n", { headers });
+          return new Response(JSON.stringify({ generatedAt: null, durationMs: 0, sources: [] }) + "\n", {
+            headers
+          });
         }
         if (dk.kind === "search-pack") {
-          return new Response(JSON.stringify({ v: 1, generatedAt: null, posts: [], index: [] }) + "\n", { headers });
+          return new Response(JSON.stringify({ v: 1, generatedAt: null, posts: [], index: [] }) + "\n", {
+            headers
+          });
         }
         if (dk.kind === "search-pack-v2") {
-          return new Response(JSON.stringify({ v: 2, generatedAt: null, posts: [], index: [] }) + "\n", { headers });
+          return new Response(JSON.stringify({ v: 2, generatedAt: null, posts: [], index: [] }) + "\n", {
+            headers
+          });
         }
         if (dk.kind === "status-history") {
           return new Response(JSON.stringify({ v: 1, generatedAt: null, entries: [] }) + "\n", { headers });
@@ -332,4 +331,3 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
-

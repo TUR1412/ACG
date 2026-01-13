@@ -16,7 +16,7 @@ function escapeXmlAttr(input: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 }
 
@@ -80,13 +80,7 @@ export function renderOpml(params: OpmlParams): string {
 
   const body = ["<body>", ...bodyOutlines, "</body>"].join("\n");
 
-  return [
-    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-    "<opml version=\"2.0\">",
-    head,
-    body,
-    "</opml>",
-    ""
-  ].join("\n");
+  return ['<?xml version="1.0" encoding="UTF-8"?>', '<opml version="2.0">', head, body, "</opml>", ""].join(
+    "\n"
+  );
 }
-

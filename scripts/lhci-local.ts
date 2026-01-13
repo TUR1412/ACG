@@ -61,7 +61,7 @@ async function main() {
     log.info("- 安装 Chrome（推荐）或 Edge，并确保可执行文件存在。");
     log.info("- 或设置环境变量 LHCI_CHROME_PATH 指向 chrome/msedge 可执行文件路径。");
     log.info("示例（PowerShell）：");
-    log.info("  $env:LHCI_CHROME_PATH = \"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\"");
+    log.info('  $env:LHCI_CHROME_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"');
     process.exitCode = 1;
     return;
   }
@@ -81,17 +81,10 @@ async function main() {
   }
 
   log.info(`[LHCI] chromePath=${chromePath}`);
-  await run(
-    "npx",
-    [
-      "--yes",
-      "@lhci/cli@0.15.1",
-      "autorun",
-      "--config",
-      configFile
-    ],
-    { ACG_BASE: "/", LHCI_CHROME_PATH: chromePath }
-  );
+  await run("npx", ["--yes", "@lhci/cli@0.15.1", "autorun", "--config", configFile], {
+    ACG_BASE: "/",
+    LHCI_CHROME_PATH: chromePath
+  });
 }
 
 void main().catch((err) => {

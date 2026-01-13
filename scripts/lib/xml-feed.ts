@@ -94,7 +94,8 @@ export function parseFeed(xml: string): FeedItem[] {
         const title = textOf(item?.title);
         const url = textOf(item?.link);
         const publishedAt = textOf(item?.pubDate) || textOf(item?.date) || textOf(item?.["dc:date"]);
-        const summary = textOf(item?.description) || textOf(item?.summary) || textOf(item?.["content:encoded"]);
+        const summary =
+          textOf(item?.description) || textOf(item?.summary) || textOf(item?.["content:encoded"]);
         const cover = pickImageFromRssItem(item);
         return { title, url, publishedAt, summary, ...(cover ? { cover } : {}) } satisfies FeedItem;
       })

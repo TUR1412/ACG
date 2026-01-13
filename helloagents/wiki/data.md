@@ -1,11 +1,13 @@
 # 数据模型
 
 ## 概述
+
 站点核心数据由同步脚本生成，为纯 JSON 文件，供 Astro 构建与浏览器运行时使用。
 
 ## Post（资讯条目）
 
 字段（与 `src/lib/types.ts` 保持一致）：
+
 - `id`: string（全局唯一）
 - `title`: string（原标题）
 - `titleZh?` / `titleJa?`: string（翻译标题）
@@ -34,16 +36,19 @@
 由同步脚本在构建期生成，用于浏览器侧全站搜索 Worker 快速加载（无需运行时全量扫描 posts 并重复构建索引）。
 
 字段（与 `src/lib/search/pack.ts` 保持一致）：
+
 - `v`: 1 | 2
 - `generatedAt`: string
 - `posts`: Post[]
 - `index`: SearchPackIndexRow[]
 
 差异（以“更稳更轻”为目标）：
+
 - v1：直接基于同步产物 posts 生成（字段完整、体积更大）。
 - v2：为搜索/渲染瘦身：去掉 preview*，并将 `summary* = summary* ?? preview*`（统一展示文案字段），减少体积并改善首载；Worker 默认优先 v2，失败回退 v1。
 
 SearchPackIndexRow：
+
 - `i`: number（索引：对应 `posts[i]`）
 - `hay`: string（归一化后的可检索文本）
 - `tags`: string[]
@@ -56,11 +61,13 @@ SearchPackIndexRow：
 ## SyncStatus（同步状态）
 
 字段（与 `src/lib/types.ts` 保持一致）：
+
 - `generatedAt`: string|null
 - `durationMs`: number
 - `sources`: SourceStatus[]
 
 SourceStatus：
+
 - `id` / `name` / `kind` / `url`
 - `ok`: boolean
 - `httpStatus?`: number
@@ -79,6 +86,7 @@ SourceStatus：
 - `error?`: string
 
 ### 同步管线参数（Env）
+
 - `ACG_SOURCE_CONCURRENCY`：来源抓取并发数（默认 `3`，范围 `1..8`）。
   - 并发开启时：抓取阶段仅更新内存中的 `.cache/http.json`（etag/last-modified/lastOkAt 等），阶段结束统一落盘，避免并发写入竞态并减少 IO。
 
@@ -87,11 +95,13 @@ SourceStatus：
 用于把每次同步的汇总指标累积为时间序列，以便在 `/status` 展示近 7/30 轮趋势。
 
 StatusHistoryV1 字段（与 `src/lib/types.ts` 保持一致）：
+
 - `v`: 1
 - `generatedAt`: string|null
 - `entries`: StatusHistoryEntry[]
 
 StatusHistoryEntry：
+
 - `generatedAt`: string
 - `durationMs`: number
 - `totalSources` / `okSources` / `errSources`: number
@@ -99,4 +109,3 @@ StatusHistoryEntry：
 - `flakySources`: number
 - `staleSources`: number
 - `parseEmpty` / `parseDrop`: number
-

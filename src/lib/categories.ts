@@ -25,4 +25,3 @@ export function isCategory(value: string): value is Category {
 export function categoryLabel(lang: Lang, category: Category): string {
   return LABELS[lang][category];
 }
-

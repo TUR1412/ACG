@@ -63,7 +63,7 @@ ACG Radar 是一个“伪全栈”的 ACG 资讯雷达站点：数据由 GitHub 
 - **Read Depth**：预计阅读时长，让浏览节奏更可控
 - **Source Trust**：来源健康度可视化，支持“只看稳定来源”
 - **全站搜索**：标题/摘要/标签/来源快速过滤，支持 `tag:` / `source:` / `cat:` / `before:` / `after:` / `is:` 语法（含 `-` 反选）
-- **Command Palette**：`Ctrl/⌘ + K` 快速切换过滤、主题、语言、复制链接等        
+- **Command Palette**：`Ctrl/⌘ + K` 快速切换过滤、主题、语言、复制链接等
 - **Layout Modes**：Grid/List 视图 + Comfort/Compact 密度，一键适配“扫读 / 浏览”
 - **PWA / 离线兜底**：弱网或离线时回退到最近缓存页面
 - **SEO Baseline**：生成 `robots.txt` + `sitemap.xml`，让搜索引擎与 Lighthouse SEO 审计更稳定（有生成数据时可增量覆盖更多页面）
@@ -168,6 +168,8 @@ npm run budget
 ## 质量与性能（建议 PR 前） / 品質とパフォーマンス（PR前推奨）
 
 ```bash
+npm run lint
+npm run format:check
 npm run check
 npm test
 npm run build
@@ -184,19 +186,19 @@ npm run lhci
 <details>
   <summary><b>展开：常用环境变量一览 / 展開：主な環境変数</b></summary>
 
-| 变量 / 変数 | 用途 / 用途 | 默认 / 既定 |
-|---|---|---|
-| `ACG_BASE` | GitHub Pages base path（本地一般用 `/`）<br/>GitHub Pages の base path（ローカルは通常 `/`） | `/` |
-| `ACG_SOURCE_CONCURRENCY` | 同步抓取阶段并发数（更保守=更稳）<br/>同期取得の並列数（保守的=安定） | `3` |
-| `ACG_TRANSLATE_MAX_POSTS` | 同步阶段翻译覆盖上限（标题/摘要/预览等字段）<br/>同期翻訳の上限（タイトル/要約/プレビュー等） | `220` |
-| `ACG_TRANSLATE_TIMEOUT_MS` | 翻译请求超时（毫秒）<br/>翻訳リクエストのタイムアウト（ms） | `18000` |
-| `ACG_BUDGET_JS_KB` | `dist/` JS 预算门禁（KB）<br/>`dist/` JS サイズ上限（KB） | `450` |
-| `ACG_BUDGET_CSS_KB` | `dist/` CSS 预算门禁（KB）<br/>`dist/` CSS サイズ上限（KB） | `650` |
-| `ACG_BUDGET_HTML_KB` | 入口页 HTML/XML/JSON(core) 预算门禁（KB）<br/>入口 HTML/XML/JSON(core) サイズ上限（KB） | `5000` |
-| `ACG_BUDGET_DATA_GZ_KB` | `dist/data/*.json.gz` 预算门禁（KB）<br/>`dist/data/*.json.gz` サイズ上限（KB） | `4500` |
-| `ACG_BUDGET_COVERS_MB` | `covers/` 预算门禁（MB）<br/>`covers/` サイズ上限（MB） | `160` |
-| `LHCI_CHROME_PATH` | 本地运行 Lighthouse CI 时指定 Chrome/Edge 可执行文件路径<br/>Lighthouse CI をローカル実行するための Chrome/Edge 実行ファイルのパス | - |
-| `LHCI_OUTPUT_DIR` | 用于 `npm run lhci:summary` 指定读取的报告目录（例如 `lhci_reports_simulate`）<br/>`npm run lhci:summary` が参照するレポートディレクトリを指定（例: `lhci_reports_simulate`） | - |
+| 变量 / 変数                | 用途 / 用途                                                                                                                                                                   | 默认 / 既定 |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `ACG_BASE`                 | GitHub Pages base path（本地一般用 `/`）<br/>GitHub Pages の base path（ローカルは通常 `/`）                                                                                  | `/`         |
+| `ACG_SOURCE_CONCURRENCY`   | 同步抓取阶段并发数（更保守=更稳）<br/>同期取得の並列数（保守的=安定）                                                                                                         | `3`         |
+| `ACG_TRANSLATE_MAX_POSTS`  | 同步阶段翻译覆盖上限（标题/摘要/预览等字段）<br/>同期翻訳の上限（タイトル/要約/プレビュー等）                                                                                 | `220`       |
+| `ACG_TRANSLATE_TIMEOUT_MS` | 翻译请求超时（毫秒）<br/>翻訳リクエストのタイムアウト（ms）                                                                                                                   | `18000`     |
+| `ACG_BUDGET_JS_KB`         | `dist/` JS 预算门禁（KB）<br/>`dist/` JS サイズ上限（KB）                                                                                                                     | `450`       |
+| `ACG_BUDGET_CSS_KB`        | `dist/` CSS 预算门禁（KB）<br/>`dist/` CSS サイズ上限（KB）                                                                                                                   | `650`       |
+| `ACG_BUDGET_HTML_KB`       | 入口页 HTML/XML/JSON(core) 预算门禁（KB）<br/>入口 HTML/XML/JSON(core) サイズ上限（KB）                                                                                       | `5000`      |
+| `ACG_BUDGET_DATA_GZ_KB`    | `dist/data/*.json.gz` 预算门禁（KB）<br/>`dist/data/*.json.gz` サイズ上限（KB）                                                                                               | `4500`      |
+| `ACG_BUDGET_COVERS_MB`     | `covers/` 预算门禁（MB）<br/>`covers/` サイズ上限（MB）                                                                                                                       | `160`       |
+| `LHCI_CHROME_PATH`         | 本地运行 Lighthouse CI 时指定 Chrome/Edge 可执行文件路径<br/>Lighthouse CI をローカル実行するための Chrome/Edge 実行ファイルのパス                                            | -           |
+| `LHCI_OUTPUT_DIR`          | 用于 `npm run lhci:summary` 指定读取的报告目录（例如 `lhci_reports_simulate`）<br/>`npm run lhci:summary` が参照するレポートディレクトリを指定（例: `lhci_reports_simulate`） | -           |
 
 </details>
 

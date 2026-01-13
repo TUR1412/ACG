@@ -15,7 +15,7 @@ export type SourceHealthSummary = {
   stable: number;
 };
 
-const BRACKETS_RE = /[\[\]【】()（）「」『』《》〈〉〔〕]/g;
+const BRACKETS_RE = /\[|[\]【】()（）「」『』《》〈〉〔〕]/g;
 const NOISE_TOKENS = new Set(["新作", "特報"]);
 
 export function normalizeForDedup(raw: string): string {
@@ -107,7 +107,10 @@ export function computePulseScore(
   return Math.max(0, Math.min(120, raw));
 }
 
-export function computeTimeLensCounts(posts: Post[], nowMs = Date.now()): Record<"2h" | "6h" | "24h", number> {
+export function computeTimeLensCounts(
+  posts: Post[],
+  nowMs = Date.now()
+): Record<"2h" | "6h" | "24h", number> {
   const counts = { "2h": 0, "6h": 0, "24h": 0 };
   for (const post of posts) {
     const time = Date.parse(post.publishedAt);
@@ -132,7 +135,7 @@ export function applyDerivedMetrics(posts: Post[], healthMap?: Map<string, Sourc
   const nowMs = Date.now();
   return posts.map((post, idx) => {
     const key = dedupKeys[idx] ?? post.id;
-    const health = post.sourceId ? healthMap?.get(post.sourceId) ?? null : null;
+    const health = post.sourceId ? (healthMap?.get(post.sourceId) ?? null) : null;
     const text = `${post.title} ${post.summary ?? post.preview ?? ""}`;
     const readMinutes = post.readMinutes ?? estimateReadMinutes(text);
     const pulseScore = computePulseScore(post, health?.level ?? null, nowMs);

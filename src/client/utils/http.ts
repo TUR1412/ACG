@@ -3,8 +3,20 @@ import { reportRequestEnd, reportRequestStart, type RequestMeta } from "../state
 
 export type HttpInterceptor = {
   onRequest?: (ctx: { url: string; init: RequestInit; label: string }) => void;
-  onResponse?: (ctx: { url: string; init: RequestInit; label: string; res: Response; durationMs: number }) => void;
-  onError?: (ctx: { url: string; init: RequestInit; label: string; error: unknown; durationMs: number }) => void;
+  onResponse?: (ctx: {
+    url: string;
+    init: RequestInit;
+    label: string;
+    res: Response;
+    durationMs: number;
+  }) => void;
+  onError?: (ctx: {
+    url: string;
+    init: RequestInit;
+    label: string;
+    error: unknown;
+    durationMs: number;
+  }) => void;
 };
 
 const interceptors: HttpInterceptor[] = [];
@@ -62,7 +74,11 @@ export type HttpRequestOptions = {
   headers?: HeadersInit;
 };
 
-export async function httpFetch(url: string, init?: RequestInit, options?: HttpRequestOptions): Promise<Response> {
+export async function httpFetch(
+  url: string,
+  init?: RequestInit,
+  options?: HttpRequestOptions
+): Promise<Response> {
   const label = options?.label ?? url;
   const timeoutMs = options?.timeoutMs ?? NETWORK.DEFAULT_TIMEOUT_MS;
   const retries = Math.max(0, Math.floor(options?.retries ?? 0));
@@ -160,13 +176,7 @@ export async function httpFetch(url: string, init?: RequestInit, options?: HttpR
     throw new Error("unreachable");
   };
 
-  try {
-    return await run();
-  } catch (err) {
-    // 兜底：确保 active 计数不会被异常路径卡死
-    // reportRequestEnd 已在上面触发，这里不再重复调用。
-    throw err;
-  }
+  return await run();
 }
 
 export async function fetchJson<T>(

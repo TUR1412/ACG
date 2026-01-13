@@ -45,10 +45,8 @@ import Icon from "../../components/Icon.astro";
   </div>
 
   <div class="mt-6" id="acg-bookmarks" hidden>
-    <div
-      id="acg-bookmarks-grid"
-      class="grid gap-4 sm:grid-cols-2 lg:gap-5 xl:grid-cols-3 2xl:grid-cols-4"
-    ></div>
+    <div id="acg-bookmarks-grid" class="grid gap-4 sm:grid-cols-2 lg:gap-5 xl:grid-cols-3 2xl:grid-cols-4">
+    </div>
   </div>
 
   <div class="mt-6 glass shine rounded-2xl p-8" id="acg-bookmarks-empty">
@@ -60,7 +58,10 @@ import Icon from "../../components/Icon.astro";
         <p class="m-0 text-sm font-medium text-slate-950">{t("zh", "bookmarks.empty")}</p>
         <p class="mt-2 text-xs leading-relaxed text-slate-600">看到喜欢的资讯，点一下右上角就能收藏。</p>
       </div>
-      <a class="rounded-xl bg-slate-950 px-4 py-2 text-xs font-medium text-white clickable" href={href("/zh/")}>
+      <a
+        class="rounded-xl bg-slate-950 px-4 py-2 text-xs font-medium text-white clickable"
+        href={href("/zh/")}
+      >
         去逛最新
       </a>
     </div>

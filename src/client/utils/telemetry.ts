@@ -43,7 +43,9 @@ function safeJsonParse<T>(raw: string | null): T | null {
 
 function readStore(): TelemetryStore {
   try {
-    const parsed = safeJsonParse<{ version?: unknown; events?: unknown }>(localStorage.getItem(STORAGE_KEYS.TELEMETRY));
+    const parsed = safeJsonParse<{ version?: unknown; events?: unknown }>(
+      localStorage.getItem(STORAGE_KEYS.TELEMETRY)
+    );
     const version = typeof parsed?.version === "number" ? parsed.version : 0;
     const eventsRaw = (parsed as any)?.events;
     const events =
@@ -212,4 +214,3 @@ export function wireTelemetry() {
     if (document.hidden) onFlush();
   });
 }
-

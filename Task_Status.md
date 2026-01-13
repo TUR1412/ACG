@@ -1,16 +1,20 @@
 # [ACG-001] 任务看板
+
 > **环境**: Windows 11 (pwsh -NoLogo -NoProfile wrapper) | **框架**: Astro + Tailwind + TypeScript | **档位**: 3档 (标准工程)
 > **已激活矩阵**: [模块 A: 视觉矫正] + [模块 E: 幽灵防御] + [模块 B: 逻辑直通]
 
 ## 1. 需求镜像 (Requirement Mirroring)
+
 > **我的理解**: 做一个“伪全栈”的二次元资讯小站：数据由 GitHub Actions 每小时抓取更新，站点静态部署到 GitHub Pages；UI 中日双语；支持搜索、收藏、已读与抓取状态页。
 > **不做什么**: 不要求你本地常驻运行服务；不做登录/数据库；“全文预览”属于实验能力（阅读模式抓取 + 翻译 + 本地缓存），不做永久存储，也不保证每个来源都能稳定抓取。
 
 ## 2. 进化知识库 (Evolutionary Knowledge - Ω)
+
 - [!] 抓取属于高风险行为：默认做“来源失败不影响全站”，并提供 `/status` 观测面板。
 - [!] 为避免每小时自动提交刷屏：历史数据默认从已部署站点的 `data/posts.json` 回读并合并。
 
 ## 3. 执行清单 (Execution)
+
 - [x] 1. 初始化 Astro + Tailwind（当前无 React 组件，已移除 React 集成）
 - [x] 2. 完成中日双语路由与文案
 - [x] 3. 编写抓取脚本与来源适配（RSS/Atom/RDF + HTML）
@@ -19,6 +23,7 @@
 - [x] 6. 本地构建验证 + README/License
 
 ## 4. 持续迭代 (Iteration)
+
 - [x] 7. Actions 抓取缓存恢复（降低来源压力）
 - [x] 8. 收藏导入/导出/清空（localStorage）
 - [x] 9. 新增关于页（机制说明 + 来源列表）

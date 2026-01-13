@@ -15,7 +15,9 @@ const okSources = status.sources.filter((s) => s.ok).length;
 const errSources = totalSources - okSources;
 const totalItems = status.sources.reduce((sum, s) => sum + (s.itemCount ?? 0), 0);
 const totalNewItems = status.sources.reduce((sum, s) => sum + (s.newItemCount ?? 0), 0);
-const flakySources = status.sources.filter((s) => typeof s.consecutiveFails === "number" && s.consecutiveFails >= 3).length;
+const flakySources = status.sources.filter(
+  (s) => typeof s.consecutiveFails === "number" && s.consecutiveFails >= 3
+).length;
 const staleThresholdHours = 72;
 const slowest = [...status.sources].sort((a, b) => b.durationMs - a.durationMs)[0];
 const successRate = totalSources > 0 ? Math.round((okSources / totalSources) * 100) : 0;
@@ -121,73 +123,75 @@ function suggest(s: (typeof status.sources)[number]): string {
     </div>
   </div>
 
-  {showTrend ? (
-    <section class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <div class="glass shine rounded-2xl p-5">
-        <div class="flex items-end justify-between gap-4">
-          <div>
-            <div class="text-xs font-semibold text-slate-600">成功率趋势（近30轮）</div>
-            <div class="mt-2 text-2xl font-semibold text-slate-950">{trendNowSuccess}%</div>
-            <div class="mt-1 text-xs text-slate-600">更新：{trendUpdatedAt}</div>
+  {
+    showTrend ? (
+      <section class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="glass shine rounded-2xl p-5">
+          <div class="flex items-end justify-between gap-4">
+            <div>
+              <div class="text-xs font-semibold text-slate-600">成功率趋势（近30轮）</div>
+              <div class="mt-2 text-2xl font-semibold text-slate-950">{trendNowSuccess}%</div>
+              <div class="mt-1 text-xs text-slate-600">更新：{trendUpdatedAt}</div>
+            </div>
+            <svg class="h-10 w-28 text-emerald-700" viewBox="0 0 120 40" aria-hidden="true">
+              <path
+                d={sparkPath(trendSuccess30)}
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
           </div>
-          <svg class="h-10 w-28 text-emerald-700" viewBox="0 0 120 40" aria-hidden="true">
-            <path
-              d={sparkPath(trendSuccess30)}
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
         </div>
-      </div>
 
-      <div class="glass shine rounded-2xl p-5">
-        <div class="flex items-end justify-between gap-4">
-          <div>
-            <div class="text-xs font-semibold text-slate-600">异常来源趋势（近30轮）</div>
-            <div class="mt-2 text-2xl font-semibold text-rose-800">{trendNowErr}</div>
-            <div class="mt-1 text-xs text-slate-600">连续失败≥3：{flakySources}</div>
+        <div class="glass shine rounded-2xl p-5">
+          <div class="flex items-end justify-between gap-4">
+            <div>
+              <div class="text-xs font-semibold text-slate-600">异常来源趋势（近30轮）</div>
+              <div class="mt-2 text-2xl font-semibold text-rose-800">{trendNowErr}</div>
+              <div class="mt-1 text-xs text-slate-600">连续失败≥3：{flakySources}</div>
+            </div>
+            <svg class="h-10 w-28 text-rose-700" viewBox="0 0 120 40" aria-hidden="true">
+              <path
+                d={sparkPath(trendErr30)}
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
           </div>
-          <svg class="h-10 w-28 text-rose-700" viewBox="0 0 120 40" aria-hidden="true">
-            <path
-              d={sparkPath(trendErr30)}
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
         </div>
-      </div>
 
-      <div class="glass shine rounded-2xl p-5">
-        <div class="flex items-end justify-between gap-4">
-          <div>
-            <div class="text-xs font-semibold text-slate-600">新增条目趋势（近30轮）</div>
-            <div class="mt-2 text-2xl font-semibold text-slate-950">{trendNowNew}</div>
-            <div class="mt-1 text-xs text-slate-600">疑似停更：{staleSources}</div>
+        <div class="glass shine rounded-2xl p-5">
+          <div class="flex items-end justify-between gap-4">
+            <div>
+              <div class="text-xs font-semibold text-slate-600">新增条目趋势（近30轮）</div>
+              <div class="mt-2 text-2xl font-semibold text-slate-950">{trendNowNew}</div>
+              <div class="mt-1 text-xs text-slate-600">疑似停更：{staleSources}</div>
+            </div>
+            <svg class="h-10 w-28 text-slate-800" viewBox="0 0 120 40" aria-hidden="true">
+              <path
+                d={sparkPath(trendNew30)}
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
           </div>
-          <svg class="h-10 w-28 text-slate-800" viewBox="0 0 120 40" aria-hidden="true">
-            <path
-              d={sparkPath(trendNew30)}
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
         </div>
+      </section>
+    ) : (
+      <div class="mt-6 glass rounded-2xl p-5 text-sm text-slate-700">
+        趋势数据尚未积累：请等待下一轮同步后再查看（需要至少 2 轮记录）。
       </div>
-    </section>
-  ) : (
-    <div class="mt-6 glass rounded-2xl p-5 text-sm text-slate-700">
-      趋势数据尚未积累：请等待下一轮同步后再查看（需要至少 2 轮记录）。
-    </div>
-  )}
+    )
+  }
 
   <section class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
     <div class="glass shine rounded-2xl p-5">
@@ -207,13 +211,15 @@ function suggest(s: (typeof status.sources)[number]): string {
     <div class="glass shine rounded-2xl p-5">
       <div class="text-xs font-semibold text-slate-600">本次条目</div>
       <div class="mt-2 text-2xl font-semibold text-slate-950">{totalItems}</div>
-      <div class="mt-1 text-xs text-slate-600">新增 {totalNewItems} · 疑似停更 {staleSources}</div>   
+      <div class="mt-1 text-xs text-slate-600">新增 {totalNewItems} · 疑似停更 {staleSources}</div>
     </div>
 
     <div class="glass shine rounded-2xl p-5">
       <div class="text-xs font-semibold text-slate-600">最慢来源</div>
       <div class="mt-2 text-base font-semibold text-slate-950 line-clamp-3">{slowest?.name ?? "-"}</div>
-      <div class="mt-1 text-xs text-slate-600">{slowest ? `${slowest.durationMs}ms · ${slowest.used}` : "-"}</div>
+      <div class="mt-1 text-xs text-slate-600">
+        {slowest ? `${slowest.durationMs}ms · ${slowest.used}` : "-"}
+      </div>
     </div>
   </section>
 
@@ -239,86 +245,97 @@ function suggest(s: (typeof status.sources)[number]): string {
           </tr>
         </thead>
         <tbody>
-          {status.sources.map((s) => (
-            <tr class="glass">
-              <td class="px-3 py-2">
-                {(() => {
-                  const u = safeExternalHttpUrl(s.url);
-                  if (!u) return <span class="font-medium text-slate-950">{s.name}</span>;
-                  return (
-                    <a class="font-medium text-slate-950 hover:underline" href={u} target="_blank" rel="noreferrer noopener">
-                      {s.name}
-                    </a>
-                  );
-                })()}
-                <div class="text-xs text-slate-600">{s.id}</div>
-              </td>
-              <td class="px-3 py-2">
-                <span
-                  class:list={[
-                    "rounded-full px-3 py-1 text-xs font-medium",
-                    s.ok ? "bg-emerald-500/15 text-emerald-800" : "bg-rose-500/15 text-rose-800"
-                  ]}
-                >
-                  {s.ok ? t("zh", "status.ok") : t("zh", "status.error")}       
-                </span>
-              </td>
-              <td class="px-3 py-2">
-                {s.itemCount}
-                {typeof s.visibleItemCount === "number" ? (
-                  <div class="text-xs text-slate-600">可见 {s.visibleItemCount}</div>
-                ) : null}
-              </td>
-              <td class="px-3 py-2">
-                {typeof s.newItemCount === "number" ? (
+          {
+            status.sources.map((s) => (
+              <tr class="glass">
+                <td class="px-3 py-2">
+                  {(() => {
+                    const u = safeExternalHttpUrl(s.url);
+                    if (!u) return <span class="font-medium text-slate-950">{s.name}</span>;
+                    return (
+                      <a
+                        class="font-medium text-slate-950 hover:underline"
+                        href={u}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                      >
+                        {s.name}
+                      </a>
+                    );
+                  })()}
+                  <div class="text-xs text-slate-600">{s.id}</div>
+                </td>
+                <td class="px-3 py-2">
                   <span
                     class:list={[
-                      "text-xs font-medium",
-                      s.newItemCount > 0 ? "text-emerald-800" : "text-slate-600"
+                      "rounded-full px-3 py-1 text-xs font-medium",
+                      s.ok ? "bg-emerald-500/15 text-emerald-800" : "bg-rose-500/15 text-rose-800"
                     ]}
                   >
-                    {s.newItemCount > 0 ? `+${s.newItemCount}` : "0"}
+                    {s.ok ? t("zh", "status.ok") : t("zh", "status.error")}
                   </span>
-                ) : (
-                  <span class="text-xs text-slate-600">-</span>
-                )}
-              </td>
-              <td
-                class:list={[
-                  "px-3 py-2 text-xs",
-                  (() => {
-                    const h = staleHours(s.latestPublishedAt);
-                    if (h != null && h >= staleThresholdHours) return "text-amber-800";
-                    return "text-slate-600";
-                  })()
-                ]}
-              >
-                {fmt(s.latestPublishedAt)}
-              </td>
-              <td class="px-3 py-2 text-xs text-slate-600">
-                {typeof s.consecutiveFails === "number" && s.consecutiveFails > 0
-                  ? `${s.consecutiveFails}次`
-                  : "-"}
-              </td>
-              <td class="px-3 py-2 text-xs text-slate-600">
-                {s.rawItemCount != null && s.filteredItemCount != null ? `${s.rawItemCount} → ${s.filteredItemCount}` : "-"}
-              </td>
-              <td class="px-3 py-2">{s.httpStatus ?? "-"}</td>
-              <td class="px-3 py-2">{s.durationMs}ms</td>
-              <td class="px-3 py-2 text-xs text-slate-600">
-                {typeof s.attempts === "number" && s.attempts > 1 ? `${s.attempts}次 · ${s.waitMs ?? 0}ms` : "-"}
-              </td>
-              <td class="px-3 py-2">
-                <span class="rounded-full border border-slate-900/10 bg-white/50 px-3 py-1 text-xs text-slate-700">
-                  {s.used}
-                </span>
-              </td>
-              <td class="px-3 py-2 text-xs text-slate-600" title={s.error ?? ""}>
-                {s.ok ? "-" : s.error?.slice(0, 80) ?? "未知错误"}
-              </td>
-              <td class="px-3 py-2 text-xs text-slate-600">{suggest(s)}</td>
-            </tr>
-          ))}
+                </td>
+                <td class="px-3 py-2">
+                  {s.itemCount}
+                  {typeof s.visibleItemCount === "number" ? (
+                    <div class="text-xs text-slate-600">可见 {s.visibleItemCount}</div>
+                  ) : null}
+                </td>
+                <td class="px-3 py-2">
+                  {typeof s.newItemCount === "number" ? (
+                    <span
+                      class:list={[
+                        "text-xs font-medium",
+                        s.newItemCount > 0 ? "text-emerald-800" : "text-slate-600"
+                      ]}
+                    >
+                      {s.newItemCount > 0 ? `+${s.newItemCount}` : "0"}
+                    </span>
+                  ) : (
+                    <span class="text-xs text-slate-600">-</span>
+                  )}
+                </td>
+                <td
+                  class:list={[
+                    "px-3 py-2 text-xs",
+                    (() => {
+                      const h = staleHours(s.latestPublishedAt);
+                      if (h != null && h >= staleThresholdHours) return "text-amber-800";
+                      return "text-slate-600";
+                    })()
+                  ]}
+                >
+                  {fmt(s.latestPublishedAt)}
+                </td>
+                <td class="px-3 py-2 text-xs text-slate-600">
+                  {typeof s.consecutiveFails === "number" && s.consecutiveFails > 0
+                    ? `${s.consecutiveFails}次`
+                    : "-"}
+                </td>
+                <td class="px-3 py-2 text-xs text-slate-600">
+                  {s.rawItemCount != null && s.filteredItemCount != null
+                    ? `${s.rawItemCount} → ${s.filteredItemCount}`
+                    : "-"}
+                </td>
+                <td class="px-3 py-2">{s.httpStatus ?? "-"}</td>
+                <td class="px-3 py-2">{s.durationMs}ms</td>
+                <td class="px-3 py-2 text-xs text-slate-600">
+                  {typeof s.attempts === "number" && s.attempts > 1
+                    ? `${s.attempts}次 · ${s.waitMs ?? 0}ms`
+                    : "-"}
+                </td>
+                <td class="px-3 py-2">
+                  <span class="rounded-full border border-slate-900/10 bg-white/50 px-3 py-1 text-xs text-slate-700">
+                    {s.used}
+                  </span>
+                </td>
+                <td class="px-3 py-2 text-xs text-slate-600" title={s.error ?? ""}>
+                  {s.ok ? "-" : (s.error?.slice(0, 80) ?? "未知错误")}
+                </td>
+                <td class="px-3 py-2 text-xs text-slate-600">{suggest(s)}</td>
+              </tr>
+            ))
+          }
         </tbody>
       </table>
     </div>

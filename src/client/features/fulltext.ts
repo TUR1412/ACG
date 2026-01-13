@@ -105,13 +105,16 @@ function runWhenIdle(task: () => void, timeoutMs: number) {
     // ignore
   }
 
-  window.setTimeout(() => {
-    try {
-      task();
-    } catch {
-      // ignore
-    }
-  }, Math.min(80, Math.max(0, timeoutMs)));
+  window.setTimeout(
+    () => {
+      try {
+        task();
+      } catch {
+        // ignore
+      }
+    },
+    Math.min(80, Math.max(0, timeoutMs))
+  );
 }
 
 type IdleDeadlineLike = {
@@ -141,13 +144,16 @@ function runDuringIdle(task: (deadline?: IdleDeadlineLike) => void, timeoutMs: n
     // ignore
   }
 
-  window.setTimeout(() => {
-    try {
-      task();
-    } catch {
-      // ignore
-    }
-  }, Math.min(80, Math.max(0, timeoutMs)));
+  window.setTimeout(
+    () => {
+      try {
+        task();
+      } catch {
+        // ignore
+      }
+    },
+    Math.min(80, Math.max(0, timeoutMs))
+  );
 }
 
 type FullTextCacheEntry = {
@@ -193,7 +199,8 @@ function writeFullTextCache(postId: string, entry: FullTextCacheEntry) {
   try {
     // 保护：避免 localStorage 被超大正文撑爆（不同浏览器配额不同）
     // 策略：优先保证“原文”可缓存；若总体过大，则丢弃翻译缓存（翻译可重新生成）。
-    const sizeOf = (it: FullTextCacheEntry) => it.original.length + (it.zh?.length ?? 0) + (it.ja?.length ?? 0);
+    const sizeOf = (it: FullTextCacheEntry) =>
+      it.original.length + (it.zh?.length ?? 0) + (it.ja?.length ?? 0);
 
     const base: FullTextCacheEntry = {
       url: entry.url,
@@ -275,12 +282,18 @@ function normalizeFullTextMarkdown(md: string): string {
   // 兜底：如果内部占位符意外泄漏到 Markdown，直接清除（不应出现在用户内容里）
   // 兼容：大小写变化 / 中间被插入空白 / 全角 @ 等异常形态
   // 注：部分抽取器/翻译会插入零宽空白（U+200B/U+FEFF），导致 `\s` 匹配不稳定，这里显式覆盖。
-  text = text.replace(/@@[\s\u200B\uFEFF]*ACG[\s\u200B\uFEFF]*TOKEN[\s\u200B\uFEFF]*\d+[\s\u200B\uFEFF]*@@/gi, "");
-  text = text.replace(/＠＠[\s\u200B\uFEFF]*ACG[\s\u200B\uFEFF]*TOKEN[\s\u200B\uFEFF]*\d+[\s\u200B\uFEFF]*＠＠/gi, "");
+  text = text.replace(
+    /@@[\s\u200B\uFEFF]*ACG[\s\u200B\uFEFF]*TOKEN[\s\u200B\uFEFF]*\d+[\s\u200B\uFEFF]*@@/gi,
+    ""
+  );
+  text = text.replace(
+    /＠＠[\s\u200B\uFEFF]*ACG[\s\u200B\uFEFF]*TOKEN[\s\u200B\uFEFF]*\d+[\s\u200B\uFEFF]*＠＠/gi,
+    ""
+  );
 
   // 清理“孤立括号/标点”噪音行（常由链接换行或抽取器残留导致）
   text = text.replace(/^\s*[)\]】」）]\s*$/gm, "");
-  text = text.replace(/^\s*[（(\[【「『]\s*$/gm, "");
+  text = text.replace(/^\s*[[（(【「『]\s*$/gm, "");
 
   // 清理“无意义的纯数字”项目符号（常见于脚注/引用残留，如 `- 1`）
   text = text.replace(/^\s*[-*]\s+\d+\s*$/gm, "");
@@ -297,7 +310,10 @@ function normalizeFullTextMarkdown(md: string): string {
     ""
   );
   // 例：`[discuss this in the forum](https://www.animenewsnetwork.com/cms/discuss/232153)`
-  text = text.replace(new RegExp(String.raw`^\s*\[[^\]]+\]\(https?:\/\/${annHost}\/cms\/discuss\/[^)]*\)\s*$`, "gmi"), "");
+  text = text.replace(
+    new RegExp(String.raw`^\s*\[[^\]]+\]\(https?:\/\/${annHost}\/cms\/discuss\/[^)]*\)\s*$`, "gmi"),
+    ""
+  );
 
   // 更激进：清理“正文尾部的纯链接/孤立分隔符”噪音（常见于阅读模式/抽取器把页脚/推荐/图片页链接带进来）。
   // 注：站点原文入口已经由页面底部「打开原文」提供，这里宁可删多一点，也不要把正文尾巴污染成链接堆。
@@ -367,11 +383,20 @@ export function stripInternalPlaceholdersFromHtml(html: string): string {
       .replace(new RegExp(String.raw`@@${zw}ACG${zw}TOKEN${zw}${num}${zw}@@`, "gi"), "")
       .replace(new RegExp(String.raw`＠＠${zw}ACG${zw}TOKEN${zw}${num}${zw}＠＠`, "gi"), "")
       // entity 形态：&#64;&#64;ACGTOKEN0&#64;&#64;（某些 HTML->text 流程会转义 @）
-      .replace(new RegExp(String.raw`${atEntity}{2}${zw}ACG${zw}TOKEN${zw}${num}${zw}${atEntity}{2}`, "gi"), "")
+      .replace(
+        new RegExp(String.raw`${atEntity}{2}${zw}ACG${zw}TOKEN${zw}${num}${zw}${atEntity}{2}`, "gi"),
+        ""
+      )
       // 兜底：占位符被强调/杂质打断（例：`@@ACG<em>TOKEN</em>0@@`）
       .replace(new RegExp(String.raw`@@ACG${broken}TOKEN${broken}${zw}${num}${zw}${broken}@@`, "gi"), "")
       .replace(new RegExp(String.raw`＠＠ACG${broken}TOKEN${broken}${zw}${num}${zw}${broken}＠＠`, "gi"), "")
-      .replace(new RegExp(String.raw`${atEntity}{2}ACG${broken}TOKEN${broken}${zw}${num}${zw}${broken}${atEntity}{2}`, "gi"), "")
+      .replace(
+        new RegExp(
+          String.raw`${atEntity}{2}ACG${broken}TOKEN${broken}${zw}${num}${zw}${broken}${atEntity}{2}`,
+          "gi"
+        ),
+        ""
+      )
   );
 }
 
@@ -389,7 +414,8 @@ function splitUrlForDisplay(href: string): { host: string; path: string } {
     if (!rawPath || rawPath === "/") return { host, path: "" };
 
     const maxLen = 52;
-    const path = rawPath.length > maxLen ? `…${rawPath.slice(Math.max(0, rawPath.length - (maxLen - 1)))}` : rawPath;
+    const path =
+      rawPath.length > maxLen ? `…${rawPath.slice(Math.max(0, rawPath.length - (maxLen - 1)))}` : rawPath;
     return { host, path };
   } catch {
     return { host: href, path: "" };
@@ -442,7 +468,8 @@ function stripEncodedTrailingPunct(input: string): string {
   // - ； : %EF%BC%9B
   // - ！ : %EF%BC%81
   // - ？ : %EF%BC%9F
-  const fullwidthTail = /(?:%EF%BC%89|%E3%80%91|%E3%80%8D|%E3%80%82|%EF%BC%8C|%EF%BC%9A|%EF%BC%9B|%EF%BC%81|%EF%BC%9F)+$/i;
+  const fullwidthTail =
+    /(?:%EF%BC%89|%E3%80%91|%E3%80%8D|%E3%80%82|%EF%BC%8C|%EF%BC%9A|%EF%BC%9B|%EF%BC%81|%EF%BC%9F)+$/i;
   url = url.replace(fullwidthTail, "");
 
   // 2) 再处理 ASCII 的“闭合符号”编码：仅在没有对应 opener 时才剥离，避免误伤 wiki 等合法括号 URL
@@ -562,7 +589,10 @@ function renderInlineMarkdown(input: string, baseUrl: string): string {
     try {
       const baseHost = new URL(baseUrl).hostname.toLowerCase();
       const u = new URL(abs);
-      if (baseHost.endsWith("animenewsnetwork.com") && u.hostname.toLowerCase().endsWith("animenewsnetwork.com")) {
+      if (
+        baseHost.endsWith("animenewsnetwork.com") &&
+        u.hostname.toLowerCase().endsWith("animenewsnetwork.com")
+      ) {
         const p = (u.pathname || "/").toLowerCase();
         if (p.startsWith("/encyclopedia/")) return labelText || abs;
       }
@@ -948,7 +978,9 @@ function detectProseKind(root: HTMLElement): ProseKind {
     const textLen = (root.textContent ?? "").trim().length;
 
     // 文章信号：存在多段“较长段落”，优先判定为文章（避免 Inside 等文章页因“相关链接列表”而被误判为目录页）
-    const longP = pNodes.filter((el) => ((el.textContent ?? "").replace(/\s+/g, " ").trim().length >= 90)).length;
+    const longP = pNodes.filter(
+      (el) => (el.textContent ?? "").replace(/\s+/g, " ").trim().length >= 90
+    ).length;
     if (longP >= 3 || (longP >= 2 && p >= 6)) return "article";
 
     // “目录/新闻列表”特征：大量 list item，段落较少；或标题+列表组合；或整体很长但结构偏列表。
@@ -1029,7 +1061,7 @@ function enhanceProseIndex(root: HTMLElement) {
 function cleanLinkRowTitle(raw: string): string {
   let s = raw.replace(/\s+/g, " ").trim();
   // 去掉“URL 被抽走”后常见残留：行尾的 "(" / "（" / "【" 等开括号
-  s = s.replace(/[（(\[【「『]\s*$/g, "").trim();
+  s = s.replace(/[[（(【「『]\s*$/g, "").trim();
   // 去掉行尾孤立的冒号
   s = s.replace(/[：:]\s*$/g, "").trim();
   return s;
@@ -1054,7 +1086,9 @@ function enhanceLinkListItems(root: HTMLElement) {
     // 不处理含图片/代码块的段落（避免误伤正常文章内容）
     if (content.querySelector("img, pre, code")) continue;
 
-    const allLinks = [...content.querySelectorAll<HTMLAnchorElement>("a")].filter((a) => Boolean(a.getAttribute("href")));
+    const allLinks = [...content.querySelectorAll<HTMLAnchorElement>("a")].filter((a) =>
+      Boolean(a.getAttribute("href"))
+    );
     if (allLinks.length === 0) continue;
 
     const autolinks = allLinks.filter((a) => a.classList.contains("acg-prose-autolink"));
@@ -1082,7 +1116,13 @@ function enhanceLinkListItems(root: HTMLElement) {
         href: a.getAttribute("href") ?? "",
         text: cleanLinkRowTitle((a.textContent ?? "").trim())
       }))
-      .filter((it) => it.href && normalizeUrlForCompare(it.href) === onlyKey && it.text.length >= 6 && !looksLikeUrlText(it.text))
+      .filter(
+        (it) =>
+          it.href &&
+          normalizeUrlForCompare(it.href) === onlyKey &&
+          it.text.length >= 6 &&
+          !looksLikeUrlText(it.text)
+      )
       .sort((a, b) => b.text.length - a.text.length)[0];
     if (bestTitleAnchor?.href) href = bestTitleAnchor.href;
     if (!href) continue;
@@ -1141,7 +1181,7 @@ function pruneProseArticleJunk(root: HTMLElement) {
     if (!t) return true;
     const compact = t.replace(/\s+/g, "");
     if (!compact) return true;
-    if (/^[)\]】」）(（\[\[【「『"”'’《》<>.,，。:：;；!?！？·•、\-—–|]+$/.test(compact)) return true;
+    if (/^[)\]】」）(（[【「『"”'’《》<>.,，。:：;；!?！？·•、\-—–|]+$/.test(compact)) return true;
     return false;
   };
 
@@ -1150,7 +1190,8 @@ function pruneProseArticleJunk(root: HTMLElement) {
     if (!t) return false;
     // 常见“来源/引用/跳转提示”残留：只提供链接，不提供正文信息
     if (/^(?:source|via|reference|references|read more|open|original|link|links)[:：]?$/.test(t)) return true;
-    if (/^(?:来源|來源|原文|引用元|参照|参考|參考|更多|查看原文|打开原文|查看|打开)[:：]?$/.test(t)) return true;
+    if (/^(?:来源|來源|原文|引用元|参照|参考|參考|更多|查看原文|打开原文|查看|打开)[:：]?$/.test(t))
+      return true;
     if (/^(?:続きを読む|リンク|リンク先|参照元)[:：]?$/.test(t)) return true;
     return false;
   };
@@ -1232,7 +1273,9 @@ function pruneProseArticleJunk(root: HTMLElement) {
     }
 
     // 只有自动 URL 卡片，且正文残留很短：直接删
-    const nonAuto = links.filter((a) => !a.classList.contains("acg-prose-autolink") && !a.classList.contains("acg-prose-linkrow"));
+    const nonAuto = links.filter(
+      (a) => !a.classList.contains("acg-prose-autolink") && !a.classList.contains("acg-prose-linkrow")
+    );
     if (nonAuto.length === 0 && rest.length <= 18) {
       container.remove();
       return;
@@ -1381,7 +1424,9 @@ function pruneProseArticleJunk(root: HTMLElement) {
     return { textLen, aCount, longP, liCount, imgCount, linkDensity, keywordHit };
   };
 
-  const candidates = [...root.querySelectorAll<HTMLElement>("section, div, ul, ol, table, details")].reverse();
+  const candidates = [
+    ...root.querySelectorAll<HTMLElement>("section, div, ul, ol, table, details")
+  ].reverse();
   for (const el of candidates) {
     if (el === root) continue;
     const m = linkMetrics(el);
@@ -1420,7 +1465,7 @@ function enhanceProseImageGalleries(root: HTMLElement) {
     if (!t) return true;
     // 常见残留：括号/引号/全角标点
     if (/^[)\]】」）"”'’]+$/.test(t)) return true;
-    if (/^[（(\[【「『]+$/.test(t)) return true;
+    if (/^[[（(【「『]+$/.test(t)) return true;
     if (/^[,，.。:：;；!?！？]+$/.test(t)) return true;
     // 常见“图片提示/放大提示/来源提示”（短句且信息量低）：允许忽略，便于把图片序列收敛成画廊
     if (t.length <= 24) {
@@ -1681,7 +1726,8 @@ function htmlElementToMarkdown(root: Element, baseUrl: string): string {
     if (/^(?:source|via|credit|credits)[:：\s]/i.test(t)) return true;
     if (/^(?:来源|來源|原文|引用元|参照|参考|參考|出典)[:：\s]/.test(t)) return true;
     if (/^(?:画像|写真|出典|参照元|リンク)[:：\s]/.test(t)) return true;
-    if (t.startsWith("©") || lower.includes("copyright") || lower.includes("all rights reserved")) return true;
+    if (t.startsWith("©") || lower.includes("copyright") || lower.includes("all rights reserved"))
+      return true;
 
     // 纯链接/几乎是链接：直接丢弃（正文已提供“打开原文”入口）
     if (/^https?:\/\//i.test(t)) return true;
@@ -1693,7 +1739,10 @@ function htmlElementToMarkdown(root: Element, baseUrl: string): string {
   };
 
   const push = (block: string) => {
-    const b = block.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+    const b = block
+      .replace(/\r\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
     if (b) blocks.push(b);
   };
 
@@ -1712,7 +1761,10 @@ function htmlElementToMarkdown(root: Element, baseUrl: string): string {
 
       if (/^H[1-6]$/.test(tag)) {
         const level = Math.min(6, Math.max(1, Number(tag.slice(1))));
-        const text = [...child.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("").trim();
+        const text = [...child.childNodes]
+          .map((c) => inlineHtmlToMarkdown(c, baseUrl))
+          .join("")
+          .trim();
         if (text) push(`${"#".repeat(level)} ${text}`);
         continue;
       }
@@ -1730,7 +1782,13 @@ function htmlElementToMarkdown(root: Element, baseUrl: string): string {
         if (!host.endsWith("animenewsnetwork.com")) {
           const captionEls = [...child.querySelectorAll("figcaption")];
           const captions = captionEls
-            .map((cap) => [...cap.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("").replace(/\s+/g, " ").trim())
+            .map((cap) =>
+              [...cap.childNodes]
+                .map((c) => inlineHtmlToMarkdown(c, baseUrl))
+                .join("")
+                .replace(/\s+/g, " ")
+                .trim()
+            )
             .map((s) => s.trim())
             .filter(Boolean)
             .filter((s) => !isLowValueCaption(s))
@@ -1771,7 +1829,11 @@ function htmlElementToMarkdown(root: Element, baseUrl: string): string {
         const items = [...child.querySelectorAll(":scope > li")];
         const lines = items
           .map((li) => {
-            const text = [...li.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("").replace(/\s+/g, " ").trim();
+            const text = [...li.childNodes]
+              .map((c) => inlineHtmlToMarkdown(c, baseUrl))
+              .join("")
+              .replace(/\s+/g, " ")
+              .trim();
             return text ? `- ${text}` : "";
           })
           .filter(Boolean);
@@ -1785,7 +1847,11 @@ function htmlElementToMarkdown(root: Element, baseUrl: string): string {
         const lines = items
           .map((li) => {
             idx += 1;
-            const text = [...li.childNodes].map((c) => inlineHtmlToMarkdown(c, baseUrl)).join("").replace(/\s+/g, " ").trim();
+            const text = [...li.childNodes]
+              .map((c) => inlineHtmlToMarkdown(c, baseUrl))
+              .join("")
+              .replace(/\s+/g, " ")
+              .trim();
             return text ? `${idx}. ${text}` : "";
           })
           .filter(Boolean);
@@ -1815,7 +1881,11 @@ function pickMainElement(doc: Document, baseUrl: string): HTMLElement {
   // 站点特化：ナタリー（natalie.mu）正文结构稳定：`.NA_article_body` 是最干净的正文容器。
   // 如果误选整个 article，会把“标签/相关人物/推荐”一并吞进来，导致全文预览再次变成“目录 + 图墙 + 链接堆”。
   if (host.endsWith("natalie.mu")) {
-    const preferredSelectors = ["article.NA_article .NA_article_body", ".NA_article_body", "article.NA_article"];
+    const preferredSelectors = [
+      "article.NA_article .NA_article_body",
+      ".NA_article_body",
+      "article.NA_article"
+    ];
     for (const sel of preferredSelectors) {
       const el = doc.querySelector(sel);
       if (!el || !(el instanceof HTMLElement)) continue;
@@ -1870,7 +1940,12 @@ function pickMainElement(doc: Document, baseUrl: string): HTMLElement {
   // 站点特化：Tokyo Otaku Mode（otakumode.com）正文容器较深，且主 article 内含工具栏/评论等杂质。
   // 优先选择“纯正文”子容器，避免全文预览出现导航/工具按钮/评论区等噪音。
   if (host.endsWith("otakumode.com")) {
-    const preferredSelectors = ["article.p-article .p-article__text", "article.p-article .p-article__body", "article.p-article", "article"];
+    const preferredSelectors = [
+      "article.p-article .p-article__text",
+      "article.p-article .p-article__body",
+      "article.p-article",
+      "article"
+    ];
     for (const sel of preferredSelectors) {
       const el = doc.querySelector(sel);
       if (!el || !(el instanceof HTMLElement)) continue;
@@ -1989,7 +2064,10 @@ function cleanupHtmlDocument(doc: Document, baseUrl: string) {
           id = u.searchParams.get("v") ?? "";
         }
         if (!id) return { href: u.toString(), label: "Watch video (YouTube)" };
-        return { href: `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`, label: "Watch video (YouTube)" };
+        return {
+          href: `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`,
+          label: "Watch video (YouTube)"
+        };
       }
 
       // Vimeo: player -> canonical
@@ -2001,8 +2079,10 @@ function cleanupHtmlDocument(doc: Document, baseUrl: string) {
       if (host.endsWith("vimeo.com")) return { href: u.toString(), label: "Watch video (Vimeo)" };
 
       // Nico / Bilibili / Twitch 等（常见 ACG 来源）
-      if (host.endsWith("nicovideo.jp") || host.endsWith("nico.ms")) return { href: u.toString(), label: "Watch video (Niconico)" };
-      if (host.endsWith("bilibili.com") || host.endsWith("b23.tv")) return { href: u.toString(), label: "Watch video (Bilibili)" };
+      if (host.endsWith("nicovideo.jp") || host.endsWith("nico.ms"))
+        return { href: u.toString(), label: "Watch video (Niconico)" };
+      if (host.endsWith("bilibili.com") || host.endsWith("b23.tv"))
+        return { href: u.toString(), label: "Watch video (Bilibili)" };
       if (host.endsWith("twitch.tv")) return { href: u.toString(), label: "Watch video (Twitch)" };
 
       return null;
@@ -2152,7 +2232,9 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
     hardCutAt(main.querySelector("#footer"));
 
     // 讨论入口：直接把其所在的小容器移除（避免遗留 `|` 或孤立链接）
-    const discussAnchors = [...main.querySelectorAll<HTMLAnchorElement>("a[href^='/cms/discuss/'], a[href*='/cms/discuss/']")];
+    const discussAnchors = [
+      ...main.querySelectorAll<HTMLAnchorElement>("a[href^='/cms/discuss/'], a[href*='/cms/discuss/']")
+    ];
     for (const a of discussAnchors) {
       const container = (a.closest("div, p, li, section") as HTMLElement | null) ?? a;
       if (container && container !== main) container.remove();
@@ -2330,13 +2412,16 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
     return { text, textLen, aCount, aTextLen, pCount, liCount, imgCount, linkDensity, keywordHit };
   };
 
-  const candidates = [...main.querySelectorAll<HTMLElement>("section, nav, aside, div, ul, ol, table, details")].reverse();
+  const candidates = [
+    ...main.querySelectorAll<HTMLElement>("section, nav, aside, div, ul, ol, table, details")
+  ].reverse();
   for (const el of candidates) {
     if (el === main) continue;
 
     const tag = el.tagName.toUpperCase();
     if (tag === "P") continue;
-    if (tag === "H1" || tag === "H2" || tag === "H3" || tag === "H4" || tag === "H5" || tag === "H6") continue;
+    if (tag === "H1" || tag === "H2" || tag === "H3" || tag === "H4" || tag === "H5" || tag === "H6")
+      continue;
 
     const m = linkMetrics(el);
 
@@ -2347,7 +2432,14 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
     }
 
     // 更激进：标签/目录/推荐常是“少量文本 + 一堆链接”，li 不一定很多
-    if ((tag === "UL" || tag === "OL") && m.liCount >= 4 && m.linkDensity >= 0.74 && m.pCount <= 0 && m.imgCount <= 0 && m.textLen <= 420) {
+    if (
+      (tag === "UL" || tag === "OL") &&
+      m.liCount >= 4 &&
+      m.linkDensity >= 0.74 &&
+      m.pCount <= 0 &&
+      m.imgCount <= 0 &&
+      m.textLen <= 420
+    ) {
       el.remove();
       continue;
     }
@@ -2359,7 +2451,13 @@ function pruneMainElement(main: HTMLElement, baseUrl: string) {
     }
 
     // 目录型列表：li 多 + 链接多 + 正文段落少 => 移除
-    if ((tag === "UL" || tag === "OL") && m.liCount >= 10 && m.linkDensity >= 0.62 && m.pCount <= 1 && m.imgCount <= 0) {
+    if (
+      (tag === "UL" || tag === "OL") &&
+      m.liCount >= 10 &&
+      m.linkDensity >= 0.62 &&
+      m.pCount <= 1 &&
+      m.imgCount <= 0
+    ) {
       el.remove();
       continue;
     }
@@ -2382,7 +2480,10 @@ async function loadFullTextViaJina(params: { url: string; timeoutMs: number }): 
   return { md, source: "jina", status: res.status };
 }
 
-async function loadFullTextViaAllOrigins(params: { url: string; timeoutMs: number }): Promise<FullTextLoadResult> {
+async function loadFullTextViaAllOrigins(params: {
+  url: string;
+  timeoutMs: number;
+}): Promise<FullTextLoadResult> {
   const { url, timeoutMs } = params;
   const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
   const res = await fetchWithTimeout(proxyUrl, timeoutMs);
@@ -2396,7 +2497,10 @@ async function loadFullTextViaAllOrigins(params: { url: string; timeoutMs: numbe
   return { md, source: "allorigins", status: res.status };
 }
 
-async function loadFullTextViaCodeTabs(params: { url: string; timeoutMs: number }): Promise<FullTextLoadResult> {
+async function loadFullTextViaCodeTabs(params: {
+  url: string;
+  timeoutMs: number;
+}): Promise<FullTextLoadResult> {
   const { url, timeoutMs } = params;
   const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
   const res = await fetchWithTimeout(proxyUrl, timeoutMs);
@@ -2416,7 +2520,8 @@ function isProbablyIndexUrl(url: string): boolean {
     const path = (u.pathname || "/").toLowerCase();
     if (path === "/" || path === "") return true;
     if (path.endsWith("/archive") || path.includes("/archive/")) return true;
-    if (/^\/(news|interest|feature|review|convention|column|press-release|newsfeed)\/?$/.test(path)) return true;
+    if (/^\/(news|interest|feature|review|convention|column|press-release|newsfeed)\/?$/.test(path))
+      return true;
     return false;
   } catch {
     return false;
@@ -2495,15 +2600,15 @@ function shouldRejectFullTextMarkdown(md: string, url: string): boolean {
   if (head.startsWith("{") || head.startsWith("[")) {
     const jsonSignals = [
       "securitycompromiseerror",
-      "\"code\":451",
-      "\"status\":451",
+      '"code":451',
+      '"status":451',
       "blocked until",
       "anonymous access",
       "readablemessage",
-      "\"name\":\"security",
-      "\"name\": \"security",
-      "\"message\":",
-      "\"code\":"
+      '"name":"security',
+      '"name": "security',
+      '"message":',
+      '"code":'
     ];
     if (jsonSignals.some((s) => headLower.includes(s))) return true;
   }
@@ -2528,7 +2633,8 @@ function shouldRejectFullTextMarkdown(md: string, url: string): boolean {
   // ANN 常见“懒加载占位图”污染：会导致全文预览出现空白大图（/img/spacer.gif）。
   // 这类内容属于抽取质量问题，直接判失败以触发重新提取（或换源）。
   if (host.endsWith("animenewsnetwork.com")) {
-    if (lower.includes("/img/spacer.gif") && /!\[[^\]]*\]\([^)]*spacer\.gif[^)]*\)/i.test(normalized)) return true;
+    if (lower.includes("/img/spacer.gif") && /!\[[^\]]*\]\([^)]*spacer\.gif[^)]*\)/i.test(normalized))
+      return true;
   }
 
   // 3) 站点“整页壳”dump（导航/页脚/追踪图混入）：对文章页直接拒绝，走 HTML 抽取更干净。
@@ -2570,14 +2676,25 @@ function shouldRejectFullTextMarkdown(md: string, url: string): boolean {
     "タグ"
   ];
   const navHit = navKeywords.some((k) => headBlob.includes(k.toLowerCase()));
-  const logoHit = headLines.some((l) => /\[!\[[^\]]*\]\((https?:\/\/|\/\/)[^)]+\)\]\(https?:\/\/[^)]+\/\)/.test(l));
-  if (!isProbablyIndexUrl(url) && bulletLinkCount >= 10 && navHit && longLineCount === 0 && (logoHit || bulletLinkCount >= 14)) return true;
+  const logoHit = headLines.some((l) =>
+    /\[!\[[^\]]*\]\((https?:\/\/|\/\/)[^)]+\)\]\(https?:\/\/[^)]+\/\)/.test(l)
+  );
+  if (
+    !isProbablyIndexUrl(url) &&
+    bulletLinkCount >= 10 &&
+    navHit &&
+    longLineCount === 0 &&
+    (logoHit || bulletLinkCount >= 14)
+  )
+    return true;
 
   // inside/animeanime：Jina 输出经常包含站点壳文本 + 菜单，必须拒绝。
   if (host.endsWith("inside-games.jp") || host.endsWith("animeanime.jp")) {
     if (
       bulletLinkCount >= 10 &&
-      (headBlob.includes("人生にゲームをプラスするメディア") || headBlob.includes("インサイド") || headBlob.includes("animeanime"))
+      (headBlob.includes("人生にゲームをプラスするメディア") ||
+        headBlob.includes("インサイド") ||
+        headBlob.includes("animeanime"))
     ) {
       return true;
     }
@@ -2585,7 +2702,16 @@ function shouldRejectFullTextMarkdown(md: string, url: string): boolean {
 
   // TOM：开头常是全站导航（Shop/News/Gallery/Otapedia…），拒绝走 HTML 抽取。
   if (host.endsWith("otakumode.com")) {
-    const tomSignals = ["tokyo otaku mode", "otapedia", "shop", "gallery", "news", "log in", "sign up", "shopping guide"];
+    const tomSignals = [
+      "tokyo otaku mode",
+      "otapedia",
+      "shop",
+      "gallery",
+      "news",
+      "log in",
+      "sign up",
+      "shopping guide"
+    ];
     const hits = tomSignals.filter((s) => headBlob.includes(s)).length;
     if (bulletLinkCount >= 8 && hits >= 3) return true;
   }
@@ -2663,7 +2789,10 @@ function chunkForTranslate(text: string, maxLen: number): string[] {
   const normalized = text.replace(/\r\n/g, "\n").trim();
   if (normalized.length <= maxLen) return [normalized];
 
-  const paras = normalized.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  const paras = normalized
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
   const chunks: string[] = [];
   let current = "";
 
@@ -2711,7 +2840,12 @@ function parseGoogleGtx(json: unknown): string | null {
   return joined.trim() ? joined : null;
 }
 
-export async function translateViaGtx(params: { text: string; target: FullTextLang; timeoutMs: number; onProgress?: (done: number, total: number) => void }): Promise<string> {
+export async function translateViaGtx(params: {
+  text: string;
+  target: FullTextLang;
+  timeoutMs: number;
+  onProgress?: (done: number, total: number) => void;
+}): Promise<string> {
   const { text, target, timeoutMs, onProgress } = params;
   const tl = target === "zh" ? "zh-CN" : "ja";
 
@@ -2747,9 +2881,11 @@ export function wireFullTextReader() {
 
     const statusEl = block.querySelector<HTMLElement>("[data-fulltext-status]");
     const contentEl = block.querySelector<HTMLElement>("[data-fulltext-content]");
-    const btnReload = block.querySelector<HTMLButtonElement>("[data-fulltext-action=\"reload\"]");
-    const btnShowOriginal = block.querySelector<HTMLButtonElement>("[data-fulltext-action=\"show-original\"]");
-    const btnShowTranslated = block.querySelector<HTMLButtonElement>("[data-fulltext-action=\"show-translated\"]");
+    const btnReload = block.querySelector<HTMLButtonElement>('[data-fulltext-action="reload"]');
+    const btnShowOriginal = block.querySelector<HTMLButtonElement>('[data-fulltext-action="show-original"]');
+    const btnShowTranslated = block.querySelector<HTMLButtonElement>(
+      '[data-fulltext-action="show-translated"]'
+    );
 
     if (!postId || !url || !contentEl) continue;
 
@@ -2897,7 +3033,13 @@ export function wireFullTextReader() {
       return await new Promise<string>((resolve, reject) => {
         workerPending.set(requestId, { kind: "translate", resolve, reject, onProgress });
         try {
-          w.postMessage({ type: "translate", requestId, text, target, timeoutMs } satisfies FullTextWorkerInMessage);
+          w.postMessage({
+            type: "translate",
+            requestId,
+            text,
+            target,
+            timeoutMs
+          } satisfies FullTextWorkerInMessage);
         } catch (err) {
           workerPending.delete(requestId);
           invalidateWorker("worker_post_failed");
@@ -3101,7 +3243,8 @@ export function wireFullTextReader() {
         });
     };
 
-    const hasTranslated = (cache: FullTextCacheEntry) => (lang === "zh" ? Boolean(cache.zh) : Boolean(cache.ja));
+    const hasTranslated = (cache: FullTextCacheEntry) =>
+      lang === "zh" ? Boolean(cache.zh) : Boolean(cache.ja);
     const applyTranslated = (cache: FullTextCacheEntry, translated: string) => {
       if (lang === "zh") cache.zh = translated;
       else cache.ja = translated;
@@ -3144,7 +3287,7 @@ export function wireFullTextReader() {
         try {
           setStatus(lang === "ja" ? "全文を読み込み中…" : "正在加载全文…");
 
-          let cache: FullTextCacheEntry | null = force ? null : memoryCache ?? readFullTextCache(postId);
+          let cache: FullTextCacheEntry | null = force ? null : (memoryCache ?? readFullTextCache(postId));
           let loadResult: FullTextLoadResult | null = null;
           if (cache && cache.url !== url) cache = null;
           if (cache && shouldRejectFullTextMarkdown(cache.original, url)) cache = null;
@@ -3163,10 +3306,14 @@ export function wireFullTextReader() {
           setStatus("");
 
           if (loadResult && loadResult.source !== "jina") {
-            flashStatus(lang === "ja" ? "代替解析で抽出済み。" : "已使用备用解析提取全文。", FULLTEXT_STATUS_FLASH_MS);
+            flashStatus(
+              lang === "ja" ? "代替解析で抽出済み。" : "已使用备用解析提取全文。",
+              FULLTEXT_STATUS_FLASH_MS
+            );
           }
         } catch (err) {
-          const status = typeof (err as any)?.status === "number" ? ((err as any).status as number) : undefined;
+          const status =
+            typeof (err as any)?.status === "number" ? ((err as any).status as number) : undefined;
           if (status === 451) {
             setStatus(
               lang === "ja"
@@ -3180,7 +3327,11 @@ export function wireFullTextReader() {
                 : `加载失败 (HTTP ${status})：建议点击「打开原文」。`
             );
           } else {
-            setStatus(lang === "ja" ? "読み込みに失敗しました。元記事を開いてください。" : "加载失败：建议点击「打开原文」。");
+            setStatus(
+              lang === "ja"
+                ? "読み込みに失敗しました。元記事を開いてください。"
+                : "加载失败：建议点击「打开原文」。"
+            );
           }
         }
       })().finally(() => {
@@ -3213,7 +3364,10 @@ export function wireFullTextReader() {
           timeoutMs: FULLTEXT_REQUEST_TIMEOUT_MS,
           onProgress: (done, total) => {
             if (total <= 1) return;
-            const label = lang === "ja" ? `翻訳中… (${Math.min(done + 1, total)}/${total})` : `正在翻译… (${Math.min(done + 1, total)}/${total})`;
+            const label =
+              lang === "ja"
+                ? `翻訳中… (${Math.min(done + 1, total)}/${total})`
+                : `正在翻译… (${Math.min(done + 1, total)}/${total})`;
             setStatus(label);
           }
         });
@@ -3228,7 +3382,13 @@ export function wireFullTextReader() {
 
         // 默认切到翻译（满足“选中文/日文就看懂”）；若用户明确选择了原文，则只提示“翻译已就绪”
         if (viewMode !== "original") showTranslated(current);
-        else flashStatus(lang === "ja" ? "翻訳が完了しました。必要なら「翻訳を見る」を押してください。" : "翻译已就绪，如需查看请点击「查看翻译」。", 2000);
+        else
+          flashStatus(
+            lang === "ja"
+              ? "翻訳が完了しました。必要なら「翻訳を見る」を押してください。"
+              : "翻译已就绪，如需查看请点击「查看翻译」。",
+            2000
+          );
         setStatus("");
       })()
         .catch((err) => {
@@ -3271,7 +3431,12 @@ export function wireFullTextReader() {
 
     // 初始：命中缓存就立即展示（纯本地，不影响性能）；翻译按“进入视口再启动”
     const cached = readFullTextCache(postId);
-    if (cached && cached.url === url && cached.original && !shouldRejectFullTextMarkdown(cached.original, url)) {
+    if (
+      cached &&
+      cached.url === url &&
+      cached.original &&
+      !shouldRejectFullTextMarkdown(cached.original, url)
+    ) {
       memoryCache = cached;
       if (hasTranslated(cached)) {
         viewMode = "translated";
@@ -3335,4 +3500,3 @@ export function wireFullTextReader() {
     }
   }
 }
-

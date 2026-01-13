@@ -358,7 +358,13 @@ function wireBookmarks(bookmarkIds: Set<string>) {
     pop(el);
     track({ type: "bookmark_toggle", data: { id, on } });
     toast({
-      title: on ? (isJapanese() ? "ブックマークしました" : "已收藏") : isJapanese() ? "已取消ブックマーク" : "已取消收藏",
+      title: on
+        ? isJapanese()
+          ? "ブックマークしました"
+          : "已收藏"
+        : isJapanese()
+          ? "已取消ブックマーク"
+          : "已取消收藏",
       variant: on ? "success" : "info"
     });
     document.dispatchEvent(new CustomEvent("acg:bookmarks-changed"));
@@ -777,13 +783,16 @@ function runWhenIdle(task: () => void, timeoutMs: number = UI.IDLE_DEFAULT_TIMEO
     // ignore
   }
 
-  window.setTimeout(() => {
-    try {
-      task();
-    } catch {
-      // ignore
-    }
-  }, Math.min(UI.IDLE_FALLBACK_DELAY_MS, Math.max(0, timeoutMs)));
+  window.setTimeout(
+    () => {
+      try {
+        task();
+      } catch {
+        // ignore
+      }
+    },
+    Math.min(UI.IDLE_FALLBACK_DELAY_MS, Math.max(0, timeoutMs))
+  );
 }
 
 function getCoverContainer(img: HTMLElement): HTMLElement | null {
@@ -965,7 +974,11 @@ function wireCoverRetry() {
     img.style.pointerEvents = "";
 
     img.src = withCacheBust(bestInitialCoverSrc(original), "acg_retry");
-    toast({ title: isJapanese() ? "画像を再試行中…" : "正在重试封面…", variant: "info", timeoutMs: UI.TOAST_HINT_TIMEOUT_MS });
+    toast({
+      title: isJapanese() ? "画像を再試行中…" : "正在重试封面…",
+      variant: "info",
+      timeoutMs: UI.TOAST_HINT_TIMEOUT_MS
+    });
   });
 }
 
@@ -1100,7 +1113,7 @@ function wireCardInViewAnimations() {
 }
 
 function wireKeyboardShortcuts() {
-  const input = document.querySelector<HTMLInputElement>("#acg-search");        
+  const input = document.querySelector<HTMLInputElement>("#acg-search");
   if (!input) return;
 
   document.addEventListener("keydown", (e) => {
@@ -1111,7 +1124,11 @@ function wireKeyboardShortcuts() {
       e.preventDefault();
       input.focus();
       input.select();
-      toast({ title: isJapanese() ? "検索へフォーカス" : "已聚焦搜索", variant: "info", timeoutMs: UI.TOAST_HINT_TIMEOUT_MS });
+      toast({
+        title: isJapanese() ? "検索へフォーカス" : "已聚焦搜索",
+        variant: "info",
+        timeoutMs: UI.TOAST_HINT_TIMEOUT_MS
+      });
       return;
     }
 
@@ -1151,8 +1168,8 @@ function wireCommandPaletteShortcut() {
 }
 
 function wireSearchClear() {
-  const input = document.querySelector<HTMLInputElement>("#acg-search");        
-  const btn = document.querySelector<HTMLButtonElement>("#acg-search-clear");   
+  const input = document.querySelector<HTMLInputElement>("#acg-search");
+  const btn = document.querySelector<HTMLButtonElement>("#acg-search-clear");
   if (!input || !btn) return;
 
   const apply = () => {
@@ -1170,7 +1187,11 @@ function wireSearchClear() {
       // ignore
     }
     apply();
-    toast({ title: isJapanese() ? "検索をクリアしました" : "已清空搜索", variant: "info", timeoutMs: UI.TOAST_HINT_TIMEOUT_MS });
+    toast({
+      title: isJapanese() ? "検索をクリアしました" : "已清空搜索",
+      variant: "info",
+      timeoutMs: UI.TOAST_HINT_TIMEOUT_MS
+    });
   });
 
   input.addEventListener("input", apply);
@@ -1229,9 +1250,10 @@ function wirePrefsDrawer() {
     document.body.classList.add("acg-no-scroll");
 
     window.setTimeout(() => {
-      const focusTarget = drawer.querySelector<HTMLInputElement>("#acg-follow-input")
-        ?? drawer.querySelector<HTMLInputElement>("#acg-block-input")
-        ?? drawer.querySelector<HTMLInputElement>("#acg-only-followed");
+      const focusTarget =
+        drawer.querySelector<HTMLInputElement>("#acg-follow-input") ??
+        drawer.querySelector<HTMLInputElement>("#acg-block-input") ??
+        drawer.querySelector<HTMLInputElement>("#acg-only-followed");
       try {
         focusTarget?.focus();
       } catch {
@@ -1300,8 +1322,7 @@ function wireQuickToggles() {
   const lensButtons = [...document.querySelectorAll<HTMLButtonElement>("button[data-time-lens]")];
   const sortButtons = [...document.querySelectorAll<HTMLButtonElement>("button[data-sort-mode]")];
 
-  const getLens = (): TimeLens =>
-    (document.documentElement.dataset.acgLens as TimeLens | undefined) ?? "all";
+  const getLens = (): TimeLens => (document.documentElement.dataset.acgLens as TimeLens | undefined) ?? "all";
   const getSort = (): SortMode =>
     (document.documentElement.dataset.acgSort as SortMode | undefined) ?? "latest";
 
@@ -1339,7 +1360,9 @@ function wireQuickToggles() {
     }
   };
 
-  const toggle = (kind: "only-followed" | "only-followed-sources" | "hide-read" | "only-stable" | "dedup") => {
+  const toggle = (
+    kind: "only-followed" | "only-followed-sources" | "hide-read" | "only-stable" | "dedup"
+  ) => {
     if (kind === "only-followed" && onlyFollowed) {
       onlyFollowed.checked = !onlyFollowed.checked;
       onlyFollowed.dispatchEvent(new Event("change", { bubbles: true }));
@@ -1430,7 +1453,7 @@ function wireQuickToggles() {
 function focusSearchFromHash() {
   try {
     if (window.location.hash !== "#search") return;
-    const input = document.querySelector<HTMLInputElement>("#acg-search");      
+    const input = document.querySelector<HTMLInputElement>("#acg-search");
     if (!input) return;
     const behavior = prefersReducedMotion() ? "auto" : "smooth";
     input.scrollIntoView({ behavior, block: "center" });
@@ -1488,7 +1511,9 @@ function wireDeviceDebug() {
 
   const lines: string[] = [];
   const el = document.documentElement;
-  const vw = window.visualViewport ? `${Math.round(window.visualViewport.width)}x${Math.round(window.visualViewport.height)}` : "-";
+  const vw = window.visualViewport
+    ? `${Math.round(window.visualViewport.width)}x${Math.round(window.visualViewport.height)}`
+    : "-";
   const inner = `${window.innerWidth}x${window.innerHeight}`;
   const screen = window.screen ? `${window.screen.width}x${window.screen.height}` : "-";
   const device = el.dataset.acgDevice ?? "-";
@@ -1498,7 +1523,9 @@ function wireDeviceDebug() {
   const uaDataMobile = uaData?.mobile != null ? String(Boolean(uaData.mobile)) : "-";
 
   const screenShortSide = window.screen ? Math.min(window.screen.width, window.screen.height) : 0;
-  const vvShortSide = window.visualViewport ? Math.min(window.visualViewport.width, window.visualViewport.height) : 0;
+  const vvShortSide = window.visualViewport
+    ? Math.min(window.visualViewport.width, window.visualViewport.height)
+    : 0;
   const innerShortSide = Math.min(window.innerWidth || 0, window.innerHeight || 0);
   const candidates = [screenShortSide, vvShortSide, innerShortSide].filter((v) => v > 0);
   const shortSide = candidates.length ? Math.min(...candidates) : 0;
@@ -1515,7 +1542,9 @@ function wireDeviceDebug() {
   lines.push(`inner: ${inner}`);
   lines.push(`visualViewport: ${vw}`);
   lines.push(`screen: ${screen}`);
-  lines.push(`shortSide: ${shortSide} (screen=${screenShortSide}, vv=${vvShortSide}, inner=${innerShortSide})`);
+  lines.push(
+    `shortSide: ${shortSide} (screen=${screenShortSide}, vv=${vvShortSide}, inner=${innerShortSide})`
+  );
   lines.push(`devicePixelRatio: ${window.devicePixelRatio || 1}`);
   lines.push(`uaData.platform: ${uaDataPlatform}`);
   lines.push(`uaData.mobile: ${uaDataMobile}`);
@@ -1549,14 +1578,14 @@ function createListFilter(params: {
   // 这里做“惰性初始化”：如果没有任何筛选条件，就延后到 idle；用户一交互则立即初始化并生效。
   let cards: HTMLElement[] = [];
   let haystacks: string[] = [];
-  let tagsByCard: string[][] = [];
-  let sourceNames: string[] = [];
-  let categories: string[] = [];
-  let publishedAtMs: (number | null)[] = [];
-  let pulseScores: number[] = [];
-  let dedupKeys: string[] = [];
-  let sourceHealth: string[] = [];
-  let orderIndex: number[] = [];
+  const tagsByCard: string[][] = [];
+  const sourceNames: string[] = [];
+  const categories: string[] = [];
+  const publishedAtMs: (number | null)[] = [];
+  const pulseScores: number[] = [];
+  const dedupKeys: string[] = [];
+  const sourceHealth: string[] = [];
+  const orderIndex: number[] = [];
   let hiddenState: boolean[] = [];
   let initialized = false;
 
@@ -1682,26 +1711,41 @@ function createListFilter(params: {
         const matchTags =
           parsed.tags.length === 0 ? true : parsed.tags.every((t) => t && tags.some((x) => x.includes(t)));
         const matchNotTags =
-          parsed.notTags.length === 0 ? true : parsed.notTags.every((t) => t && !tags.some((x) => x.includes(t)));
+          parsed.notTags.length === 0
+            ? true
+            : parsed.notTags.every((t) => t && !tags.some((x) => x.includes(t)));
         const matchSources =
           parsed.sources.length === 0
             ? true
-            : parsed.sources.every((t) => t && (sourceName.includes(t) || (sourceId ? normalizeText(sourceId).includes(t) : false)));
+            : parsed.sources.every(
+                (t) =>
+                  t && (sourceName.includes(t) || (sourceId ? normalizeText(sourceId).includes(t) : false))
+              );
         const matchNotSources =
           parsed.notSources.length === 0
             ? true
-            : parsed.notSources.every((t) => t && !(sourceName.includes(t) || (sourceId ? normalizeText(sourceId).includes(t) : false)));
-        const matchCats = parsed.categories.length === 0 ? true : parsed.categories.some((c) => c && category === c);
+            : parsed.notSources.every(
+                (t) =>
+                  t && !(sourceName.includes(t) || (sourceId ? normalizeText(sourceId).includes(t) : false))
+              );
+        const matchCats =
+          parsed.categories.length === 0 ? true : parsed.categories.some((c) => c && category === c);
         const matchNotCats =
           parsed.notCategories.length === 0 ? true : parsed.notCategories.every((c) => c && category !== c);
-        const matchAfter = parsed.afterMs == null ? true : published != null ? published >= parsed.afterMs : false;
-        const matchBefore = parsed.beforeMs == null ? true : published != null ? published <= parsed.beforeMs : false;
+        const matchAfter =
+          parsed.afterMs == null ? true : published != null ? published >= parsed.afterMs : false;
+        const matchBefore =
+          parsed.beforeMs == null ? true : published != null ? published <= parsed.beforeMs : false;
         const matchFollow = !followOnlyEnabled
           ? true
           : followWords.length === 0
             ? false
             : followWords.some((w) => w && hay.includes(w));
-        const matchFollowSources = !followSourcesOnlyEnabled ? true : sourceId ? followedSources.has(sourceId) : false;
+        const matchFollowSources = !followSourcesOnlyEnabled
+          ? true
+          : sourceId
+            ? followedSources.has(sourceId)
+            : false;
         const read = id ? readIds.has(id) : false;
         const matchIsRead = parsed.isRead == null ? true : parsed.isRead ? read : !read;
         const matchIsUnread = parsed.isUnread == null ? true : parsed.isUnread ? !read : read;
@@ -1768,27 +1812,45 @@ function createListFilter(params: {
       const key = dedupKeys[i] ?? "";
 
       const matchText = parsed.text.length === 0 ? true : parsed.text.every((t) => t && hay.includes(t));
-      const matchNotText = parsed.notText.length === 0 ? true : parsed.notText.every((t) => t && !hay.includes(t));
-      const matchTags = parsed.tags.length === 0 ? true : parsed.tags.every((t) => t && tags.some((x) => x.includes(t)));
-      const matchNotTags = parsed.notTags.length === 0 ? true : parsed.notTags.every((t) => t && !tags.some((x) => x.includes(t)));
+      const matchNotText =
+        parsed.notText.length === 0 ? true : parsed.notText.every((t) => t && !hay.includes(t));
+      const matchTags =
+        parsed.tags.length === 0 ? true : parsed.tags.every((t) => t && tags.some((x) => x.includes(t)));
+      const matchNotTags =
+        parsed.notTags.length === 0
+          ? true
+          : parsed.notTags.every((t) => t && !tags.some((x) => x.includes(t)));
       const matchSources =
         parsed.sources.length === 0
           ? true
-          : parsed.sources.every((t) => t && (sourceName.includes(t) || (sourceId ? normalizeText(sourceId).includes(t) : false)));
+          : parsed.sources.every(
+              (t) => t && (sourceName.includes(t) || (sourceId ? normalizeText(sourceId).includes(t) : false))
+            );
       const matchNotSources =
         parsed.notSources.length === 0
           ? true
-          : parsed.notSources.every((t) => t && !(sourceName.includes(t) || (sourceId ? normalizeText(sourceId).includes(t) : false)));
-      const matchCats = parsed.categories.length === 0 ? true : parsed.categories.some((c) => c && category === c);
-      const matchNotCats = parsed.notCategories.length === 0 ? true : parsed.notCategories.every((c) => c && category !== c);
-      const matchAfter = parsed.afterMs == null ? true : published != null ? published >= parsed.afterMs : false;
-      const matchBefore = parsed.beforeMs == null ? true : published != null ? published <= parsed.beforeMs : false;
+          : parsed.notSources.every(
+              (t) =>
+                t && !(sourceName.includes(t) || (sourceId ? normalizeText(sourceId).includes(t) : false))
+            );
+      const matchCats =
+        parsed.categories.length === 0 ? true : parsed.categories.some((c) => c && category === c);
+      const matchNotCats =
+        parsed.notCategories.length === 0 ? true : parsed.notCategories.every((c) => c && category !== c);
+      const matchAfter =
+        parsed.afterMs == null ? true : published != null ? published >= parsed.afterMs : false;
+      const matchBefore =
+        parsed.beforeMs == null ? true : published != null ? published <= parsed.beforeMs : false;
       const matchFollow = !followOnlyEnabled
         ? true
         : followWords.length === 0
           ? false
           : followWords.some((w) => w && hay.includes(w));
-      const matchFollowSources = !followSourcesOnlyEnabled ? true : sourceId ? followedSources.has(sourceId) : false;
+      const matchFollowSources = !followSourcesOnlyEnabled
+        ? true
+        : sourceId
+          ? followedSources.has(sourceId)
+          : false;
       const read = id ? readIds.has(id) : false;
       const matchIsRead = parsed.isRead == null ? true : parsed.isRead ? read : !read;
       const matchIsUnread = parsed.isUnread == null ? true : parsed.isUnread ? !read : read;
@@ -2181,7 +2243,7 @@ function whenLabel(lang: BookmarkLang, publishedAt: string): string {
 }
 
 let bookmarkPostsByIdPromise: Promise<Map<string, BookmarkPost>> | null = null;
-async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {     
+async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {
   if (bookmarkPostsByIdPromise) return bookmarkPostsByIdPromise;
   bookmarkPostsByIdPromise = (async () => {
     const url = href(NETWORK.POSTS_JSON_PATH);
@@ -2233,9 +2295,7 @@ async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {
 
 function shouldPrefetchAllPosts(): boolean {
   try {
-    const conn = (navigator as any).connection as
-      | { saveData?: boolean; effectiveType?: string }
-      | undefined;
+    const conn = (navigator as any).connection as { saveData?: boolean; effectiveType?: string } | undefined;
     if (conn?.saveData) return false;
     const effective = String(conn?.effectiveType ?? "").toLowerCase();
     if (effective.includes("2g")) return false;
@@ -2308,7 +2368,15 @@ function wireGlobalSearch(params: {
 
   type SearchWorkerOutMessage =
     | { type: "ready"; total: number }
-    | { type: "result"; requestId: number; total: number; matched: number; unread: number; posts: BookmarkPost[]; truncated: boolean }
+    | {
+        type: "result";
+        requestId: number;
+        total: number;
+        matched: number;
+        unread: number;
+        posts: BookmarkPost[];
+        truncated: boolean;
+      }
     | { type: "error"; requestId?: number; message: string };
 
   let worker: Worker | null = null;
@@ -2429,7 +2497,8 @@ function wireGlobalSearch(params: {
       if (msg.type === "result") {
         if (msg.requestId !== latestRequestId) return;
         renderResults(msg.posts, getBookmarkLang());
-        if (count) count.textContent = msg.truncated ? `${msg.matched}+/${msg.total}` : `${msg.matched}/${msg.total}`;
+        if (count)
+          count.textContent = msg.truncated ? `${msg.matched}+/${msg.total}` : `${msg.matched}/${msg.total}`;
         if (unreadCount) unreadCount.textContent = String(msg.unread);
         setEmptyVisible(msg.matched === 0);
 
@@ -2437,7 +2506,9 @@ function wireGlobalSearch(params: {
           lastTruncatedToastRequestId = msg.requestId;
           toast({
             title: isJapanese() ? "結果が多すぎます" : "结果过多",
-            desc: isJapanese() ? `先頭 ${msg.matched} 件のみ表示します。条件を絞ってください。` : `仅展示前 ${msg.matched} 条，请继续缩小条件。`,
+            desc: isJapanese()
+              ? `先頭 ${msg.matched} 件のみ表示します。条件を絞ってください。`
+              : `仅展示前 ${msg.matched} 条，请继续缩小条件。`,
             variant: "info",
             timeoutMs: 1600
           });
@@ -2556,7 +2627,8 @@ function wireGlobalSearch(params: {
     syncWorkerState();
 
     const q = input.value.trim();
-    const shouldSearch = Boolean(q) || filters.hideRead || filters.onlyFollowed || filters.onlyFollowedSources;
+    const shouldSearch =
+      Boolean(q) || filters.hideRead || filters.onlyFollowed || filters.onlyFollowedSources;
     if (shouldSearch) {
       requestSearch(input.value);
     } else {
@@ -2710,7 +2782,9 @@ type BookmarkMetaStore = {
 
 function readBookmarkMetaCache(): Map<string, BookmarkPost> {
   try {
-    const parsed = safeJsonParse<{ version?: unknown; posts?: unknown }>(localStorage.getItem(STORAGE_KEYS.BOOKMARK_META));
+    const parsed = safeJsonParse<{ version?: unknown; posts?: unknown }>(
+      localStorage.getItem(STORAGE_KEYS.BOOKMARK_META)
+    );
     const version = typeof parsed?.version === "number" ? parsed?.version : 0;
     if (version !== 1) return new Map();
 
@@ -2795,14 +2869,16 @@ function buildBookmarkCard(params: {
   const when = whenLabel(lang, post.publishedAt);
   const publishedAtMs = new Date(post.publishedAt).getTime();
   const isFresh =
-    Number.isFinite(publishedAtMs) && Date.now() - publishedAtMs >= 0 && Date.now() - publishedAtMs < UI.FRESH_WINDOW_MS;
+    Number.isFinite(publishedAtMs) &&
+    Date.now() - publishedAtMs >= 0 &&
+    Date.now() - publishedAtMs < UI.FRESH_WINDOW_MS;
   const freshLabel = lang === "ja" ? "新着" : "NEW";
 
-  const displayTitle = lang === "zh" ? post.titleZh ?? post.title : post.titleJa ?? post.title;
+  const displayTitle = lang === "zh" ? (post.titleZh ?? post.title) : (post.titleJa ?? post.title);
   const displaySnippet =
     lang === "zh"
-      ? post.summaryZh ?? post.previewZh ?? post.summary ?? post.preview
-      : post.summaryJa ?? post.previewJa ?? post.summary ?? post.preview;
+      ? (post.summaryZh ?? post.previewZh ?? post.summary ?? post.preview)
+      : (post.summaryJa ?? post.previewJa ?? post.summary ?? post.preview);
 
   const article = document.createElement("article");
   article.className = "glass-card acg-card clickable shine group relative overflow-hidden rounded-2xl";
@@ -3087,14 +3163,19 @@ function wireBookmarksPage(bookmarkIds: Set<string>, readIds: Set<string>) {
           if (optimistic.length > 0) {
             optimistic.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
             const frag = document.createDocumentFragment();
-            for (const post of optimistic) frag.appendChild(buildBookmarkCard({ post, lang, readIds, bookmarkIds }));
+            for (const post of optimistic)
+              frag.appendChild(buildBookmarkCard({ post, lang, readIds, bookmarkIds }));
             grid.innerHTML = "";
             grid.appendChild(frag);
             renderedIds = new Set(optimistic.map((p) => p.id));
             usedOptimistic = true;
 
             if (optimisticMissing.length > 0) {
-              setBookmarksMessage(lang === "ja" ? "ローカルキャッシュを表示中…同期しています。" : "已显示本地缓存…正在同步更新。");
+              setBookmarksMessage(
+                lang === "ja"
+                  ? "ローカルキャッシュを表示中…同期しています。"
+                  : "已显示本地缓存…正在同步更新。"
+              );
             }
           } else {
             renderBookmarksSkeleton(grid);
@@ -3126,7 +3207,7 @@ function wireBookmarksPage(bookmarkIds: Set<string>, readIds: Set<string>) {
             items: list,
             overscanRows: 6,
             estimateRowHeight: UI.BOOKMARK_CARD_ESTIMATE_ROW_HEIGHT,
-            renderItem: (post) => buildBookmarkCard({ post, lang, readIds, bookmarkIds })    
+            renderItem: (post) => buildBookmarkCard({ post, lang, readIds, bookmarkIds })
           });
         } else {
           virtual.setItems(list);
@@ -3165,7 +3246,11 @@ function wireBookmarksPage(bookmarkIds: Set<string>, readIds: Set<string>) {
       if (count) count.textContent = "0";
       if (empty) empty?.classList.remove("hidden");
       setBookmarksMessage(lang === "ja" ? `読み込み失敗: ${msg}` : `加载失败：${msg}`);
-      toast({ title: lang === "ja" ? "ブックマーク読み込み失敗" : "收藏加载失败", desc: msg, variant: "error" });
+      toast({
+        title: lang === "ja" ? "ブックマーク読み込み失敗" : "收藏加载失败",
+        desc: msg,
+        variant: "error"
+      });
     } finally {
       applyRunning = false;
     }
@@ -3211,11 +3296,7 @@ function wireBookmarkTools(bookmarkIds: Set<string>) {
 
   exportBtn?.addEventListener("click", () => {
     const now = new Date();
-    const stamp = now
-      .toISOString()
-      .replace(/[:.]/g, "")
-      .replace("T", "-")
-      .slice(0, 15);
+    const stamp = now.toISOString().replace(/[:.]/g, "").replace("T", "-").slice(0, 15);
     const payload = {
       version: 1,
       exportedAt: now.toISOString(),
@@ -3250,11 +3331,7 @@ function wireBookmarkTools(bookmarkIds: Set<string>) {
       document.dispatchEvent(new CustomEvent("acg:bookmarks-changed"));
 
       const added = bookmarkIds.size - before;
-      setBookmarksMessage(
-        isJapanese()
-          ? `インポート完了（+${added}）。`
-          : `导入完成（新增 +${added}）。`
-      );
+      setBookmarksMessage(isJapanese() ? `インポート完了（+${added}）。` : `导入完成（新增 +${added}）。`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setBookmarksMessage(isJapanese() ? `インポート失敗: ${msg}` : `导入失败：${msg}`);
@@ -3320,11 +3397,7 @@ function renderWordChips(params: {
   }
 }
 
-function wirePreferences(params: {
-  follows: Set<string>;
-  blocklist: Set<string>;
-  filters: FilterStore;
-}) {
+function wirePreferences(params: { follows: Set<string>; blocklist: Set<string>; filters: FilterStore }) {
   const { follows, blocklist, filters } = params;
 
   const onlyFollowed = document.querySelector<HTMLInputElement>("#acg-only-followed");
@@ -3655,9 +3728,9 @@ function wireSourceFollows(followedSources: Set<string>) {
 }
 
 function wireDailyBriefCopy() {
-  const btn = document.querySelector<HTMLButtonElement>("#acg-brief-copy");     
+  const btn = document.querySelector<HTMLButtonElement>("#acg-brief-copy");
   const list = document.querySelector<HTMLElement>("#acg-daily-brief");
-  const msg = document.querySelector<HTMLElement>("#acg-brief-message");        
+  const msg = document.querySelector<HTMLElement>("#acg-brief-message");
   if (!btn || !list) return;
 
   btn.addEventListener("click", async () => {
@@ -3671,7 +3744,13 @@ function wireDailyBriefCopy() {
       : `今日快报 (${new Date().toLocaleDateString("zh-CN")})`;
     const ok = await copyToClipboard([header, "", ...lines].join("\n"));
     if (!msg) return;
-    msg.textContent = ok ? (isJapanese() ? "クリップボードにコピーしました。" : "已复制到剪贴板。") : (isJapanese() ? "コピーに失敗しました。" : "复制失败。");
+    msg.textContent = ok
+      ? isJapanese()
+        ? "クリップボードにコピーしました。"
+        : "已复制到剪贴板。"
+      : isJapanese()
+        ? "コピーに失敗しました。"
+        : "复制失败。";
     msg.classList.remove("hidden");
     toast({
       title: ok ? (isJapanese() ? "コピーしました" : "已复制") : isJapanese() ? "コピー失敗" : "复制失败",
@@ -3691,7 +3770,13 @@ function wireCopyTextButtons() {
 
       const ok = await copyToClipboard(text);
       toast({
-        title: ok ? (isJapanese() ? "リンクをコピーしました" : "已复制链接") : isJapanese() ? "コピー失敗" : "复制失败",
+        title: ok
+          ? isJapanese()
+            ? "リンクをコピーしました"
+            : "已复制链接"
+          : isJapanese()
+            ? "コピー失敗"
+            : "复制失败",
         variant: ok ? "success" : "error"
       });
     });
@@ -3805,7 +3890,8 @@ function wireSpotlightCarousel() {
         const dy = typeof e?.clientY === "number" ? e.clientY - startY : 0;
         const move = Math.hypot(dx, dy);
         const moveThreshold = pointerType === "pen" ? 12 : 16;
-        if (Math.abs(dx) >= moveThreshold && Math.abs(dx) >= Math.abs(dy) && move >= moveThreshold) dragged = true;
+        if (Math.abs(dx) >= moveThreshold && Math.abs(dx) >= Math.abs(dy) && move >= moveThreshold)
+          dragged = true;
         // 兜底：如果没有可靠坐标，再用更高阈值的 scrollLeft 判断（避免误伤点击）
         else if (!e && Math.abs(track.scrollLeft - startScrollLeft) > 28) dragged = true;
       }
@@ -3947,12 +4033,7 @@ function wirePageTransitions() {
   }
 
   const shouldIgnoreClick = (ev: MouseEvent) =>
-    ev.defaultPrevented ||
-    ev.button !== 0 ||
-    ev.metaKey ||
-    ev.ctrlKey ||
-    ev.shiftKey ||
-    ev.altKey;
+    ev.defaultPrevented || ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey;
 
   const findAnchor = (target: EventTarget | null): HTMLAnchorElement | null => {
     if (!(target instanceof Element)) return null;
@@ -3962,7 +4043,11 @@ function wirePageTransitions() {
 
   const isSameDocumentHashNav = (next: URL): boolean => {
     try {
-      return next.origin === location.origin && next.pathname === location.pathname && next.search === location.search;
+      return (
+        next.origin === location.origin &&
+        next.pathname === location.pathname &&
+        next.search === location.search
+      );
     } catch {
       return false;
     }
@@ -4093,7 +4178,7 @@ function initApp() {
   wireDailyBriefCopy();
   wireCopyTextButtons();
   wireSpotlightCarousel();
-  runWhenIdle(() => hydrateCoverStates(), UI.HYDRATE_COVER_IDLE_DELAY_MS);      
+  runWhenIdle(() => hydrateCoverStates(), UI.HYDRATE_COVER_IDLE_DELAY_MS);
   wireDeviceDebug();
   maybeStartHealthMonitor();
   openPrefsFromHash();
@@ -4131,9 +4216,7 @@ function main() {
         new CustomEvent("acg:toast", {
           detail: {
             title: isJapanese() ? "初期化に失敗しました" : "初始化失败",
-            desc: isJapanese()
-              ? "ページを再読み込みしてください。"
-              : "页面脚本初始化失败，建议刷新重试。",
+            desc: isJapanese() ? "ページを再読み込みしてください。" : "页面脚本初始化失败，建议刷新重试。",
             variant: "error",
             timeoutMs: 4200
           }

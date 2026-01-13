@@ -27,7 +27,8 @@ const sources = SOURCE_CONFIGS.map((s) => ({
       {t("zh", "nav.about")}
     </h1>
     <p class="mt-2 text-sm leading-relaxed text-slate-700">
-      ACG Radar 是一个“伪全栈”的二次元资讯聚合站：用 GitHub Actions 定时抓取资讯，生成静态页面并发布到 GitHub Pages。
+      ACG Radar 是一个“伪全栈”的二次元资讯聚合站：用 GitHub Actions 定时抓取资讯，生成静态页面并发布到 GitHub
+      Pages。
     </p>
     <ul class="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-700">
       <li>更新频率：每小时（UTC 整点）</li>
@@ -55,7 +56,8 @@ const sources = SOURCE_CONFIGS.map((s) => ({
   <section class="mt-6 glass rounded-2xl p-6">
     <h2 class="m-0 text-sm font-semibold text-slate-950">来源列表</h2>
     <p class="mt-2 text-sm text-slate-700">
-      如需增加/移除来源，编辑 <code class="rounded bg-slate-900/5 px-1 py-0.5">src/lib/source-config.ts</code>。
+      如需增加/移除来源，编辑 <code class="rounded bg-slate-900/5 px-1 py-0.5">src/lib/source-config.ts</code
+      >。
     </p>
 
     <div class="mt-3 overflow-x-auto">
@@ -69,38 +71,45 @@ const sources = SOURCE_CONFIGS.map((s) => ({
           </tr>
         </thead>
         <tbody>
-          {sources.map((s) => (
-            <tr class="glass">
-              <td class="px-3 py-2">
-                <div class="font-medium text-slate-950">{s.name}</div>
-                <div class="text-xs text-slate-600">{s.id}</div>
-              </td>
-              <td class="px-3 py-2">{categoryLabel("zh", s.category)}</td>
-              <td class="px-3 py-2">{s.kind}</td>
-              <td class="px-3 py-2">
-                {s.homepage ? (
-                  <a
-                    class="text-slate-950 hover:underline"
-                    href={s.homepage}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                  >
-                    首页
-                  </a>
-                ) : (
-                  <span class="text-slate-600">首页</span>
-                )}
-                <span class="px-2 text-slate-400">·</span>
-                {s.url ? (
-                  <a class="text-slate-950 hover:underline" href={s.url} target="_blank" rel="noreferrer noopener">
-                    Feed/列表
-                  </a>
-                ) : (
-                  <span class="text-slate-600">Feed/列表</span>
-                )}
-              </td>
-            </tr>
-          ))}
+          {
+            sources.map((s) => (
+              <tr class="glass">
+                <td class="px-3 py-2">
+                  <div class="font-medium text-slate-950">{s.name}</div>
+                  <div class="text-xs text-slate-600">{s.id}</div>
+                </td>
+                <td class="px-3 py-2">{categoryLabel("zh", s.category)}</td>
+                <td class="px-3 py-2">{s.kind}</td>
+                <td class="px-3 py-2">
+                  {s.homepage ? (
+                    <a
+                      class="text-slate-950 hover:underline"
+                      href={s.homepage}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >
+                      首页
+                    </a>
+                  ) : (
+                    <span class="text-slate-600">首页</span>
+                  )}
+                  <span class="px-2 text-slate-400">·</span>
+                  {s.url ? (
+                    <a
+                      class="text-slate-950 hover:underline"
+                      href={s.url}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >
+                      Feed/列表
+                    </a>
+                  ) : (
+                    <span class="text-slate-600">Feed/列表</span>
+                  )}
+                </td>
+              </tr>
+            ))
+          }
         </tbody>
       </table>
     </div>

@@ -119,7 +119,8 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
   zh: {
     "site.name": "ACG Radar",
     "site.tagline": "每小时更新的二次元资讯雷达（聚合 + 收藏 + 关注）",
-    "site.disclaimer": "本站聚合标题/摘要并跳转原文；详情页提供「全文预览（实验）」阅读模式（实时解析/翻译，可能有误），版权归原站。数据由 GitHub Actions 定时更新。",
+    "site.disclaimer":
+      "本站聚合标题/摘要并跳转原文；详情页提供「全文预览（实验）」阅读模式（实时解析/翻译，可能有误），版权归原站。数据由 GitHub Actions 定时更新。",
     "nav.latest": "新闻动态",
     "nav.search": "搜索",
     "nav.bookmarks": "收藏",
@@ -150,7 +151,7 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "prefs.themeAuto": "自动",
     "prefs.themeLight": "浅色",
     "prefs.themeDark": "深色",
-    "prefs.themeHint": "自动 = 跟随系统外观（可在系统设置中切换深色/浅色）。",  
+    "prefs.themeHint": "自动 = 跟随系统外观（可在系统设置中切换深色/浅色）。",
     "prefs.view": "视图",
     "prefs.viewGrid": "网格",
     "prefs.viewList": "列表",
@@ -188,7 +189,8 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "prefs.telemetry": "可观测性（Telemetry）",
     "prefs.telemetryUpload": "允许上报（可选）",
     "prefs.telemetryEndpoint": "上报地址（Endpoint）",
-    "prefs.telemetryHint": "默认仅本地记录（不上传）。仅当你开启“允许上报”且填写 http(s) endpoint 时，才会在页面隐藏/离开时尝试 sendBeacon/fetch 上报。",
+    "prefs.telemetryHint":
+      "默认仅本地记录（不上传）。仅当你开启“允许上报”且填写 http(s) endpoint 时，才会在页面隐藏/离开时尝试 sendBeacon/fetch 上报。",
     "prefs.telemetryExport": "导出",
     "prefs.telemetryClear": "清空",
     "prefs.telemetryCount": "事件",
@@ -201,7 +203,8 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "post.previewTitle": "内容预览",
     "post.previewHint": "预览来自页面描述/自动摘录（非全文）。完整内容请点击「打开原文」。",
     "post.fullTextTitle": "全文预览（实验）",
-    "post.fullTextHint": "全文预览（实验）：将尝试从原站提取全文并翻译到当前语言，可能不完整或有误；版权归原站。加载失败请点击「打开原文」。",
+    "post.fullTextHint":
+      "全文预览（实验）：将尝试从原站提取全文并翻译到当前语言，可能不完整或有误；版权归原站。加载失败请点击「打开原文」。",
     "post.fullTextReload": "重新加载",
     "post.fullTextOriginal": "查看原文",
     "post.fullTextTranslated": "查看翻译",
@@ -231,7 +234,8 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
   ja: {
     "site.name": "ACG Radar",
     "site.tagline": "毎時更新のACGニュースレーダー（集約 + ブックマーク + フォロー）",
-    "site.disclaimer": "本サイトはタイトル/要約を集約し元記事へ誘導します。詳細ページの「全文プレビュー（実験）」はリアルタイム解析/翻訳（誤訳の可能性あり）で、著作権は原サイトに帰属します。データは GitHub Actions により定期更新されます。",
+    "site.disclaimer":
+      "本サイトはタイトル/要約を集約し元記事へ誘導します。詳細ページの「全文プレビュー（実験）」はリアルタイム解析/翻訳（誤訳の可能性あり）で、著作権は原サイトに帰属します。データは GitHub Actions により定期更新されます。",
     "nav.latest": "ニュース",
     "nav.search": "検索",
     "nav.bookmarks": "ブックマーク",
@@ -255,14 +259,15 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "search.placeholder": "検索（タイトル / 要約 / タグ）…",
     "search.result": "一致",
     "search.emptyTitle": "一致する結果がありません",
-    "search.emptyHint": "検索語をクリアするか、「フォローのみ / フォローしたソースのみ / 既読を隠す / ソース無効化」を見直してください。",
+    "search.emptyHint":
+      "検索語をクリアするか、「フォローのみ / フォローしたソースのみ / 既読を隠す / ソース無効化」を見直してください。",
     "search.clear": "クリア",
     "prefs.title": "設定",
     "prefs.theme": "テーマ",
     "prefs.themeAuto": "自動",
     "prefs.themeLight": "ライト",
     "prefs.themeDark": "ダーク",
-    "prefs.themeHint": "自動 = OSの外観設定（ライト/ダーク）に追従します。",    
+    "prefs.themeHint": "自動 = OSの外観設定（ライト/ダーク）に追従します。",
     "prefs.view": "表示",
     "prefs.viewGrid": "グリッド",
     "prefs.viewList": "リスト",
@@ -300,7 +305,8 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "prefs.telemetry": "可観測性（Telemetry）",
     "prefs.telemetryUpload": "送信を許可（任意）",
     "prefs.telemetryEndpoint": "送信先（Endpoint）",
-    "prefs.telemetryHint": "既定はローカル記録のみ（送信しません）。「送信を許可」+ http(s) endpoint を設定した場合のみ、ページ離脱時に sendBeacon/fetch で送信を試みます。",
+    "prefs.telemetryHint":
+      "既定はローカル記録のみ（送信しません）。「送信を許可」+ http(s) endpoint を設定した場合のみ、ページ離脱時に sendBeacon/fetch で送信を試みます。",
     "prefs.telemetryExport": "エクスポート",
     "prefs.telemetryClear": "クリア",
     "prefs.telemetryCount": "イベント",
@@ -311,9 +317,11 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "common.skipToContent": "本文へスキップ",
     "post.openSource": "元記事へ",
     "post.previewTitle": "内容プレビュー",
-    "post.previewHint": "プレビューはページの説明/自動抽出（全文ではありません）。全文は「元記事へ」からご確認ください。",
+    "post.previewHint":
+      "プレビューはページの説明/自動抽出（全文ではありません）。全文は「元記事へ」からご確認ください。",
     "post.fullTextTitle": "全文プレビュー（実験）",
-    "post.fullTextHint": "全文プレビュー（実験）：元記事から全文を抽出して現在の言語に翻訳します（不完全・誤訳の可能性あり）。著作権は原サイトに帰属します。失敗時は「元記事を開く」をご利用ください。",
+    "post.fullTextHint":
+      "全文プレビュー（実験）：元記事から全文を抽出して現在の言語に翻訳します（不完全・誤訳の可能性あり）。著作権は原サイトに帰属します。失敗時は「元記事を開く」をご利用ください。",
     "post.fullTextReload": "再読み込み",
     "post.fullTextOriginal": "原文",
     "post.fullTextTranslated": "翻訳",
@@ -331,7 +339,8 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "status.ok": "OK",
     "status.error": "エラー",
     "telemetry.title": "Telemetry（ローカル）",
-    "telemetry.hint": "このページはブラウザの localStorage から telemetry を読み取り表示するだけです（自動送信しません）。調査/自己診断に利用できます。",
+    "telemetry.hint":
+      "このページはブラウザの localStorage から telemetry を読み取り表示するだけです（自動送信しません）。調査/自己診断に利用できます。",
     "telemetry.filter": "フィルター",
     "telemetry.filterPlaceholder": "type / path / data で絞り込み…",
     "telemetry.empty": "telemetry イベントがありません（またはクリア済み）。",

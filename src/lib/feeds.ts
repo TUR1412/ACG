@@ -7,7 +7,7 @@ import type { Post } from "./types";
 export type FeedLang = "zh" | "ja";
 
 function pickTitle(lang: FeedLang, post: Post): string {
-  return lang === "ja" ? post.titleJa ?? post.title : post.titleZh ?? post.title;
+  return lang === "ja" ? (post.titleJa ?? post.title) : (post.titleZh ?? post.title);
 }
 
 function pickPreview(lang: FeedLang, post: Post): string {
@@ -35,7 +35,10 @@ export async function buildLangFeedXml(context: APIContext, lang: FeedLang): Pro
     .slice(0, 120);
 
   const title = lang === "ja" ? "ACGレーダー（日本語）" : "ACG Radar（中文）";
-  const description = lang === "ja" ? "毎時更新の ACG ニュースレーダー（日本語フィード）" : "每小时更新的 ACG 资讯雷达（中文信息流）";
+  const description =
+    lang === "ja"
+      ? "毎時更新の ACG ニュースレーダー（日本語フィード）"
+      : "每小时更新的 ACG 资讯雷达（中文信息流）";
   const language = lang === "ja" ? "ja" : "zh-Hans";
   const locale = lang === "ja" ? "ja-JP" : "zh-CN";
   const labelSource = lang === "ja" ? "元記事" : "原文";
@@ -73,4 +76,3 @@ export async function buildLangFeedXml(context: APIContext, lang: FeedLang): Pro
     }
   });
 }
-

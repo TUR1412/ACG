@@ -98,7 +98,9 @@ function renderMarkdown(status: SyncStatus, postsCount: number | null): string {
   const errSources = totalSources - okSources;
 
   const totalItems = sum(status.sources.map((s) => (Number.isFinite(s.itemCount) ? s.itemCount : 0)));
-  const totalNewItems = sum(status.sources.map((s) => (Number.isFinite(s.newItemCount) ? (s.newItemCount ?? 0) : 0)));
+  const totalNewItems = sum(
+    status.sources.map((s) => (Number.isFinite(s.newItemCount) ? (s.newItemCount ?? 0) : 0))
+  );
   const totalVisibleItems = sum(
     status.sources.map((s) => (Number.isFinite(s.visibleItemCount) ? (s.visibleItemCount ?? 0) : 0))
   );
@@ -186,7 +188,7 @@ async function appendSummary(markdown: string): Promise<void> {
 
   try {
     const prev = await readFile(file, "utf-8").catch(() => "");
-    const next = prev ? `${prev.trimEnd()}\n\n${markdown}\n` : `${markdown}\n`;  
+    const next = prev ? `${prev.trimEnd()}\n\n${markdown}\n` : `${markdown}\n`;
     await writeFile(file, next, "utf-8");
   } catch {
     log.info(markdown);

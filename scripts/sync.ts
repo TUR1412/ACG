@@ -24,7 +24,7 @@ import { deriveTags } from "./lib/tagger";
 import { readTranslateCache, translateTextCached, type TranslateCache } from "./lib/translate";
 
 function hasJapaneseKana(text: string): boolean {
-  // Hiragana + Katakana。仅靠汉字无法区分中/日，所以用 kana 作为“强证据”。     
+  // Hiragana + Katakana。仅靠汉字无法区分中/日，所以用 kana 作为“强证据”。
   return /[\u3041-\u30ff]/.test(text);
 }
 
@@ -95,7 +95,7 @@ async function translatePosts(params: {
           translated += 1;
         }
       }
- 
+
       // 日文：如果原文已经明显是日文（含 kana），就不“翻译回日文”（避免破坏原标题）
       if (shouldTranslateToJa && !post.titleJa && !hasJapaneseKana(post.title)) {
         attempted += 1;
@@ -133,7 +133,7 @@ async function translatePosts(params: {
           translated += 1;
         }
       }
- 
+
       if (shouldTranslateToJa && !post.summaryJa && !hasJapaneseKana(post.summary)) {
         attempted += 1;
         const nextJa = await translateTextCached({
@@ -260,14 +260,14 @@ async function runSource(params: {
     // 如果本地没有历史数据但拿到 304，就会导致“空仓库永远为空”的死循环。
     // 这里直接强制再拉一次，确保每次运行都能自洽产出数据。
     res = await fetchTextWithCache({
-        url: source.url,
-        cache,
-        cachePath,
-        timeoutMs: 25_000,
-        verbose,
-        force: true,
-        persistCache
-      });
+      url: source.url,
+      cache,
+      cachePath,
+      timeoutMs: 25_000,
+      verbose,
+      force: true,
+      persistCache
+    });
   }
 
   if (res.ok && res.status === 304) {
@@ -730,7 +730,7 @@ async function enrichCoversFromArticlePages(params: {
   cachePath: string;
   verbose: boolean;
   persistCache: boolean;
-}): Promise<{ attempted: number; enriched: number; maxTotal: number }> {        
+}): Promise<{ attempted: number; enriched: number; maxTotal: number }> {
   const { posts, cache, cachePath, verbose, persistCache } = params;
   const log = createLogger({ verbose });
 
@@ -878,23 +878,12 @@ async function main() {
 
   const outPostsPath = resolve(root, "src", "data", "generated", "posts.json");
   const outStatusPath = resolve(root, "src", "data", "generated", "status.json");
-  const outStatusHistoryPath = resolve(
-    root,
-    "src",
-    "data",
-    "generated",
-    "status-history.v1.json"
-  );
+  const outStatusHistoryPath = resolve(root, "src", "data", "generated", "status-history.v1.json");
   const outSearchPackPath = resolve(root, "src", "data", "generated", "search-pack.v1.json");
   const outSearchPackV2Path = resolve(root, "src", "data", "generated", "search-pack.v2.json");
   const publicPostsPath = resolve(root, "public", "data", "posts.json");
   const publicStatusPath = resolve(root, "public", "data", "status.json");
-  const publicStatusHistoryPath = resolve(
-    root,
-    "public",
-    "data",
-    "status-history.v1.json"
-  );
+  const publicStatusHistoryPath = resolve(root, "public", "data", "status-history.v1.json");
   const publicSearchPackPath = resolve(root, "public", "data", "search-pack.v1.json");
   const publicSearchPackV2Path = resolve(root, "public", "data", "search-pack.v2.json");
   const cachePath = cacheFilePath(root);
@@ -905,8 +894,7 @@ async function main() {
 
   // 历史数据策略：优先尝试从上一次 Pages 部署的 data/posts.json 读取（避免每小时提交刷屏）。
   // 若不存在（首次部署）则退回到仓库内的 src/data/generated/posts.json。
-  const remotePostsUrl =
-    process.env.ACG_REMOTE_POSTS_URL ?? "https://tur1412.github.io/ACG/data/posts.json";
+  const remotePostsUrl = process.env.ACG_REMOTE_POSTS_URL ?? "https://tur1412.github.io/ACG/data/posts.json";
   const previousLocal = await readJsonFile<Post[]>(outPostsPath, []);
   const previousRemote = await (async () => {
     try {
@@ -921,7 +909,7 @@ async function main() {
     }
   })();
 
-  // 状态趋势：回读上一轮 status.json，用于计算连续失败等趋势字段（不阻断同步）。  
+  // 状态趋势：回读上一轮 status.json，用于计算连续失败等趋势字段（不阻断同步）。
   const remoteStatusUrl =
     process.env.ACG_REMOTE_STATUS_URL ?? "https://tur1412.github.io/ACG/data/status.json";
   const previousRemoteStatus = await (async () => {
@@ -953,8 +941,7 @@ async function main() {
 
   // status-history：回读上一轮趋势文件（用于连续可视化；不阻断同步）。
   const remoteStatusHistoryUrl =
-    process.env.ACG_REMOTE_STATUS_HISTORY_URL ??
-    "https://tur1412.github.io/ACG/data/status-history.v1.json";
+    process.env.ACG_REMOTE_STATUS_HISTORY_URL ?? "https://tur1412.github.io/ACG/data/status-history.v1.json";
   const previousRemoteStatusHistory = await (async () => {
     try {
       const res = await fetch(`${remoteStatusHistoryUrl}?t=${Date.now()}`, {
@@ -962,12 +949,7 @@ async function main() {
       });
       if (!res.ok) return null;
       const json = (await res.json()) as unknown;
-      if (
-        json &&
-        typeof json === "object" &&
-        (json as any).v === 1 &&
-        Array.isArray((json as any).entries)
-      ) {
+      if (json && typeof json === "object" && (json as any).v === 1 && Array.isArray((json as any).entries)) {
         return json as StatusHistoryV1;
       }
       return null;
@@ -1104,19 +1086,13 @@ async function main() {
   await writePublicJsonAndGzip(publicStatusPath, status);
 
   // status-history：趋势汇总（按“每次同步”为粒度），用于 status 页面展示。
-  const staleThresholdHoursForHistory = parseNonNegativeInt(
-    process.env.ACG_STALE_THRESHOLD_HOURS,
-    72
-  );
+  const staleThresholdHoursForHistory = parseNonNegativeInt(process.env.ACG_STALE_THRESHOLD_HOURS, 72);
   const sourcesForHistory = status.sources ?? [];
   const totalSourcesForHistory = sourcesForHistory.length;
   const okSourcesForHistory = sourcesForHistory.filter((s) => s.ok).length;
   const errSourcesForHistory = totalSourcesForHistory - okSourcesForHistory;
   const totalItemsForHistory = sourcesForHistory.reduce((sum, s) => sum + (s.itemCount ?? 0), 0);
-  const totalNewItemsForHistory = sourcesForHistory.reduce(
-    (sum, s) => sum + (s.newItemCount ?? 0),
-    0
-  );
+  const totalNewItemsForHistory = sourcesForHistory.reduce((sum, s) => sum + (s.newItemCount ?? 0), 0);
   const flakySourcesForHistory = sourcesForHistory.filter(
     (s) => typeof s.consecutiveFails === "number" && s.consecutiveFails >= 3
   ).length;
@@ -1158,7 +1134,9 @@ async function main() {
     entries: []
   });
   const baseEntriesRaw: unknown[] =
-    previousRemoteStatusHistory && Array.isArray(previousRemoteStatusHistory.entries) && previousRemoteStatusHistory.entries.length > 0
+    previousRemoteStatusHistory &&
+    Array.isArray(previousRemoteStatusHistory.entries) &&
+    previousRemoteStatusHistory.entries.length > 0
       ? (previousRemoteStatusHistory.entries as unknown[])
       : (previousLocalHistory.entries as unknown[]);
   const baseEntries = baseEntriesRaw
@@ -1222,7 +1200,7 @@ async function main() {
 
 main().catch((err) => {
   const log = createLogger();
-  const message = err instanceof Error ? err.stack ?? err.message : String(err);
+  const message = err instanceof Error ? (err.stack ?? err.message) : String(err);
   log.error(message);
   process.exitCode = 1;
 });

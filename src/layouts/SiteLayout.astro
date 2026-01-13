@@ -80,7 +80,12 @@ const swHref = href("/sw.js");
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={pageDescription} />
     {resolvedOgImage ? <meta name="twitter:image" content={resolvedOgImage} /> : null}
-    <link rel="alternate" type="application/rss+xml" title={lang === "ja" ? "ACGレーダー RSS" : "ACG Radar RSS"} href={withLang("/feed.xml")} />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={lang === "ja" ? "ACGレーダー RSS" : "ACG Radar RSS"}
+      href={withLang("/feed.xml")}
+    />
     <meta name="theme-color" content="#f6f7fb" />
     <link rel="manifest" href={manifestHref} />
     <link rel="apple-touch-icon" sizes="180x180" href={href("/icons/apple-touch-icon.png")} />
@@ -109,13 +114,17 @@ const swHref = href("/sw.js");
         try {
           if (mode === "dark") isDark = true;
           else if (mode === "light") isDark = false;
-          else isDark = typeof window.matchMedia === "function" ? window.matchMedia("(prefers-color-scheme: dark)").matches : false;
+          else
+            isDark =
+              typeof window.matchMedia === "function"
+                ? window.matchMedia("(prefers-color-scheme: dark)").matches
+                : false;
         } catch {
           // ignore
         }
 
         try {
-          const meta = document.querySelector('meta[name="theme-color"]');      
+          const meta = document.querySelector('meta[name="theme-color"]');
           meta?.setAttribute("content", isDark ? DARK : LIGHT);
         } catch {
           // ignore
@@ -144,10 +153,7 @@ const swHref = href("/sw.js");
         };
 
         try {
-          const ric =
-            typeof window.requestIdleCallback === "function"
-              ? window.requestIdleCallback
-              : null;
+          const ric = typeof window.requestIdleCallback === "function" ? window.requestIdleCallback : null;
           if (ric) {
             ric(clear, { timeout: 2600 });
             return;
@@ -194,7 +200,9 @@ const swHref = href("/sw.js");
 
         try {
           const screenShortSide = window.screen ? Math.min(window.screen.width, window.screen.height) : 0;
-          const vvShortSide = window.visualViewport ? Math.min(window.visualViewport.width, window.visualViewport.height) : 0;
+          const vvShortSide = window.visualViewport
+            ? Math.min(window.visualViewport.width, window.visualViewport.height)
+            : 0;
           const innerShortSide = Math.min(window.innerWidth || 0, window.innerHeight || 0);
           const candidates = [screenShortSide, vvShortSide, innerShortSide].filter((v) => v > 0);
           const shortSide = candidates.length ? Math.min(...candidates) : 0;
@@ -216,7 +224,8 @@ const swHref = href("/sw.js");
           const ua = navigator.userAgent || "";
           const uaTablet = /iPad|Tablet|Android(?!.*Mobile)/i.test(ua);
           const uaMobile =
-            /iPhone|iPod|Android.*Mobile|Windows Phone/i.test(ua) || (navigator.userAgentData ? navigator.userAgentData.mobile : false);
+            /iPhone|iPod|Android.*Mobile|Windows Phone/i.test(ua) ||
+            (navigator.userAgentData ? navigator.userAgentData.mobile : false);
 
           // iPadOS 在“桌面站点”下 UA 可能伪装成 Mac；常用特征：UA 含 Macintosh 且 maxTouchPoints>1
           const isIpadOs = /Macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1;
@@ -263,7 +272,12 @@ const swHref = href("/sw.js");
           const coresRaw = typeof navigator !== "undefined" ? navigator.hardwareConcurrency : undefined;
           const cores = typeof coresRaw === "number" ? coresRaw : NaN;
 
-          if (saveData || slowNet || (Number.isFinite(mem) && mem <= 4) || (Number.isFinite(cores) && cores <= 4)) {
+          if (
+            saveData ||
+            slowNet ||
+            (Number.isFinite(mem) && mem <= 4) ||
+            (Number.isFinite(cores) && cores <= 4)
+          ) {
             perf = "low";
           }
         } catch {
@@ -288,11 +302,7 @@ const swHref = href("/sw.js");
       <div class="acg-boot-fatal-inner">
         <div class="acg-boot-fatal-title">{bootFatalTitle}</div>
         <div class="acg-boot-fatal-desc">{bootFatalDesc}</div>
-        <button
-          type="button"
-          class="acg-boot-fatal-action clickable"
-          onclick="location.reload()"
-        >
+        <button type="button" class="acg-boot-fatal-action clickable" onclick="location.reload()">
           {bootFatalAction}
         </button>
       </div>
@@ -314,20 +324,22 @@ const swHref = href("/sw.js");
           </a>
 
           <nav class="acg-nav-desktop hidden items-center gap-2 lg:flex">
-            {CATEGORIES.map((c) => (
-              <a
-                href={withLang(`/c/${c}/`)}
-                aria-current={c === currentCategory ? "page" : undefined}
-                class:list={[
-                  "rounded-xl px-3 py-2 text-sm clickable",
-                  c === currentCategory
-                    ? "glass border-slate-900/20 text-slate-950 shadow-sm"
-                    : "text-slate-700 hover:text-slate-950"
-                ]}
-              >
-                {categoryLabel(lang, c)}
-              </a>
-            ))}
+            {
+              CATEGORIES.map((c) => (
+                <a
+                  href={withLang(`/c/${c}/`)}
+                  aria-current={c === currentCategory ? "page" : undefined}
+                  class:list={[
+                    "rounded-xl px-3 py-2 text-sm clickable",
+                    c === currentCategory
+                      ? "glass border-slate-900/20 text-slate-950 shadow-sm"
+                      : "text-slate-700 hover:text-slate-950"
+                  ]}
+                >
+                  {categoryLabel(lang, c)}
+                </a>
+              ))
+            }
           </nav>
 
           <div class="flex items-center gap-1 sm:gap-2">
@@ -352,7 +364,9 @@ const swHref = href("/sw.js");
               aria-current={isBookmarks ? "page" : undefined}
               class:list={[
                 "hidden rounded-xl px-3 py-2 text-sm clickable sm:inline-flex",
-                isBookmarks ? "glass border-slate-900/20 text-slate-950 shadow-sm" : "text-slate-700 hover:text-slate-950"
+                isBookmarks
+                  ? "glass border-slate-900/20 text-slate-950 shadow-sm"
+                  : "text-slate-700 hover:text-slate-950"
               ]}
             >
               {t(lang, "nav.bookmarks")}
@@ -362,7 +376,9 @@ const swHref = href("/sw.js");
               aria-current={isStatus ? "page" : undefined}
               class:list={[
                 "hidden rounded-xl px-3 py-2 text-sm clickable sm:inline-flex",
-                isStatus ? "glass border-slate-900/20 text-slate-950 shadow-sm" : "text-slate-700 hover:text-slate-950"
+                isStatus
+                  ? "glass border-slate-900/20 text-slate-950 shadow-sm"
+                  : "text-slate-700 hover:text-slate-950"
               ]}
             >
               {t(lang, "nav.status")}
@@ -372,7 +388,9 @@ const swHref = href("/sw.js");
               aria-current={isAbout ? "page" : undefined}
               class:list={[
                 "hidden rounded-xl px-3 py-2 text-sm clickable sm:inline-flex",
-                isAbout ? "glass border-slate-900/20 text-slate-950 shadow-sm" : "text-slate-700 hover:text-slate-950"
+                isAbout
+                  ? "glass border-slate-900/20 text-slate-950 shadow-sm"
+                  : "text-slate-700 hover:text-slate-950"
               ]}
             >
               {t(lang, "nav.about")}
@@ -392,26 +410,30 @@ const swHref = href("/sw.js");
           class="acg-nav-mobile acg-hscroll mt-2 flex gap-2 overflow-x-auto pb-1 sm:mt-3 lg:hidden"
           aria-label="Categories"
         >
-          {CATEGORIES.map((c) => (
-            <a
-              href={withLang(`/c/${c}/`)}
-              aria-current={c === currentCategory ? "page" : undefined}
-              class:list={[
-                "whitespace-nowrap rounded-full px-4 py-2 text-xs clickable",
-                c === currentCategory
-                  ? "glass border-slate-900/20 text-slate-950 shadow-sm"
-                  : "border border-slate-900/10 bg-white/45 text-slate-700 hover:bg-white/60"
-              ]}
-            >
-              {categoryLabel(lang, c)}
-            </a>
-          ))}
+          {
+            CATEGORIES.map((c) => (
+              <a
+                href={withLang(`/c/${c}/`)}
+                aria-current={c === currentCategory ? "page" : undefined}
+                class:list={[
+                  "whitespace-nowrap rounded-full px-4 py-2 text-xs clickable",
+                  c === currentCategory
+                    ? "glass border-slate-900/20 text-slate-950 shadow-sm"
+                    : "border border-slate-900/10 bg-white/45 text-slate-700 hover:bg-white/60"
+                ]}
+              >
+                {categoryLabel(lang, c)}
+              </a>
+            ))
+          }
           <a
             href={withLang("/about/")}
             aria-current={isAbout ? "page" : undefined}
             class:list={[
               "whitespace-nowrap rounded-full px-4 py-2 text-xs clickable",
-              isAbout ? "glass border-slate-900/20 text-slate-950 shadow-sm" : "border border-slate-900/10 bg-white/45 text-slate-700 hover:bg-white/60"
+              isAbout
+                ? "glass border-slate-900/20 text-slate-950 shadow-sm"
+                : "border border-slate-900/10 bg-white/45 text-slate-700 hover:bg-white/60"
             ]}
           >
             {t(lang, "nav.about")}
@@ -443,8 +465,8 @@ const swHref = href("/sw.js");
           </summary>
           <pre
             id="acg-device-debug"
-            class="mt-2 whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-slate-700"
-          ></pre>
+            class="mt-2 whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-slate-700">
+          </pre>
         </details>
       </div>
     </footer>

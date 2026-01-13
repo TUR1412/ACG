@@ -17,7 +17,7 @@ type Props = {
 const { post, lang, index } = Astro.props;
 const detailHref = href(`/${lang}/p/${post.id}/`);
 const when = formatRelativeHours(lang, post.publishedAt) ?? formatDateTime(lang, post.publishedAt);
-const title = lang === "zh" ? post.titleZh ?? post.title : post.titleJa ?? post.title;
+const title = lang === "zh" ? (post.titleZh ?? post.title) : (post.titleJa ?? post.title);
 const theme = getCategoryTheme(post.category);
 const bookmarkLabel = t(lang, "nav.bookmarks");
 const pulseScore = typeof post.pulseScore === "number" ? post.pulseScore : null;
@@ -45,13 +45,21 @@ const pulseScore = typeof post.pulseScore === "number" ? post.pulseScore : null;
       </span>
 
       <div class="min-w-0 flex-1">
-        <a href={detailHref} class="block text-sm font-semibold leading-snug text-slate-950 hover:underline line-clamp-2">
+        <a
+          href={detailHref}
+          class="block text-sm font-semibold leading-snug text-slate-950 hover:underline line-clamp-2"
+        >
           {title}
         </a>
         <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
           <span class="whitespace-nowrap">{when}</span>
           <span class="text-slate-400">·</span>
-          <span class="min-w-0 truncate" data-source-badge data-source-name={post.sourceName} title={post.sourceName}>
+          <span
+            class="min-w-0 truncate"
+            data-source-badge
+            data-source-name={post.sourceName}
+            title={post.sourceName}
+          >
             {post.sourceName}
           </span>
         </div>

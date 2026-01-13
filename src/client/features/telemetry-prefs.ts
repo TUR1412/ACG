@@ -151,7 +151,13 @@ export function wireTelemetryPrefs() {
       });
     } else {
       emitToast({
-        title: on ? (isJapanese() ? "送信を許可しました" : "已允许上报") : isJapanese() ? "送信を停止しました" : "已停止上报",
+        title: on
+          ? isJapanese()
+            ? "送信を許可しました"
+            : "已允许上报"
+          : isJapanese()
+            ? "送信を停止しました"
+            : "已停止上报",
         variant: on ? "success" : "info",
         timeoutMs: 1400
       });
@@ -164,7 +170,12 @@ export function wireTelemetryPrefs() {
     track({ type: "telemetry_endpoint_change", data: { ok: isHttpUrl(value) } });
     emitToast({
       title: isJapanese() ? "endpoint を保存しました" : "已保存 endpoint",
-      desc: value && !isHttpUrl(value) ? (isJapanese() ? "http/https の URL のみ有効です。" : "仅 http/https URL 会被用于上报。") : undefined,
+      desc:
+        value && !isHttpUrl(value)
+          ? isJapanese()
+            ? "http/https の URL のみ有効です。"
+            : "仅 http/https URL 会被用于上报。"
+          : undefined,
       variant: value && !isHttpUrl(value) ? "error" : "success",
       timeoutMs: 1600
     });
@@ -231,4 +242,3 @@ export function wireTelemetryPrefs() {
     });
   });
 }
-

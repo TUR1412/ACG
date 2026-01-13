@@ -10,4 +10,3 @@ export function safeExternalHttpUrl(raw: string | null | undefined): string | nu
     return null;
   }
 }
-

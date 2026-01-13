@@ -29,6 +29,13 @@ npm ci
 # 开发预览 / dev
 npm run dev
 
+# 代码规范 / lint
+npm run lint
+
+# 格式化 / format
+npm run format
+npm run format:check
+
 # 构建 / build
 npm run build
 
@@ -66,6 +73,8 @@ npm run sync
 1. 新建分支（建议）/ ブランチ作成（推奨）
 2. 保持改动聚焦（一次 PR 解决一个主题）/ 1PR=1テーマ
 3. 跑完最基本的验证 / 最低限の検証
+   - `npm run lint`
+   - `npm run format:check`
    - `npm test`
    - `npm run check`
    - `npm run build`
@@ -87,4 +96,3 @@ npm run sync
 
 参与本项目即表示同意遵守 `CODE_OF_CONDUCT.md`。
 参加者は `CODE_OF_CONDUCT.md` を遵守してください。
-
