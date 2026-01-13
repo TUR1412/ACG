@@ -86,6 +86,12 @@ const swHref = href("/sw.js");
       title={lang === "ja" ? "ACGレーダー RSS" : "ACG Radar RSS"}
       href={withLang("/feed.xml")}
     />
+    <link
+      rel="search"
+      type="application/opensearchdescription+xml"
+      title="ACG Radar"
+      href={href("/opensearch.xml")}
+    />
     <meta name="theme-color" content="#f6f7fb" />
     <link rel="manifest" href={manifestHref} />
     <link rel="apple-touch-icon" sizes="180x180" href={href("/icons/apple-touch-icon.png")} />

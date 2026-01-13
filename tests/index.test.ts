@@ -44,6 +44,7 @@ import { parseQuery, tokenizeQuery } from "../src/lib/search/query";
 import { GET as getRobotsTxt } from "../src/pages/robots.txt.ts";
 import { GET as getSecurityTxt } from "../src/pages/.well-known/security.txt.ts";
 import { GET as getHumansTxt } from "../src/pages/humans.txt.ts";
+import { GET as getOpenSearchXml } from "../src/pages/opensearch.xml.ts";
 import {
   applyDerivedMetrics,
   buildSourceHealthMap,
@@ -1203,6 +1204,15 @@ test("generated-data + feeds/json-feed: 在临时 cwd 下可稳定读取与生�
     assert.ok(humansText.includes("Maintainer: TUR1412"));
     assert.ok(humansText.includes("Site: https://example.com/"));
     assert.ok(humansText.includes("Repository: https://github.com/TUR1412/ACG"));
+
+    const openSearchRes = getOpenSearchXml({
+      url: new URL("https://example.com/opensearch.xml"),
+      site: new URL("https://example.com/")
+    } as any);
+    const openSearchText = await openSearchRes.text();
+    assert.ok(openSearchText.includes("<OpenSearchDescription"));
+    assert.ok(openSearchText.includes("q={searchTerms}"));
+    assert.ok(openSearchText.includes("https://example.com/zh/"));
   } finally {
     process.chdir(prevCwd);
     await rm(dir, { recursive: true, force: true });

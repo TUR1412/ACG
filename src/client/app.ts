@@ -1493,6 +1493,38 @@ function openCmdkFromHash() {
   requestOpenCommandPalette();
 }
 
+function applySearchQueryFromUrl() {
+  let q = "";
+  try {
+    const params = new URLSearchParams(window.location.search);
+    q = (params.get("q") ?? "").trim();
+  } catch {
+    q = "";
+  }
+
+  if (!q) return;
+
+  const input = document.querySelector<HTMLInputElement>("#acg-search");
+  if (!input) return;
+
+  try {
+    input.value = q;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.focus();
+  } catch {
+    // ignore
+  }
+
+  // 清理 URL 中的 q，避免刷新/返回导致重复覆盖用户输入。
+  try {
+    const u = new URL(window.location.href);
+    u.searchParams.delete("q");
+    window.history.replaceState(null, "", u.pathname + u.search + u.hash);
+  } catch {
+    // ignore
+  }
+}
+
 function wireDeviceDebug() {
   const details = document.querySelector<HTMLDetailsElement>("#acg-device-debug-details");
   const pre = document.querySelector<HTMLElement>("#acg-device-debug");
@@ -4184,6 +4216,7 @@ function initApp() {
   openPrefsFromHash();
   openCmdkFromHash();
   focusSearchFromHash();
+  applySearchQueryFromUrl();
 }
 
 function main() {
