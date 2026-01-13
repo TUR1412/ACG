@@ -14,9 +14,9 @@ const { posts, lang, variant = "card" } = Astro.props;
 ---
 
 {variant === "compact" ? (
-  <div class="grid gap-3 sm:grid-cols-2 lg:gap-4 xl:grid-cols-3">
-    {posts.map((p) => (
-      <PostLinkItem post={p} lang={lang} />
+  <div class="acg-post-grid grid gap-3 sm:grid-cols-2 lg:gap-4 xl:grid-cols-3" data-post-grid>
+    {posts.map((p, i) => (
+      <PostLinkItem post={p} lang={lang} index={i} />
     ))}
   </div>
 ) : (

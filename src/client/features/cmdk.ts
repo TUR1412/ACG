@@ -343,9 +343,9 @@ function buildCommands(): CommandView[] {
   };
 
   const toggleLang = () => {
-    const ok = click('a[aria-label="Switch language"]');
+    const ok = click("a[data-lang-switch]");
     if (ok) return;
-    const rest = location.pathname.replace(/^\/(zh|ja)(\/|$)/, "/");     
+    const rest = location.pathname.replace(/^\/(zh|ja)(\/|$)/, "/");
     nav(`/${otherLang}${rest}${location.search}${location.hash}`);
   };
 

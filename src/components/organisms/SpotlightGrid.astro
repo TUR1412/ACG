@@ -53,7 +53,7 @@ function whenLabel(post: Post): string {
 }
 ---
 
-<section class="mt-6">
+<section class="mt-6 acg-spotlight">
   <div class="flex flex-wrap items-end justify-between gap-3">
     <h2 class="m-0 text-sm font-semibold text-slate-950">{title}</h2>
     <div class="flex flex-wrap items-center justify-end gap-2 text-xs">
@@ -97,6 +97,7 @@ function whenLabel(post: Post): string {
           const theme = getCategoryTheme(post.category);
           const cover = resolveCover(post.cover, 1200);
           const coverOriginal = post.coverOriginal ?? cover?.original;
+          const showCover = Boolean(cover && !/^https?:\/\//i.test(cover.src));
           const publishedAtMs = new Date(post.publishedAt).getTime();
           const isFresh =
             Number.isFinite(publishedAtMs) &&
@@ -112,7 +113,7 @@ function whenLabel(post: Post): string {
               data-post-id={post.id}
               data-category={post.category}
               data-source-id={post.sourceId}
-              data-has-cover={post.cover ? "true" : "false"}
+              data-has-cover={showCover ? "true" : "false"}
             >
               <a href={postHref(post)} class="acg-carousel-hit" aria-label={postTitle(post)}></a>
 
@@ -126,9 +127,9 @@ function whenLabel(post: Post): string {
                   <div class="acg-cover-fallback-meta">{categoryLabel(lang, post.category)}</div>
                 </div>
               </div>
-              {cover ? (
+              {showCover ? (
                 <img
-                  src={cover.src}
+                  src={cover!.src}
                   alt=""
                   loading={i === 0 ? "eager" : "lazy"}
                   decoding="async"

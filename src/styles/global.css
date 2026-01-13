@@ -2746,6 +2746,19 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 }
 
 /* Spotlight：封面轮播（杂志式“封面墙”） */
+.acg-spotlight {
+  /* 性能：Spotlight 通常在首屏下方（尤其移动端），用 content-visibility 避免
+     离屏内容参与首屏渲染/合成，减少 LCP 被“下方大块内容”拖慢的概率。 */
+  content-visibility: auto;
+  contain-intrinsic-size: 560px;
+}
+
+@media (max-width: 640px) {
+  .acg-spotlight {
+    contain-intrinsic-size: 480px;
+  }
+}
+
 .acg-carousel {
   position: relative;
   overflow: hidden;

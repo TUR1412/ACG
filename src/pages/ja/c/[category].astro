@@ -21,7 +21,7 @@ const enriched = applyDerivedMetrics(posts, healthMap);
 const category = Astro.params.category as Category;
 const inCategory = enriched.filter((p) => p.category === category);
 const total = inCategory.length;
-const filtered = inCategory.slice(0, 42);
+const filtered = inCategory.slice(0, 36);
 const theme = getCategoryTheme(category);
 ---
 
@@ -161,7 +161,7 @@ const theme = getCategoryTheme(category);
   </section>
 
   <section class="mt-6">
-    <PostList posts={filtered} lang="ja" />
+    <PostList posts={filtered} lang="ja" variant="compact" />
     <div id="acg-list-empty" class="mt-4 glass shine rounded-2xl p-8 hidden">
       <div class="flex flex-col items-center gap-3 text-center">
         <div class="radar grid size-16 place-items-center shadow-e4">

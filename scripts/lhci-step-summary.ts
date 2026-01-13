@@ -83,20 +83,26 @@ function renderMarkdown(rows: Array<{ url: string; perf: number | null; a11y: nu
   return lines.join("\n");
 }
 
-async function main() {
-  const root = process.cwd();
-  const manifestPath = resolve(root, ".lighthouseci", "manifest.json");
-
-  const manifest = await safeReadJson<unknown>(manifestPath);
-  if (!manifest || typeof manifest !== "object" || !Array.isArray((manifest as any).runs)) {
-    await appendSummary(
-      `## Lighthouse CI Summary\n\n- manifest not found or invalid: \`.lighthouseci/manifest.json\`\n`
-    );
-    return;
+function parseManifest(raw: unknown): LhciManifestEntry[] | null {
+  // Newer LHCI filesystem target writes `manifest.json` as an array.
+  if (Array.isArray(raw)) {
+    return raw
+      .filter((x) => x && typeof x === "object")
+      .map((x: any) => {
+        return {
+          url: typeof x.url === "string" ? x.url : "",
+          htmlPath: typeof x.htmlPath === "string" ? x.htmlPath : undefined,
+          jsonPath: typeof x.jsonPath === "string" ? x.jsonPath : undefined
+        };
+      })
+      .filter((x) => x.url);
   }
 
-  const runsRaw = (manifest as any).runs as unknown[];
-  const entries: LhciManifestEntry[] = runsRaw
+  // Legacy schema: `{ runs: [...] }`.
+  if (!raw || typeof raw !== "object") return null;
+  const runsRaw = (raw as any).runs as unknown;
+  if (!Array.isArray(runsRaw)) return null;
+  return runsRaw
     .filter((x) => x && typeof x === "object")
     .map((x: any) => {
       return {
@@ -106,6 +112,31 @@ async function main() {
       };
     })
     .filter((x) => x.url);
+}
+
+async function main() {
+  const root = process.cwd();
+  const manifestCandidates = [
+    resolve(root, ".lighthouseci", "manifest.json"),
+    resolve(root, "lhci_reports", "manifest.json")
+  ];
+
+  let manifestRaw: unknown = null;
+  for (const p of manifestCandidates) {
+    const data = await safeReadJson<unknown>(p);
+    if (data) {
+      manifestRaw = data;
+      break;
+    }
+  }
+
+  const entries = parseManifest(manifestRaw);
+  if (!entries || !entries.length) {
+    await appendSummary(
+      `## Lighthouse CI Summary\n\n- manifest not found or invalid: \`.lighthouseci/manifest.json\` or \`lhci_reports/manifest.json\`\n`
+    );
+    return;
+  }
 
   if (!entries.length) {
     await appendSummary(`## Lighthouse CI Summary\n\n- no runs in manifest\n`);

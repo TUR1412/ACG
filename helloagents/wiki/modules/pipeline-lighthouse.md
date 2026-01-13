@@ -17,7 +17,8 @@
 场景：贡献者希望在本机复现 CI 跑分，但部分环境缺少 Chrome/Edge 或浏览器路径不可被 LHCI 自动发现。
 - 预期结果：提供 `npm run lhci:local`：
   - 自动探测 `chromePath`（可用 `LHCI_CHROME_PATH` 显式指定）
-  - 如缺少 `dist/` 则自动执行一次 build（`ACG_BASE=/`）
+  - 默认会先执行一次 build（`ACG_BASE=/`），避免 `dist/` 已存在但内容过期导致跑分与真实代码不一致
+  - 可选：传入 `-- --skip-build` 跳过 build（仅在你明确知道 dist 最新时使用）
 
 ## 依赖
 - `.github/workflows/lighthouse.yml`
@@ -26,6 +27,6 @@
 - `scripts/lhci-step-summary.ts`
 
 ## 产物
-- `.lighthouseci/manifest.json`（本地临时目录，默认在 `.gitignore` 中忽略）
+- `lhci_reports/manifest.json`（LHCI filesystem target 输出，包含各 URL 分数摘要）
+- `.lighthouseci/manifest.json`（LHCI 本地临时目录，历史/兼容用途；默认在 `.gitignore` 中忽略）
 - `lhci_reports/`（workflow 上传 artifact，用于 PR review 与回溯）
-

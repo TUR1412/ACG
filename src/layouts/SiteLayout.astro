@@ -326,7 +326,8 @@ const swHref = href("/sw.js");
             <a
               href={langSwitchHref}
               class="glass rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable shadow-sm sm:text-sm"
-              aria-label="Switch language"
+              data-lang-switch
+              title={lang === "zh" ? "日本語" : "中文"}
             >
               {lang === "zh" ? "日本語" : "中文"}
             </a>

@@ -5,6 +5,15 @@
 
 ## [Unreleased]
 
+## [0.5.18] - 2026-01-13
+
+### 变更
+- 首屏 LCP 稳定性：Spotlight 区块启用 `content-visibility`（配合 `contain-intrinsic-size`），降低离屏大块内容参与首屏渲染导致的 LCP 漂移。
+- 封面渲染策略：Spotlight/RandomPick 在 SSR 阶段仅对本地可缓存 cover 输出 `<img>`；外链封面使用占位并由客户端渐进增强，降低外链波动对 LHCI 的影响。
+- 首屏体积与 DOM：首页/分类页 SSR 默认条目数 42 → 36，并默认使用 `PostList variant="compact"`，进一步降低 DOM/解析开销。
+- 可访问性：卡片封面链接补齐 `aria-label/title`；语言切换入口改用 `data-lang-switch` 供 CmdK 定位（避免 `aria-label` 语义不匹配）。
+- Lighthouse 工具链：`lhci:local` 默认先 build（`ACG_BASE=/`），并提供 `--skip-build`；`lhci:summary` 兼容 `lhci_reports/manifest.json` 与 `.lighthouseci/manifest.json` 两种格式。
+
 ## [0.5.17] - 2026-01-13
 
 ### 变更

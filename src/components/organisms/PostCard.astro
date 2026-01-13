@@ -73,6 +73,8 @@ const bookmarkLabel = t(lang, "nav.bookmarks");
     <div class="acg-post-card-cover relative w-32 shrink-0 sm:w-full">
       <a
         href={detailHref}
+        aria-label={title}
+        title={title}
         class="acg-post-card-cover-link relative block aspect-[4/3] overflow-hidden rounded-xl sm:aspect-[16/9] sm:rounded-none"
       >
         <div class:list={["absolute inset-0 bg-gradient-to-br", theme.cover]}></div>
