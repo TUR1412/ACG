@@ -3,9 +3,9 @@ import { href } from "../lib/href";
 
 export function GET(context: APIContext): Response {
   const site = context.site ?? new URL(context.url.origin);
-
   const sitemapUrl = new URL(href("/sitemap.xml"), site).toString();
-  const body = [`User-agent: *`, `Allow: /`, ``, `Sitemap: ${sitemapUrl}`, ``].join("\n");
+
+  const body = ["User-agent: *", "Allow: /", "", `Sitemap: ${sitemapUrl}`, ""].join("\n");
 
   return new Response(body, {
     headers: {

@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+### 新增
+
+- SEO：新增 `robots.txt` endpoint 并指向 `sitemap.xml`，让爬虫发现入口更稳定（同时让 Lighthouse SEO 审计更稳）。
+
 ### 修复
 
 - generated-data：读取生成数据时改为按调用时 `process.cwd()` 动态解析文件路径，避免在测试/脚本中临时切换 cwd 导致读到旧数据或读取失败。

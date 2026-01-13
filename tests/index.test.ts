@@ -41,6 +41,7 @@ import { createRecommender } from "../src/lib/recommend";
 import { renderRss } from "../src/lib/rss";
 import { buildSearchIndex, normalizeSearchPackIndexRow } from "../src/lib/search/pack";
 import { parseQuery, tokenizeQuery } from "../src/lib/search/query";
+import { GET as getRobotsTxt } from "../src/pages/robots.txt.ts";
 import {
   applyDerivedMetrics,
   buildSourceHealthMap,
@@ -1172,6 +1173,14 @@ test("generated-data + feeds/json-feed: 在临时 cwd 下可稳定读取与生�
     const json = JSON.parse(jsonText);
     assert.equal(json.title, "ACG Radar（中文）");
     assert.ok(String(json.items?.[0]?.url).includes("/zh/p/1/"));
+
+    const robotsRes = getRobotsTxt({
+      url: new URL("https://example.com/robots.txt"),
+      site: new URL("https://example.com/")
+    } as any);
+    const robotsText = await robotsRes.text();
+    assert.ok(robotsText.includes("User-agent: *"));
+    assert.ok(robotsText.includes("Sitemap: https://example.com/sitemap.xml"));
   } finally {
     process.chdir(prevCwd);
     await rm(dir, { recursive: true, force: true });
