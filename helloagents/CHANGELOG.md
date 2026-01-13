@@ -5,6 +5,22 @@
 
 ## [Unreleased]
 
+## [0.5.30] - 2026-01-13
+
+### 新增
+
+- CI Commit Message 校验：`CI` workflow 新增 `commitlint` job，对 PR/push 的 commit range 执行 Conventional Commits 校验，减少“只在本地 hook 校验”的盲区。
+- Git Push 门禁：新增 Husky `pre-push` hook，在推送前执行 `lint` + `check` + `test:coverage`，降低坏提交进入远端的概率。
+
+### 变更
+
+- 覆盖率门禁：将 `test:coverage` 的阈值提升为 lines/functions/statements ≥ 40%、branches ≥ 55%，并通过新增单测确保门禁可持续通过。
+- 单元测试覆盖：补齐 `href/cover/category/format` 等纯函数用例，使覆盖率从 ~39.79% 提升到 ~45.51%（以 c8 summary 为准）。
+
+### 修复
+
+- Node 兼容性：`src/lib/href.ts` 与 `src/lib/cover.ts` 使用 `import.meta.env?.BASE_URL` 进行安全访问，避免在非 Vite 环境（Node/测试）下触发 `TypeError`。
+
 ## [0.5.29] - 2026-01-13
 
 ### 新增
