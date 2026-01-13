@@ -2,7 +2,7 @@
   "name": "acg",
   "private": true,
   "type": "module",
-  "version": "0.5.28",
+  "version": "0.5.29",
   "engines": {
     "node": ">=20"
   },
@@ -37,6 +37,8 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.6",
+    "@commitlint/cli": "^20.3.1",
+    "@commitlint/config-conventional": "^20.3.1",
     "@eslint/js": "^9.39.2",
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^8.53.0",

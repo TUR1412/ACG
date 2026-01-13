@@ -91,6 +91,15 @@ npm run sync
    - `npm run build`
 4. 按 PR 模板填写说明 / PR テンプレートに従って記載
 
+### 提交信息（Commit message）/ コミットメッセージ
+
+- 建议使用 Conventional Commits（例如：`feat(ui): ...`、`fix(sync): ...`、`chore(release): vX.Y.Z`）。  
+  Conventional Commits（例：`feat(ui): ...`、`fix(sync): ...`、`chore(release): vX.Y.Z`）を推奨します。
+- 本项目启用了 commitlint（Husky `commit-msg` hook），会在本地提交时校验格式。  
+  このプロジェクトは commitlint（Husky `commit-msg` hook）を有効化しており、ローカルでコミット時に形式を検証します。
+- 如需临时跳过：`HUSKY=0 git commit ...`  
+  一時的に無効化したい場合：`HUSKY=0 git commit ...`
+
 ---
 
 ## 5. 文案与双语 / 表示と言語

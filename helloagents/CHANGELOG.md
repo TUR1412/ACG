@@ -5,6 +5,16 @@
 
 ## [Unreleased]
 
+## [0.5.29] - 2026-01-13
+
+### 新增
+
+- Commit message 门禁：引入 commitlint（`commitlint.config.cjs`）并通过 Husky `commit-msg` hook 在本地提交时校验 Conventional Commits 格式。
+
+### 变更
+
+- 文档：贡献指南/README 补充 Conventional Commits 与 commitlint 说明（可用 `HUSKY=0` 临时跳过 hooks）。
+
 ## [0.5.28] - 2026-01-13
 
 ### 新增
