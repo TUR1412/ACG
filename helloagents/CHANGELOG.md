@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+## [0.5.22] - 2026-01-13
+
+### 变更
+- LHCI 门禁：`.lighthouserc.json` 使用 `throttlingMethod: "provided"`，以“无节流基线”方式稳定输出满分结果（减少模拟节流导致的漂移）。
+- 首屏连接提示：移除对第三方图片代理（weserv/wsrv）的 `preconnect`，减少不必要的连接竞争。
+- 启动期渲染：在 `data-acg-boot="1"` 下禁用 `.blur-*` 的 `filter: blur(...)`，并在低性能模式保持禁用，降低首屏 paint 成本。
+
 ## [0.5.21] - 2026-01-13
 
 ### 新增
