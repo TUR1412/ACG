@@ -25,6 +25,8 @@ export default [
       ".lighthouseci/**",
       "lhci_reports/**",
       "lhci_reports_simulate/**",
+      "coverage/**",
+      ".nyc_output/**",
       "public/data/**",
       "public/covers/**",
       "src/data/generated/**"

@@ -2,7 +2,7 @@
   "name": "acg",
   "private": true,
   "type": "module",
-  "version": "0.5.25",
+  "version": "0.5.26",
   "engines": {
     "node": ">=20"
   },
@@ -24,7 +24,8 @@
     "lhci:summary": "tsx scripts/lhci-step-summary.ts",
     "budget": "tsx scripts/perf-budget.ts",
     "check": "astro check",
-    "test": "node --import tsx --test tests/index.test.ts"
+    "test": "node --import tsx --test tests/index.test.ts",
+    "test:coverage": "c8 --reporter=text-summary --reporter=lcov node --import tsx --test tests/index.test.ts"
   },
   "dependencies": {
     "@astrojs/tailwind": "^6.0.2",
@@ -39,6 +40,7 @@
     "@typescript-eslint/eslint-plugin": "^8.53.0",
     "@typescript-eslint/parser": "^8.53.0",
     "autoprefixer": "^10.4.23",
+    "c8": "^10.1.3",
     "eslint": "^9.39.2",
     "eslint-plugin-astro": "^1.5.0",
     "globals": "^17.0.0",

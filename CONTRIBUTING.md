@@ -45,6 +45,9 @@ npm run check
 # 单元测试 / tests
 npm test
 
+# 覆盖率 / coverage（可选）
+npm run test:coverage
+
 # 体积预算 / perf budget
 npm run budget
 ```
@@ -75,7 +78,7 @@ npm run sync
 3. 跑完最基本的验证 / 最低限の検証
    - `npm run lint`
    - `npm run format:check`
-   - `npm test`
+   - `npm test`（或 `npm run test:coverage`）
    - `npm run check`
    - `npm run build`
 4. 按 PR 模板填写说明 / PR テンプレートに従って記載

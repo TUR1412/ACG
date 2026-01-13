@@ -6,6 +6,8 @@ dist/
 .lighthouseci/
 lhci_reports/
 lhci_reports_simulate/
+coverage/
+.nyc_output/
 .DS_Store
 
 # 本地环境

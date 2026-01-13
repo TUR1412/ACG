@@ -5,6 +5,18 @@
 
 ## [Unreleased]
 
+## [0.5.26] - 2026-01-13
+
+### 新增
+
+- 单元测试覆盖率：新增 `c8` 覆盖率工具与 `npm run test:coverage`，生成 `lcov` 与 summary 报告。
+
+### 变更
+
+- CI 质量门禁：`CI` workflow 的测试步骤改为 `test:coverage` 并上传 `coverage` artifact（便于回归时追踪覆盖率变化）。
+- 工程清理：`.gitignore` 忽略 `coverage/` 与 `.nyc_output/`，避免本地产物污染仓库。
+- 文档：README/贡献指南补充 `test:coverage` 的建议用法。
+
 ## [0.5.25] - 2026-01-13
 
 ### 新增
