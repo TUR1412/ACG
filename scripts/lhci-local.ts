@@ -31,6 +31,26 @@ async function main() {
     log.info("");
     log.info("Options:");
     log.info("  --skip-build   Skip `npm run build` when dist/ exists");
+    log.info("  --simulate     Use `.lighthouserc.simulate.json` (simulated throttling)");
+    log.info("  --config FILE  Use a custom LHCI config file");
+    return;
+  }
+
+  const pickConfigFile = (): string => {
+    const configIdx = args.indexOf("--config");
+    if (configIdx >= 0) {
+      const next = args[configIdx + 1];
+      if (typeof next === "string" && next.trim()) return next.trim();
+    }
+    if (args.includes("--simulate")) return ".lighthouserc.simulate.json";
+    return ".lighthouserc.json";
+  };
+
+  const configFile = pickConfigFile();
+  const configPath = resolve(process.cwd(), configFile);
+  if (!existsSync(configPath)) {
+    log.error(`[LHCI] config not found: ${configFile}`);
+    process.exitCode = 1;
     return;
   }
 
@@ -68,7 +88,7 @@ async function main() {
       "@lhci/cli@0.15.1",
       "autorun",
       "--config",
-      ".lighthouserc.json"
+      configFile
     ],
     { ACG_BASE: "/", LHCI_CHROME_PATH: chromePath }
   );

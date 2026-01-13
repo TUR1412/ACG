@@ -1,5 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 import { createLogger } from "./lib/logger";
 
 type LhciManifestEntry = {
@@ -116,7 +116,15 @@ function parseManifest(raw: unknown): LhciManifestEntry[] | null {
 
 async function main() {
   const root = process.cwd();
+  const outputDir = (process.env.LHCI_OUTPUT_DIR ?? "").trim();
   const manifestCandidates = [
+    ...(outputDir
+      ? [
+          isAbsolute(outputDir)
+            ? resolve(outputDir, "manifest.json")
+            : resolve(root, outputDir, "manifest.json")
+        ]
+      : []),
     resolve(root, ".lighthouseci", "manifest.json"),
     resolve(root, "lhci_reports", "manifest.json")
   ];

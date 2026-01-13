@@ -174,8 +174,8 @@ npm run build
 npm run lhci
 ```
 
-- Lighthouse CI（本地）：如本机未安装 Chrome/Edge，可先设置 `LHCI_CHROME_PATH`，或使用 `npm run lhci:local`（自动探测 `chromePath`，且在缺少 `dist/` 时自动 build）。<br/>
-  Lighthouse CI（ローカル）：Chrome/Edge が無い場合は `LHCI_CHROME_PATH` を設定、または `npm run lhci:local`（`chromePath` 自動検出 + `dist/` が無ければ build）を使用してください。
+- Lighthouse CI（本地）：如本机未安装 Chrome/Edge，可先设置 `LHCI_CHROME_PATH`，或使用 `npm run lhci:local`（自动探测 `chromePath`，且在缺少 `dist/` 时自动 build）。如需模拟节流对比，可使用 `npm run lhci:simulate`（输出到 `lhci_reports_simulate/`）或 `npm run lhci:local:simulate`。<br/>
+  Lighthouse CI（ローカル）：Chrome/Edge が無い場合は `LHCI_CHROME_PATH` を設定、または `npm run lhci:local`（`chromePath` 自動検出 + `dist/` が無ければ build）を使用してください。スロットリングをシミュレーションして比較したい場合は `npm run lhci:simulate`（出力: `lhci_reports_simulate/`）または `npm run lhci:local:simulate` を利用できます。
 
 ---
 
@@ -196,6 +196,7 @@ npm run lhci
 | `ACG_BUDGET_DATA_GZ_KB` | `dist/data/*.json.gz` 预算门禁（KB）<br/>`dist/data/*.json.gz` サイズ上限（KB） | `4500` |
 | `ACG_BUDGET_COVERS_MB` | `covers/` 预算门禁（MB）<br/>`covers/` サイズ上限（MB） | `160` |
 | `LHCI_CHROME_PATH` | 本地运行 Lighthouse CI 时指定 Chrome/Edge 可执行文件路径<br/>Lighthouse CI をローカル実行するための Chrome/Edge 実行ファイルのパス | - |
+| `LHCI_OUTPUT_DIR` | 用于 `npm run lhci:summary` 指定读取的报告目录（例如 `lhci_reports_simulate`）<br/>`npm run lhci:summary` が参照するレポートディレクトリを指定（例: `lhci_reports_simulate`） | - |
 
 </details>
 

@@ -1,0 +1,45 @@
+name: Lighthouse CI (Simulated)
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build (base=/)
+        env:
+          ACG_BASE: /
+        run: npm run build
+
+      - name: Lighthouse CI (Simulated)
+        run: npm run lhci:simulate
+
+      - name: Lighthouse Summary (Simulated)
+        if: always()
+        env:
+          LHCI_OUTPUT_DIR: lhci_reports_simulate
+        run: npm run lhci:summary
+
+      - name: Upload Lighthouse Reports (Simulated)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lhci-reports-simulate
+          path: lhci_reports_simulate

@@ -5,6 +5,7 @@ dist/
 .cache/**/*
 .lighthouseci/
 lhci_reports/
+lhci_reports_simulate/
 .DS_Store
 
 # 本地环境
