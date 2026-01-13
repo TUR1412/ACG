@@ -5,6 +5,9 @@ node_modules/
 .lighthouseci/
 lhci_reports/
 lhci_reports_simulate/
+coverage/
+.nyc_output/
+.husky/_/
 
 # generated data / artifacts
 src/data/generated/

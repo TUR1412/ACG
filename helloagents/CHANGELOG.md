@@ -5,6 +5,18 @@
 
 ## [Unreleased]
 
+## [0.5.28] - 2026-01-13
+
+### 新增
+
+- 覆盖率摘要：新增 `scripts/coverage-step-summary.ts` 与 `npm run coverage:summary`，在 GitHub Actions Job Summary 中输出覆盖率表格（便于快速 review）。
+
+### 变更
+
+- CI 可观测性：`CI` workflow 在 `test:coverage` 后追加 `coverage:summary` 步骤，让覆盖率结果在 Summary 里可见。
+- 工程清理：`.prettierignore` 忽略 `coverage/`、`.nyc_output/` 与 `.husky/_/` 等临时产物目录，避免格式检查误扫非源码文件。
+- 覆盖率产物：`test:coverage` 增加 `json-summary` reporter 以生成 `coverage/coverage-summary.json`（供 summary 脚本读取）。
+
 ## [0.5.27] - 2026-01-13
 
 ### 新增
