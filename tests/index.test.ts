@@ -43,6 +43,7 @@ import { buildSearchIndex, normalizeSearchPackIndexRow } from "../src/lib/search
 import { parseQuery, tokenizeQuery } from "../src/lib/search/query";
 import { GET as getRobotsTxt } from "../src/pages/robots.txt.ts";
 import { GET as getSecurityTxt } from "../src/pages/.well-known/security.txt.ts";
+import { GET as getHumansTxt } from "../src/pages/humans.txt.ts";
 import {
   applyDerivedMetrics,
   buildSourceHealthMap,
@@ -1193,6 +1194,15 @@ test("generated-data + feeds/json-feed: 在临时 cwd 下可稳定读取与生�
     assert.ok(secText.includes("Preferred-Languages: zh, ja, en"));
     assert.match(secText, /Expires:\s\d{4}-\d{2}-\d{2}/);
     assert.ok(secText.includes("Canonical: https://example.com/.well-known/security.txt"));
+
+    const humansRes = getHumansTxt({
+      url: new URL("https://example.com/humans.txt"),
+      site: new URL("https://example.com/")
+    } as any);
+    const humansText = await humansRes.text();
+    assert.ok(humansText.includes("Maintainer: TUR1412"));
+    assert.ok(humansText.includes("Site: https://example.com/"));
+    assert.ok(humansText.includes("Repository: https://github.com/TUR1412/ACG"));
   } finally {
     process.chdir(prevCwd);
     await rm(dir, { recursive: true, force: true });
