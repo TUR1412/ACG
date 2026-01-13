@@ -2485,6 +2485,64 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   }
 }
 
+/* 启动失败兜底：当脚本初始化失败时，提供静态可见的“错误边界”提示与刷新入口。 */
+.acg-boot-fatal {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 70;
+  width: min(520px, calc(100vw - 32px));
+  display: none;
+  pointer-events: none;
+}
+
+:root[data-acg-boot="failed"] .acg-boot-fatal {
+  display: block;
+}
+
+.acg-boot-fatal-inner {
+  pointer-events: auto;
+  border-radius: 18px;
+  border: 1px solid transparent;
+  background:
+    var(--toast-surface) padding-box,
+    linear-gradient(135deg, rgba(244, 63, 94, 0.55), rgba(124, 58, 237, 0.32), rgba(244, 63, 94, 0.45)) border-box;
+  box-shadow: var(--acg-shadow-e8);
+  padding: 12px 14px;
+  color: var(--text);
+}
+
+.acg-boot-fatal-title {
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.acg-boot-fatal-desc {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.acg-boot-fatal-action {
+  margin-top: 10px;
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.70);
+  padding: 10px 12px;
+  font-weight: 700;
+  font-size: 12px;
+  color: rgba(15, 23, 42, 0.92);
+}
+
+:root[data-acg-theme="dark"] .acg-boot-fatal-action {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.90);
+}
+
 /* Toast：轻量交互反馈（不依赖框架） */
 .acg-toast-root {
   position: fixed;

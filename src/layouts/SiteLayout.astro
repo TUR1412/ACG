@@ -48,6 +48,11 @@ const isStatus = currentPath === "/status/";
 const isAbout = currentPath === "/about/";
 const isLatest = currentPath === "/" || currentPath?.startsWith("/c/") === true;
 
+const bootFatalTitle = lang === "ja" ? "初期化に失敗しました" : "初始化失败";
+const bootFatalDesc =
+  lang === "ja" ? "ページを再読み込みしてください。" : "页面脚本初始化失败，建议刷新重试。";
+const bootFatalAction = lang === "ja" ? "再読み込み" : "刷新";
+
 const manifestHref = href("/manifest.webmanifest");
 const swHref = href("/sw.js");
 ---
@@ -280,6 +285,20 @@ const swHref = href("/sw.js");
     <a href="#main" class="acg-skip-link glass clickable">
       {t(lang, "common.skipToContent")}
     </a>
+
+    <div class="acg-boot-fatal" role="alert" aria-live="polite">
+      <div class="acg-boot-fatal-inner">
+        <div class="acg-boot-fatal-title">{bootFatalTitle}</div>
+        <div class="acg-boot-fatal-desc">{bootFatalDesc}</div>
+        <button
+          type="button"
+          class="acg-boot-fatal-action clickable"
+          onclick="location.reload()"
+        >
+          {bootFatalAction}
+        </button>
+      </div>
+    </div>
     <header
       class="sticky top-0 z-20 border-b border-slate-900/10 acg-header-surface"
       style="view-transition-name: acg-header;"
