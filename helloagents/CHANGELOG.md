@@ -5,6 +5,16 @@
 
 ## [Unreleased]
 
+## [0.5.24] - 2026-01-13
+
+### 新增
+- 模拟节流跑分：新增 `.lighthouserc.simulate.json`（`throttlingMethod: "simulate"`），输出到 `lhci_reports_simulate/`，用于更贴近真实移动端网络/CPU 的对比审计。
+- 模拟跑分工作流：新增 `Lighthouse CI (Simulated)` 手动工作流（workflow_dispatch），产出独立报告 artifact。
+
+### 变更
+- 本地 LHCI runner：`scripts/lhci-local.ts` 支持 `--simulate` 与 `--config FILE`（开闭原则：默认行为不变）。
+- LHCI Summary：`scripts/lhci-step-summary.ts` 支持 `LHCI_OUTPUT_DIR` 指定读取的报告目录，便于并行维护多套输出。
+
 ## [0.5.23] - 2026-01-13
 
 ### 变更
