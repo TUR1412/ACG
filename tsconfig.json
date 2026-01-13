@@ -2,5 +2,18 @@
   "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
     "types": ["astro/client"]
-  }
+  },
+  "exclude": [
+    "coverage",
+    ".nyc_output",
+    "dist",
+    ".astro",
+    "lhci_reports",
+    "lhci_reports_simulate",
+    ".lighthouseci",
+    ".cache",
+    "public/data",
+    "public/covers",
+    "src/data/generated"
+  ]
 }

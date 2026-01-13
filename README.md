@@ -177,6 +177,9 @@ npm run build
 npm run lhci
 ```
 
+- Git hooks：本项目启用了 Husky `pre-commit`（lint-staged + `npm test`）。如需临时跳过可用 `HUSKY=0`。<br/>
+  Git フック：Husky の `pre-commit`（lint-staged + `npm test`）を有効化しています。一時的に無効化したい場合は `HUSKY=0` を利用できます。
+
 - Lighthouse CI（本地）：如本机未安装 Chrome/Edge，可先设置 `LHCI_CHROME_PATH`，或使用 `npm run lhci:local`（自动探测 `chromePath`，且在缺少 `dist/` 时自动 build）。如需模拟节流对比，可使用 `npm run lhci:simulate`（输出到 `lhci_reports_simulate/`）或 `npm run lhci:local:simulate`。<br/>
   Lighthouse CI（ローカル）：Chrome/Edge が無い場合は `LHCI_CHROME_PATH` を設定、または `npm run lhci:local`（`chromePath` 自動検出 + `dist/` が無ければ build）を使用してください。スロットリングをシミュレーションして比較したい場合は `npm run lhci:simulate`（出力: `lhci_reports_simulate/`）または `npm run lhci:local:simulate` を利用できます。
 

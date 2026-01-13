@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [0.5.27] - 2026-01-13
+
+### 新增
+
+- 本地提交门禁：引入 Husky + lint-staged，并在 `pre-commit` 中对暂存文件执行 `eslint --fix` + `prettier --write`，同时跑 `npm test`（小步、可回滚、可验证）。
+
+### 变更
+
+- 覆盖率门禁：`test:coverage` 增加 `--check-coverage` 的最小阈值（lines/functions/statements ≥ 35%、branches ≥ 50%），防止覆盖率“悄悄滑坡”。
+- 类型检查稳定性：`tsconfig.json` 排除 `coverage/` 等临时产物目录，避免本地跑完覆盖率后 `astro check` 误扫报告脚本导致提示噪音。
+
 ## [0.5.26] - 2026-01-13
 
 ### 新增

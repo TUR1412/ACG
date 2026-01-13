@@ -48,6 +48,14 @@ npm test
 # 覆盖率 / coverage（可选）
 npm run test:coverage
 
+# Git hooks（可选） / Git フック（任意）
+#
+# 本项目启用了 Husky（Git hooks）。安装依赖后会自动启用 `pre-commit`：对暂存文件执行 lint-staged + `npm test`。
+# このプロジェクトは Husky（Git hooks）を有効化しています。依存インストール後に `pre-commit` が自動で有効化され、staged ファイルに lint-staged + `npm test` を実行します。
+#
+# 如需临时跳过：`HUSKY=0 git commit ...`
+# 一時的に無効化したい場合：`HUSKY=0 git commit ...`
+
 # 体积预算 / perf budget
 npm run budget
 ```

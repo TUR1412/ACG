@@ -2,7 +2,7 @@
   "name": "acg",
   "private": true,
   "type": "module",
-  "version": "0.5.26",
+  "version": "0.5.27",
   "engines": {
     "node": ">=20"
   },
@@ -25,7 +25,8 @@
     "budget": "tsx scripts/perf-budget.ts",
     "check": "astro check",
     "test": "node --import tsx --test tests/index.test.ts",
-    "test:coverage": "c8 --reporter=text-summary --reporter=lcov node --import tsx --test tests/index.test.ts"
+    "test:coverage": "c8 --check-coverage --lines 35 --functions 35 --branches 50 --statements 35 --reporter=text-summary --reporter=lcov node --import tsx --test tests/index.test.ts",
+    "prepare": "husky"
   },
   "dependencies": {
     "@astrojs/tailwind": "^6.0.2",
@@ -44,11 +45,25 @@
     "eslint": "^9.39.2",
     "eslint-plugin-astro": "^1.5.0",
     "globals": "^17.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "postcss": "^8.5.6",
     "prettier": "^3.4.2",
     "prettier-plugin-astro": "^0.14.1",
     "tailwindcss": "^3.4.19",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.astro": [
+      "prettier --write"
+    ],
+    "*.{json,md,css,yml,yaml}": [
+      "prettier --write"
+    ]
   }
 }
