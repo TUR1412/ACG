@@ -2747,14 +2747,18 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 
 /* Spotlight：封面轮播（杂志式“封面墙”） */
 .acg-spotlight {
-  /* 性能：Spotlight 通常在首屏下方（尤其移动端），用 content-visibility 避免
-     离屏内容参与首屏渲染/合成，减少 LCP 被“下方大块内容”拖慢的概率。 */
+  /* 性能：Spotlight 通常在首屏下方（尤其移动端），应避免“离屏大块内容”参与首屏渲染/合成。
+     注意：整段 section 做 content-visibility 可能导致 a11y（color-contrast）在离屏状态下误判背景色。
+     因此只对 carousel 本体启用，既稳 LCP，也不影响标题/提示文字的可访问性审计。 */
+}
+
+.acg-spotlight .acg-carousel {
   content-visibility: auto;
   contain-intrinsic-size: 560px;
 }
 
 @media (max-width: 640px) {
-  .acg-spotlight {
+  .acg-spotlight .acg-carousel {
     contain-intrinsic-size: 480px;
   }
 }

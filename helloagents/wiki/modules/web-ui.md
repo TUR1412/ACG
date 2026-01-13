@@ -64,7 +64,8 @@
 场景：部分来源封面为外链（第三方域），在移动端/模拟网络下容易引入不可预测的加载波动，导致 Lighthouse/LHCI 的 LCP 漂移；同时 Spotlight 模块通常位于首屏下方，不应参与首屏渲染竞争。
 - 预期结果：在不破坏既有“封面加载/重试/占位”逻辑根基的前提下，让首屏渲染更可预测，避免 LCP 被下方大块内容拖慢。
 - 实现要点：
-  - Spotlight 容器启用 `content-visibility: auto`（配合 `contain-intrinsic-size`），使离屏内容不参与首屏渲染/合成。
+  - Spotlight 的 carousel 本体（`.acg-spotlight .acg-carousel`）启用 `content-visibility: auto`（配合 `contain-intrinsic-size`），避免离屏大块内容参与首屏渲染/合成；标题/提示保留正常渲染，避免 a11y（`color-contrast`）在离屏状态误判背景色。
+  - 颜色对比度：Spotlight 标题/提示使用更高对比的 chip 背景（如 `bg-white/80`），确保 dark/auto 下 `color-contrast` 审计稳定通过。
   - 首页/随机推荐等大图封面：SSR 仅在 cover 已解析为本地静态路径时输出 `<img>`；外链封面改为占位背景，仍由封面加载器在客户端渐进增强。
 
 ### 需求: 详情页体积优化（相关推荐）
