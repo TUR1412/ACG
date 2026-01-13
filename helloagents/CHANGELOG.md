@@ -8,6 +8,7 @@
 ### 新增
 
 - SEO：新增 `robots.txt` endpoint 并指向 `sitemap.xml`，让爬虫发现入口更稳定（同时让 Lighthouse SEO 审计更稳）。
+- Security：新增 `/.well-known/security.txt`（指向 GitHub Security Policy），便于安全问题使用标准渠道发现与上报。
 
 ### 修复
 

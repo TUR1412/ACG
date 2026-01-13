@@ -42,6 +42,7 @@ import { renderRss } from "../src/lib/rss";
 import { buildSearchIndex, normalizeSearchPackIndexRow } from "../src/lib/search/pack";
 import { parseQuery, tokenizeQuery } from "../src/lib/search/query";
 import { GET as getRobotsTxt } from "../src/pages/robots.txt.ts";
+import { GET as getSecurityTxt } from "../src/pages/.well-known/security.txt.ts";
 import {
   applyDerivedMetrics,
   buildSourceHealthMap,
@@ -1181,6 +1182,17 @@ test("generated-data + feeds/json-feed: 在临时 cwd 下可稳定读取与生�
     const robotsText = await robotsRes.text();
     assert.ok(robotsText.includes("User-agent: *"));
     assert.ok(robotsText.includes("Sitemap: https://example.com/sitemap.xml"));
+
+    const secRes = getSecurityTxt({
+      url: new URL("https://example.com/.well-known/security.txt"),
+      site: new URL("https://example.com/")
+    } as any);
+    const secText = await secRes.text();
+    assert.ok(secText.includes("Contact: https://github.com/TUR1412/ACG/security/policy"));
+    assert.ok(secText.includes("Policy: https://github.com/TUR1412/ACG/security/policy"));
+    assert.ok(secText.includes("Preferred-Languages: zh, ja, en"));
+    assert.match(secText, /Expires:\s\d{4}-\d{2}-\d{2}/);
+    assert.ok(secText.includes("Canonical: https://example.com/.well-known/security.txt"));
   } finally {
     process.chdir(prevCwd);
     await rm(dir, { recursive: true, force: true });
