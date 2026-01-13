@@ -231,6 +231,48 @@
   --shadow-card-hover: 0 14px 44px rgba(2, 6, 23, 0.11);
 }
 
+/* 启动期降级：优先保证首帧渲染与交互稳定，再恢复玻璃 blur 等昂贵效果。 */
+:root[data-acg-boot="1"] {
+  --acg-glass-blur: 0px;
+  --acg-glass-sat: 1;
+  --acg-glass-blur-phone: 0px;
+  --acg-glass-sat-phone: 1;
+  --acg-fab-blur: 0px;
+  --acg-fab-sat: 1;
+  --acg-border-pan-duration: 0ms;
+}
+
+:root[data-acg-boot="1"] .acg-header-surface,
+:root[data-acg-boot="1"] .glass,
+:root[data-acg-boot="1"] .acg-icon-fab,
+:root[data-acg-boot="1"] .acg-toast,
+:root[data-acg-boot="1"] .acg-carousel-controls-inner,
+:root[data-acg-boot="1"] .acg-carousel-nav,
+:root[data-acg-boot="1"] .acg-cmdk-backdrop,
+:root[data-acg-boot="1"] .acg-cmdk-panel {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-acg-boot="1"] body::before {
+  opacity: 0;
+}
+
+:root[data-acg-boot="1"] body {
+  background: linear-gradient(180deg, #f8faff 0%, #eef2ff 100%);
+}
+
+:root[data-acg-boot="1"][data-acg-theme="dark"] body {
+  background: linear-gradient(180deg, #04070f 0%, #0a1224 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-acg-boot="1"]:not([data-acg-theme]) body,
+  :root[data-acg-boot="1"][data-acg-theme="auto"] body {
+    background: linear-gradient(180deg, #04070f 0%, #0a1224 100%);
+  }
+}
+
 /* 滚动期降级：滚动时临时关闭高开销效果（停止滚动后恢复）。 */
 :root[data-acg-scroll="1"] {
   --acg-glass-blur: 0px;

@@ -66,6 +66,7 @@
 - 实现要点：
   - Spotlight 的 carousel 本体（`.acg-spotlight .acg-carousel`）启用 `content-visibility: auto`（配合 `contain-intrinsic-size`），避免离屏大块内容参与首屏渲染/合成；标题/提示保留正常渲染，避免 a11y（`color-contrast`）在离屏状态误判背景色。
   - 颜色对比度：Spotlight 标题/提示使用更高对比的 chip 背景（如 `bg-white/80`），确保 dark/auto 下 `color-contrast` 审计稳定通过。
+  - LCP 候选控制：Spotlight 卡片标题使用更紧凑的字号与行数（`text-lg` + `line-clamp-2`），减少“离屏/临界位置的大标题”成为 LCP 候选的概率，从而提升分数稳定性。
   - 首页/随机推荐等大图封面：SSR 仅在 cover 已解析为本地静态路径时输出 `<img>`；外链封面改为占位背景，仍由封面加载器在客户端渐进增强。
 
 ### 需求: 详情页体积优化（相关推荐）

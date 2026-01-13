@@ -120,6 +120,43 @@ const swHref = href("/sw.js");
     <script is:inline>
       (() => {
         const el = document.documentElement;
+        try {
+          el.dataset.acgBoot = "1";
+        } catch {
+          // ignore
+        }
+
+        const clear = () => {
+          try {
+            delete el.dataset.acgBoot;
+          } catch {
+            try {
+              el.removeAttribute("data-acg-boot");
+            } catch {
+              // ignore
+            }
+          }
+        };
+
+        try {
+          const ric =
+            typeof window.requestIdleCallback === "function"
+              ? window.requestIdleCallback
+              : null;
+          if (ric) {
+            ric(clear, { timeout: 2600 });
+            return;
+          }
+        } catch {
+          // ignore
+        }
+
+        window.setTimeout(clear, 2200);
+      })();
+    </script>
+    <script is:inline>
+      (() => {
+        const el = document.documentElement;
         let view = "grid";
         let density = "comfort";
 
