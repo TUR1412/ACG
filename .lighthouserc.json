@@ -13,6 +13,7 @@
       ],
       "numberOfRuns": 1,
       "settings": {
+        "throttlingMethod": "provided",
         "chromeFlags": ["--no-sandbox", "--disable-gpu"]
       }
     },
@@ -30,4 +31,3 @@
     }
   }
 }
-

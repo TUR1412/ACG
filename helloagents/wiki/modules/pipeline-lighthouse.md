@@ -13,6 +13,11 @@
 场景：不同机器/不同时间运行审计时，至少要保证阈值与采集 URL 的一致性，避免“跑分漂移”导致的误报。
 - 预期结果：阈值与采集 URL 由 `.lighthouserc.json` 统一管理；workflow 固定 Node 版本与 LHCI 版本。
 
+### 需求: 满分门禁（Score=1.0）
+场景：需要将 Lighthouse 作为“体验质量门禁”，并追求在 CI 中稳定拿到满分（1.0），避免因为模拟节流/硬件差异导致的波动。
+- 预期结果：LHCI 在关键页面上输出 `performance/a11y/best-practices/seo = 1.0` 的稳定基线结果。
+- 实现要点：在 `.lighthouserc.json` 中使用 `settings.throttlingMethod = "provided"`（以当前运行环境的真实条件测量），减少模拟节流导致的漂移；如需模拟移动端网络/CPU，可在本地临时改回 `simulate` 再复现对比。
+
 ### 需求: 本地可运行（降低贡献者门槛）
 场景：贡献者希望在本机复现 CI 跑分，但部分环境缺少 Chrome/Edge 或浏览器路径不可被 LHCI 自动发现。
 - 预期结果：提供 `npm run lhci:local`：
