@@ -21,15 +21,6 @@ function nowIso(): string {
   }
 }
 
-function round(n: number): number {
-  return Math.round(n);
-}
-
-function bytesToMiB(n: number): string {
-  const mib = n / (1024 * 1024);
-  return `${mib.toFixed(1)} MiB`;
-}
-
 function getDomNodes(): number | null {
   try {
     return document.getElementsByTagName("*").length;
@@ -40,10 +31,17 @@ function getDomNodes(): number | null {
 
 function getMemory(): HealthSnapshot["memory"] {
   try {
-    const mem = (performance as any).memory as
-      | { usedJSHeapSize?: number; totalJSHeapSize?: number; jsHeapSizeLimit?: number }
-      | undefined;
+    const mem = (
+      performance as unknown as {
+        memory?: {
+          usedJSHeapSize?: number;
+          totalJSHeapSize?: number;
+          jsHeapSizeLimit?: number;
+        };
+      }
+    ).memory;
     if (!mem) return null;
+
     const used = typeof mem.usedJSHeapSize === "number" ? mem.usedJSHeapSize : NaN;
     const total = typeof mem.totalJSHeapSize === "number" ? mem.totalJSHeapSize : NaN;
     const limit = typeof mem.jsHeapSizeLimit === "number" ? mem.jsHeapSizeLimit : NaN;
@@ -77,7 +75,7 @@ function observeLongTasks(): {
         if (d > maxMs) maxMs = d;
       }
     });
-    obs.observe({ entryTypes: ["longtask"] as any });
+    obs.observe({ entryTypes: ["longtask"] } as unknown as PerformanceObserverInit);
   } catch {
     obs = null;
   }
@@ -147,7 +145,7 @@ export function startHealthMonitor(params?: { intervalMs?: number }): () => void
   let domNodes: number | null = null;
   let domSampleTick = 0;
 
-  const snapshot = (): HealthSnapshot => {
+  const makeSnapshot = (): HealthSnapshot => {
     // DOM 计数较贵：降低频率
     domSampleTick += 1;
     if (domSampleTick % 2 === 1) domNodes = getDomNodes();
@@ -162,45 +160,19 @@ export function startHealthMonitor(params?: { intervalMs?: number }): () => void
     };
   };
 
-  const log = () => {
-    const s = snapshot();
-    const net = s.requests.slow ? "slow" : "ok";
-    const busy = s.requests.active > 0 ? `busy(${s.requests.active})` : "idle";
-    const fpsLabel = s.fps != null ? `${s.fps.toFixed(1)}fps` : "fps=?";
+  let last: HealthSnapshot = makeSnapshot();
 
-    console.groupCollapsed(`[ACG HEALTH] ${fpsLabel} · ${net} · ${busy} · ${s.at}`);
-
-    const rows: Record<string, string> = {
-      "Requests.active": String(s.requests.active),
-      "Requests.net": net,
-      "Requests.lastSlowMs": s.requests.lastSlowMs != null ? `${round(s.requests.lastSlowMs)}ms` : "-",
-      "Requests.lastError": s.requests.lastError
-        ? `${s.requests.lastError.status ?? "-"} ${s.requests.lastError.url}`
-        : "-"
-    };
-    if (s.longTasks) {
-      rows["LongTasks.count"] = String(s.longTasks.count);
-      rows["LongTasks.max"] = `${round(s.longTasks.maxMs)}ms`;
-      rows["LongTasks.total"] = `${round(s.longTasks.totalMs)}ms`;
+  const tick = () => {
+    last = makeSnapshot();
+    try {
+      document.dispatchEvent(new CustomEvent("acg:health-snapshot", { detail: { snapshot: last } }));
+    } catch {
+      // ignore
     }
-    if (s.domNodes != null) rows["DOM.nodes"] = String(s.domNodes);
-    console.table(rows);
-
-    if (s.memory) {
-      console.log(
-        `[Memory] used=${bytesToMiB(s.memory.usedJsHeapSize)} total=${bytesToMiB(s.memory.totalJsHeapSize)} limit=${bytesToMiB(
-          s.memory.jsHeapSizeLimit
-        )}`
-      );
-    } else {
-      console.log("[Memory] performance.memory 不可用（非 Chromium 或被禁用）");
-    }
-
-    console.groupEnd();
   };
 
-  const timer = window.setInterval(log, intervalMs);
-  log();
+  const timer = window.setInterval(tick, intervalMs);
+  tick();
 
   const stop = () => {
     window.clearInterval(timer);
@@ -222,7 +194,9 @@ export function startHealthMonitor(params?: { intervalMs?: number }): () => void
   };
 
   try {
-    (window as any).__acgHealth = { stop, snapshot };
+    (
+      window as unknown as { __acgHealth?: { stop: () => void; snapshot: () => HealthSnapshot } }
+    ).__acgHealth = { stop, snapshot: () => last };
   } catch {
     // ignore
   }

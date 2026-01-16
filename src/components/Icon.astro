@@ -1,6 +1,8 @@
 ---
 export type { IconName } from "./atoms/Icon.astro";
-import AtomIcon from "./atoms/Icon.astro";
+import AtomIcon, { type Props } from "./atoms/Icon.astro";
+
+const props = Astro.props as Props;
 ---
 
-<AtomIcon {...Astro.props as any} />
+<AtomIcon {...props} />

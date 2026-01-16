@@ -8,7 +8,7 @@ export function bestInitialCoverSrc(original: string, width = 1200): string {
   }
   // https 页面里加载 http 图片会被浏览器直接拦截；这里直接用 https 包装，减少“看起来像缺图”的时间。
   try {
-    const protocol = (globalThis as any)?.location?.protocol as unknown;
+    const protocol = (globalThis as unknown as { location?: { protocol?: unknown } }).location?.protocol;
     if (protocol === "https:" && original.startsWith("http://")) {
       return toWeservImageUrl({ url: original, width });
     }

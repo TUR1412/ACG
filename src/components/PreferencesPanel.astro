@@ -1,5 +1,7 @@
 ---
-import OrganismPreferencesPanel from "./organisms/PreferencesPanel.astro";
+import OrganismPreferencesPanel, { type Props } from "./organisms/PreferencesPanel.astro";
+
+const props = Astro.props as Props;
 ---
 
-<OrganismPreferencesPanel {...Astro.props as any} />
+<OrganismPreferencesPanel {...props} />

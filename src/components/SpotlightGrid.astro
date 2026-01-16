@@ -1,5 +1,7 @@
 ---
-import OrganismSpotlightGrid from "./organisms/SpotlightGrid.astro";
+import OrganismSpotlightGrid, { type Props } from "./organisms/SpotlightGrid.astro";
+
+const props = Astro.props as Props;
 ---
 
-<OrganismSpotlightGrid {...Astro.props as any} />
+<OrganismSpotlightGrid {...props} />

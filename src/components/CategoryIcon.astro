@@ -1,5 +1,7 @@
 ---
-import AtomCategoryIcon from "./atoms/CategoryIcon.astro";
+import AtomCategoryIcon, { type Props } from "./atoms/CategoryIcon.astro";
+
+const props = Astro.props as Props;
 ---
 
-<AtomCategoryIcon {...Astro.props as any} />
+<AtomCategoryIcon {...props} />

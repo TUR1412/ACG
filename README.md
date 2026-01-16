@@ -20,6 +20,7 @@
 [![CI](https://github.com/TUR1412/ACG/actions/workflows/ci.yml/badge.svg)](https://github.com/TUR1412/ACG/actions/workflows/ci.yml)
 [![Lighthouse CI](https://github.com/TUR1412/ACG/actions/workflows/lighthouse.yml/badge.svg)](https://github.com/TUR1412/ACG/actions/workflows/lighthouse.yml)
 [![CodeQL](https://github.com/TUR1412/ACG/actions/workflows/codeql.yml/badge.svg)](https://github.com/TUR1412/ACG/actions/workflows/codeql.yml)
+![Version](https://img.shields.io/github/package-json/v/TUR1412/ACG?label=Version&color=3b82f6)
 ![MIT](https://img.shields.io/badge/License-MIT-black)
 ![Astro](https://img.shields.io/badge/Astro-5-FF5D01?logo=astro&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)
@@ -49,6 +50,23 @@
   - JSON Feed：`/zh/feed.json` / `/ja/feed.json`
   - OPML：`/zh/opml.xml` / `/ja/opml.xml`
 
+### 🖼️ 效果演示 / Demo（占位）
+
+<details>
+  <summary><b>截图 / GIF 占位（请替换为你自己的演示资源）</b></summary>
+
+- 首页信息流（Grid/List + Pulse/Latest）
+- 搜索（高级语法：`tag:` / `source:` / `cat:` / `before:` / `after:` / `is:`）
+- 偏好面板（Accent 强调色 + View Presets 视图预设）
+- Cmdk（`Ctrl/⌘ + K`，键盘快速切换/应用预设）
+
+<!--
+![Home](docs/demo/home.png)
+![Preferences](docs/demo/prefs.png)
+![Cmdk](docs/demo/cmdk.gif)
+-->
+</details>
+
 ### TL;DR（这是什么）
 
 ACG Radar 是一个“伪全栈”的 ACG 资讯雷达站点：数据由 GitHub Actions **每小时抓取**并清洗，生成静态站点后部署到 GitHub Pages。
@@ -65,6 +83,8 @@ ACG Radar 是一个“伪全栈”的 ACG 资讯雷达站点：数据由 GitHub 
 - **全站搜索**：标题/摘要/标签/来源快速过滤，支持 `tag:` / `source:` / `cat:` / `before:` / `after:` / `is:` 语法（含 `-` 反选）
 - **Command Palette**：`Ctrl/⌘ + K` 快速切换过滤、主题、语言、复制链接等
 - **Layout Modes**：Grid/List 视图 + Comfort/Compact 密度，一键适配“扫读 / 浏览”
+- **Accent（强调色）**：`neon/sakura/ocean/amber` 四种风格，持久化到本机（localStorage），全站联动视觉氛围
+- **View Presets（视图预设）**：保存“筛选 + 布局 + 主题 + Accent”的组合；一键应用/重命名/删除，并可复制可复现的视图链接
 - **PWA / 离线兜底**：弱网或离线时回退到最近缓存页面
 - **SEO Baseline**：生成 `robots.txt` + `sitemap.xml`，让搜索引擎与 Lighthouse SEO 审计更稳定（有生成数据时可增量覆盖更多页面）
 - **Friendly 404**：生成 `404.html`（语言选择 + 快捷入口），降低“空白页”与迷路成本
@@ -94,6 +114,42 @@ ACG Radar 是一个“伪全栈”的 ACG 资讯雷达站点：数据由 GitHub 
 - 安全/隐私：请遵循 `SECURITY.md`（不要在公开 Issue 中披露密钥、个人信息或漏洞利用细节）。
 
 ---
+
+## 📁 目录结构（概览）
+
+```text
+.
+├─ .github/workflows/         # CI / Pages / Lighthouse
+├─ docs/                      # README 资源 & 架构图
+├─ helloagents/               # 项目知识库（SSOT）
+├─ public/                    # 静态资源（data/、covers/ 等）
+├─ scripts/                   # 同步/验证/预算门禁
+├─ src/
+│  ├─ pages/                  # 路由页面（Astro）
+│  ├─ layouts/                # 页面布局
+│  ├─ components/             # UI 组件（Atomic Design）
+│  ├─ client/                 # 浏览器端交互层（偏好/搜索/命令面板等）
+│  └─ lib/                    # 纯函数/共享逻辑（可被脚本/测试复用）
+└─ tests/                     # Node 单测
+```
+
+## 🧩 技术栈（图）
+
+```mermaid
+flowchart LR
+  subgraph DataPipeline[Data Pipeline]
+    Actions[GitHub Actions] --> Node[Node.js]
+    Node --> Build[Astro Build]
+  end
+
+  subgraph UI[Frontend UI]
+    Astro[Astro] --> TS[TypeScript]
+    Astro --> TW[Tailwind CSS]
+  end
+
+  Build --> UI
+  UI --> Pages[GitHub Pages]
+```
 
 ## 架构（静态站 + 定时同步） / アーキテクチャ（静的サイト + 定期同期）
 
@@ -241,6 +297,11 @@ MIT
 ### 概要
 
 ACG Radar は、GitHub Actions により **毎時更新**される ACG ニュースレーダーです。取得 → クリーニング → 静的ビルド → GitHub Pages へデプロイ、という構成で **常駐バックエンド不要**の運用を目指します。
+
+### ✨ Highlights
+
+- Accent：`neon/sakura/ocean/amber` の 4 種アクセント（localStorage に保存）
+- View Presets：フィルター + レイアウト + テーマ + Accent を保存し、再現可能なリンクで共有
 
 ### 可観測性（Telemetry）
 

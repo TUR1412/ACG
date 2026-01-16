@@ -4,13 +4,13 @@ import type { Lang } from "../../i18n/i18n";
 import PostCard from "./PostCard.astro";
 import PostLinkItem from "../molecules/PostLinkItem.astro";
 
-type Props = {
+export type Props = {
   posts: Post[];
   lang: Lang;
   variant?: "card" | "compact";
 };
 
-const { posts, lang, variant = "card" } = Astro.props;
+const { posts, lang, variant = "card" } = Astro.props as Props;
 ---
 
 {

@@ -10,13 +10,13 @@ import CategoryIcon from "../atoms/CategoryIcon.astro";
 import Icon from "../atoms/Icon.astro";
 import SourceBadge from "../molecules/SourceBadge.astro";
 
-type Props = {
+export type Props = {
   posts: Post[];
   lang: Lang;
   title: string;
 };
 
-const { posts, lang, title } = Astro.props;
+const { posts, lang, title } = Astro.props as Props;
 
 const items = posts.slice(0, 4);
 const metaLabel = lang === "ja" ? "カバーカルーセル" : "封面轮播";

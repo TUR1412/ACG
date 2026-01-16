@@ -2,7 +2,7 @@
 // prettier-ignore
 export type IconName = "arrow-left" | "arrow-right" | "arrow-up" | "chart" | "chevron-right" | "clock" | "external-link" | "grid" | "info" | "link" | "list" | "moon" | "refresh" | "search" | "sliders" | "star" | "sun" | "x";
 
-type Props = {
+export type Props = {
   name: IconName;
   size?: number;
   class?: string;
@@ -10,7 +10,7 @@ type Props = {
   filled?: boolean;
 };
 
-const { name, size = 18, class: className, filled = false } = Astro.props;
+const { name, size = 18, class: className, filled = false } = Astro.props as Props;
 const cls = ["acg-icon", className].filter(Boolean).join(" ");
 ---
 

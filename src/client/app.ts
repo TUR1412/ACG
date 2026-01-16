@@ -28,6 +28,8 @@ const DENSITY_KEY = STORAGE_KEYS.DENSITY;
 const DISABLED_SOURCES_KEY = STORAGE_KEYS.DISABLED_SOURCES;
 const FOLLOWED_SOURCES_KEY = STORAGE_KEYS.FOLLOWED_SOURCES;
 const THEME_KEY = STORAGE_KEYS.THEME;
+const ACCENT_KEY = STORAGE_KEYS.ACCENT;
+const VIEW_PRESETS_KEY = STORAGE_KEYS.VIEW_PRESETS;
 
 type FilterStore = {
   version: 3;
@@ -42,6 +44,8 @@ type FilterStore = {
 
 type ThemeMode = "auto" | "light" | "dark";
 
+type AccentMode = "neon" | "sakura" | "ocean" | "amber";
+
 type SearchScope = "page" | "all";
 
 type ViewMode = "grid" | "list";
@@ -51,6 +55,29 @@ type DensityMode = "comfort" | "compact";
 type TimeLens = "all" | "2h" | "6h" | "24h";
 
 type SortMode = "latest" | "pulse";
+
+type ViewSnapshotV1 = {
+  q: string;
+  scope: SearchScope;
+  filters: Omit<FilterStore, "version">;
+  view: ViewMode;
+  density: DensityMode;
+  theme: ThemeMode;
+  accent: AccentMode;
+};
+
+type ViewPresetV1 = {
+  version: 1;
+  id: string;
+  name: string;
+  createdAt: number;
+  snapshot: ViewSnapshotV1;
+};
+
+type ViewPresetStoreV1 = {
+  version: 1;
+  presets: ViewPresetV1[];
+};
 
 const THEME_COLOR = {
   LIGHT: "#f6f7fb",
@@ -120,16 +147,18 @@ function normalizeSortMode(value: unknown): SortMode {
 
 function loadFilters(): FilterStore {
   try {
-    const parsed = safeJsonParse<Partial<FilterStore>>(localStorage.getItem(FILTERS_KEY));
+    const parsed = safeJsonParse<Record<string, unknown>>(localStorage.getItem(FILTERS_KEY));
+    const getBool = (key: string): boolean => parsed?.[key] === true;
+    const get = (key: string): unknown => parsed?.[key];
     return {
       version: 3,
-      onlyFollowed: Boolean(parsed?.onlyFollowed),
-      onlyFollowedSources: Boolean((parsed as any)?.onlyFollowedSources),
-      hideRead: Boolean(parsed?.hideRead),
-      onlyStableSources: Boolean((parsed as any)?.onlyStableSources),
-      dedup: Boolean((parsed as any)?.dedup),
-      timeLens: normalizeTimeLens((parsed as any)?.timeLens),
-      sortMode: normalizeSortMode((parsed as any)?.sortMode)
+      onlyFollowed: getBool("onlyFollowed"),
+      onlyFollowedSources: getBool("onlyFollowedSources"),
+      hideRead: getBool("hideRead"),
+      onlyStableSources: getBool("onlyStableSources"),
+      dedup: getBool("dedup"),
+      timeLens: normalizeTimeLens(get("timeLens")),
+      sortMode: normalizeSortMode(get("sortMode"))
     };
   } catch {
     return {
@@ -488,6 +517,34 @@ function applyThemeMode(mode: ThemeMode) {
   syncThemeColor(resolveThemeIsDark(mode));
 }
 
+function normalizeAccentMode(value: unknown): AccentMode {
+  return value === "neon" || value === "sakura" || value === "ocean" || value === "amber" ? value : "neon";
+}
+
+function loadAccentMode(): AccentMode {
+  try {
+    return normalizeAccentMode(localStorage.getItem(ACCENT_KEY));
+  } catch {
+    return "neon";
+  }
+}
+
+function saveAccentMode(mode: AccentMode) {
+  try {
+    localStorage.setItem(ACCENT_KEY, mode);
+  } catch {
+    // ignore
+  }
+}
+
+function applyAccentMode(mode: AccentMode) {
+  try {
+    document.documentElement.dataset.acgAccent = mode;
+  } catch {
+    // ignore
+  }
+}
+
 function syncRadioGroupTabStops(group: HTMLElement) {
   const radios = [...group.querySelectorAll<HTMLButtonElement>("[role=radio]")];
   if (radios.length === 0) return;
@@ -649,6 +706,38 @@ function wireThemeMode() {
   }
 }
 
+function wireAccentMode() {
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>("[data-accent-mode]")];
+
+  const apply = (mode: AccentMode) => {
+    applyAccentMode(mode);
+    for (const btn of buttons) {
+      const active = (btn.dataset.accentMode ?? "") === mode;
+      btn.dataset.active = active ? "true" : "false";
+      btn.setAttribute("aria-checked", active ? "true" : "false");
+    }
+    syncRadioGroupsFromButtons(buttons);
+    document.dispatchEvent(new CustomEvent("acg:accent-changed", { detail: { mode } }));
+  };
+
+  const mode = loadAccentMode();
+  apply(mode);
+
+  if (buttons.length > 0) {
+    document.addEventListener("click", (e) => {
+      if (e.defaultPrevented) return;
+      if (!(e.target instanceof HTMLElement)) return;
+      const el = e.target.closest<HTMLButtonElement>("[data-accent-mode]");
+      if (!el) return;
+      e.preventDefault();
+      const next = normalizeAccentMode(el.dataset.accentMode);
+      saveAccentMode(next);
+      apply(next);
+      track({ type: "accent_changed", data: { mode: next } });
+    });
+  }
+}
+
 function loadViewMode(): ViewMode {
   try {
     const raw = localStorage.getItem(VIEW_MODE_KEY);
@@ -763,9 +852,8 @@ function wireDensityMode() {
 
 function runWhenIdle(task: () => void, timeoutMs: number = UI.IDLE_DEFAULT_TIMEOUT_MS) {
   try {
-    const ric = (window as any).requestIdleCallback as
-      | ((cb: (deadline?: unknown) => void, opts?: { timeout?: number }) => number)
-      | undefined;
+    type RequestIdleCallbackLike = (cb: (deadline?: unknown) => void, opts?: { timeout?: number }) => number;
+    const ric = (window as unknown as { requestIdleCallback?: RequestIdleCallbackLike }).requestIdleCallback;
     if (typeof ric === "function") {
       ric(
         () => {
@@ -1494,35 +1582,159 @@ function openCmdkFromHash() {
 }
 
 function applySearchQueryFromUrl() {
-  let q = "";
+  // Legacy alias: older deep links only carried `?q=...` and should keep working.
+  // New view links (copy-view-link / view presets) use a richer snapshot and are
+  // handled by applyViewSnapshotFromUrl().
+  applyViewSnapshotFromUrl();
+}
+
+function applyViewSnapshotFromUrl() {
+  let params: URLSearchParams | null = null;
   try {
-    const params = new URLSearchParams(window.location.search);
-    q = (params.get("q") ?? "").trim();
+    params = new URLSearchParams(window.location.search);
   } catch {
-    q = "";
+    params = null;
   }
 
-  if (!q) return;
+  if (!params) return;
 
-  const input = document.querySelector<HTMLInputElement>("#acg-search");
-  if (!input) return;
+  const viewKeys = [
+    "only",
+    "onlySources",
+    "hide",
+    "stable",
+    "dedup",
+    "lens",
+    "sort",
+    "view",
+    "density",
+    "theme",
+    "accent",
+    "scope"
+  ] as const;
+
+  const hasViewParams = viewKeys.some((k) => params.has(k));
+  const q = (params.get("q") ?? "").trim();
+
+  if (!q && !hasViewParams) return;
+
+  const click = (selector: string): boolean => {
+    const el = document.querySelector<HTMLElement>(selector);
+    if (!el) return false;
+    try {
+      el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      return true;
+    } catch {
+      try {
+        el.click();
+        return true;
+      } catch {
+        return false;
+      }
+    }
+  };
+
+  const setCheckbox = (selector: string, checked: boolean): boolean => {
+    const el = document.querySelector<HTMLInputElement>(selector);
+    if (!el) return false;
+    try {
+      el.checked = checked;
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const setInputValue = (selector: string, value: string): boolean => {
+    const el = document.querySelector<HTMLInputElement>(selector);
+    if (!el) return false;
+    try {
+      el.value = value;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const cleanupUrl = (keys: readonly string[]) => {
+    try {
+      const u = new URL(window.location.href);
+      for (const k of keys) u.searchParams.delete(k);
+      window.history.replaceState(null, "", u.pathname + u.search + u.hash);
+    } catch {
+      // ignore
+    }
+  };
+
+  // Backward-compat: `?q=...` should not wipe existing view prefs unless the
+  // URL explicitly carries view params.
+  if (!hasViewParams) {
+    if (!q) return;
+    setInputValue("#acg-search", q);
+    try {
+      document.querySelector<HTMLInputElement>("#acg-search")?.focus();
+    } catch {
+      // ignore
+    }
+    cleanupUrl(["q"]);
+    return;
+  }
+
+  const getBool = (k: string): boolean => {
+    const v = params.get(k);
+    return v === "1" || v === "true";
+  };
+
+  const themeRaw = params.get("theme");
+  const theme: ThemeMode = themeRaw === "light" || themeRaw === "dark" ? themeRaw : "auto";
+
+  const snap: ViewSnapshotV1 = {
+    q,
+    scope: params.get("scope") === "all" ? "all" : "page",
+    filters: {
+      onlyFollowed: getBool("only"),
+      onlyFollowedSources: getBool("onlySources"),
+      hideRead: getBool("hide"),
+      onlyStableSources: getBool("stable"),
+      dedup: getBool("dedup"),
+      timeLens: normalizeTimeLens(params.get("lens")),
+      sortMode: normalizeSortMode(params.get("sort"))
+    },
+    view: params.get("view") === "list" ? "list" : "grid",
+    density: params.get("density") === "compact" ? "compact" : "comfort",
+    theme,
+    accent: normalizeAccentMode(params.get("accent"))
+  };
 
   try {
-    input.value = q;
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    input.focus();
+    setSearchScope(snap.scope);
   } catch {
     // ignore
   }
 
-  // 清理 URL 中的 q，避免刷新/返回导致重复覆盖用户输入。
+  setCheckbox("#acg-only-followed", snap.filters.onlyFollowed);
+  setCheckbox("#acg-only-followed-sources", snap.filters.onlyFollowedSources);
+  setCheckbox("#acg-hide-read", snap.filters.hideRead);
+  setCheckbox("#acg-only-stable-sources", snap.filters.onlyStableSources);
+  setCheckbox("#acg-dedup-view", snap.filters.dedup);
+
+  click(`button[data-time-lens="${snap.filters.timeLens}"]`);
+  click(`button[data-sort-mode="${snap.filters.sortMode}"]`);
+  click(`button[data-view-mode="${snap.view}"]`);
+  click(`button[data-density-mode="${snap.density}"]`);
+  click(`button[data-theme-mode="${snap.theme}"]`);
+  click(`button[data-accent-mode="${snap.accent}"]`);
+  setInputValue("#acg-search", snap.q);
+
   try {
-    const u = new URL(window.location.href);
-    u.searchParams.delete("q");
-    window.history.replaceState(null, "", u.pathname + u.search + u.hash);
+    document.dispatchEvent(new CustomEvent("acg:filters-changed"));
   } catch {
     // ignore
   }
+
+  cleanupUrl(["q", ...viewKeys]);
 }
 
 function wireDeviceDebug() {
@@ -1550,7 +1762,9 @@ function wireDeviceDebug() {
   const screen = window.screen ? `${window.screen.width}x${window.screen.height}` : "-";
   const device = el.dataset.acgDevice ?? "-";
   const ua = (navigator.userAgent ?? "").replace(/\s+/g, " ").trim();
-  const uaData = (navigator as any).userAgentData as { platform?: string; mobile?: boolean } | undefined;
+  type NavigatorUADataLike = { platform?: string; mobile?: boolean };
+  type NavigatorWithUAData = Navigator & { userAgentData?: NavigatorUADataLike };
+  const uaData = (navigator as NavigatorWithUAData).userAgentData;
   const uaDataPlatform = uaData?.platform ?? "-";
   const uaDataMobile = uaData?.mobile != null ? String(Boolean(uaData.mobile)) : "-";
 
@@ -2293,7 +2507,7 @@ async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {
     const map = new Map<string, BookmarkPost>();
     for (const item of json) {
       if (!item || typeof item !== "object") continue;
-      const it = item as any;
+      const it = item as Record<string, unknown>;
       const id = typeof it.id === "string" ? it.id : "";
       if (!id) continue;
       const post: BookmarkPost = {
@@ -2327,7 +2541,9 @@ async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {
 
 function shouldPrefetchAllPosts(): boolean {
   try {
-    const conn = (navigator as any).connection as { saveData?: boolean; effectiveType?: string } | undefined;
+    type NetworkInformationLike = { saveData?: boolean; effectiveType?: string };
+    type NavigatorWithConnection = Navigator & { connection?: NetworkInformationLike };
+    const conn = (navigator as NavigatorWithConnection).connection;
     if (conn?.saveData) return false;
     const effective = String(conn?.effectiveType ?? "").toLowerCase();
     if (effective.includes("2g")) return false;
@@ -2820,13 +3036,13 @@ function readBookmarkMetaCache(): Map<string, BookmarkPost> {
     const version = typeof parsed?.version === "number" ? parsed?.version : 0;
     if (version !== 1) return new Map();
 
-    const postsRaw = (parsed as any)?.posts;
+    const postsRaw = parsed?.posts;
     if (!Array.isArray(postsRaw)) return new Map();
 
     const map = new Map<string, BookmarkPost>();
     for (const item of postsRaw) {
       if (!item || typeof item !== "object") continue;
-      const it = item as any;
+      const it = item as Record<string, unknown>;
       const id = typeof it.id === "string" ? it.id : "";
       if (!id) continue;
       const post: BookmarkPost = {
@@ -3353,7 +3569,7 @@ function wireBookmarkTools(bookmarkIds: Set<string>) {
       const ids = Array.isArray(parsed)
         ? parsed
         : parsed && typeof parsed === "object"
-          ? (parsed as any).ids
+          ? (parsed as Record<string, unknown>).ids
           : null;
 
       const list = Array.isArray(ids) ? ids.filter((x) => typeof x === "string") : [];
@@ -3597,6 +3813,457 @@ function wirePreferences(params: { follows: Set<string>; blocklist: Set<string>;
   blockAdd.addEventListener("click", addBlock);
   blockInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") addBlock();
+  });
+}
+
+function wireViewPresets(filters: FilterStore) {
+  const list = document.querySelector<HTMLElement>("#acg-view-presets");
+  const saveBtn = document.querySelector<HTMLButtonElement>("#acg-view-save");
+  const copyBtn = document.querySelector<HTMLButtonElement>("#acg-view-copy-link");
+  if (!list || !saveBtn || !copyBtn) return;
+
+  const dialog = document.querySelector<HTMLDialogElement>("#acg-view-save-dialog");
+  const nameInput = document.querySelector<HTMLInputElement>("#acg-view-save-name");
+  const closeBtn = dialog?.querySelector<HTMLButtonElement>("[data-view-dialog-close]") ?? null;
+  const cancelBtn = dialog?.querySelector<HTMLButtonElement>("[data-view-dialog-cancel]") ?? null;
+  const confirmBtn = dialog?.querySelector<HTMLButtonElement>("[data-view-dialog-save]") ?? null;
+
+  const isLangJa = isJapanese();
+  const txt = {
+    empty: isLangJa ? "保存したビューはまだありません。" : "暂无已保存视图。",
+    apply: isLangJa ? "適用" : "应用",
+    rename: isLangJa ? "名前変更" : "重命名",
+    remove: isLangJa ? "削除" : "删除",
+    link: isLangJa ? "リンク" : "链接",
+    saved: isLangJa ? "ビューを保存しました" : "已保存视图",
+    renamed: isLangJa ? "名前を更新しました" : "已更新名称",
+    deleted: isLangJa ? "削除しました" : "已删除",
+    copied: isLangJa ? "リンクをコピーしました" : "链接已复制",
+    copyFailed: isLangJa ? "复制に失敗しました" : "复制失败",
+    applied: isLangJa ? "適用しました" : "已应用",
+    invalidName: isLangJa ? "名前を入力してください" : "请输入名称",
+    tooMany: isLangJa ? "保存数が上限です" : "保存数量已达上限",
+    promptRename: isLangJa ? "新しい名前" : "新的名称"
+  } as const;
+
+  const isRecord = (v: unknown): v is Record<string, unknown> => Boolean(v && typeof v === "object");
+
+  const makeId = (): string => {
+    try {
+      const u = crypto.randomUUID?.();
+      if (u) return u;
+    } catch {
+      // ignore
+    }
+    const rand = Math.random().toString(16).slice(2);
+    return `v_${Date.now().toString(16)}_${rand}`;
+  };
+
+  const normalizePreset = (raw: unknown): ViewPresetV1 | null => {
+    if (!isRecord(raw)) return null;
+    if (raw.version !== 1) return null;
+    const id = typeof raw.id === "string" ? raw.id : "";
+    const name = typeof raw.name === "string" ? raw.name : "";
+    const createdAt = typeof raw.createdAt === "number" && Number.isFinite(raw.createdAt) ? raw.createdAt : 0;
+    const snapshotRaw = raw.snapshot;
+    if (!id || !name || !createdAt || !isRecord(snapshotRaw)) return null;
+
+    const filtersRaw = snapshotRaw.filters;
+    if (!isRecord(filtersRaw)) return null;
+
+    const snap: ViewSnapshotV1 = {
+      q: typeof snapshotRaw.q === "string" ? snapshotRaw.q : "",
+      scope: snapshotRaw.scope === "all" ? "all" : "page",
+      filters: {
+        onlyFollowed: filtersRaw.onlyFollowed === true,
+        onlyFollowedSources: filtersRaw.onlyFollowedSources === true,
+        hideRead: filtersRaw.hideRead === true,
+        onlyStableSources: filtersRaw.onlyStableSources === true,
+        dedup: filtersRaw.dedup === true,
+        timeLens: normalizeTimeLens(filtersRaw.timeLens),
+        sortMode: normalizeSortMode(filtersRaw.sortMode)
+      },
+      view: snapshotRaw.view === "list" ? "list" : "grid",
+      density: snapshotRaw.density === "compact" ? "compact" : "comfort",
+      theme: snapshotRaw.theme === "light" || snapshotRaw.theme === "dark" ? snapshotRaw.theme : "auto",
+      accent: normalizeAccentMode(snapshotRaw.accent)
+    };
+
+    return { version: 1, id, name, createdAt, snapshot: snap };
+  };
+
+  const loadPresets = (): ViewPresetV1[] => {
+    try {
+      const parsed = safeJsonParse<Record<string, unknown>>(localStorage.getItem(VIEW_PRESETS_KEY));
+      if (!parsed || parsed.version !== 1) return [];
+      const listRaw = parsed.presets;
+      if (!Array.isArray(listRaw)) return [];
+      const presets = listRaw.map((x) => normalizePreset(x)).filter((x): x is ViewPresetV1 => Boolean(x));
+      return presets.sort((a, b) => b.createdAt - a.createdAt);
+    } catch {
+      return [];
+    }
+  };
+
+  const savePresets = (presets: ViewPresetV1[]) => {
+    try {
+      const store = { version: 1, presets } satisfies ViewPresetStoreV1;
+      localStorage.setItem(VIEW_PRESETS_KEY, JSON.stringify(store));
+    } catch {
+      // ignore
+    }
+  };
+
+  const snapshotCurrent = (): ViewSnapshotV1 => {
+    const input = document.querySelector<HTMLInputElement>("#acg-search");
+    const q = (input?.value ?? "").trim();
+    return {
+      q,
+      scope: getSearchScope(),
+      filters: {
+        onlyFollowed: Boolean(filters.onlyFollowed),
+        onlyFollowedSources: Boolean(filters.onlyFollowedSources),
+        hideRead: Boolean(filters.hideRead),
+        onlyStableSources: Boolean(filters.onlyStableSources),
+        dedup: Boolean(filters.dedup),
+        timeLens: filters.timeLens,
+        sortMode: filters.sortMode
+      },
+      view: loadViewMode(),
+      density: loadDensityMode(),
+      theme: loadThemeMode(),
+      accent: loadAccentMode()
+    };
+  };
+
+  const click = (selector: string): boolean => {
+    const el = document.querySelector<HTMLElement>(selector);
+    if (!el) return false;
+    try {
+      el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      return true;
+    } catch {
+      try {
+        (el as HTMLElement).click();
+        return true;
+      } catch {
+        return false;
+      }
+    }
+  };
+
+  const setCheckbox = (id: string, checked: boolean): boolean => {
+    const el = document.querySelector<HTMLInputElement>(id);
+    if (!el) return false;
+    try {
+      el.checked = checked;
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const setInputValue = (id: string, value: string): boolean => {
+    const el = document.querySelector<HTMLInputElement>(id);
+    if (!el) return false;
+    try {
+      el.value = value;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const shareUrlFor = (snap: ViewSnapshotV1): string => {
+    const u = new URL(window.location.href);
+    const set1 = (k: string, v: string) => u.searchParams.set(k, v);
+    const setBool = (k: string, v: boolean) => {
+      if (v) set1(k, "1");
+      else u.searchParams.delete(k);
+    };
+
+    if (snap.q) set1("q", snap.q);
+    else u.searchParams.delete("q");
+
+    setBool("only", snap.filters.onlyFollowed);
+    setBool("onlySources", snap.filters.onlyFollowedSources);
+    setBool("hide", snap.filters.hideRead);
+    setBool("stable", snap.filters.onlyStableSources);
+    setBool("dedup", snap.filters.dedup);
+    if (snap.filters.timeLens !== "all") set1("lens", snap.filters.timeLens);
+    else u.searchParams.delete("lens");
+    if (snap.filters.sortMode !== "latest") set1("sort", snap.filters.sortMode);
+    else u.searchParams.delete("sort");
+    if (snap.view !== "grid") set1("view", snap.view);
+    else u.searchParams.delete("view");
+    if (snap.density !== "comfort") set1("density", snap.density);
+    else u.searchParams.delete("density");
+    if (snap.theme !== "auto") set1("theme", snap.theme);
+    else u.searchParams.delete("theme");
+    if (snap.accent !== "neon") set1("accent", snap.accent);
+    else u.searchParams.delete("accent");
+    if (snap.scope !== "page") set1("scope", snap.scope);
+    else u.searchParams.delete("scope");
+
+    return u.toString();
+  };
+
+  const applySnapshot = (snap: ViewSnapshotV1) => {
+    try {
+      setSearchScope(snap.scope);
+    } catch {
+      // ignore
+    }
+
+    setCheckbox("#acg-only-followed", snap.filters.onlyFollowed);
+    setCheckbox("#acg-only-followed-sources", snap.filters.onlyFollowedSources);
+    setCheckbox("#acg-hide-read", snap.filters.hideRead);
+    setCheckbox("#acg-only-stable-sources", snap.filters.onlyStableSources);
+    setCheckbox("#acg-dedup-view", snap.filters.dedup);
+
+    if (snap.filters.timeLens) click(`button[data-time-lens="${snap.filters.timeLens}"]`);
+    if (snap.filters.sortMode) click(`button[data-sort-mode="${snap.filters.sortMode}"]`);
+    if (snap.view) click(`button[data-view-mode="${snap.view}"]`);
+    if (snap.density) click(`button[data-density-mode="${snap.density}"]`);
+    if (snap.theme) click(`button[data-theme-mode="${snap.theme}"]`);
+    if (snap.accent) click(`button[data-accent-mode="${snap.accent}"]`);
+    setInputValue("#acg-search", snap.q);
+
+    document.dispatchEvent(new CustomEvent("acg:filters-changed"));
+  };
+
+  let presets = loadPresets();
+  let editingId: string | null = null;
+
+  const render = () => {
+    list.innerHTML = "";
+    if (presets.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "rounded-xl border border-slate-900/10 bg-white/45 px-3 py-2 text-xs text-slate-600";
+      empty.textContent = txt.empty;
+      list.appendChild(empty);
+      return;
+    }
+
+    for (const p of presets) {
+      const row = document.createElement("div");
+      row.className =
+        "flex items-center justify-between gap-2 rounded-xl border border-slate-900/10 bg-white/50 px-3 py-2";
+      row.dataset.viewPresetId = p.id;
+
+      const left = document.createElement("div");
+      left.className = "min-w-0";
+      const title = document.createElement("div");
+      title.className = "truncate text-xs font-semibold text-slate-950";
+      title.textContent = p.name;
+      const meta = document.createElement("div");
+      meta.className = "truncate text-[11px] text-slate-600";
+      meta.textContent = p.snapshot.q
+        ? `${p.snapshot.q}`
+        : `${p.snapshot.filters.timeLens} · ${p.snapshot.filters.sortMode}`;
+      left.appendChild(title);
+      left.appendChild(meta);
+
+      const right = document.createElement("div");
+      right.className = "flex shrink-0 items-center gap-1";
+
+      const btn = (label: string, action: string) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className =
+          "rounded-lg border border-slate-900/10 bg-white/55 px-2 py-1 text-[11px] font-medium text-slate-800 hover:bg-white/80 clickable";
+        b.textContent = label;
+        b.dataset.action = action;
+        return b;
+      };
+
+      right.appendChild(btn(txt.apply, "apply"));
+      right.appendChild(btn(txt.link, "copy"));
+      right.appendChild(btn(txt.rename, "rename"));
+      right.appendChild(btn(txt.remove, "delete"));
+
+      row.appendChild(left);
+      row.appendChild(right);
+      list.appendChild(row);
+    }
+  };
+
+  const openDialog = (opts: { mode: "create" } | { mode: "rename"; id: string; currentName: string }) => {
+    const fallbackPrompt = () => {
+      const current = opts.mode === "rename" ? opts.currentName : "";
+      const name = window.prompt(txt.promptRename, current)?.trim() ?? "";
+      if (!name) return;
+      if (opts.mode === "rename") {
+        const next = presets.map((p) => (p.id === opts.id ? { ...p, name } : p));
+        presets = next;
+        savePresets(presets);
+        render();
+        toast({ title: txt.renamed, variant: "success", timeoutMs: UI.TOAST_HINT_TIMEOUT_MS });
+        return;
+      }
+      const snap = snapshotCurrent();
+      const preset: ViewPresetV1 = { version: 1, id: makeId(), name, createdAt: Date.now(), snapshot: snap };
+      presets = [preset, ...presets].slice(0, 24);
+      savePresets(presets);
+      render();
+      toast({ title: txt.saved, variant: "success", timeoutMs: UI.TOAST_HINT_TIMEOUT_MS });
+    };
+
+    if (!dialog || !nameInput || !confirmBtn) {
+      fallbackPrompt();
+      return;
+    }
+
+    editingId = opts.mode === "rename" ? opts.id : null;
+    nameInput.value = opts.mode === "rename" ? opts.currentName : "";
+
+    try {
+      if (typeof dialog.showModal === "function") dialog.showModal();
+      else (dialog as unknown as { open: boolean }).open = true;
+    } catch {
+      fallbackPrompt();
+      return;
+    }
+
+    window.setTimeout(() => {
+      try {
+        nameInput.focus();
+        nameInput.select();
+      } catch {
+        // ignore
+      }
+    }, 20);
+  };
+
+  const closeDialog = () => {
+    try {
+      if (dialog?.open) dialog.close();
+    } catch {
+      try {
+        if (dialog) (dialog as unknown as { open: boolean }).open = false;
+      } catch {
+        // ignore
+      }
+    }
+    editingId = null;
+  };
+
+  const onConfirm = () => {
+    const name = (nameInput?.value ?? "").trim();
+    if (!name) {
+      toast({ title: txt.invalidName, variant: "error", timeoutMs: 1800 });
+      return;
+    }
+
+    if (editingId) {
+      presets = presets.map((p) => (p.id === editingId ? { ...p, name } : p));
+      savePresets(presets);
+      render();
+      closeDialog();
+      toast({ title: txt.renamed, variant: "success", timeoutMs: UI.TOAST_HINT_TIMEOUT_MS });
+      return;
+    }
+
+    if (presets.length >= 24) {
+      toast({ title: txt.tooMany, desc: "max=24", variant: "error", timeoutMs: 2200 });
+      return;
+    }
+
+    const preset: ViewPresetV1 = {
+      version: 1,
+      id: makeId(),
+      name,
+      createdAt: Date.now(),
+      snapshot: snapshotCurrent()
+    };
+    presets = [preset, ...presets];
+    savePresets(presets);
+    render();
+    closeDialog();
+    toast({ title: txt.saved, variant: "success", timeoutMs: UI.TOAST_HINT_TIMEOUT_MS });
+  };
+
+  render();
+
+  saveBtn.addEventListener("click", () => openDialog({ mode: "create" }));
+
+  copyBtn.addEventListener("click", () => {
+    void (async () => {
+      const url = shareUrlFor(snapshotCurrent());
+      const ok = await copyToClipboard(url);
+      toast({
+        title: ok ? txt.copied : txt.copyFailed,
+        variant: ok ? "success" : "error",
+        timeoutMs: ok ? UI.TOAST_HINT_TIMEOUT_MS : 2200
+      });
+      if (ok) track({ type: "view_link_copy", data: {} });
+    })();
+  });
+
+  closeBtn?.addEventListener("click", () => closeDialog());
+  cancelBtn?.addEventListener("click", () => closeDialog());
+  confirmBtn?.addEventListener("click", () => onConfirm());
+
+  list.addEventListener("click", (e) => {
+    if (e.defaultPrevented) return;
+    if (!(e.target instanceof HTMLElement)) return;
+    const action = e.target.closest<HTMLElement>("[data-action]")?.dataset.action ?? "";
+    if (!action) return;
+    const row = e.target.closest<HTMLElement>("[data-view-preset-id]");
+    const id = row?.dataset.viewPresetId ?? "";
+    if (!id) return;
+
+    const preset = presets.find((p) => p.id === id) ?? null;
+    if (!preset) return;
+
+    if (action === "apply") {
+      e.preventDefault();
+      applySnapshot(preset.snapshot);
+      toast({ title: txt.applied, variant: "success", timeoutMs: UI.TOAST_HINT_TIMEOUT_MS });
+      track({ type: "view_preset_apply", data: { id } });
+      return;
+    }
+    if (action === "copy") {
+      e.preventDefault();
+      void (async () => {
+        const ok = await copyToClipboard(shareUrlFor(preset.snapshot));
+        toast({
+          title: ok ? txt.copied : txt.copyFailed,
+          variant: ok ? "success" : "error",
+          timeoutMs: ok ? UI.TOAST_HINT_TIMEOUT_MS : 2200
+        });
+        if (ok) track({ type: "view_link_copy", data: { id } });
+      })();
+      return;
+    }
+    if (action === "rename") {
+      e.preventDefault();
+      openDialog({ mode: "rename", id, currentName: preset.name });
+      return;
+    }
+    if (action === "delete") {
+      e.preventDefault();
+      presets = presets.filter((p) => p.id !== id);
+      savePresets(presets);
+      render();
+      toast({ title: txt.deleted, variant: "success", timeoutMs: UI.TOAST_HINT_TIMEOUT_MS });
+      track({ type: "view_preset_delete", data: { id } });
+    }
+  });
+
+  document.addEventListener("acg:apply-view-preset", (ev) => {
+    const ce = ev as CustomEvent<unknown>;
+    const detail = ce.detail;
+    if (!isRecord(detail)) return;
+    const id = typeof detail.id === "string" ? detail.id : "";
+    if (!id) return;
+    const preset = presets.find((p) => p.id === id) ?? null;
+    if (!preset) return;
+    applySnapshot(preset.snapshot);
+    toast({ title: txt.applied, variant: "success", timeoutMs: UI.TOAST_HINT_TIMEOUT_MS });
+    track({ type: "view_preset_apply", data: { id, from: "cmdk" } });
   });
 }
 
@@ -4041,7 +4708,8 @@ function markCurrentPostRead(readIds: Set<string>) {
 
 function supportsViewTransitions(): boolean {
   try {
-    return typeof (document as any).startViewTransition === "function";
+    const d = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+    return typeof d.startViewTransition === "function";
   } catch {
     return false;
   }
@@ -4174,6 +4842,7 @@ function initApp() {
   const followedSources = loadIds(FOLLOWED_SOURCES_KEY);
   wirePageTransitions();
   wireThemeMode();
+  wireAccentMode();
   wireViewMode();
   wireDensityMode();
   wireRadioGroupKeyboardNav();
@@ -4190,6 +4859,7 @@ function initApp() {
   wireBookmarksPage(bookmarkIds, readIds);
   wireBookmarkTools(bookmarkIds);
   wirePreferences({ follows, blocklist, filters });
+  wireViewPresets(filters);
   wireTelemetryPrefs();
   wireSourceToggles(disabledSources);
   wireSourceFollows(followedSources);

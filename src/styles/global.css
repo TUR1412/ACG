@@ -162,11 +162,15 @@
   --acg-text-phi-lg: clamp(1.4rem, 1.18rem + 0.8vw, 1.62rem);
   --acg-text-phi-xl: clamp(1.62rem, 1.34rem + 1.2vw, 2.1rem);
   --acg-text-phi-2xl: clamp(2.2rem, 1.72rem + 1.9vw, 2.62rem);
+  /* Accent system (runtime-switchable via data-acg-accent) */
+  --acg-accent-rgb: 124 58 237;
+  --acg-accent-2-rgb: 56 189 248;
+  --acg-accent-3-rgb: 16 185 129;
   --acg-border-gradient: linear-gradient(
     135deg,
-    rgba(79, 70, 229, 0.55),
-    rgba(14, 165, 233, 0.38),
-    rgba(16, 185, 129, 0.32)
+    rgb(var(--acg-accent-rgb) / 0.55),
+    rgb(var(--acg-accent-2-rgb) / 0.38),
+    rgb(var(--acg-accent-3-rgb) / 0.32)
   );
   --acg-shadow-e1: 0 1px 2px rgba(2, 6, 23, 0.06), 0 1px 0 rgba(255, 255, 255, 0.55) inset;
   --acg-shadow-e2: 0 4px 14px rgba(2, 6, 23, 0.08), 0 1px 0 rgba(255, 255, 255, 0.48) inset;
@@ -196,7 +200,7 @@
   --shadow-soft: 0 18px 55px rgba(2, 6, 23, 0.12);
   --shadow-card: 0 10px 28px rgba(2, 6, 23, 0.08);
   --shadow-card-hover: 0 22px 70px rgba(2, 6, 23, 0.14);
-  --ring: rgba(56, 189, 248, 0.55);
+  --ring: rgb(var(--acg-accent-2-rgb) / 0.55);
   --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -220,6 +224,92 @@
   --shadow-soft: 0 14px 44px rgba(2, 6, 23, 0.1);
   --shadow-card: 0 8px 22px rgba(2, 6, 23, 0.07);
   --shadow-card-hover: 0 14px 44px rgba(2, 6, 23, 0.11);
+}
+
+/* Accent palettes (works in both light/dark theme) */
+:root[data-acg-accent="neon"] {
+  --acg-accent-rgb: 124 58 237;
+  --acg-accent-2-rgb: 56 189 248;
+  --acg-accent-3-rgb: 16 185 129;
+}
+
+:root[data-acg-accent="sakura"] {
+  --acg-accent-rgb: 236 72 153;
+  --acg-accent-2-rgb: 244 63 94;
+  --acg-accent-3-rgb: 251 191 36;
+}
+
+:root[data-acg-accent="ocean"] {
+  --acg-accent-rgb: 6 182 212;
+  --acg-accent-2-rgb: 59 130 246;
+  --acg-accent-3-rgb: 16 185 129;
+}
+
+:root[data-acg-accent="amber"] {
+  --acg-accent-rgb: 245 158 11;
+  --acg-accent-2-rgb: 249 115 22;
+  --acg-accent-3-rgb: 59 130 246;
+}
+
+.acg-accent {
+  accent-color: rgb(var(--acg-accent-rgb));
+}
+
+.acg-orb {
+  will-change: transform;
+  animation: acg-orb-float-a 18s var(--ease-smooth) infinite;
+}
+
+.acg-orb-a {
+  background: rgb(var(--acg-accent-rgb) / 0.12);
+}
+
+.acg-orb-b {
+  background: rgb(var(--acg-accent-2-rgb) / 0.12);
+  animation-name: acg-orb-float-b;
+  animation-duration: 22s;
+}
+
+@keyframes acg-orb-float-a {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(22px, 14px, 0) scale(1.06);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes acg-orb-float-b {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-18px, -10px, 0) scale(1.08);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acg-orb {
+    animation: none;
+  }
+}
+
+.acg-dialog::backdrop {
+  background: rgb(2 6 23 / 0.55);
+  backdrop-filter: blur(10px) saturate(1.05);
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+}
+
+:root[data-acg-perf="low"] .acg-dialog::backdrop,
+:root[data-acg-boot="1"] .acg-dialog::backdrop {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* 启动期降级：优先保证首帧渲染与交互稳定，再恢复玻璃 blur 等昂贵效果。 */
@@ -869,7 +959,7 @@ html[data-acg-net="slow"] body::after {
 }
 
 ::selection {
-  background: rgba(124, 58, 237, 0.22);
+  background: rgb(var(--acg-accent-rgb) / 0.22);
 }
 
 /* 跨页视图过渡（支持的浏览器会自动丝滑，其他浏览器无影响） */

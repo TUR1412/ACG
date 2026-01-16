@@ -165,8 +165,10 @@ export function wirePerfMonitoring() {
   if (!canObserve) return;
 
   try {
-    const nav = performance.getEntriesByType?.("navigation")?.[0] as any;
-    const rs = typeof nav?.responseStart === "number" ? nav.responseStart : 0;
+    const nav = performance.getEntriesByType?.("navigation")?.[0] ?? null;
+    const timing =
+      nav && typeof nav === "object" && "responseStart" in nav ? (nav as PerformanceNavigationTiming) : null;
+    const rs = typeof timing?.responseStart === "number" ? timing.responseStart : 0;
     if (Number.isFinite(rs) && rs > 0) ttfb = rs;
   } catch {
     // ignore
@@ -180,7 +182,7 @@ export function wirePerfMonitoring() {
       if (!last) return;
       lcp = Math.max(lcp, last.startTime);
     });
-    obs.observe({ type: "largest-contentful-paint", buffered: true } as any);
+    obs.observe({ type: "largest-contentful-paint", buffered: true } as unknown as PerformanceObserverInit);
   } catch {
     // ignore
   }
@@ -188,13 +190,14 @@ export function wirePerfMonitoring() {
   try {
     // CLS
     const obs = new PerformanceObserver((list) => {
-      for (const entry of list.getEntries() as any[]) {
-        const value = typeof entry?.value === "number" ? entry.value : 0;
-        const hadRecentInput = Boolean(entry?.hadRecentInput);
+      for (const entry of list.getEntries()) {
+        const it = entry as unknown as Record<string, unknown>;
+        const value = typeof it.value === "number" ? it.value : 0;
+        const hadRecentInput = Boolean(it.hadRecentInput);
         if (!hadRecentInput) cls += value;
       }
     });
-    obs.observe({ type: "layout-shift", buffered: true } as any);
+    obs.observe({ type: "layout-shift", buffered: true } as unknown as PerformanceObserverInit);
   } catch {
     // ignore
   }
@@ -206,14 +209,15 @@ export function wirePerfMonitoring() {
         const now = Date.now();
         if (now - lastLongTaskAt < LONGTASK_SAMPLE_GAP_MS) return;
         lastLongTaskAt = now;
-        for (const entry of list.getEntries() as any[]) {
-          const dur = typeof entry?.duration === "number" ? entry.duration : 0;
+        for (const entry of list.getEntries()) {
+          const it = entry as unknown as Record<string, unknown>;
+          const dur = typeof it.duration === "number" ? it.duration : 0;
           if (!Number.isFinite(dur) || dur <= 0) continue;
           longTaskCount += 1;
           longTaskMax = Math.max(longTaskMax, dur);
         }
       });
-      obs.observe({ type: "longtask", buffered: true } as any);
+      obs.observe({ type: "longtask", buffered: true } as unknown as PerformanceObserverInit);
     } catch {
       // ignore
     }
@@ -231,12 +235,13 @@ export function wirePerfMonitoring() {
       };
 
       const obs = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries() as any[]) {
-          const id = typeof entry?.interactionId === "number" ? entry.interactionId : 0;
+        for (const entry of list.getEntries()) {
+          const it = entry as unknown as Record<string, unknown>;
+          const id = typeof it.interactionId === "number" ? it.interactionId : 0;
           if (!id) continue;
-          const dur = typeof entry?.duration === "number" ? entry.duration : 0;
+          const dur = typeof it.duration === "number" ? it.duration : 0;
           if (!Number.isFinite(dur) || dur <= 0) continue;
-          const name = typeof entry?.name === "string" ? entry.name : "";
+          const name = typeof it.name === "string" ? it.name : "";
           if (
             name &&
             name !== "click" &&
@@ -251,9 +256,13 @@ export function wirePerfMonitoring() {
       });
 
       try {
-        obs.observe({ type: "event", buffered: true, durationThreshold: 40 } as any);
+        obs.observe({
+          type: "event",
+          buffered: true,
+          durationThreshold: 40
+        } as unknown as PerformanceObserverInit);
       } catch {
-        obs.observe({ type: "event", buffered: true } as any);
+        obs.observe({ type: "event", buffered: true } as unknown as PerformanceObserverInit);
       }
     } catch {
       // ignore

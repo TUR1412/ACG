@@ -2,10 +2,10 @@
 import Icon from "../atoms/Icon.astro";
 import { safeExternalHttpUrl } from "../../lib/safe-url";
 
-type Tone = "light" | "dark";
-type Health = "excellent" | "good" | "warn" | "down";
+export type Tone = "light" | "dark";
+export type Health = "excellent" | "good" | "warn" | "down";
 
-type Props = {
+export type Props = {
   name: string;
   url?: string;
   tone?: Tone;
@@ -25,7 +25,7 @@ const {
   compact = false,
   health,
   healthLabel
-} = Astro.props;
+} = Astro.props as Props;
 const safeUrl = safeExternalHttpUrl(url);
 
 const base =

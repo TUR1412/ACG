@@ -5,7 +5,7 @@ import { copyToClipboard } from "../utils/clipboard";
 import { isJapanese } from "../utils/lang";
 import { track } from "../utils/telemetry";
 
-type CommandGroup = "nav" | "search" | "filters" | "system" | "share";
+type CommandGroup = "nav" | "search" | "filters" | "views" | "system" | "share";
 
 type Command = {
   id: string;
@@ -98,6 +98,8 @@ function groupLabel(group: CommandGroup): string {
       return ja ? "検索" : "搜索";
     case "filters":
       return ja ? "フィルター" : "过滤";
+    case "views":
+      return ja ? "ビュー" : "视图";
     case "system":
       return ja ? "システム" : "系统";
     case "share":
@@ -345,6 +347,116 @@ function buildCommands(): CommandView[] {
       // ignore
     }
     return false;
+  };
+
+  const getAccentMode = (): "neon" | "sakura" | "ocean" | "amber" => {
+    try {
+      const raw = document.documentElement.dataset.acgAccent;
+      if (raw === "neon" || raw === "sakura" || raw === "ocean" || raw === "amber") return raw;
+    } catch {
+      // ignore
+    }
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.ACCENT);
+      return raw === "neon" || raw === "sakura" || raw === "ocean" || raw === "amber" ? raw : "neon";
+    } catch {
+      return "neon";
+    }
+  };
+
+  const setAccentMode = (mode: "neon" | "sakura" | "ocean" | "amber"): boolean => {
+    const ok = click(`[data-accent-mode="${mode}"]`);
+    if (ok) return true;
+    try {
+      localStorage.setItem(STORAGE_KEYS.ACCENT, mode);
+    } catch {
+      // ignore
+    }
+    try {
+      document.documentElement.dataset.acgAccent = mode;
+    } catch {
+      // ignore
+    }
+    try {
+      document.dispatchEvent(new CustomEvent("acg:accent-changed", { detail: { accent: mode } }));
+    } catch {
+      // ignore
+    }
+    return false;
+  };
+
+  const isRecord = (v: unknown): v is Record<string, unknown> => Boolean(v && typeof v === "object");
+
+  type ViewPresetSummary = { id: string; name: string; createdAt: number; hint: string };
+
+  const loadViewPresets = (): ViewPresetSummary[] => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.VIEW_PRESETS);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as unknown;
+      if (!isRecord(parsed) || parsed.version !== 1) return [];
+      const listRaw = parsed.presets;
+      if (!Array.isArray(listRaw)) return [];
+
+      const normalizeLens = (v: unknown): "all" | "2h" | "6h" | "24h" => {
+        return v === "2h" || v === "6h" || v === "24h" || v === "all" ? v : "all";
+      };
+      const normalizeSort = (v: unknown): "latest" | "pulse" => {
+        return v === "pulse" || v === "latest" ? v : "latest";
+      };
+
+      const out: ViewPresetSummary[] = [];
+      for (const item of listRaw) {
+        if (!isRecord(item) || item.version !== 1) continue;
+        const id = typeof item.id === "string" ? item.id : "";
+        const name = typeof item.name === "string" ? item.name : "";
+        const createdAt =
+          typeof item.createdAt === "number" && Number.isFinite(item.createdAt) ? item.createdAt : 0;
+        const snap = isRecord(item.snapshot) ? item.snapshot : null;
+        if (!id || !name || !createdAt || !snap) continue;
+
+        let hint = "";
+        const qRaw = typeof snap.q === "string" ? snap.q.trim() : "";
+        if (qRaw) hint = qRaw.length > 72 ? `${qRaw.slice(0, 72)}…` : qRaw;
+        else if (isRecord(snap.filters)) {
+          const lens = normalizeLens(snap.filters.timeLens);
+          const sort = normalizeSort(snap.filters.sortMode);
+          hint = `${lens} · ${sort}`;
+        } else {
+          hint = "";
+        }
+
+        out.push({ id, name, createdAt, hint });
+      }
+
+      out.sort((a, b) => b.createdAt - a.createdAt);
+      return out;
+    } catch {
+      return [];
+    }
+  };
+
+  const openViewPresetManager = () => {
+    openPrefs();
+    window.setTimeout(() => {
+      const el = document.querySelector<HTMLElement>("#acg-view-presets");
+      if (!el) return;
+      const behavior = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "auto" : "smooth";
+      try {
+        el.scrollIntoView({ behavior, block: "center" });
+      } catch {
+        // ignore
+      }
+    }, 120);
+  };
+
+  const applyViewPreset = (id: string): boolean => {
+    try {
+      document.dispatchEvent(new CustomEvent("acg:apply-view-preset", { detail: { id } }));
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const toggleLang = () => {
@@ -657,6 +769,91 @@ function buildCommands(): CommandView[] {
       run: action(copyPageUrl)
     }
   ];
+
+  const fallbackDesc = isJapanese()
+    ? "このページでは UI がないため、設定のみ保存しました。"
+    : "当前页无对应控件，已仅保存偏好设置。";
+
+  const accentNames = {
+    neon: isJapanese() ? "ネオン" : "霓虹",
+    sakura: isJapanese() ? "サクラ" : "樱花",
+    ocean: isJapanese() ? "オーシャン" : "海蓝",
+    amber: isJapanese() ? "アンバー" : "琥珀"
+  } as const;
+
+  const buildAccentCommand = (mode: keyof typeof accentNames): Command => ({
+    id: `accent_${mode}`,
+    group: "views",
+    title: isJapanese() ? `アクセント：${accentNames[mode]}` : `强调色：${accentNames[mode]}`,
+    desc: isJapanese() ? "Accent color" : "Accent color",
+    keywords: ["accent", String(mode), accentNames[mode], "theme", "color"],
+    run: action(() => {
+      const ok = setAccentMode(mode);
+      close();
+      toast({
+        title: isJapanese() ? `アクセント：${accentNames[mode]}` : `强调色：${accentNames[mode]}`,
+        desc: ok ? undefined : fallbackDesc,
+        variant: "success",
+        timeoutMs: 1400
+      });
+      try {
+        track({ type: "accent_set", data: { accent: mode } });
+      } catch {
+        // ignore
+      }
+    })
+  });
+
+  const currentAccent = getAccentMode();
+  const accentOrder: Array<keyof typeof accentNames> = ["neon", "sakura", "ocean", "amber"];
+  const accentSorted = [currentAccent, ...accentOrder.filter((x) => x !== currentAccent)] as Array<
+    keyof typeof accentNames
+  >;
+  commands.push(...accentSorted.map((m) => buildAccentCommand(m)));
+
+  commands.push({
+    id: "view_preset_manage",
+    group: "views",
+    title: isJapanese() ? "ビューのプリセット" : "视图预设",
+    desc: isJapanese() ? "保存/適用/リンク" : "保存/应用/链接",
+    keywords: ["view", "preset", "saved", "layout", "density", "accent", "视图", "预设"],
+    run: action(() => {
+      close();
+      openViewPresetManager();
+    })
+  });
+
+  const presets = loadViewPresets();
+  for (const p of presets) {
+    commands.push({
+      id: `view_preset_apply_${p.id}`,
+      group: "views",
+      title: isJapanese() ? `ビュー：${p.name}` : `视图：${p.name}`,
+      desc: p.hint || (isJapanese() ? "保存したビュー" : "已保存视图"),
+      keywords: ["view", "preset", p.name, p.hint].filter((x): x is string => Boolean(x)),
+      run: action(() => {
+        close();
+        const ok = applyViewPreset(p.id);
+        toast({
+          title: ok
+            ? isJapanese()
+              ? "適用しました"
+              : "已应用"
+            : isJapanese()
+              ? "適用に失敗しました"
+              : "应用失败",
+          desc: p.name,
+          variant: ok ? "success" : "error",
+          timeoutMs: ok ? 1400 : 2200
+        });
+        try {
+          track({ type: "view_preset_apply", data: { id: p.id, from: "cmdk" } });
+        } catch {
+          // ignore
+        }
+      })
+    });
+  }
 
   return commands.map((c) => ({
     ...c,

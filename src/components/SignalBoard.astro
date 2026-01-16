@@ -1,5 +1,7 @@
 ---
-import OrganismSignalBoard from "./organisms/SignalBoard.astro";
+import OrganismSignalBoard, { type Props } from "./organisms/SignalBoard.astro";
+
+const props = Astro.props as Props;
 ---
 
-<OrganismSignalBoard {...Astro.props as any} />
+<OrganismSignalBoard {...props} />

@@ -1,13 +1,13 @@
 ---
 import type { Category } from "../../lib/categories";
 
-type Props = {
+export type Props = {
   category: Category;
   size?: number;
   class?: string;
 };
 
-const { category, size = 22, class: className } = Astro.props;
+const { category, size = 22, class: className } = Astro.props as Props;
 const cls = ["acg-icon", className].filter(Boolean).join(" ");
 ---
 

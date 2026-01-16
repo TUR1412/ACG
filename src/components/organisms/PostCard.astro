@@ -11,14 +11,14 @@ import CategoryIcon from "../atoms/CategoryIcon.astro";
 import Icon from "../atoms/Icon.astro";
 import SourceBadge from "../molecules/SourceBadge.astro";
 
-type Props = {
+export type Props = {
   post: Post;
   lang: Lang;
   animateIndex?: number;
   index?: number;
 };
 
-const { post, lang, animateIndex, index } = Astro.props;
+const { post, lang, animateIndex, index } = Astro.props as Props;
 const detailHref = href(`/${lang}/p/${post.id}/`);
 const when = formatRelativeHours(lang, post.publishedAt) ?? formatDateTime(lang, post.publishedAt);
 

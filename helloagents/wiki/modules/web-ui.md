@@ -8,7 +8,7 @@
 
 - 职责：Astro 页面/组件渲染、RSS/JSON Feed/OPML 输出、SEO 元信息、布局与导航
 - 状态：✅稳定
-- 最后更新：2026-01-13
+- 最后更新：2026-01-16
 
 ## 规范
 
@@ -32,6 +32,20 @@
 - 预期结果：偏好设置中提供 View Mode（Grid/List）与 Density（Comfort/Compact）两组入口；默认保持现有网格与舒适密度。
 - 实现要点：通过根节点 `data-acg-view` / `data-acg-density` 驱动样式覆盖（最小侵入），避免修改页面/组件的核心结构；切换仅影响表现层，不改变业务逻辑根基。
 - 入口补强：首页/分类页的 chip 区域提供 View/Density 快捷按钮（含 Grid/List 图标），降低切换成本；与命令面板入口保持一致，形成“鼠标/触屏 + 键盘”双路径。
+
+### 需求: 强调色（Accent）与视觉氛围
+
+场景：在玻璃拟态的基础上提供可配置的“强调色/氛围”，让站点在不同设备上保持一致的视觉偏好，同时不引入臃肿依赖与复杂主题系统。
+
+- 预期结果：支持 `neon/sakura/ocean/amber` 四种 Accent；偏好面板可切换并持久化到本机（localStorage）；全局 CSS 变量与背景氛围随 Accent 联动；`prefers-reduced-motion` 与 `data-acg-perf="low"` 下自动降级动效。
+- 实现要点：根节点注入 `data-acg-accent`；全局 CSS 通过变量/渐变/光斑动效统一驱动；切换动作通过 `acg:accent-changed` 广播，便于后续扩展可观测性或可视化能力。
+
+### 需求: 视图预设（View Presets）与可复现分享
+
+场景：用户希望将“筛选 + 布局 + 主题/强调色”组合保存成一套可复用场景，并能复制链接跨设备打开或分享给他人。
+
+- 预期结果：偏好面板支持保存/应用/重命名/删除视图预设，并可复制“可复现”的视图链接；打开链接后可自动还原快照并清理 URL 参数，避免刷新/返回重复覆盖。
+- 实现要点：预设存储在 localStorage（版本化 store）；链接以 query 参数差分表达（仅输出非默认值）；应用走“复用既有 UI 事件/数据管道”的路径，确保与正常交互一致。
 
 ### 需求: Telemetry 偏好与自助排障
 
@@ -145,3 +159,6 @@
 - `src/components/*.astro`
 - `src/lib/feeds.ts`
 - `src/lib/source-config.ts`
+- `src/components/organisms/PreferencesPanel.astro`
+- `src/client/app.ts`
+- `src/client/features/cmdk.ts`

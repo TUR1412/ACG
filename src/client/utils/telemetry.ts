@@ -47,7 +47,7 @@ function readStore(): TelemetryStore {
       localStorage.getItem(STORAGE_KEYS.TELEMETRY)
     );
     const version = typeof parsed?.version === "number" ? parsed.version : 0;
-    const eventsRaw = (parsed as any)?.events;
+    const eventsRaw = parsed?.events;
     const events =
       version === 1 && Array.isArray(eventsRaw)
         ? (eventsRaw.filter((x: unknown) => x && typeof x === "object") as TelemetryEvent[])

@@ -85,9 +85,8 @@ function isScrollingNow(): boolean {
 
 function runWhenIdle(task: () => void, timeoutMs: number) {
   try {
-    const ric = (window as any).requestIdleCallback as
-      | ((cb: (deadline?: unknown) => void, opts?: { timeout?: number }) => number)
-      | undefined;
+    type RequestIdleCallbackLike = (cb: (deadline?: unknown) => void, opts?: { timeout?: number }) => number;
+    const ric = (window as unknown as { requestIdleCallback?: RequestIdleCallbackLike }).requestIdleCallback;
     if (typeof ric === "function") {
       ric(
         () => {
@@ -124,9 +123,11 @@ type IdleDeadlineLike = {
 
 function runDuringIdle(task: (deadline?: IdleDeadlineLike) => void, timeoutMs: number) {
   try {
-    const ric = (window as any).requestIdleCallback as
-      | ((cb: (deadline: IdleDeadlineLike) => void, opts?: { timeout?: number }) => number)
-      | undefined;
+    type RequestIdleCallbackLike = (
+      cb: (deadline: IdleDeadlineLike) => void,
+      opts?: { timeout?: number }
+    ) => number;
+    const ric = (window as unknown as { requestIdleCallback?: RequestIdleCallbackLike }).requestIdleCallback;
     if (typeof ric === "function") {
       ric(
         (deadline) => {
@@ -178,7 +179,7 @@ function readFullTextCache(postId: string): FullTextCacheEntry | null {
     try {
       const json = JSON.parse(raw) as unknown;
       if (!json || typeof json !== "object") return null;
-      const it = json as any;
+      const it = json as Record<string, unknown>;
       if (typeof it.original !== "string" || typeof it.url !== "string") return null;
       return {
         url: it.url,
@@ -3312,8 +3313,11 @@ export function wireFullTextReader() {
             );
           }
         } catch (err) {
-          const status =
-            typeof (err as any)?.status === "number" ? ((err as any).status as number) : undefined;
+          const status = (() => {
+            if (!err || typeof err !== "object") return undefined;
+            const v = (err as Record<string, unknown>).status;
+            return typeof v === "number" ? v : undefined;
+          })();
           if (status === 451) {
             setStatus(
               lang === "ja"
@@ -3392,7 +3396,14 @@ export function wireFullTextReader() {
         setStatus("");
       })()
         .catch((err) => {
-          const msg = String((err as any)?.message ?? "");
+          const msg =
+            err instanceof Error
+              ? err.message
+              : (() => {
+                  if (!err || typeof err !== "object") return String(err ?? "");
+                  const m = (err as Record<string, unknown>).message;
+                  return typeof m === "string" ? m : String(err);
+                })();
           const m = /HTTP\s+(\d+)/i.exec(msg);
           if (m?.[1]) {
             setStatus(lang === "ja" ? `翻訳に失敗しました (HTTP ${m[1]})。` : `翻译失败 (HTTP ${m[1]})。`);

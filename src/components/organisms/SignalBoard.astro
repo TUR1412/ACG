@@ -11,7 +11,7 @@ import Chip from "../atoms/Chip.astro";
 type HotTag = { tag: string; count: number };
 type LensCounts = Record<"2h" | "6h" | "24h", number>;
 
-type Props = {
+export type Props = {
   lang: Lang;
   pulseTop: Post[];
   hotTags: HotTag[];
@@ -20,7 +20,7 @@ type Props = {
   totalPosts: number;
 };
 
-const { lang, pulseTop, hotTags, lensCounts, healthSummary, totalPosts } = Astro.props;
+const { lang, pulseTop, hotTags, lensCounts, healthSummary, totalPosts } = Astro.props as Props;
 const noData = t(lang, "common.noData");
 const stableRatio =
   healthSummary.total > 0 ? Math.round((healthSummary.stable / healthSummary.total) * 100) : 0;

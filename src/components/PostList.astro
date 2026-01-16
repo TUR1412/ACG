@@ -1,5 +1,7 @@
 ---
-import OrganismPostList from "./organisms/PostList.astro";
+import OrganismPostList, { type Props } from "./organisms/PostList.astro";
+
+const props = Astro.props as Props;
 ---
 
-<OrganismPostList {...Astro.props as any} />
+<OrganismPostList {...props} />

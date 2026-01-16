@@ -76,7 +76,7 @@ export function buildSearchPackV2(posts: Post[], generatedAt: string): SearchPac
 
 export function normalizeSearchPackIndexRow(value: unknown, maxPosts: number): SearchPackIndexRow | null {
   if (!value || typeof value !== "object") return null;
-  const it = value as any;
+  const it = value as Record<string, unknown>;
 
   const iRaw = typeof it.i === "number" ? it.i : NaN;
   const i = Number.isFinite(iRaw) ? Math.floor(iRaw) : NaN;

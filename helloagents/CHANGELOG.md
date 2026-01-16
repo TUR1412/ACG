@@ -12,6 +12,10 @@
 - Meta：新增 `humans.txt`（项目/技术栈/仓库信息），提供更标准的站点元信息入口。
 - Search：新增 `opensearch.xml` 并在页面 head 注入 `rel="search"`，支持浏览器将站内搜索添加为搜索引擎（通过 `?q=` 预填充输入框）。
 
+- UI：新增 Accent（强调色）系统（`neon/sakura/ocean/amber`），并持久化到本机（localStorage），全站视觉联动。
+- UI：新增 View Presets（视图预设）：保存/应用/重命名/删除/复制可复现视图链接（URL 自动套用快照后清理参数）。
+- Cmdk：命令面板新增 Accent 与视图预设入口，强化键盘路径与效率操作。
+
 ### 修复
 
 - generated-data：读取生成数据时改为按调用时 `process.cwd()` 动态解析文件路径，避免在测试/脚本中临时切换 cwd 导致读到旧数据或读取失败。

@@ -38,6 +38,12 @@ export type I18nKey =
   | "prefs.themeLight"
   | "prefs.themeDark"
   | "prefs.themeHint"
+  | "prefs.accent"
+  | "prefs.accentNeon"
+  | "prefs.accentSakura"
+  | "prefs.accentOcean"
+  | "prefs.accentAmber"
+  | "prefs.accentHint"
   | "prefs.view"
   | "prefs.viewGrid"
   | "prefs.viewList"
@@ -59,6 +65,16 @@ export type I18nKey =
   | "prefs.sort"
   | "prefs.sortLatest"
   | "prefs.sortPulse"
+  | "prefs.views"
+  | "prefs.viewsCopyLink"
+  | "prefs.viewsSave"
+  | "prefs.viewsHint"
+  | "prefs.viewsSaveTitle"
+  | "prefs.viewsName"
+  | "prefs.viewsNamePlaceholder"
+  | "prefs.viewsSaveHint"
+  | "prefs.viewsCancel"
+  | "prefs.viewsConfirmSave"
   | "prefs.followPlaceholder"
   | "prefs.followAdd"
   | "prefs.blockPlaceholder"
@@ -152,6 +168,12 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "prefs.themeLight": "浅色",
     "prefs.themeDark": "深色",
     "prefs.themeHint": "自动 = 跟随系统外观（可在系统设置中切换深色/浅色）。",
+    "prefs.accent": "强调色",
+    "prefs.accentNeon": "霓虹",
+    "prefs.accentSakura": "樱花",
+    "prefs.accentOcean": "海洋",
+    "prefs.accentAmber": "琥珀",
+    "prefs.accentHint": "强调色会影响高亮、焦点与部分渐变装饰。",
     "prefs.view": "视图",
     "prefs.viewGrid": "网格",
     "prefs.viewList": "列表",
@@ -173,6 +195,16 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "prefs.sort": "排序",
     "prefs.sortLatest": "最新优先",
     "prefs.sortPulse": "热度优先",
+    "prefs.views": "视图预设",
+    "prefs.viewsCopyLink": "复制视图链接",
+    "prefs.viewsSave": "保存当前视图",
+    "prefs.viewsHint": "把当前搜索/过滤/主题等打包成可复用的“视图”。支持一键应用与分享。",
+    "prefs.viewsSaveTitle": "保存视图",
+    "prefs.viewsName": "名称",
+    "prefs.viewsNamePlaceholder": "例如：近24h · 热度 · 去重",
+    "prefs.viewsSaveHint": "最多保存 24 个视图（仅保存在本机浏览器）。",
+    "prefs.viewsCancel": "取消",
+    "prefs.viewsConfirmSave": "保存",
     "prefs.followPlaceholder": "关注关键词（作品/角色/声优）",
     "prefs.followAdd": "添加",
     "prefs.blockPlaceholder": "屏蔽关键词（不想看到的）",
@@ -268,6 +300,12 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "prefs.themeLight": "ライト",
     "prefs.themeDark": "ダーク",
     "prefs.themeHint": "自動 = OSの外観設定（ライト/ダーク）に追従します。",
+    "prefs.accent": "アクセント",
+    "prefs.accentNeon": "ネオン",
+    "prefs.accentSakura": "さくら",
+    "prefs.accentOcean": "オーシャン",
+    "prefs.accentAmber": "アンバー",
+    "prefs.accentHint": "アクセントはハイライト/フォーカス/一部の装飾グラデーションに影響します。",
     "prefs.view": "表示",
     "prefs.viewGrid": "グリッド",
     "prefs.viewList": "リスト",
@@ -289,6 +327,16 @@ const MESSAGES: Record<Lang, Record<I18nKey, string>> = {
     "prefs.sort": "並び替え",
     "prefs.sortLatest": "新着優先",
     "prefs.sortPulse": "熱度優先",
+    "prefs.views": "ビュー（プリセット）",
+    "prefs.viewsCopyLink": "ビューURLをコピー",
+    "prefs.viewsSave": "現在のビューを保存",
+    "prefs.viewsHint": "現在の検索/フィルター/テーマ等を“ビュー”として保存し、ワンクリックで適用できます。",
+    "prefs.viewsSaveTitle": "ビューを保存",
+    "prefs.viewsName": "名前",
+    "prefs.viewsNamePlaceholder": "例：24h · 熱度 · 重複除外",
+    "prefs.viewsSaveHint": "最大 24 件（ローカル保存）。",
+    "prefs.viewsCancel": "キャンセル",
+    "prefs.viewsConfirmSave": "保存",
     "prefs.followPlaceholder": "フォロー（作品/声優など）",
     "prefs.followAdd": "追加",
     "prefs.blockPlaceholder": "除外キーワード",

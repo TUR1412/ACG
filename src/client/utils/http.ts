@@ -193,7 +193,8 @@ export async function fetchJson<T>(
 
 function supportsGzipDecompression(): boolean {
   try {
-    return typeof (globalThis as any).DecompressionStream === "function";
+    const DS = (globalThis as unknown as { DecompressionStream?: unknown }).DecompressionStream;
+    return typeof DS === "function";
   } catch {
     return false;
   }
@@ -201,11 +202,14 @@ function supportsGzipDecompression(): boolean {
 
 async function gunzipToText(res: Response): Promise<string> {
   if (!res.body) throw new Error("empty body");
-  const DS = (globalThis as any).DecompressionStream as unknown;
+  const DS = (globalThis as unknown as { DecompressionStream?: unknown }).DecompressionStream;
   if (typeof DS !== "function") throw new Error("DecompressionStream unsupported");
 
   // `DecompressionStream` 是浏览器原生能力（零依赖）；不支持的环境将回退到 JSON。
-  const ds = new (DS as any)("gzip");
+  const ctor = DS as unknown as {
+    new (format: "gzip"): TransformStream<Uint8Array, Uint8Array>;
+  };
+  const ds = new ctor("gzip");
   const stream = (res.body as ReadableStream).pipeThrough(ds);
   return await new Response(stream).text();
 }

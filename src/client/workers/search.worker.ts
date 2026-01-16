@@ -105,7 +105,7 @@ function normalizeCategory(value: unknown): BookmarkCategory {
 
 function normalizePost(value: unknown): BookmarkPost | null {
   if (!value || typeof value !== "object") return null;
-  const it = value as any;
+  const it = value as Record<string, unknown>;
 
   const id = typeof it.id === "string" ? it.id : "";
   if (!id) return null;
@@ -135,7 +135,8 @@ function normalizePost(value: unknown): BookmarkPost | null {
 
 function supportsGzipDecompression(): boolean {
   try {
-    return typeof (globalThis as any).DecompressionStream === "function";
+    const DS = (globalThis as unknown as { DecompressionStream?: unknown }).DecompressionStream;
+    return typeof DS === "function";
   } catch {
     return false;
   }
@@ -143,9 +144,12 @@ function supportsGzipDecompression(): boolean {
 
 async function gunzipToText(res: Response): Promise<string> {
   if (!res.body) throw new Error("empty body");
-  const DS = (globalThis as any).DecompressionStream as unknown;
+  const DS = (globalThis as unknown as { DecompressionStream?: unknown }).DecompressionStream;
   if (typeof DS !== "function") throw new Error("DecompressionStream unsupported");
-  const ds = new (DS as any)("gzip");
+  const ctor = DS as unknown as {
+    new (format: "gzip"): TransformStream<Uint8Array, Uint8Array>;
+  };
+  const ds = new ctor("gzip");
   const stream = (res.body as ReadableStream).pipeThrough(ds);
   return await new Response(stream).text();
 }
@@ -277,10 +281,14 @@ async function ensureDataLoaded(): Promise<void> {
 
   const cached = await dbGet<unknown>(POSTS_KEY);
   if (cached && typeof cached === "object") {
-    const v = (cached as any).v;
-    if (v === 2 && Array.isArray((cached as any).posts) && Array.isArray((cached as any).index)) {
-      const listRaw = (cached as any).posts as unknown[];
-      const idxRaw = (cached as any).index as unknown[];
+    const v = (cached as Record<string, unknown>).v;
+    if (
+      v === 2 &&
+      Array.isArray((cached as Record<string, unknown>).posts) &&
+      Array.isArray((cached as Record<string, unknown>).index)
+    ) {
+      const listRaw = (cached as Record<string, unknown>).posts as unknown[];
+      const idxRaw = (cached as Record<string, unknown>).index as unknown[];
       const list = listRaw.map(normalizePost).filter((x): x is BookmarkPost => Boolean(x));
       if (list.length > 0) {
         const idx = idxRaw
@@ -300,8 +308,8 @@ async function ensureDataLoaded(): Promise<void> {
       }
     }
 
-    if (v === 1 && Array.isArray((cached as any).posts)) {
-      const list = ((cached as any).posts as unknown[])
+    if (v === 1 && Array.isArray((cached as Record<string, unknown>).posts)) {
+      const list = ((cached as Record<string, unknown>).posts as unknown[])
         .map(normalizePost)
         .filter((x): x is BookmarkPost => Boolean(x));
       if (list.length > 0) {
@@ -317,7 +325,7 @@ async function ensureDataLoaded(): Promise<void> {
     if (!url) return false;
     try {
       const json = await fetchJsonPreferGzip(url, gzUrl);
-      const pack = json as any;
+      const pack = json as Record<string, unknown>;
       const v = pack && typeof pack === "object" ? pack.v : 0;
       if ((v === 1 || v === 2) && Array.isArray(pack.posts) && Array.isArray(pack.index)) {
         const list = (pack.posts as unknown[])
@@ -362,7 +370,7 @@ async function ensureDataLoaded(): Promise<void> {
 }
 
 function post(msg: WorkerOutMessage) {
-  (self as any).postMessage(msg);
+  (self as unknown as { postMessage: (message: WorkerOutMessage) => void }).postMessage(msg);
 }
 
 function applyState(next: WorkerSetStateMessage["state"]) {
@@ -374,7 +382,7 @@ function applyState(next: WorkerSetStateMessage["state"]) {
   state.filters = {
     version: 2,
     onlyFollowed: Boolean(next.filters?.onlyFollowed),
-    onlyFollowedSources: Boolean((next.filters as any)?.onlyFollowedSources),
+    onlyFollowedSources: Boolean(next.filters?.onlyFollowedSources),
     hideRead: Boolean(next.filters?.hideRead)
   };
 }

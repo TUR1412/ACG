@@ -2,11 +2,11 @@
 import type { Lang } from "../../i18n/i18n";
 import PreferencesPanel from "./PreferencesPanel.astro";
 
-type Props = {
+export type Props = {
   lang: Lang;
 };
 
-const { lang } = Astro.props;
+const { lang } = Astro.props as Props;
 ---
 
 <div id="acg-prefs" class="acg-prefs-drawer" data-prefs-drawer>
