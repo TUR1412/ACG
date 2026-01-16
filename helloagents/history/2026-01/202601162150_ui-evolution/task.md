@@ -38,5 +38,5 @@
 
 ## 6. 发布准备
 
-- [ ] 6.1 生成规范提交（Conventional Commits），并尝试推送到远端
-- [ ] 6.2 完成后迁移方案包到 `helloagents/history/2026-01/` 并更新 `helloagents/history/index.md`
+- [√] 6.1 生成规范提交（Conventional Commits），并尝试推送到远端
+- [√] 6.2 完成后迁移方案包到 `helloagents/history/2026-01/` 并更新 `helloagents/history/index.md`

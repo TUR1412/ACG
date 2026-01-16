@@ -42,6 +42,8 @@
 | 202601120620 | atomic_segmented_a11y | UI/可访问性 | ✅已完成 | history/2026-01/202601120620_atomic_segmented_a11y/ |
 | 202601120638 | a11y_aria_feedback | A11y/体验 | ✅已完成 | history/2026-01/202601120638_a11y_aria_feedback/ |
 
+| 202601162150 | ui-evolution | UI/体验 | ✅已完成 | history/2026-01/202601162150_ui-evolution/ |
+
 ## 按月归档
 
 ### 2025-12
@@ -84,3 +86,4 @@
 - 202601120601_perf_vitals_inp_ttfb_font_preload (2026-01/202601120601_perf_vitals_inp_ttfb_font_preload/) - perf_vitals 补齐（TTFB/INP）+ 字体 preload
 - 202601120620_atomic_segmented_a11y (2026-01/202601120620_atomic_segmented_a11y/) - Atomic Segmented + roving tabindex（键盘可访问性）
 - 202601120638_a11y_aria_feedback (2026-01/202601120638_a11y_aria_feedback/) - Quick chips `aria-pressed` + 偏好提示 live region + 删除按钮 `aria-label`
+- 202601162150_ui-evolution (2026-01/202601162150_ui-evolution/) - Accent（强调色）+ View Presets（视图预设）+ 可复现分享链接（URL 套用快照后清理）+ Cmdk 入口补强
