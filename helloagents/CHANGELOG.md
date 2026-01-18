@@ -19,6 +19,7 @@
 ### 修复
 
 - generated-data：读取生成数据时改为按调用时 `process.cwd()` 动态解析文件路径，避免在测试/脚本中临时切换 cwd 导致读到旧数据或读取失败。
+- CI：`CI` workflow 在执行 `npm run validate` 前先运行一次最小化的 `npm run sync`（禁用翻译/封面相关耗时步骤），避免干净 checkout 下因缺少生成文件而失败。
 
 ## [0.5.31] - 2026-01-13
 

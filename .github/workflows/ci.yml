@@ -80,6 +80,17 @@ jobs:
           name: coverage
           path: coverage
 
+      - name: Sync Data (CI minimal)
+        env:
+          # CI 中仅验证“抓取/解析/生成”主链路，避免引入大量外部依赖与不稳定因素：
+          # - 不做封面补全（会额外请求每条文章的页面）
+          # - 不做封面本地缓存（会下载大量图片）
+          # - 不做翻译（依赖外部翻译服务，且耗时）
+          ACG_COVER_ENRICH_MAX: "0"
+          ACG_COVER_CACHE_MAX: "0"
+          ACG_TRANSLATE_MAX_POSTS: "0"
+        run: npm run sync
+
       - name: Validate Generated Data
         run: npm run validate
 
