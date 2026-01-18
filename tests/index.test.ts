@@ -598,7 +598,7 @@ test("scripts/lib/logger: debug/annotation/group 语义稳定", async (t) => {
 test("scripts/lib/http-cache: sha1/读写/截断/缓存路径", async () => {
   assert.equal(sha1("abc"), "a9993e364706816aba3e25717850c26c9cd0d89d");
   assert.equal(stripAndTruncate("  hello   world \n ok ", 12), "hello world…");
-  assert.equal(cacheFilePath("C:\\root"), "C:\\root\\.cache\\http.json");
+  assert.equal(cacheFilePath("C:\\root"), join("C:\\root", ".cache", "http.json"));
 
   const dir = join(tmpdir(), `acg-http-cache-${Date.now()}-${Math.random().toString(16).slice(2)}`);
   const file = join(dir, "a.json");
