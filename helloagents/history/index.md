@@ -41,7 +41,6 @@
 | 202601120601 | perf_vitals_inp_ttfb_font_preload | 性能/可观测性 | ✅已完成 | history/2026-01/202601120601_perf_vitals_inp_ttfb_font_preload/ |
 | 202601120620 | atomic_segmented_a11y | UI/可访问性 | ✅已完成 | history/2026-01/202601120620_atomic_segmented_a11y/ |
 | 202601120638 | a11y_aria_feedback | A11y/体验 | ✅已完成 | history/2026-01/202601120638_a11y_aria_feedback/ |
-
 | 202601162150 | ui-evolution | UI/体验 | ✅已完成 | history/2026-01/202601162150_ui-evolution/ |
 | 202601181859 | ui_desktop_device_detection | UI/修复 | ✅已完成 | history/2026-01/202601181859_ui_desktop_device_detection/ |
 
