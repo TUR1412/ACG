@@ -3287,6 +3287,11 @@ html[data-acg-device="phone"] .acg-carousel-dot.is-active {
   -webkit-backdrop-filter: none;
 }
 
+/* 桌面端（含高缩放/窄窗口）不展示“App 式底部导航”，避免遮挡内容与重复导航。 */
+html[data-acg-device="desktop"] .acg-bottom-nav {
+  display: none;
+}
+
 html[data-acg-device="phone"] .acg-bottom-nav {
   /* 手机端：固定层的 blur/阴影更容易拖慢滚动，适度降级更“稳” */
   box-shadow: 0 18px 55px rgba(2, 6, 23, 0.14);
