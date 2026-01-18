@@ -43,6 +43,7 @@
 | 202601120638 | a11y_aria_feedback | A11y/体验 | ✅已完成 | history/2026-01/202601120638_a11y_aria_feedback/ |
 | 202601162150 | ui-evolution | UI/体验 | ✅已完成 | history/2026-01/202601162150_ui-evolution/ |
 | 202601181859 | ui_desktop_device_detection | UI/修复 | ✅已完成 | history/2026-01/202601181859_ui_desktop_device_detection/ |
+| 202601182006 | ui_bottom_nav_overlap | UI/修复 | ✅已完成 | history/2026-01/202601182006_ui_bottom_nav_overlap/ |
 
 ## 按月归档
 
@@ -88,3 +89,4 @@
 - 202601120638_a11y_aria_feedback (2026-01/202601120638_a11y_aria_feedback/) - Quick chips `aria-pressed` + 偏好提示 live region + 删除按钮 `aria-label`
 - 202601162150_ui-evolution (2026-01/202601162150_ui-evolution/) - Accent（强调色）+ View Presets（视图预设）+ 可复现分享链接（URL 套用快照后清理）+ Cmdk 入口补强
 - 202601181859_ui_desktop_device_detection (2026-01/202601181859_ui_desktop_device_detection/) - 修复桌面端设备类型误判（desktop → phone）导致移动端样式错误启用（如底部导航遮挡）
+- 202601182006_ui_bottom_nav_overlap (2026-01/202601182006_ui_bottom_nav_overlap/) - 修复平板/触控兜底在大视口下启用底部导航时的遮挡/重叠问题（补齐 `--acg-bottom-nav-h` 与 padding 兜底）
