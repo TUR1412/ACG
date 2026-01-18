@@ -8,7 +8,18 @@
 
 - 职责：Astro 页面/组件渲染、RSS/JSON Feed/OPML 输出、SEO 元信息、布局与导航
 - 状态：✅稳定
-- 最后更新：2026-01-16
+- 最后更新：2026-01-18
+
+## 关键实现
+
+### 设备类型判定（`data-acg-device`）
+
+用于在静态站环境下兼顾“桌面/平板/手机”的布局节奏，尤其是移动端浏览器启用“桌面站点”后宽度断点会失真的情况。
+
+- 注入位置：`src/layouts/SiteLayout.astro`（`<head>` 内联脚本，首屏尽早写入 dataset）
+- 判定结果：`desktop` | `tablet` | `phone`
+- 判定策略：UA/指针能力为主，`screen/visualViewport/inner` 的短边作为兜底（用于识别“桌面站点下的手机/平板”）
+- 桌面保护：在 Windows/X11/Macintosh 等桌面 UA 下不会因 `screen` 尺寸偏小（高缩放/Headless）误判为 `phone`，避免桌面端错误启用移动端样式（如底部导航）
 
 ## 规范
 
