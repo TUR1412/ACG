@@ -722,6 +722,11 @@ html[data-acg-device="phone"] {
   --acg-bottom-nav-h: 78px;
 }
 
+html[data-acg-device="tablet"] {
+  /* 平板：可能存在 >=1024 的视口（横屏/桌面站点），仍需要预留底部导航高度 */
+  --acg-bottom-nav-h: 78px;
+}
+
 html,
 body {
   height: 100%;
@@ -2182,7 +2187,9 @@ html[data-acg-device="phone"] .acg-nav-mobile {
 
 /* 兜底：避免底部导航遮挡内容 */
 html[data-acg-device="phone"] .acg-main,
-html[data-acg-device="phone"] .acg-footer {
+html[data-acg-device="phone"] .acg-footer,
+html[data-acg-device="tablet"] .acg-main,
+html[data-acg-device="tablet"] .acg-footer {
   padding-bottom: calc(32px + var(--acg-bottom-nav-h)) !important;
 }
 
@@ -2216,7 +2223,11 @@ html[data-acg-device="tablet"] .acg-post-grid {
 /* 纯 CSS 兜底：
    即使 data-acg-device 未能注入（或浏览器启用“桌面站点”导致宽度断点失真），
    触控设备也必须走移动端节奏，避免“手机渲染成 PC 布局”与卡顿。 */
-@media (hover: none), (pointer: coarse), (any-pointer: coarse), (any-hover: none) {
+@media (hover: none) and (pointer: coarse), (hover: none) and (any-pointer: coarse) {
+  :root {
+    --acg-bottom-nav-h: 78px;
+  }
+
   .acg-layout-grid {
     grid-template-columns: 1fr !important;
   }

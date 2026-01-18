@@ -22,6 +22,7 @@
 - CI：`CI` workflow 在执行 `npm run validate` 前先运行一次最小化的 `npm run sync`（禁用翻译/封面相关耗时步骤），避免干净 checkout 下因缺少生成文件而失败。
 - Tests：修复 `cacheFilePath` 单测对 Windows 路径分隔符的硬编码断言，使 GitHub Actions（ubuntu-latest）上的 `npm test` 不再因平台差异失败。
 - UI：修复设备类型判定在桌面环境下可能因 `screen` 尺寸偏小（高缩放/Headless）误判为 `phone`，导致桌面端错误启用移动端样式（如底部导航）。
+- UI：修复平板/触控兜底样式在大视口（≥1024）下启用底部导航时，因未正确设置 `--acg-bottom-nav-h` 导致主内容与固定浮层可能被底部导航遮挡/重叠的问题。
 
 ## [0.5.31] - 2026-01-13
 

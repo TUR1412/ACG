@@ -21,6 +21,19 @@
 - 判定策略：UA/指针能力为主，`screen/visualViewport/inner` 的短边作为兜底（用于识别“桌面站点下的手机/平板”）
 - 桌面保护：在 Windows/X11/Macintosh 等桌面 UA 下不会因 `screen` 尺寸偏小（高缩放/Headless）误判为 `phone`，避免桌面端错误启用移动端样式（如底部导航）
 
+### 底部导航安全区（`--acg-bottom-nav-h`）
+
+站点存在固定底部导航（`.acg-bottom-nav`），在以下场景可能会启用：
+
+- 视口宽度较小（`max-width: 1023px`）
+- `data-acg-device="phone"` / `data-acg-device="tablet"`（用于“桌面站点”模式下的手机/平板）
+- CSS 触控兜底（仅在 `hover: none` 的触控设备下启用，避免影响同时具备鼠标的桌面设备）
+
+为避免主内容、Footer 以及浮层（Toast/FAB）被底部导航遮挡，需要在启用底部导航时同步设置：
+
+- `--acg-bottom-nav-h: 78px`
+- 强制补齐 `.acg-main/.acg-footer` 的 `padding-bottom`（在 `lg` 断点下也不被 Tailwind 的 `lg:py-8` 覆盖）
+
 ## 规范
 
 ### 需求: 订阅导出兼容
