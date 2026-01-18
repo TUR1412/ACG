@@ -1293,45 +1293,19 @@ function wirePrefsDrawer() {
   const openers = [...document.querySelectorAll<HTMLElement>("[data-open-prefs]")];
   const closers = [...drawer.querySelectorAll<HTMLElement>("[data-close-prefs]")];
 
-  const mq = (() => {
-    try {
-      return window.matchMedia("(max-width: 767px)");
-    } catch {
-      return null;
-    }
-  })();
-
-  const isPhoneDevice = () => document.documentElement?.dataset?.acgDevice === "phone";
-
-  const isOverlayMode = () => {
-    if (isPhoneDevice()) return true;
-    if (mq) return mq.matches;
-    return window.innerWidth < 768;
-  };
-
   const syncA11y = () => {
-    if (isOverlayMode()) {
-      if (!drawer.classList.contains("is-open")) {
-        drawer.setAttribute("aria-hidden", "true");
-        drawer.setAttribute("inert", "");
-      }
-    } else {
-      drawer.classList.remove("is-open");
+    const open = drawer.classList.contains("is-open");
+    if (!open) {
+      drawer.setAttribute("aria-hidden", "true");
+      drawer.setAttribute("inert", "");
       document.body.classList.remove("acg-no-scroll");
+    } else {
       drawer.removeAttribute("aria-hidden");
       drawer.removeAttribute("inert");
     }
   };
 
   const open = () => {
-    if (!isOverlayMode()) {
-      const behavior = prefersReducedMotion() ? "auto" : "smooth";
-      drawer.scrollIntoView({ behavior, block: "start" });
-      drawer.classList.add("pop");
-      window.setTimeout(() => drawer.classList.remove("pop"), 360);
-      return;
-    }
-
     drawer.classList.add("is-open");
     drawer.removeAttribute("inert");
     drawer.removeAttribute("aria-hidden");
@@ -1351,7 +1325,6 @@ function wirePrefsDrawer() {
   };
 
   const close = () => {
-    if (!isOverlayMode()) return;
     drawer.classList.remove("is-open");
     document.body.classList.remove("acg-no-scroll");
     drawer.setAttribute("aria-hidden", "true");
@@ -1373,7 +1346,6 @@ function wirePrefsDrawer() {
   }
 
   drawer.addEventListener("click", (e) => {
-    if (!isOverlayMode()) return;
     if (e.target === drawer) close();
   });
 
@@ -1383,15 +1355,6 @@ function wirePrefsDrawer() {
   });
 
   syncA11y();
-  if (mq) {
-    if (typeof mq.addEventListener === "function") {
-      mq.addEventListener("change", syncA11y);
-    } else {
-      // Safari（legacy API）
-      const legacy = (mq as unknown as { addListener?: (cb: () => void) => void }).addListener;
-      if (typeof legacy === "function") legacy.call(mq, syncA11y);
-    }
-  }
 }
 
 function wireQuickToggles() {

@@ -68,8 +68,8 @@ const spotlight = (() => {
 ---
 
 <SiteLayout lang="ja" currentPath="/">
-  <section class="acg-layout-grid grid gap-grid md:grid-cols-12">
-    <div class="glass relative overflow-hidden rounded-2xl p-6 md:col-span-8">
+  <section class="acg-layout-grid grid items-start gap-grid md:grid-cols-12">
+    <div class="glass relative overflow-hidden rounded-2xl p-6 md:col-span-7">
       <div class="pointer-events-none absolute inset-0">
         <div class="acg-orb acg-orb-a absolute -left-24 -top-24 h-72 w-72 rounded-full blur-3xl"></div>
         <div class="acg-orb acg-orb-b absolute -right-24 -bottom-24 h-72 w-72 rounded-full blur-3xl"></div>
@@ -318,7 +318,7 @@ const spotlight = (() => {
       </div>
     </div>
 
-    <aside class="md:col-span-4">
+    <aside class="md:col-span-5">
       <SignalBoard
         lang="ja"
         pulseTop={pulseTop}
@@ -332,7 +332,7 @@ const spotlight = (() => {
 
   <SpotlightGrid posts={spotlight} lang="ja" title={t("ja", "home.spotlight")} />
 
-  <section class="acg-layout-grid mt-6 grid gap-grid md:grid-cols-12">
+  <section class="acg-layout-grid mt-6 grid items-start gap-grid md:grid-cols-12">
     <div class="md:col-span-8">
       <PostList posts={latest} lang="ja" variant="compact" />
       <div id="acg-list-empty" class="mt-4 glass shine rounded-2xl p-8 hidden">
@@ -356,8 +356,6 @@ const spotlight = (() => {
     </div>
 
     <div class="grid gap-4 md:col-span-4">
-      <PreferencesDrawer lang="ja" />
-
       <div class="glass rounded-2xl p-6">
         <div class="flex items-center justify-between gap-3">
           <h2 class="m-0 text-sm font-semibold text-slate-950">{t("ja", "home.dailyBrief")}</h2>
@@ -492,4 +490,6 @@ const spotlight = (() => {
       </div>
     </div>
   </section>
+
+  <PreferencesDrawer lang="ja" />
 </SiteLayout>

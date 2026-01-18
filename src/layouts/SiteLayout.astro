@@ -319,7 +319,7 @@ const swHref = href("/sw.js");
       class="sticky top-0 z-20 border-b border-slate-900/10 acg-header-surface"
       style="view-transition-name: acg-header;"
     >
-      <div class="mx-auto max-w-7xl px-gutter py-2 sm:py-3">
+      <div class="mx-auto max-w-screen-2xl px-gutter py-2 sm:py-3">
         <div class="flex items-center justify-between gap-3">
           <a href={withLang("/")} class="flex items-center gap-3">
             <span class="radar grid size-10 place-items-center shadow-e3">
@@ -453,13 +453,13 @@ const swHref = href("/sw.js");
     <main
       id="main"
       tabindex="-1"
-      class="acg-main mx-auto max-w-7xl px-gutter pt-8 pb-8 lg:py-8"
+      class="acg-main mx-auto max-w-screen-2xl px-gutter pt-8 pb-8 lg:py-8"
       style="view-transition-name: acg-main;"
     >
       <slot />
     </main>
 
-    <footer class="acg-footer mx-auto max-w-7xl px-gutter pb-10 pt-4 text-xs text-slate-600">
+    <footer class="acg-footer mx-auto max-w-screen-2xl px-gutter pb-10 pt-4 text-xs text-slate-600">
       <div class="glass rounded-2xl px-4 py-3">
         <p class="m-0 leading-relaxed">{t(lang, "site.disclaimer")}</p>
 

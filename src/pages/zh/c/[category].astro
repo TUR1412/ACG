@@ -31,8 +31,8 @@ const theme = getCategoryTheme(category);
   currentCategory={category}
   currentPath={`/c/${category}/`}
 >
-  <section class="acg-layout-grid grid gap-grid md:grid-cols-12">
-    <div class="glass relative overflow-hidden rounded-2xl p-6 md:col-span-8">
+  <section class="acg-layout-grid grid items-start gap-grid md:grid-cols-12">
+    <div class="glass relative overflow-hidden rounded-2xl p-6 md:col-span-12">
       <div class="pointer-events-none absolute inset-0">
         <div class:list={["absolute -left-24 -top-24 h-72 w-72 rounded-full blur-3xl", theme.glow]}></div>
         <div class="absolute -right-24 -bottom-24 h-72 w-72 rounded-full bg-slate-900/5 blur-3xl"></div>
@@ -160,10 +160,6 @@ const theme = getCategoryTheme(category);
         </Chip>
       </div>
     </div>
-
-    <div class="md:col-span-4">
-      <PreferencesDrawer lang="zh" />
-    </div>
   </section>
 
   <section class="mt-6">
@@ -187,4 +183,6 @@ const theme = getCategoryTheme(category);
       </div>
     </div>
   </section>
+
+  <PreferencesDrawer lang="zh" />
 </SiteLayout>

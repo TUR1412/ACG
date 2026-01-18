@@ -3628,40 +3628,46 @@ body.acg-no-scroll {
 }
 
 .acg-prefs-drawer {
-  position: relative;
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  background: rgba(2, 6, 23, 0.38);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur) ease;
+}
+
+.acg-prefs-drawer.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.acg-prefs-drawer-panel {
+  overflow: auto;
+  background: rgba(255, 255, 255, 0.01);
+  box-shadow: 0 40px 120px rgba(2, 6, 23, 0.28);
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.acg-prefs-drawer-panel::before {
+  content: none;
 }
 
 @media (max-width: 767px) {
   .acg-prefs-drawer {
-    position: fixed;
-    inset: 0;
-    z-index: 70;
-    display: flex;
     align-items: flex-end;
     padding: 12px;
     padding-bottom: calc(12px + env(safe-area-inset-bottom));
-    background: rgba(2, 6, 23, 0.38);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--dur) ease;
-  }
-
-  .acg-prefs-drawer.is-open {
-    opacity: 1;
-    pointer-events: auto;
   }
 
   .acg-prefs-drawer-panel {
     width: 100%;
     max-height: calc(100vh - 24px - env(safe-area-inset-top));
-    overflow: auto;
     border-radius: 24px;
-    background: rgba(255, 255, 255, 0.01);
-    box-shadow: 0 40px 120px rgba(2, 6, 23, 0.28);
     transform: translateY(20px);
     transition: transform var(--dur) var(--ease-spring);
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
   }
 
   .acg-prefs-drawer-panel::before {
@@ -3680,6 +3686,26 @@ body.acg-no-scroll {
   }
 }
 
+@media (min-width: 768px) {
+  .acg-prefs-drawer {
+    align-items: stretch;
+    justify-content: flex-end;
+    padding: 16px;
+  }
+
+  .acg-prefs-drawer-panel {
+    width: min(460px, calc(100vw - 32px));
+    height: calc(100vh - 32px);
+    border-radius: 24px;
+    transform: translateX(20px);
+    transition: transform var(--dur) var(--ease-spring);
+  }
+
+  .acg-prefs-drawer.is-open .acg-prefs-drawer-panel {
+    transform: translateX(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .acg-prefs-drawer {
     transition: none;
@@ -3690,65 +3716,19 @@ body.acg-no-scroll {
   }
 }
 
-@media (min-width: 768px) {
-  .acg-prefs-drawer {
-    position: static;
-    inset: auto;
-    z-index: auto;
-    display: block;
-    padding: 0;
-    background: none;
-    opacity: 1;
-    pointer-events: auto;
-    transition: none;
-  }
-
-  .acg-prefs-drawer-panel {
-    max-height: none;
-    overflow: visible;
-    border-radius: 0;
-    box-shadow: none;
-    transform: none;
-    transition: none;
-    background: none;
-  }
-
-  .acg-prefs-drawer-panel::before {
-    content: none;
-  }
-}
-
-/* 手机端偏好设置抽屉：即使处于“桌面站点/大视口”，也保持抽屉模式 */
+/* 手机端偏好设置抽屉：即使处于“桌面站点/大视口”，也保持底部抽屉模式 */
 html[data-acg-device="phone"] .acg-prefs-drawer {
-  position: fixed;
-  inset: 0;
-  z-index: 70;
-  display: flex;
   align-items: flex-end;
   padding: 12px;
   padding-bottom: calc(12px + env(safe-area-inset-bottom));
-  background: rgba(2, 6, 23, 0.38);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--dur) ease;
-}
-
-html[data-acg-device="phone"] .acg-prefs-drawer.is-open {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 html[data-acg-device="phone"] .acg-prefs-drawer-panel {
   width: 100%;
   max-height: calc(100vh - 24px - env(safe-area-inset-top));
-  overflow: auto;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.01);
-  box-shadow: 0 40px 120px rgba(2, 6, 23, 0.28);
   transform: translateY(20px);
   transition: transform var(--dur) var(--ease-spring);
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
 }
 
 html[data-acg-device="phone"] .acg-prefs-drawer-panel::before {
@@ -3770,6 +3750,7 @@ html[data-acg-device="phone"] .acg-prefs-drawer.is-open .acg-prefs-drawer-panel 
 .acg-signal-board {
   position: relative;
   overflow: hidden;
+  container-type: inline-size;
 }
 
 .acg-signal-board::before {
@@ -3789,7 +3770,7 @@ html[data-acg-device="phone"] .acg-prefs-drawer.is-open .acg-prefs-drawer-panel 
   gap: 12px;
 }
 
-@media (min-width: 640px) {
+@container (min-width: 560px) {
   .acg-signal-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
