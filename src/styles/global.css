@@ -714,22 +714,10 @@
   }
 }
 
-html[data-acg-device="phone"] {
-  /* 手机端性能优先：即使启用了“桌面站点/大视口”，也应保持移动端阴影与布局节奏 */
-  --shadow-soft: 0 14px 40px rgba(2, 6, 23, 0.1);
-  --shadow-card: 0 8px 18px rgba(2, 6, 23, 0.08);
-  --shadow-card-hover: 0 16px 55px rgba(2, 6, 23, 0.12);
-  --acg-bottom-nav-h: 78px;
-}
-
-html[data-acg-device="tablet"] {
-  /* 平板：可能存在 >=1024 的视口（横屏/桌面站点），仍需要预留底部导航高度 */
-  --acg-bottom-nav-h: 78px;
-}
-
 html,
 body {
   height: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -956,7 +944,7 @@ html[data-acg-net="slow"] body::after {
   }
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 767px) {
   :root {
     /* 移动端底部导航默认高度（含 safe-area）。用于把 FAB/Toast 顶上去 */
     --acg-bottom-nav-h: 78px;
@@ -2112,172 +2100,6 @@ html[data-acg-device="phone"] .acg-card {
   }
 }
 
-/* 防止“手机被当成 PC 布局”：当浏览器启用桌面站点时，宽度断点不可信；以设备分级为准 */
-html[data-acg-device="phone"] .acg-layout-grid {
-  grid-template-columns: 1fr !important;
-}
-
-html[data-acg-device="phone"] .acg-layout-grid > * {
-  grid-column: 1 / -1 !important;
-}
-
-html[data-acg-device="phone"] .acg-post-grid {
-  grid-template-columns: 1fr !important;
-}
-
-/* 横向滚动容器：手机端优先“可滑动”而不是换行（避免桌面断点把它变成一坨） */
-html[data-acg-device="phone"] .acg-hscroll {
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-}
-
-/* 平板同理：即使启用了桌面站点，也要保持“可滑动”的资讯节奏 */
-html[data-acg-device="tablet"] .acg-hscroll {
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-}
-
-/* 首页专项：手机/平板即使启用了“桌面站点”导致 sm 断点生效，也必须保持移动端的分类横滑（而不是桌面网格）。 */
-html[data-acg-device="phone"] .acg-home-cats-mobile,
-html[data-acg-device="tablet"] .acg-home-cats-mobile {
-  display: flex !important;
-}
-
-html[data-acg-device="phone"] .acg-home-cats-desktop,
-html[data-acg-device="tablet"] .acg-home-cats-desktop {
-  display: none !important;
-}
-
-/* 列表卡片：手机端始终用“移动端媒体卡片”布局（避免 sm/md 触发桌面版） */
-html[data-acg-device="phone"] .acg-post-card-body {
-  display: flex !important;
-  padding: 12px !important;
-}
-
-html[data-acg-device="phone"] .acg-post-card-cover {
-  width: 8rem !important;
-}
-
-html[data-acg-device="phone"] .acg-post-card-cover-link {
-  aspect-ratio: 4 / 3 !important;
-  border-radius: 12px !important;
-}
-
-html[data-acg-device="phone"] .acg-post-card-cover-badges,
-html[data-acg-device="phone"] .acg-post-card-cover-when {
-  display: none !important;
-}
-
-html[data-acg-device="phone"] .acg-post-card-content {
-  padding: 4px 0 !important;
-}
-
-/* 兜底：若手机在“桌面站点”下误触发了 lg 导航，也要强制回到移动端分类条 */
-html[data-acg-device="phone"] .acg-nav-desktop {
-  display: none !important;
-}
-
-html[data-acg-device="phone"] .acg-nav-mobile {
-  display: flex !important;
-}
-
-/* 兜底：避免底部导航遮挡内容 */
-html[data-acg-device="phone"] .acg-main,
-html[data-acg-device="phone"] .acg-footer,
-html[data-acg-device="tablet"] .acg-main,
-html[data-acg-device="tablet"] .acg-footer {
-  padding-bottom: calc(32px + var(--acg-bottom-nav-h)) !important;
-}
-
-/* 平板适配：触控 + 中等屏幕优先“阅读”和“滑动”，避免落入纯桌面布局 */
-html[data-acg-device="tablet"] .acg-nav-desktop {
-  display: none !important;
-}
-
-html[data-acg-device="tablet"] .acg-nav-mobile {
-  display: flex !important;
-}
-
-/* 兜底：即使启用了“桌面站点”导致 lg 断点触发，触控设备也必须保留底部导航（否则会显得像 PC 站点） */
-html[data-acg-device="phone"] .acg-bottom-nav,
-html[data-acg-device="tablet"] .acg-bottom-nav {
-  display: flex !important;
-}
-
-html[data-acg-device="tablet"] .acg-layout-grid {
-  grid-template-columns: 1fr !important;
-}
-
-html[data-acg-device="tablet"] .acg-layout-grid > * {
-  grid-column: 1 / -1 !important;
-}
-
-html[data-acg-device="tablet"] .acg-post-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-}
-
-/* 纯 CSS 兜底：
-   即使 data-acg-device 未能注入（或浏览器启用“桌面站点”导致宽度断点失真），
-   触控设备也必须走移动端节奏，避免“手机渲染成 PC 布局”与卡顿。 */
-@media (hover: none) and (pointer: coarse), (hover: none) and (any-pointer: coarse) {
-  :root {
-    --acg-bottom-nav-h: 78px;
-  }
-
-  .acg-layout-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .acg-layout-grid > * {
-    grid-column: 1 / -1 !important;
-  }
-
-  .acg-post-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .acg-nav-desktop {
-    display: none !important;
-  }
-
-  .acg-nav-mobile {
-    display: flex !important;
-  }
-
-  .acg-bottom-nav {
-    display: flex !important;
-  }
-
-  .acg-home-cats-mobile {
-    display: flex !important;
-  }
-
-  .acg-home-cats-desktop {
-    display: none !important;
-  }
-
-  .acg-hscroll {
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-  }
-
-  .acg-main,
-  .acg-footer {
-    padding-bottom: calc(32px + var(--acg-bottom-nav-h)) !important;
-  }
-
-  .glass {
-    backdrop-filter: blur(var(--acg-glass-blur-phone)) saturate(var(--acg-glass-sat-phone));
-    -webkit-backdrop-filter: blur(var(--acg-glass-blur-phone)) saturate(var(--acg-glass-sat-phone));
-  }
-}
-
 /* 用户偏好：视图模式 / 信息密度
    - data-acg-view="list": 桌面也强制走“媒体卡片列表”节奏（更高信息吞吐）
    - data-acg-density="compact": 减少留白与摘要/标签占比（更省滚动） */
@@ -3274,7 +3096,7 @@ html[data-acg-device="phone"] .acg-carousel-dot.is-active {
   right: 10px;
   bottom: calc(10px + env(safe-area-inset-bottom));
   z-index: 50;
-  display: flex;
+  display: none;
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
@@ -3287,26 +3109,13 @@ html[data-acg-device="phone"] .acg-carousel-dot.is-active {
   -webkit-backdrop-filter: none;
 }
 
-/* 桌面端（含高缩放/窄窗口）不展示“App 式底部导航”，避免遮挡内容与重复导航。 */
-html[data-acg-device="desktop"] .acg-bottom-nav {
-  display: none;
-}
-
-html[data-acg-device="phone"] .acg-bottom-nav {
-  /* 手机端：固定层的 blur/阴影更容易拖慢滚动，适度降级更“稳” */
-  box-shadow: 0 18px 55px rgba(2, 6, 23, 0.14);
-  background: var(--bottom-nav-surface-phone);
-}
-
-@media (min-width: 1024px) {
-  /* 桌面端不显示底部导航（避免与顶部导航重复） */
+@media (max-width: 767px) {
   .acg-bottom-nav {
-    display: none;
+    display: flex;
+    /* 手机端：固定层的 blur/阴影更容易拖慢滚动，适度降级更“稳” */
+    box-shadow: 0 18px 55px rgba(2, 6, 23, 0.14);
+    background: var(--bottom-nav-surface-phone);
   }
-}
-
-html[data-acg-device="phone"] .acg-bottom-nav {
-  display: flex;
 }
 
 .acg-bottom-nav-item {

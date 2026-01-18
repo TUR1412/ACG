@@ -23,6 +23,9 @@
 - Tests：修复 `cacheFilePath` 单测对 Windows 路径分隔符的硬编码断言，使 GitHub Actions（ubuntu-latest）上的 `npm test` 不再因平台差异失败。
 - UI：修复设备类型判定在桌面环境下可能因 `screen` 尺寸偏小（高缩放/Headless）误判为 `phone`，导致桌面端错误启用移动端样式（如底部导航）。
 - UI：修复平板/触控兜底样式在大视口（≥1024）下启用底部导航时，因未正确设置 `--acg-bottom-nav-h` 导致主内容与固定浮层可能被底部导航遮挡/重叠的问题。
+- UI：收敛底部导航启用条件（仅 `max-width: 767px`），并用 `--acg-bottom-nav-h` 统一推高主内容/页脚，避免桌面端与平板端出现“导航遮挡内容/重叠”的体验问题。
+- UI：移除依赖 `data-acg-device` 与 `(pointer: coarse)` 的强制移动端布局兜底，避免桌面触控/UA 缩减场景误触发布局坍塌、横向滚动条与组件重叠。
+- UI：设备分级逻辑把 `(any-hover: hover)` 视作桌面能力，减少“UA 缩减 + 触控”导致的错误 `tablet` 判定。
 
 ## [0.5.31] - 2026-01-13
 

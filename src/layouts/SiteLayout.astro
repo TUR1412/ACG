@@ -226,6 +226,7 @@ const swHref = href("/sw.js");
           const hoverHover = mq("(hover: hover)");
           const anyPointerCoarse = mq("(any-pointer: coarse)");
           const anyHoverNone = mq("(any-hover: none)");
+          const anyHoverHover = mq("(any-hover: hover)");
 
           const ua = navigator.userAgent || "";
           const uaTablet = /iPad|Tablet|Android(?!.*Mobile)/i.test(ua);
@@ -241,7 +242,7 @@ const swHref = href("/sw.js");
 
           // 桌面环境兜底：避免“高缩放/Headless 的 screen 尺寸偏小”导致误判成手机。
           // 注意：iPadOS 的“桌面站点”可能伪装成 Macintosh，但上方 isIpadOs 已优先处理。
-          const desktopUa = /Windows NT|X11|Macintosh/i.test(ua);
+          const desktopUa = /Windows NT|X11|Macintosh/i.test(ua) || hoverHover || anyHoverHover;
 
           // 强兜底：部分浏览器在“桌面站点”下会伪装 UA/指针能力；用屏幕短边做最后保险。
           if (uaTablet || isIpadOs) device = "tablet";
@@ -453,13 +454,15 @@ const swHref = href("/sw.js");
     <main
       id="main"
       tabindex="-1"
-      class="acg-main mx-auto max-w-screen-2xl px-gutter pt-8 pb-8 lg:py-8"
+      class="acg-main mx-auto max-w-screen-2xl px-gutter pt-8 pb-[calc(2rem+var(--acg-bottom-nav-h))] lg:py-8"
       style="view-transition-name: acg-main;"
     >
       <slot />
     </main>
 
-    <footer class="acg-footer mx-auto max-w-screen-2xl px-gutter pb-10 pt-4 text-xs text-slate-600">
+    <footer
+      class="acg-footer mx-auto max-w-screen-2xl px-gutter pb-[calc(2.5rem+var(--acg-bottom-nav-h))] pt-4 text-xs text-slate-600"
+    >
       <div class="glass rounded-2xl px-4 py-3">
         <p class="m-0 leading-relaxed">{t(lang, "site.disclaimer")}</p>
 
