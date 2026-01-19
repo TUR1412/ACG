@@ -1777,11 +1777,12 @@ function createListFilter(params: {
 }) {
   const { readIds, follows, blocklist, disabledSources, followedSources, filters } = params;
   const input = document.querySelector<HTMLInputElement>("#acg-search");
+  const pageGrid = document.querySelector<HTMLElement>(".acg-post-grid[data-post-grid]");
   const count = document.querySelector<HTMLElement>("#acg-search-count");
   const unreadCount = document.querySelector<HTMLElement>("#acg-unread-count");
   const empty = document.querySelector<HTMLElement>("#acg-list-empty");
   const clear = document.querySelector<HTMLButtonElement>("#acg-clear-search");
-  if (!input) return;
+  if (!input || !pageGrid) return;
 
   // 性能：首页/分类页卡片较多时，DOMContentLoaded 里全量 query + textContent 拼接会造成“首屏卡一下”。
   // 这里做“惰性初始化”：如果没有任何筛选条件，就延后到 idle；用户一交互则立即初始化并生效。
@@ -1808,7 +1809,10 @@ function createListFilter(params: {
 
   const initIfNeeded = () => {
     if (initialized) return;
-    cards = [...document.querySelectorAll<HTMLElement>("[data-post-id]")];
+    // 仅针对“主列表”的卡片做筛选/排序。
+    // Spotlight/Carousel 也包含 data-post-id（用于收藏等），但它不应参与列表筛选/排序，
+    // 否则会导致元素被 appendChild 移动到错误容器，出现“列表消失/重叠/闪一下”的问题。
+    cards = [...pageGrid.querySelectorAll<HTMLElement>("[data-post-id]")];
     haystacks = cards.map((card, index) => {
       const title = bestTitleText(card);
       const summary = card.querySelector("p")?.textContent ?? "";
@@ -1861,8 +1865,7 @@ function createListFilter(params: {
   const isStableHealth = (level: string) => level === "excellent" || level === "good";
 
   const applySort = () => {
-    const container = cards[0]?.parentElement;
-    if (!container) return;
+    const container = pageGrid;
     const mode = filters.sortMode ?? "latest";
     const sorted = [...cards].sort((a, b) => {
       const ia = Number.parseInt(a.dataset.idx ?? "", 10);

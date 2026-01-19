@@ -26,6 +26,7 @@
 - UI：收敛底部导航启用条件（仅 `max-width: 767px`），并用 `--acg-bottom-nav-h` 统一推高主内容/页脚，避免桌面端与平板端出现“导航遮挡内容/重叠”的体验问题。
 - UI：移除依赖 `data-acg-device` 与 `(pointer: coarse)` 的强制移动端布局兜底，避免桌面触控/UA 缩减场景误触发布局坍塌、横向滚动条与组件重叠。
 - UI：设备分级逻辑把 `(any-hover: hover)` 视作桌面能力，减少“UA 缩减 + 触控”导致的错误 `tablet` 判定。
+- UI：修复页面内筛选/排序误把 Spotlight Carousel 的 `[data-post-id]` 也当成“主列表卡片”，导致 `appendChild` 重排时把列表节点移动到轮播容器，从而出现“列表消失/重叠/闪一下”的问题；改为只在 `.acg-post-grid[data-post-grid]` 内做筛选/排序。
 
 ## [0.5.31] - 2026-01-13
 
