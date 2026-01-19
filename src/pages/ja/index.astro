@@ -69,256 +69,288 @@ const spotlight = (() => {
 
 <SiteLayout lang="ja" currentPath="/">
   <section class="acg-layout-grid grid items-start gap-grid md:grid-cols-12">
-    <div class="glass relative overflow-hidden rounded-2xl p-6 md:col-span-7">
-      <div class="pointer-events-none absolute inset-0">
-        <div class="acg-orb acg-orb-a absolute -left-24 -top-24 h-72 w-72 rounded-full blur-3xl"></div>
-        <div class="acg-orb acg-orb-b absolute -right-24 -bottom-24 h-72 w-72 rounded-full blur-3xl"></div>
-      </div>
-
-      <div class="relative flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1
-            class="m-0 text-phi-xl font-semibold leading-tight tracking-tight text-slate-950 md:text-phi-2xl"
-          >
-            {t("ja", "nav.latest")}
-          </h1>
-          <p class="mt-1 text-xs text-slate-600">
-            {t("ja", "common.updatedAt")}
-            {updatedAt} · {enriched.length} 件
-          </p>
+    <div class="grid gap-6 md:col-span-8">
+      <div class="glass relative overflow-hidden rounded-2xl p-6">
+        <div class="pointer-events-none absolute inset-0">
+          <div class="acg-orb acg-orb-a absolute -left-24 -top-24 h-72 w-72 rounded-full blur-3xl"></div>
+          <div class="acg-orb acg-orb-b absolute -right-24 -bottom-24 h-72 w-72 rounded-full blur-3xl"></div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2 text-xs text-slate-700">
-          <span class="glass rounded-full px-3 py-1">
-            {t("ja", "search.result")}
-            <span id="acg-search-count">-</span>
-          </span>
-          <span class="glass rounded-full px-3 py-1">
-            {t("ja", "home.unread")}
-            <span id="acg-unread-count">-</span>
-          </span>
-        </div>
-      </div>
-
-      <div class="relative mt-4">
-        <label class="sr-only" for="acg-search">{t("ja", "search.placeholder")}</label>
-        <div class="relative">
-          <div class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-            <Icon name="search" size={18} />
+        <div class="relative flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1
+              class="m-0 text-phi-xl font-semibold leading-tight tracking-tight text-slate-950 md:text-phi-2xl"
+            >
+              {t("ja", "nav.latest")}
+            </h1>
+            <p class="mt-1 text-xs text-slate-600">
+              {t("ja", "common.updatedAt")}
+              {updatedAt} · {enriched.length} 件
+            </p>
           </div>
-          <input
-            id="acg-search"
-            type="search"
-            enterkeyhint="search"
-            class="w-full rounded-xl border border-slate-900/10 bg-white/60 px-4 py-3 pl-10 text-sm text-slate-950 outline-none focus:border-slate-900/20 focus:bg-white/70"
-            placeholder={t("ja", "search.placeholder")}
-          />
-          <button
-            type="button"
-            id="acg-search-clear"
-            class="absolute right-2 top-1/2 size-9 -translate-y-1/2 items-center justify-center rounded-xl border border-slate-900/10 bg-white/65 text-slate-700 hover:bg-white/80 clickable"
-            hidden
-            aria-label={t("ja", "search.clear")}
-            title={t("ja", "search.clear")}
-          >
-            <Icon name="x" size={18} />
-          </button>
-        </div>
-      </div>
 
-      <div
-        class="acg-hscroll relative mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
-      >
-        <Chip data-quick-toggle="only-followed" data-active="false">
-          {t("ja", "prefs.followOnly")}
-        </Chip>
-        <Chip data-quick-toggle="only-followed-sources" data-active="false">
-          {t("ja", "prefs.followedSourcesOnly")}
-        </Chip>
-        <Chip data-quick-toggle="hide-read" data-active="false">
-          {t("ja", "prefs.hideRead")}
-        </Chip>
-        <Chip data-quick-toggle="only-stable" data-active="false">
-          {t("ja", "prefs.onlyStableSources")}
-        </Chip>
-        <Chip data-quick-toggle="dedup" data-active="false">
-          {t("ja", "prefs.dedupView")}
-        </Chip>
-        <div class="flex gap-2" role="radiogroup" aria-label={t("ja", "prefs.view")}>
-          <Chip
-            icon="grid"
-            iconSize={16}
-            data-view-mode="grid"
-            data-active="false"
-            role="radio"
-            aria-checked="false"
-          >
-            <span>{t("ja", "prefs.viewGrid")}</span>
-          </Chip>
-          <Chip
-            icon="list"
-            iconSize={16}
-            data-view-mode="list"
-            data-active="false"
-            role="radio"
-            aria-checked="false"
-          >
-            <span>{t("ja", "prefs.viewList")}</span>
-          </Chip>
+          <div class="flex flex-wrap items-center gap-2 text-xs text-slate-700">
+            <span class="glass rounded-full px-3 py-1">
+              {t("ja", "search.result")}
+              <span id="acg-search-count">-</span>
+            </span>
+            <span class="glass rounded-full px-3 py-1">
+              {t("ja", "home.unread")}
+              <span id="acg-unread-count">-</span>
+            </span>
+          </div>
         </div>
-        <div class="flex gap-2" role="radiogroup" aria-label={t("ja", "prefs.density")}>
-          <Chip data-density-mode="comfort" data-active="false" role="radio" aria-checked="false">
-            {t("ja", "prefs.densityComfort")}
-          </Chip>
-          <Chip data-density-mode="compact" data-active="false" role="radio" aria-checked="false">
-            {t("ja", "prefs.densityCompact")}
-          </Chip>
-        </div>
-        <Chip data-quick-lens="2h" data-active="false">
-          {t("ja", "prefs.timeLens2h")}
-        </Chip>
-        <Chip data-quick-lens="6h" data-active="false">
-          {t("ja", "prefs.timeLens6h")}
-        </Chip>
-        <Chip data-quick-lens="24h" data-active="false">
-          {t("ja", "prefs.timeLens24h")}
-        </Chip>
-        <Chip data-quick-sort="pulse" data-active="false">
-          {t("ja", "prefs.sortPulse")}
-        </Chip>
-        <Chip icon="sliders" iconSize={16} data-open-prefs data-active="false">
-          <span>{t("ja", "prefs.title")}</span>
-        </Chip>
-      </div>
 
-      <div
-        class="acg-home-cats-mobile acg-hscroll relative mt-5 -mx-1 flex gap-3 overflow-x-auto px-1 pb-1 sm:hidden snap-x snap-mandatory"
-      >
-        {
-          CATEGORIES.map((c) => (
-            <a
-              href={href(`/ja/c/${c}/`)}
-              class="glass clickable group relative min-w-[240px] snap-start overflow-hidden rounded-2xl p-4"
+        <div class="relative mt-4">
+          <label class="sr-only" for="acg-search">{t("ja", "search.placeholder")}</label>
+          <div class="relative">
+            <div class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+              <Icon name="search" size={18} />
+            </div>
+            <input
+              id="acg-search"
+              type="search"
+              enterkeyhint="search"
+              class="w-full rounded-xl border border-slate-900/10 bg-white/60 px-4 py-3 pl-10 text-sm text-slate-950 outline-none focus:border-slate-900/20 focus:bg-white/70"
+              placeholder={t("ja", "search.placeholder")}
+            />
+            <button
+              type="button"
+              id="acg-search-clear"
+              class="absolute right-2 top-1/2 size-9 -translate-y-1/2 items-center justify-center rounded-xl border border-slate-900/10 bg-white/65 text-slate-700 hover:bg-white/80 clickable"
+              hidden
+              aria-label={t("ja", "search.clear")}
+              title={t("ja", "search.clear")}
             >
-              <div class:list={["absolute inset-0 bg-gradient-to-br opacity-60", CATEGORY_THEME[c].cover]} />
-              <div class="relative flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                  <div class="text-sm font-semibold text-slate-950">{categoryLabel("ja", c)}</div>
-                  <div class="mt-1 text-xs text-slate-600">直近24h {categoryCount.get(c) ?? 0} 件</div>
-                </div>
+              <Icon name="x" size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div
+          class="acg-hscroll relative mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+        >
+          <Chip data-quick-toggle="only-followed" data-active="false">
+            {t("ja", "prefs.followOnly")}
+          </Chip>
+          <Chip data-quick-toggle="only-followed-sources" data-active="false">
+            {t("ja", "prefs.followedSourcesOnly")}
+          </Chip>
+          <Chip data-quick-toggle="hide-read" data-active="false">
+            {t("ja", "prefs.hideRead")}
+          </Chip>
+          <Chip data-quick-toggle="only-stable" data-active="false">
+            {t("ja", "prefs.onlyStableSources")}
+          </Chip>
+          <Chip data-quick-toggle="dedup" data-active="false">
+            {t("ja", "prefs.dedupView")}
+          </Chip>
+          <div class="flex gap-2" role="radiogroup" aria-label={t("ja", "prefs.view")}>
+            <Chip
+              icon="grid"
+              iconSize={16}
+              data-view-mode="grid"
+              data-active="false"
+              role="radio"
+              aria-checked="false"
+            >
+              <span>{t("ja", "prefs.viewGrid")}</span>
+            </Chip>
+            <Chip
+              icon="list"
+              iconSize={16}
+              data-view-mode="list"
+              data-active="false"
+              role="radio"
+              aria-checked="false"
+            >
+              <span>{t("ja", "prefs.viewList")}</span>
+            </Chip>
+          </div>
+          <div class="flex gap-2" role="radiogroup" aria-label={t("ja", "prefs.density")}>
+            <Chip data-density-mode="comfort" data-active="false" role="radio" aria-checked="false">
+              {t("ja", "prefs.densityComfort")}
+            </Chip>
+            <Chip data-density-mode="compact" data-active="false" role="radio" aria-checked="false">
+              {t("ja", "prefs.densityCompact")}
+            </Chip>
+          </div>
+          <Chip data-quick-lens="2h" data-active="false">
+            {t("ja", "prefs.timeLens2h")}
+          </Chip>
+          <Chip data-quick-lens="6h" data-active="false">
+            {t("ja", "prefs.timeLens6h")}
+          </Chip>
+          <Chip data-quick-lens="24h" data-active="false">
+            {t("ja", "prefs.timeLens24h")}
+          </Chip>
+          <Chip data-quick-sort="pulse" data-active="false">
+            {t("ja", "prefs.sortPulse")}
+          </Chip>
+          <Chip icon="sliders" iconSize={16} data-open-prefs data-active="false">
+            <span>{t("ja", "prefs.title")}</span>
+          </Chip>
+        </div>
+
+        <div
+          class="acg-home-cats-mobile acg-hscroll relative mt-5 -mx-1 flex gap-3 overflow-x-auto px-1 pb-1 sm:hidden snap-x snap-mandatory"
+        >
+          {
+            CATEGORIES.map((c) => (
+              <a
+                href={href(`/ja/c/${c}/`)}
+                class="glass clickable group relative min-w-[240px] snap-start overflow-hidden rounded-2xl p-4"
+              >
                 <div
-                  class:list={[
-                    "grid size-11 place-items-center rounded-2xl border border-slate-900/10 bg-white/55",
-                    CATEGORY_THEME[c].ink
-                  ]}
-                >
-                  <CategoryIcon category={c} size={22} />
+                  class:list={["absolute inset-0 bg-gradient-to-br opacity-60", CATEGORY_THEME[c].cover]}
+                />
+                <div class="relative flex items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="text-sm font-semibold text-slate-950">{categoryLabel("ja", c)}</div>
+                    <div class="mt-1 text-xs text-slate-600">直近24h {categoryCount.get(c) ?? 0} 件</div>
+                  </div>
+                  <div
+                    class:list={[
+                      "grid size-11 place-items-center rounded-2xl border border-slate-900/10 bg-white/55",
+                      CATEGORY_THEME[c].ink
+                    ]}
+                  >
+                    <CategoryIcon category={c} size={22} />
+                  </div>
                 </div>
-              </div>
-            </a>
-          ))
-        }
+              </a>
+            ))
+          }
+        </div>
+
+        <div class="acg-home-cats-desktop relative mt-5 hidden grid-cols-2 gap-3 sm:grid sm:grid-cols-4">
+          {
+            CATEGORIES.map((c) => (
+              <a
+                href={href(`/ja/c/${c}/`)}
+                class="glass clickable group relative overflow-hidden rounded-2xl p-4"
+              >
+                <div
+                  class:list={["absolute inset-0 bg-gradient-to-br opacity-60", CATEGORY_THEME[c].cover]}
+                />
+                <div class="relative flex items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="text-sm font-semibold text-slate-950">{categoryLabel("ja", c)}</div>
+                    <div class="mt-1 text-xs text-slate-600">24時間 {categoryCount.get(c) ?? 0} 件</div>
+                  </div>
+                  <div
+                    class:list={[
+                      "grid size-11 place-items-center rounded-2xl border border-slate-900/10 bg-white/55",
+                      CATEGORY_THEME[c].ink
+                    ]}
+                  >
+                    {c === "anime" ? (
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path
+                          d="M7 7.8c0-1.55 1.26-2.8 2.8-2.8h4.4c1.55 0 2.8 1.25 2.8 2.8v8.4c0 1.55-1.25 2.8-2.8 2.8H9.8A2.8 2.8 0 0 1 7 16.2V7.8Z"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        />
+                        <path
+                          d="M10 9h4M10 13h4"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                        />
+                      </svg>
+                    ) : c === "game" ? (
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path
+                          d="M7.5 14.5h-1a2 2 0 0 1-2-2v-1.2a6.3 6.3 0 0 1 12.6 0v1.2a2 2 0 0 1-2 2h-1"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                        />
+                        <path
+                          d="M9 12h2M10 11v2"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                        />
+                        <path
+                          d="M14.8 11.8h.01M16.4 13.2h.01"
+                          stroke="currentColor"
+                          stroke-width="3"
+                          stroke-linecap="round"
+                        />
+                      </svg>
+                    ) : c === "goods" ? (
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path
+                          d="M6 10.5V8.8A2.8 2.8 0 0 1 8.8 6h6.4A2.8 2.8 0 0 1 18 8.8v1.7"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        />
+                        <path
+                          d="M5.5 10.5h13v9.2A2.3 2.3 0 0 1 16.2 22H7.8A2.3 2.3 0 0 1 5.5 19.7v-9.2Z"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        />
+                        <path d="M9 13.2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                      </svg>
+                    ) : (
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path
+                          d="M12 22a8.5 8.5 0 1 0-8.5-8.5"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                        />
+                        <path
+                          d="M7.5 11.5c.7-1.8 2.4-3 4.5-3s3.8 1.2 4.5 3"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                        />
+                        <path
+                          d="M9.2 15.4h.01M14.8 15.4h.01"
+                          stroke="currentColor"
+                          stroke-width="3"
+                          stroke-linecap="round"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+              </a>
+            ))
+          }
+        </div>
       </div>
 
-      <div class="acg-home-cats-desktop relative mt-5 hidden grid-cols-2 gap-3 sm:grid sm:grid-cols-4">
-        {
-          CATEGORIES.map((c) => (
-            <a
-              href={href(`/ja/c/${c}/`)}
-              class="glass clickable group relative overflow-hidden rounded-2xl p-4"
-            >
-              <div class:list={["absolute inset-0 bg-gradient-to-br opacity-60", CATEGORY_THEME[c].cover]} />
-              <div class="relative flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                  <div class="text-sm font-semibold text-slate-950">{categoryLabel("ja", c)}</div>
-                  <div class="mt-1 text-xs text-slate-600">24時間 {categoryCount.get(c) ?? 0} 件</div>
-                </div>
-                <div
-                  class:list={[
-                    "grid size-11 place-items-center rounded-2xl border border-slate-900/10 bg-white/55",
-                    CATEGORY_THEME[c].ink
-                  ]}
-                >
-                  {c === "anime" ? (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path
-                        d="M7 7.8c0-1.55 1.26-2.8 2.8-2.8h4.4c1.55 0 2.8 1.25 2.8 2.8v8.4c0 1.55-1.25 2.8-2.8 2.8H9.8A2.8 2.8 0 0 1 7 16.2V7.8Z"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      />
-                      <path
-                        d="M10 9h4M10 13h4"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                  ) : c === "game" ? (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path
-                        d="M7.5 14.5h-1a2 2 0 0 1-2-2v-1.2a6.3 6.3 0 0 1 12.6 0v1.2a2 2 0 0 1-2 2h-1"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                      />
-                      <path
-                        d="M9 12h2M10 11v2"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                      />
-                      <path
-                        d="M14.8 11.8h.01M16.4 13.2h.01"
-                        stroke="currentColor"
-                        stroke-width="3"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                  ) : c === "goods" ? (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path
-                        d="M6 10.5V8.8A2.8 2.8 0 0 1 8.8 6h6.4A2.8 2.8 0 0 1 18 8.8v1.7"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      />
-                      <path
-                        d="M5.5 10.5h13v9.2A2.3 2.3 0 0 1 16.2 22H7.8A2.3 2.3 0 0 1 5.5 19.7v-9.2Z"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      />
-                      <path d="M9 13.2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    </svg>
-                  ) : (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path
-                        d="M12 22a8.5 8.5 0 1 0-8.5-8.5"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                      />
-                      <path
-                        d="M7.5 11.5c.7-1.8 2.4-3 4.5-3s3.8 1.2 4.5 3"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                      />
-                      <path
-                        d="M9.2 15.4h.01M14.8 15.4h.01"
-                        stroke="currentColor"
-                        stroke-width="3"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                  )}
-                </div>
+      <SpotlightGrid posts={spotlight} lang="ja" title={t("ja", "home.spotlight")} />
+
+      <div>
+        <PostList posts={latest} lang="ja" />
+        <div id="acg-list-empty" class="mt-4 glass shine rounded-2xl p-8 hidden">
+          <div class="flex flex-col items-center gap-3 text-center">
+            <div class="radar grid size-16 place-items-center shadow-e4">
+              <span class="text-sm font-bold text-white/90">?</span>
+            </div>
+            <div>
+              <div class="text-sm font-semibold text-slate-950">{t("ja", "search.emptyTitle")}</div>
+              <div class="mt-2 text-xs leading-relaxed text-slate-600">
+                {t("ja", "search.emptyHint")}
               </div>
-            </a>
-          ))
-        }
+            </div>
+            <button
+              type="button"
+              id="acg-clear-search"
+              class="rounded-xl bg-slate-950 px-4 py-2 text-xs font-medium text-white clickable"
+            >
+              {t("ja", "search.clear")}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <aside class="md:col-span-5">
+    <aside class="grid gap-4 md:col-span-4">
       <SignalBoard
         lang="ja"
         pulseTop={pulseTop}
@@ -327,35 +359,7 @@ const spotlight = (() => {
         healthSummary={healthSummary}
         totalPosts={enriched.length}
       />
-    </aside>
-  </section>
 
-  <SpotlightGrid posts={spotlight} lang="ja" title={t("ja", "home.spotlight")} />
-
-  <section class="acg-layout-grid mt-6 grid items-start gap-grid md:grid-cols-12">
-    <div class="md:col-span-8">
-      <PostList posts={latest} lang="ja" variant="compact" />
-      <div id="acg-list-empty" class="mt-4 glass shine rounded-2xl p-8 hidden">
-        <div class="flex flex-col items-center gap-3 text-center">
-          <div class="radar grid size-16 place-items-center shadow-e4">
-            <span class="text-sm font-bold text-white/90">?</span>
-          </div>
-          <div>
-            <div class="text-sm font-semibold text-slate-950">{t("ja", "search.emptyTitle")}</div>
-            <div class="mt-2 text-xs leading-relaxed text-slate-600">{t("ja", "search.emptyHint")}</div>
-          </div>
-          <button
-            type="button"
-            id="acg-clear-search"
-            class="rounded-xl bg-slate-950 px-4 py-2 text-xs font-medium text-white clickable"
-          >
-            {t("ja", "search.clear")}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid gap-4 md:col-span-4">
       <div class="glass rounded-2xl p-6">
         <div class="flex items-center justify-between gap-3">
           <h2 class="m-0 text-sm font-semibold text-slate-950">{t("ja", "home.dailyBrief")}</h2>
@@ -488,7 +492,7 @@ const spotlight = (() => {
           )
         }
       </div>
-    </div>
+    </aside>
   </section>
 
   <PreferencesDrawer lang="ja" />

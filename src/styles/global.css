@@ -3579,7 +3579,7 @@ html[data-acg-device="phone"] .acg-prefs-drawer.is-open .acg-prefs-drawer-panel 
   gap: 12px;
 }
 
-@container (min-width: 560px) {
+@container (min-width: 440px) {
   .acg-signal-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
