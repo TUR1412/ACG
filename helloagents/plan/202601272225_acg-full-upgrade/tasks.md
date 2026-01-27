@@ -20,8 +20,8 @@
 
 ```yaml
 总任务: 22
-已完成: 10
-完成率: 45%
+已完成: 11
+完成率: 50%
 ```
 
 ---
@@ -76,7 +76,7 @@
 
 ### 3. 同步管线模块化（P0/P1）
 
-- [ ] 3.1 将 `scripts/sync.ts` 拆分为 `scripts/pipeline/*`（阶段化：fetch/parse/normalize/dedup/enrich/output）
+- [√] 3.1 将 `scripts/sync.ts` 拆分为 `scripts/pipeline/*`（阶段化：fetch/parse/normalize/dedup/enrich/output）
 
   - 目标: 各阶段输入输出类型清晰；可单测；可复用；便于定位故障
   - 验证: `npm run sync:dry` 与 `npm run sync` 行为一致（差异仅体现在写盘）
@@ -148,15 +148,16 @@
 
 > 执行过程中的重要记录
 
-| 任务 | 状态      | 备注                                                                                                         |
-| ---- | --------- | ------------------------------------------------------------------------------------------------------------ |
-| 1.1  | completed | 已在 `proposal.md` 固化目标与版本策略（0.6.x → 1.0）                                                         |
-| 1.2  | completed | 已生成 `baseline.md`（含 lint/check/test/build/budget 基线结果）                                             |
-| 1.3  | completed | 已在 `proposal.md` 补充“非目标（本次不做）”章节                                                              |
-| 2.1  | completed | 已拆分 `theme/accent/radiogroup` 模块，`app.ts` 入口保持不变                                                 |
-| 2.2  | completed | 已拆分 `fulltext`（markdown/translate/cache/idle/net/wire），worker 引用改为直达子模块                       |
-| 2.3  | completed | 已将 `cmdk` 拆分为 `src/client/features/cmdk/*`（薄入口保留），并补齐 query/presets 单测确保覆盖率门禁可持续 |
-| 2.4  | completed | `src/client` 业务代码不再直接访问 `localStorage`，统一通过 `state/storage.ts` 封装                           |
-| 2.5  | completed | telemetry 增加 data 清洗（去 query/hash + 敏感键 redaction）与去重/节流，减少隐私与噪音风险                  |
-| 3.2  | completed | 新增 `scripts/lib/env.ts` 并重构 `scripts/sync.ts` 统一读取 env                                              |
-| 3.5  | completed | 增强 `SOURCE_CONFIGS` 校验（homepage/http + include 正则可编译）                                             |
+| 任务 | 状态      | 备注                                                                                                                                                         |
+| ---- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1.1  | completed | 已在 `proposal.md` 固化目标与版本策略（0.6.x → 1.0）                                                                                                         |
+| 1.2  | completed | 已生成 `baseline.md`（含 lint/check/test/build/budget 基线结果）                                                                                             |
+| 1.3  | completed | 已在 `proposal.md` 补充“非目标（本次不做）”章节                                                                                                              |
+| 2.1  | completed | 已拆分 `theme/accent/radiogroup` 模块，`app.ts` 入口保持不变                                                                                                 |
+| 2.2  | completed | 已拆分 `fulltext`（markdown/translate/cache/idle/net/wire），worker 引用改为直达子模块                                                                       |
+| 2.3  | completed | 已将 `cmdk` 拆分为 `src/client/features/cmdk/*`（薄入口保留），并补齐 query/presets 单测确保覆盖率门禁可持续                                                 |
+| 2.4  | completed | `src/client` 业务代码不再直接访问 `localStorage`，统一通过 `state/storage.ts` 封装                                                                           |
+| 2.5  | completed | telemetry 增加 data 清洗（去 query/hash + 敏感键 redaction）与去重/节流，减少隐私与噪音风险                                                                  |
+| 3.2  | completed | 新增 `scripts/lib/env.ts` 并重构 `scripts/sync.ts` 统一读取 env                                                                                              |
+| 3.1  | completed | `scripts/sync.ts` 拆分为 `scripts/pipeline/*`（sources/posts/covers/translate/status-history），并通过 `lint/check/test:coverage/build/budget/sync:dry` 验证 |
+| 3.5  | completed | 增强 `SOURCE_CONFIGS` 校验（homepage/http + include 正则可编译）                                                                                             |

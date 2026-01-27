@@ -22,6 +22,7 @@
 - Client：本机存储边界收敛：`src/client` 业务代码不再直接访问 `localStorage`，统一通过 `src/client/state/storage.ts` 封装（含 `removeKey/loadBoolean/loadTrimmedString`），并补齐对应单测覆盖。
 - Client：命令面板 `cmdk` 拆分为 `src/client/features/cmdk/*`（薄入口保留），提取 query/presets 纯函数模块并补齐单测，保持覆盖率门禁可持续。
 - Client：Telemetry 事件 data 增加隐私清洗（URL 去 query/hash + 敏感键 redaction）并加入去重/节流，降低日志噪音与潜在泄露风险。
+- Pipeline：同步脚本 `scripts/sync.ts` 拆分为 `scripts/pipeline/*` 的阶段化模块（sources/posts/covers/translate/status-history），降低单文件复杂度并提升可复用性与可维护性。
 
 ### 修复
 

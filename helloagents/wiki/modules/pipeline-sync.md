@@ -8,7 +8,7 @@
 
 - 职责：拉取来源（RSS/HTML）→ 去重排序 → 补图/预览增强 → 翻译字段（限量）→ 生成搜索包/状态趋势 → 写入 `src/data/generated` 与 `public/data`
 - 状态：✅稳定
-- 最后更新：2026-01-12
+- 最后更新：2026-01-27
 
 ## 规范
 
@@ -60,7 +60,8 @@
 
 ## 依赖
 
-- `scripts/sync.ts`
+- `scripts/sync.ts`（编排入口）
+- `scripts/pipeline/*`（阶段化实现：sources/posts/covers/translate/status-history/concurrency）
 - `scripts/lib/*`
 - `scripts/sources/*`
 - `src/lib/source-config.ts`（来源配置 SSOT）
