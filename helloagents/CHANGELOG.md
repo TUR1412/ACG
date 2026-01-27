@@ -16,6 +16,13 @@
 - UI：新增 View Presets（视图预设）：保存/应用/重命名/删除/复制可复现视图链接（URL 自动套用快照后清理参数）。
 - Cmdk：命令面板新增 Accent 与视图预设入口，强化键盘路径与效率操作。
 
+### 变更
+
+- Client：全文预览 `fulltext` 模块拆分为 `src/client/features/fulltext/*`（薄入口保留），并让 `fulltext.worker.ts` 直达子模块导入，降低耦合并为纯函数测试铺路。
+- Client：本机存储边界收敛：`src/client` 业务代码不再直接访问 `localStorage`，统一通过 `src/client/state/storage.ts` 封装（含 `removeKey/loadBoolean/loadTrimmedString`），并补齐对应单测覆盖。
+- Client：命令面板 `cmdk` 拆分为 `src/client/features/cmdk/*`（薄入口保留），提取 query/presets 纯函数模块并补齐单测，保持覆盖率门禁可持续。
+- Client：Telemetry 事件 data 增加隐私清洗（URL 去 query/hash + 敏感键 redaction）并加入去重/节流，降低日志噪音与潜在泄露风险。
+
 ### 修复
 
 - generated-data：读取生成数据时改为按调用时 `process.cwd()` 动态解析文件路径，避免在测试/脚本中临时切换 cwd 导致读到旧数据或读取失败。

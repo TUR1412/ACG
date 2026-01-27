@@ -1,4 +1,5 @@
 import { subscribeRequestState, type RequestState } from "../state/requests";
+import { loadString } from "../state/storage";
 
 export type HealthSnapshot = {
   at: string;
@@ -208,7 +209,7 @@ export function maybeStartHealthMonitor() {
   let enabled = false;
   try {
     const params = new URLSearchParams(window.location.search);
-    enabled = params.get("health") === "1" || localStorage.getItem("acg.health") === "1";
+    enabled = params.get("health") === "1" || loadString("acg.health") === "1";
   } catch {
     enabled = false;
   }

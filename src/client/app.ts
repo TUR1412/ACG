@@ -15,8 +15,21 @@ import {
   wireGlobalErrorMonitoring,
   wirePerfMonitoring
 } from "./utils/monitoring";
-import { loadIds, loadWords, normalizeWord, safeJsonParse, saveIds, saveWords } from "./state/storage";
+import {
+  loadIds,
+  loadJson,
+  loadString,
+  loadWords,
+  normalizeWord,
+  saveIds,
+  saveJson,
+  saveString,
+  saveWords
+} from "./state/storage";
 import { wireTelemetryPrefs } from "./features/telemetry-prefs";
+import { loadAccentMode, normalizeAccentMode, wireAccentMode } from "./features/accent";
+import { loadThemeMode, wireThemeMode } from "./features/theme";
+import { syncRadioGroupsFromButtons, wireRadioGroupKeyboardNav } from "./ui/radiogroup";
 
 const BOOKMARK_KEY = STORAGE_KEYS.BOOKMARKS;
 const READ_KEY = STORAGE_KEYS.READ;
@@ -27,8 +40,6 @@ const VIEW_MODE_KEY = STORAGE_KEYS.VIEW_MODE;
 const DENSITY_KEY = STORAGE_KEYS.DENSITY;
 const DISABLED_SOURCES_KEY = STORAGE_KEYS.DISABLED_SOURCES;
 const FOLLOWED_SOURCES_KEY = STORAGE_KEYS.FOLLOWED_SOURCES;
-const THEME_KEY = STORAGE_KEYS.THEME;
-const ACCENT_KEY = STORAGE_KEYS.ACCENT;
 const VIEW_PRESETS_KEY = STORAGE_KEYS.VIEW_PRESETS;
 
 type FilterStore = {
@@ -79,14 +90,9 @@ type ViewPresetStoreV1 = {
   presets: ViewPresetV1[];
 };
 
-const THEME_COLOR = {
-  LIGHT: "#f6f7fb",
-  DARK: "#04070f"
-} as const;
-
 function loadSearchScope(): SearchScope {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.SEARCH_SCOPE);
+    const raw = loadString(STORAGE_KEYS.SEARCH_SCOPE);
     return raw === "all" || raw === "page" ? raw : "page";
   } catch {
     return "page";
@@ -95,7 +101,7 @@ function loadSearchScope(): SearchScope {
 
 function saveSearchScope(scope: SearchScope) {
   try {
-    localStorage.setItem(STORAGE_KEYS.SEARCH_SCOPE, scope);
+    saveString(STORAGE_KEYS.SEARCH_SCOPE, scope);
   } catch {
     // ignore
   }
@@ -147,7 +153,7 @@ function normalizeSortMode(value: unknown): SortMode {
 
 function loadFilters(): FilterStore {
   try {
-    const parsed = safeJsonParse<Record<string, unknown>>(localStorage.getItem(FILTERS_KEY));
+    const parsed = loadJson<Record<string, unknown>>(FILTERS_KEY);
     const getBool = (key: string): boolean => parsed?.[key] === true;
     const get = (key: string): unknown => parsed?.[key];
     return {
@@ -176,7 +182,7 @@ function loadFilters(): FilterStore {
 
 function saveFilters(filters: FilterStore) {
   try {
-    localStorage.setItem(FILTERS_KEY, JSON.stringify(filters));
+    saveJson(FILTERS_KEY, filters);
   } catch {
     // ignore
   }
@@ -467,280 +473,9 @@ function maybeAutoTunePerfMode() {
   window.requestAnimationFrame(tick);
 }
 
-function prefersColorSchemeDark(): boolean {
-  try {
-    return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
-  } catch {
-    return false;
-  }
-}
-
-function loadThemeMode(): ThemeMode {
-  try {
-    const raw = localStorage.getItem(THEME_KEY);
-    return raw === "light" || raw === "dark" || raw === "auto" ? raw : "auto";
-  } catch {
-    return "auto";
-  }
-}
-
-function saveThemeMode(mode: ThemeMode) {
-  try {
-    localStorage.setItem(THEME_KEY, mode);
-  } catch {
-    // ignore
-  }
-}
-
-function resolveThemeIsDark(mode: ThemeMode): boolean {
-  if (mode === "dark") return true;
-  if (mode === "light") return false;
-  return prefersColorSchemeDark();
-}
-
-function syncThemeColor(isDark: boolean) {
-  try {
-    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    if (!meta) return;
-    meta.content = isDark ? THEME_COLOR.DARK : THEME_COLOR.LIGHT;
-  } catch {
-    // ignore
-  }
-}
-
-function applyThemeMode(mode: ThemeMode) {
-  try {
-    document.documentElement.dataset.acgTheme = mode;
-  } catch {
-    // ignore
-  }
-  syncThemeColor(resolveThemeIsDark(mode));
-}
-
-function normalizeAccentMode(value: unknown): AccentMode {
-  return value === "neon" || value === "sakura" || value === "ocean" || value === "amber" ? value : "neon";
-}
-
-function loadAccentMode(): AccentMode {
-  try {
-    return normalizeAccentMode(localStorage.getItem(ACCENT_KEY));
-  } catch {
-    return "neon";
-  }
-}
-
-function saveAccentMode(mode: AccentMode) {
-  try {
-    localStorage.setItem(ACCENT_KEY, mode);
-  } catch {
-    // ignore
-  }
-}
-
-function applyAccentMode(mode: AccentMode) {
-  try {
-    document.documentElement.dataset.acgAccent = mode;
-  } catch {
-    // ignore
-  }
-}
-
-function syncRadioGroupTabStops(group: HTMLElement) {
-  const radios = [...group.querySelectorAll<HTMLButtonElement>("[role=radio]")];
-  if (radios.length === 0) return;
-  const checked = radios.find((b) => b.getAttribute("aria-checked") === "true") ?? null;
-  const focusable = checked ?? radios[0];
-  for (const btn of radios) {
-    btn.tabIndex = btn === focusable ? 0 : -1;
-  }
-}
-
-function syncRadioGroupsFromButtons(buttons: HTMLButtonElement[]) {
-  const groups = new Set<HTMLElement>();
-  for (const btn of buttons) {
-    const group = btn.closest<HTMLElement>("[role=radiogroup]");
-    if (group) groups.add(group);
-  }
-  for (const group of groups) syncRadioGroupTabStops(group);
-}
-
-function wireRadioGroupKeyboardNav() {
-  document.addEventListener("keydown", (e) => {
-    if (e.defaultPrevented) return;
-    if (e.altKey || e.ctrlKey || e.metaKey) return;
-    if (!(e.target instanceof HTMLElement)) return;
-
-    const key = e.key;
-    if (
-      key !== "ArrowLeft" &&
-      key !== "ArrowRight" &&
-      key !== "ArrowUp" &&
-      key !== "ArrowDown" &&
-      key !== "Home" &&
-      key !== "End"
-    ) {
-      return;
-    }
-
-    const radio = e.target.closest<HTMLButtonElement>("[role=radio]");
-    if (!radio) return;
-    const group = radio.closest<HTMLElement>("[role=radiogroup]");
-    if (!group) return;
-
-    const radios = [...group.querySelectorAll<HTMLButtonElement>("[role=radio]")];
-    if (radios.length === 0) return;
-    const current = radios.includes(radio) ? radio : radios[0];
-    const idx = Math.max(0, radios.indexOf(current));
-
-    const nextIdx =
-      key === "Home"
-        ? 0
-        : key === "End"
-          ? radios.length - 1
-          : key === "ArrowLeft" || key === "ArrowUp"
-            ? (idx + radios.length - 1) % radios.length
-            : (idx + 1) % radios.length;
-
-    const next = radios[nextIdx];
-    if (!next || next === current) return;
-    e.preventDefault();
-    try {
-      next.focus();
-    } catch {
-      // ignore
-    }
-    try {
-      next.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-    } catch {
-      try {
-        next.click();
-      } catch {
-        // ignore
-      }
-    }
-  });
-}
-
-function wireThemeMode() {
-  const buttons = [...document.querySelectorAll<HTMLButtonElement>("[data-theme-mode]")];
-  const toggles = [...document.querySelectorAll<HTMLButtonElement>("[data-theme-toggle]")];
-
-  const labelFor = (el: HTMLElement, mode: ThemeMode): string => {
-    const name = el.dataset.themeLabelName ?? "Theme";
-    const auto = el.dataset.themeLabelAuto ?? "Auto";
-    const light = el.dataset.themeLabelLight ?? "Light";
-    const dark = el.dataset.themeLabelDark ?? "Dark";
-    const modeLabel = mode === "dark" ? dark : mode === "light" ? light : auto;
-    return `${name}: ${modeLabel}`;
-  };
-
-  const apply = (mode: ThemeMode) => {
-    applyThemeMode(mode);
-    for (const btn of buttons) {
-      const active = (btn.dataset.themeMode ?? "") === mode;
-      btn.dataset.active = active ? "true" : "false";
-      btn.setAttribute("aria-checked", active ? "true" : "false");
-    }
-    syncRadioGroupsFromButtons(buttons);
-    for (const el of toggles) {
-      const title = labelFor(el, mode);
-      el.title = title;
-      const text = el.querySelector<HTMLElement>("[data-theme-toggle-text]");
-      if (text) {
-        const auto = el.dataset.themeLabelAuto ?? "Auto";
-        const light = el.dataset.themeLabelLight ?? "Light";
-        const dark = el.dataset.themeLabelDark ?? "Dark";
-        text.textContent = mode === "dark" ? dark : mode === "light" ? light : auto;
-      }
-    }
-  };
-
-  const mode = loadThemeMode();
-  apply(mode);
-
-  if (buttons.length > 0) {
-    document.addEventListener("click", (e) => {
-      if (e.defaultPrevented) return;
-      if (!(e.target instanceof HTMLElement)) return;
-      const el = e.target.closest<HTMLButtonElement>("[data-theme-mode]");
-      if (!el) return;
-      const next = el.dataset.themeMode;
-      if (next !== "auto" && next !== "light" && next !== "dark") return;
-      e.preventDefault();
-      saveThemeMode(next);
-      apply(next);
-    });
-  }
-
-  for (const el of toggles) {
-    el.addEventListener("click", (e) => {
-      e.preventDefault();
-      const current = loadThemeMode();
-      const next: ThemeMode = current === "auto" ? "light" : current === "light" ? "dark" : "auto";
-      saveThemeMode(next);
-      apply(next);
-    });
-  }
-
-  const mq = (() => {
-    try {
-      return window.matchMedia("(prefers-color-scheme: dark)");
-    } catch {
-      return null;
-    }
-  })();
-  if (!mq) return;
-
-  const onChange = () => {
-    const current = loadThemeMode();
-    if (current !== "auto") return;
-    syncThemeColor(resolveThemeIsDark(current));
-  };
-
-  if (typeof mq.addEventListener === "function") {
-    mq.addEventListener("change", onChange);
-  } else {
-    // Safari（legacy API）
-    const legacy = (mq as unknown as { addListener?: (cb: () => void) => void }).addListener;
-    if (typeof legacy === "function") legacy.call(mq, onChange);
-  }
-}
-
-function wireAccentMode() {
-  const buttons = [...document.querySelectorAll<HTMLButtonElement>("[data-accent-mode]")];
-
-  const apply = (mode: AccentMode) => {
-    applyAccentMode(mode);
-    for (const btn of buttons) {
-      const active = (btn.dataset.accentMode ?? "") === mode;
-      btn.dataset.active = active ? "true" : "false";
-      btn.setAttribute("aria-checked", active ? "true" : "false");
-    }
-    syncRadioGroupsFromButtons(buttons);
-    document.dispatchEvent(new CustomEvent("acg:accent-changed", { detail: { mode } }));
-  };
-
-  const mode = loadAccentMode();
-  apply(mode);
-
-  if (buttons.length > 0) {
-    document.addEventListener("click", (e) => {
-      if (e.defaultPrevented) return;
-      if (!(e.target instanceof HTMLElement)) return;
-      const el = e.target.closest<HTMLButtonElement>("[data-accent-mode]");
-      if (!el) return;
-      e.preventDefault();
-      const next = normalizeAccentMode(el.dataset.accentMode);
-      saveAccentMode(next);
-      apply(next);
-      track({ type: "accent_changed", data: { mode: next } });
-    });
-  }
-}
-
 function loadViewMode(): ViewMode {
   try {
-    const raw = localStorage.getItem(VIEW_MODE_KEY);
+    const raw = loadString(VIEW_MODE_KEY);
     return raw === "grid" || raw === "list" ? raw : "grid";
   } catch {
     return "grid";
@@ -749,7 +484,7 @@ function loadViewMode(): ViewMode {
 
 function saveViewMode(mode: ViewMode) {
   try {
-    localStorage.setItem(VIEW_MODE_KEY, mode);
+    saveString(VIEW_MODE_KEY, mode);
   } catch {
     // ignore
   }
@@ -796,7 +531,7 @@ function wireViewMode() {
 
 function loadDensityMode(): DensityMode {
   try {
-    const raw = localStorage.getItem(DENSITY_KEY);
+    const raw = loadString(DENSITY_KEY);
     return raw === "comfort" || raw === "compact" ? raw : "comfort";
   } catch {
     return "comfort";
@@ -805,7 +540,7 @@ function loadDensityMode(): DensityMode {
 
 function saveDensityMode(mode: DensityMode) {
   try {
-    localStorage.setItem(DENSITY_KEY, mode);
+    saveString(DENSITY_KEY, mode);
   } catch {
     // ignore
   }
@@ -1708,7 +1443,7 @@ function wireDeviceDebug() {
   let enabled = false;
   try {
     const params = new URLSearchParams(window.location.search);
-    enabled = params.get("debug") === "1" || localStorage.getItem("acg.debug") === "1";
+    enabled = params.get("debug") === "1" || loadString("acg.debug") === "1";
   } catch {
     enabled = false;
   }
@@ -2996,9 +2731,7 @@ type BookmarkMetaStore = {
 
 function readBookmarkMetaCache(): Map<string, BookmarkPost> {
   try {
-    const parsed = safeJsonParse<{ version?: unknown; posts?: unknown }>(
-      localStorage.getItem(STORAGE_KEYS.BOOKMARK_META)
-    );
+    const parsed = loadJson<{ version?: unknown; posts?: unknown }>(STORAGE_KEYS.BOOKMARK_META);
     const version = typeof parsed?.version === "number" ? parsed?.version : 0;
     if (version !== 1) return new Map();
 
@@ -3044,7 +2777,7 @@ function writeBookmarkMetaCache(posts: BookmarkPost[]) {
   try {
     const sliced = posts.slice(0, UI.BOOKMARK_META_MAX_ITEMS);
     const payload: BookmarkMetaStore = { version: 1, savedAt: new Date().toISOString(), posts: sliced };
-    localStorage.setItem(STORAGE_KEYS.BOOKMARK_META, JSON.stringify(payload));
+    saveJson(STORAGE_KEYS.BOOKMARK_META, payload);
   } catch {
     // ignore
   }
@@ -3860,7 +3593,7 @@ function wireViewPresets(filters: FilterStore) {
 
   const loadPresets = (): ViewPresetV1[] => {
     try {
-      const parsed = safeJsonParse<Record<string, unknown>>(localStorage.getItem(VIEW_PRESETS_KEY));
+      const parsed = loadJson<Record<string, unknown>>(VIEW_PRESETS_KEY);
       if (!parsed || parsed.version !== 1) return [];
       const listRaw = parsed.presets;
       if (!Array.isArray(listRaw)) return [];
@@ -3874,7 +3607,7 @@ function wireViewPresets(filters: FilterStore) {
   const savePresets = (presets: ViewPresetV1[]) => {
     try {
       const store = { version: 1, presets } satisfies ViewPresetStoreV1;
-      localStorage.setItem(VIEW_PRESETS_KEY, JSON.stringify(store));
+      saveJson(VIEW_PRESETS_KEY, store);
     } catch {
       // ignore
     }

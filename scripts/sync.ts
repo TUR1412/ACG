@@ -22,6 +22,7 @@ import type { Post, SourceStatus, StatusHistoryEntry, StatusHistoryV1, SyncStatu
 import { buildSearchPack, buildSearchPackV2 } from "../src/lib/search/pack";
 import { deriveTags } from "./lib/tagger";
 import { readTranslateCache, translateTextCached, type TranslateCache } from "./lib/translate";
+import { envNonNegativeInt, envPositiveIntInRange, envRatio01 } from "./lib/env";
 
 function hasJapaneseKana(text: string): boolean {
   // Hiragana + Katakana。仅靠汉字无法区分中/日，所以用 kana 作为“强证据”。
@@ -37,8 +38,8 @@ async function translatePosts(params: {
 }): Promise<{ translated: number; attempted: number }> {
   const { posts, cache, cachePath, verbose, persistCache } = params;
 
-  const timeoutMs = parseNonNegativeInt(process.env.ACG_TRANSLATE_TIMEOUT_MS, 18_000);
-  const maxPosts = parseNonNegativeInt(process.env.ACG_TRANSLATE_MAX_POSTS, 220);
+  const timeoutMs = envNonNegativeInt("ACG_TRANSLATE_TIMEOUT_MS", 18_000);
+  const maxPosts = envNonNegativeInt("ACG_TRANSLATE_MAX_POSTS", 220);
 
   const sourceLangById = new Map<string, SourceLang>();
   for (const s of SOURCES) sourceLangById.set(s.id, s.lang ?? "unknown");
@@ -398,14 +399,9 @@ async function runSource(params: {
 
   // 解析结果“异常缩水”：可能是来源结构变更/反爬命中/被错误 HTML 污染。
   // 保守策略：当历史足够多且本次明显变少时，回退上一轮数据，避免静默停更。
-  const dropMinPrev = parseNonNegativeInt(process.env.ACG_PARSE_DROP_MIN_PREV, 12);
-  const dropMinKeep = parseNonNegativeInt(process.env.ACG_PARSE_DROP_MIN_KEEP, 3);
-  const dropRatio = (() => {
-    const raw = process.env.ACG_PARSE_DROP_RATIO;
-    const parsed = raw == null ? NaN : Number(raw);
-    if (!Number.isFinite(parsed) || parsed <= 0 || parsed >= 1) return 0.15;
-    return parsed;
-  })();
+  const dropMinPrev = envNonNegativeInt("ACG_PARSE_DROP_MIN_PREV", 12);
+  const dropMinKeep = envNonNegativeInt("ACG_PARSE_DROP_MIN_KEEP", 3);
+  const dropRatio = envRatio01("ACG_PARSE_DROP_RATIO", 0.15);
 
   const suspiciousDrop =
     previous.length >= dropMinPrev &&
@@ -481,13 +477,6 @@ function filterByDays(posts: Post[], days: number): Post[] {
     const time = new Date(p.publishedAt).getTime();
     return Number.isFinite(time) && time >= cutoff;
   });
-}
-
-function parseNonNegativeInt(value: string | undefined, fallback: number): number {
-  if (value == null) return fallback;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
-  return Math.floor(parsed);
 }
 
 function normalizeStatusHistoryEntry(value: unknown): StatusHistoryEntry | null {
@@ -619,11 +608,11 @@ async function cacheCoverThumbnails(params: {
   const log = createLogger({ verbose });
 
   // 目标：让“首页/最近”尽量都能稳定显示封面（不依赖热链），同时控制体积与抓取压力。
-  const max = parseNonNegativeInt(process.env.ACG_COVER_CACHE_MAX, 260);
-  const width = parseNonNegativeInt(process.env.ACG_COVER_CACHE_WIDTH, 960);
-  const timeoutMs = parseNonNegativeInt(process.env.ACG_COVER_CACHE_TIMEOUT_MS, 20_000);
-  const maxBytes = parseNonNegativeInt(process.env.ACG_COVER_CACHE_MAX_BYTES, 2_800_000);
-  const concurrency = parseNonNegativeInt(process.env.ACG_COVER_CACHE_CONCURRENCY, 6);
+  const max = envNonNegativeInt("ACG_COVER_CACHE_MAX", 260);
+  const width = envNonNegativeInt("ACG_COVER_CACHE_WIDTH", 960);
+  const timeoutMs = envNonNegativeInt("ACG_COVER_CACHE_TIMEOUT_MS", 20_000);
+  const maxBytes = envNonNegativeInt("ACG_COVER_CACHE_MAX_BYTES", 2_800_000);
+  const concurrency = envNonNegativeInt("ACG_COVER_CACHE_CONCURRENCY", 6);
 
   if (max <= 0) return { attempted: 0, cached: 0, max };
 
@@ -736,16 +725,16 @@ async function enrichCoversFromArticlePages(params: {
 
   // 偏激进默认值：优先让“最新可见内容”尽量都有封面。
   // 仍可通过环境变量一键调回保守/关闭（设为 0）。
-  const maxTotal = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_MAX, 320);
-  const maxPerSource = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_PER_SOURCE_MAX, 200);
-  const delayMs = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_DELAY_MS, 0);
-  const missTtlHours = parseNonNegativeInt(process.env.ACG_COVER_ENRICH_MISS_TTL_HOURS, 72);
+  const maxTotal = envNonNegativeInt("ACG_COVER_ENRICH_MAX", 320);
+  const maxPerSource = envNonNegativeInt("ACG_COVER_ENRICH_PER_SOURCE_MAX", 200);
+  const delayMs = envNonNegativeInt("ACG_COVER_ENRICH_DELAY_MS", 0);
+  const missTtlHours = envNonNegativeInt("ACG_COVER_ENRICH_MISS_TTL_HOURS", 72);
   const missTtlMs = missTtlHours * 60 * 60 * 1000;
 
   // 预览策略：只要摘要缺失或过短，就尝试从文章页抓取 og:description / meta description / 首段落。
-  const previewMinLen = parseNonNegativeInt(process.env.ACG_PREVIEW_MIN_LEN, 90);
-  const previewMaxLen = parseNonNegativeInt(process.env.ACG_PREVIEW_MAX_LEN, 420);
-  const previewMissTtlHours = parseNonNegativeInt(process.env.ACG_PREVIEW_MISS_TTL_HOURS, 24);
+  const previewMinLen = envNonNegativeInt("ACG_PREVIEW_MIN_LEN", 90);
+  const previewMaxLen = envNonNegativeInt("ACG_PREVIEW_MAX_LEN", 420);
+  const previewMissTtlHours = envNonNegativeInt("ACG_PREVIEW_MISS_TTL_HOURS", 24);
   const previewMissTtlMs = previewMissTtlHours * 60 * 60 * 1000;
 
   const candidates = posts
@@ -968,12 +957,7 @@ async function main() {
   const sourceStatuses: SourceStatus[] = [];
   const allPosts: Post[] = [...previousPosts];
 
-  const sourceConcurrency = (() => {
-    const raw = process.env.ACG_SOURCE_CONCURRENCY;
-    const parsed = raw == null ? NaN : Number(raw);
-    if (!Number.isFinite(parsed) || parsed <= 0) return 3;
-    return Math.max(1, Math.min(8, Math.floor(parsed)));
-  })();
+  const sourceConcurrency = envPositiveIntInRange("ACG_SOURCE_CONCURRENCY", 3, { min: 1, max: 8 });
 
   // 来源抓取：支持有限并发（默认 3），以降低整轮耗时与整点波动。
   // 注意：为避免并发写入 http cache 文件导致竞态，抓取阶段仅更新内存 cache，结束后统一落盘。
@@ -1086,7 +1070,7 @@ async function main() {
   await writePublicJsonAndGzip(publicStatusPath, status);
 
   // status-history：趋势汇总（按“每次同步”为粒度），用于 status 页面展示。
-  const staleThresholdHoursForHistory = parseNonNegativeInt(process.env.ACG_STALE_THRESHOLD_HOURS, 72);
+  const staleThresholdHoursForHistory = envNonNegativeInt("ACG_STALE_THRESHOLD_HOURS", 72);
   const sourcesForHistory = status.sources ?? [];
   const totalSourcesForHistory = sourcesForHistory.length;
   const okSourcesForHistory = sourcesForHistory.filter((s) => s.ok).length;
@@ -1143,7 +1127,7 @@ async function main() {
     .map(normalizeStatusHistoryEntry)
     .filter((x): x is StatusHistoryEntry => Boolean(x));
 
-  const maxEntries = parseNonNegativeInt(process.env.ACG_STATUS_HISTORY_MAX, 240);
+  const maxEntries = envNonNegativeInt("ACG_STATUS_HISTORY_MAX", 240);
   const merged = [...baseEntries, entry].sort((a, b) => a.generatedAt.localeCompare(b.generatedAt));
 
   // 去重：同一时间戳只保留最后一个（通常代表同一轮重复生成）。

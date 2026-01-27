@@ -8,6 +8,7 @@
  */
 
 import { STORAGE_KEYS } from "../constants";
+import { loadBoolean, loadString, loadTrimmedString, safeJsonParse, saveJson } from "../state/storage";
 
 export type TelemetryLang = "zh" | "ja";
 
@@ -27,25 +28,22 @@ type TelemetryStore = {
 };
 
 const MAX_EVENTS = 800;
+const DEDUP_MS = 10_000;
+const MAX_RECENT_KEYS = 64;
+const MAX_DATA_DEPTH = 4;
+const MAX_DATA_KEYS = 48;
+const MAX_DATA_ARRAY_LEN = 48;
+const MAX_STRING_LEN = 360;
+
+const recentKeyAt = new Map<string, number>();
 
 function nowIso(): string {
   return new Date().toISOString();
 }
 
-function safeJsonParse<T>(raw: string | null): T | null {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
-}
-
 function readStore(): TelemetryStore {
   try {
-    const parsed = safeJsonParse<{ version?: unknown; events?: unknown }>(
-      localStorage.getItem(STORAGE_KEYS.TELEMETRY)
-    );
+    const parsed = safeJsonParse<{ version?: unknown; events?: unknown }>(loadString(STORAGE_KEYS.TELEMETRY));
     const version = typeof parsed?.version === "number" ? parsed.version : 0;
     const eventsRaw = parsed?.events;
     const events =
@@ -60,7 +58,7 @@ function readStore(): TelemetryStore {
 
 function writeStore(store: TelemetryStore) {
   try {
-    localStorage.setItem(STORAGE_KEYS.TELEMETRY, JSON.stringify(store));
+    saveJson(STORAGE_KEYS.TELEMETRY, store);
   } catch {
     // ignore
   }
@@ -86,13 +84,9 @@ function resolveDevice(): string | undefined {
 }
 
 function readUploadConfig(): { endpoint: string; enabled: boolean } {
-  try {
-    const enabled = localStorage.getItem(STORAGE_KEYS.TELEMETRY_UPLOAD) === "true";
-    const endpoint = localStorage.getItem(STORAGE_KEYS.TELEMETRY_ENDPOINT) ?? "";
-    return { endpoint, enabled };
-  } catch {
-    return { endpoint: "", enabled: false };
-  }
+  const enabled = loadBoolean(STORAGE_KEYS.TELEMETRY_UPLOAD);
+  const endpoint = loadTrimmedString(STORAGE_KEYS.TELEMETRY_ENDPOINT);
+  return { endpoint, enabled };
 }
 
 function isHttpUrl(raw: string): boolean {
@@ -117,6 +111,107 @@ function stripUrlQueryHash(raw: string): string {
   }
 }
 
+function clampText(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text;
+  return `${text.slice(0, Math.max(0, maxLen - 1))}…`;
+}
+
+function shouldRedactKey(key: string): boolean {
+  const k = key.toLowerCase();
+  return (
+    k.includes("token") ||
+    k.includes("secret") ||
+    k.includes("password") ||
+    k.includes("passwd") ||
+    k.includes("authorization") ||
+    k.includes("cookie") ||
+    k.includes("api_key") ||
+    k.includes("apikey")
+  );
+}
+
+function sanitizeTelemetryString(raw: string): string {
+  const s = clampText(raw.trim(), MAX_STRING_LEN);
+  if (!s) return "";
+
+  // 隐私优先：常见 URL / path 字符串去 query/hash，避免 token/追踪参数进入 telemetry。
+  if (/^https?:\/\//i.test(s) || s.startsWith("/")) return stripUrlQueryHash(s);
+
+  // 兜底：对显式包含 URL scheme 的字符串也做一次清洗。
+  if (s.includes("://")) return stripUrlQueryHash(s);
+
+  return s;
+}
+
+function sanitizeTelemetryValue(value: unknown, depth: number, seen: WeakSet<object>): unknown {
+  if (value == null) return value;
+
+  if (typeof value === "string") return sanitizeTelemetryString(value);
+  if (typeof value === "number" || typeof value === "boolean") return value;
+  if (typeof value === "bigint") return sanitizeTelemetryString(String(value));
+  if (typeof value === "symbol" || typeof value === "function") return undefined;
+
+  if (Array.isArray(value)) {
+    if (depth >= MAX_DATA_DEPTH) return "[max_depth]";
+    return value
+      .slice(0, MAX_DATA_ARRAY_LEN)
+      .map((v) => sanitizeTelemetryValue(v, depth + 1, seen))
+      .filter((v) => v !== undefined);
+  }
+
+  if (typeof value === "object") {
+    if (value instanceof Error) {
+      return {
+        name: sanitizeTelemetryString(value.name || "Error"),
+        message: sanitizeTelemetryString(value.message || "")
+      };
+    }
+
+    if (seen.has(value as object)) return "[circular]";
+    if (depth >= MAX_DATA_DEPTH) return "[max_depth]";
+    seen.add(value as object);
+
+    const out: Record<string, unknown> = {};
+    let keys = 0;
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (keys >= MAX_DATA_KEYS) break;
+      if (shouldRedactKey(k)) {
+        out[k] = "[redacted]";
+        keys += 1;
+        continue;
+      }
+
+      const next = sanitizeTelemetryValue(v, depth + 1, seen);
+      if (next === undefined) continue;
+      out[k] = next;
+      keys += 1;
+    }
+    return out;
+  }
+
+  return sanitizeTelemetryString(String(value));
+}
+
+function sanitizeTelemetryData(data?: Record<string, unknown>): Record<string, unknown> | undefined {
+  if (!data) return undefined;
+  const seen = new WeakSet<object>();
+  const sanitized = sanitizeTelemetryValue(data, 0, seen);
+  if (!sanitized || typeof sanitized !== "object" || Array.isArray(sanitized)) return undefined;
+  return Object.keys(sanitized).length > 0 ? (sanitized as Record<string, unknown>) : undefined;
+}
+
+function shouldDropEvent(key: string): boolean {
+  const now = Date.now();
+  const last = recentKeyAt.get(key) ?? 0;
+  if (last > 0 && now - last < DEDUP_MS) return true;
+  recentKeyAt.set(key, now);
+  if (recentKeyAt.size > MAX_RECENT_KEYS) {
+    const first = recentKeyAt.keys().next().value;
+    if (typeof first === "string") recentKeyAt.delete(first);
+  }
+  return false;
+}
+
 export function track(params: { type: string; data?: Record<string, unknown> }) {
   const type = params.type.trim();
   if (!type) return;
@@ -137,8 +232,17 @@ export function track(params: { type: string; data?: Record<string, unknown> }) 
     path,
     lang: resolveLangFromPathname(),
     device: resolveDevice(),
-    data: params.data
+    data: sanitizeTelemetryData(params.data)
   };
+
+  const key = (() => {
+    try {
+      return `${event.type}|${event.path}|${event.lang ?? ""}|${event.device ?? ""}|${JSON.stringify(event.data ?? {})}`;
+    } catch {
+      return `${event.type}|${event.path}|${event.lang ?? ""}|${event.device ?? ""}`;
+    }
+  })();
+  if (key && shouldDropEvent(key)) return;
 
   const store = readStore();
   store.events.push(event);

@@ -67,7 +67,30 @@ import {
 } from "../src/client/utils/monitoring";
 import { STORAGE_KEYS } from "../src/client/constants";
 import { flushTelemetry, track, wireTelemetry } from "../src/client/utils/telemetry";
+import {
+  loadBoolean,
+  loadIds,
+  loadJson,
+  loadString,
+  loadTrimmedString,
+  loadWords,
+  removeKey,
+  saveBoolean,
+  saveIds,
+  saveJson,
+  saveString,
+  saveTrimmedString,
+  saveWords
+} from "../src/client/state/storage";
+import {
+  buildCommandHaystack,
+  filterCommandViews,
+  pickHighlightToken,
+  toCommandViews
+} from "../src/client/features/cmdk/query";
+import { parseViewPresetSummaries } from "../src/client/features/cmdk/view-presets";
 import { findChromePath } from "../scripts/lib/chrome-path";
+import { envNonNegativeInt, envPositiveIntInRange, envRatio01 } from "../scripts/lib/env";
 import "../src/lib/types";
 
 function createMemoryStorage() {
@@ -104,6 +127,90 @@ function patchGlobal<T>(t: test.TestContext, key: string, value: T) {
     else delete g[key];
   });
 }
+
+test("state/storage: 基础读写与容错", (t) => {
+  const storage = createMemoryStorage();
+  patchGlobal(t, "localStorage", storage);
+
+  saveString("acg.test.raw", "  hello  ");
+  assert.equal(loadString("acg.test.raw"), "  hello  ");
+
+  saveTrimmedString("acg.test.trim", "  hi  ");
+  assert.equal(loadTrimmedString("acg.test.trim"), "hi");
+
+  saveBoolean("acg.test.bool", true);
+  assert.equal(loadBoolean("acg.test.bool"), true);
+  saveBoolean("acg.test.bool", false);
+  assert.equal(loadBoolean("acg.test.bool"), false);
+
+  saveJson("acg.test.json", { a: 1, b: "x" });
+  assert.deepEqual(loadJson<{ a: number; b: string }>("acg.test.json"), { a: 1, b: "x" });
+
+  saveIds("acg.test.ids", new Set(["a", "b"]));
+  const ids = loadIds("acg.test.ids");
+  assert.equal(ids.has("a"), true);
+  assert.equal(ids.has("b"), true);
+  assert.equal(ids.has("c"), false);
+
+  saveWords("acg.test.words", new Set([" Foo", "BAR ", "  bar  "]));
+  const words = loadWords("acg.test.words");
+  assert.equal(words.has("foo"), true);
+  assert.equal(words.has("bar"), true);
+
+  removeKey("acg.test.raw");
+  assert.equal(loadString("acg.test.raw"), null);
+});
+
+test("cmdk/query: highlight token 选择", () => {
+  assert.equal(pickHighlightToken(""), "");
+  assert.equal(pickHighlightToken("   "), "");
+  assert.equal(pickHighlightToken("abc"), "abc");
+  assert.equal(pickHighlightToken("  abc   def  "), "abc");
+  assert.equal(pickHighlightToken("a bcdef"), "bcdef");
+});
+
+test("cmdk/query: haystack 构建与过滤", () => {
+  const views = toCommandViews([
+    { id: "a", group: "nav", title: "Hello World", desc: "Foo", keywords: ["bar"], run: () => {} },
+    { id: "b", group: "search", title: "Another", keywords: ["x y"], run: () => {} }
+  ]);
+
+  assert.ok(buildCommandHaystack(views[0]).includes("hello"));
+  assert.equal(filterCommandViews(views, "").length, 2);
+  assert.equal(filterCommandViews(views, "hello").length, 1);
+  assert.equal(filterCommandViews(views, "bar").length, 1);
+  assert.equal(filterCommandViews(views, "x").length, 1);
+});
+
+test("cmdk/view-presets: parseViewPresetSummaries 解析与排序", () => {
+  const long = "a".repeat(80);
+  const parsed = {
+    version: 1,
+    presets: [
+      { version: 1, id: "1", name: "One", createdAt: 2, snapshot: { q: "  hello  " } },
+      {
+        version: 1,
+        id: "2",
+        name: "Two",
+        createdAt: 3,
+        snapshot: { q: "", filters: { timeLens: "6h", sortMode: "pulse" } }
+      },
+      { version: 1, id: "3", name: "Three", createdAt: 1, snapshot: { q: long } },
+      { version: 1, id: "bad", name: "", createdAt: 4, snapshot: { q: "x" } }
+    ]
+  };
+
+  const out = parseViewPresetSummaries(parsed);
+  assert.equal(out.length, 3);
+  assert.equal(out[0].id, "2");
+  assert.equal(out[0].hint, "6h · pulse");
+  assert.equal(out[1].id, "1");
+  assert.equal(out[1].hint, "hello");
+  assert.equal(out[2].id, "3");
+  assert.equal(out[2].hint, `${"a".repeat(72)}…`);
+
+  assert.deepEqual(parseViewPresetSummaries({ version: 2, presets: [] }), []);
+});
 
 function patchEnv(t: test.TestContext, key: string, value: string | undefined) {
   const prev = process.env[key];
@@ -732,6 +839,52 @@ test("telemetry: track/flushTelemetry/sendBeacon/fetch fallback", async (t) => {
   assert.equal(dispatched.length, 0);
 });
 
+test("telemetry: data sanitize + dedup", (t) => {
+  const storage = createMemoryStorage();
+  patchGlobal(t, "localStorage", storage);
+
+  patchGlobal(t, "document", {
+    hidden: false,
+    referrer: "",
+    documentElement: { dataset: { acgDevice: "desktop" } },
+    addEventListener: () => {},
+    dispatchEvent: () => true
+  });
+
+  patchGlobal(t, "window", {
+    location: { pathname: "/zh/" },
+    addEventListener: () => {}
+  });
+
+  const data = {
+    url: "https://example.com/a?token=secret#x",
+    href: "/zh/?q=1#x",
+    token: "secret",
+    nested: {
+      ok: true,
+      secret: "x",
+      arr: ["https://e.com/x?y=1#z", 2, () => {}]
+    }
+  } as any;
+
+  track({ type: "sanitize_test", data });
+  track({ type: "sanitize_test", data });
+  track({ type: "sanitize_test", data: { ...data, ts: 2 } });
+
+  const raw = storage.getItem(STORAGE_KEYS.TELEMETRY);
+  assert.ok(raw);
+  const store = JSON.parse(raw);
+  assert.equal(store.events.length, 2);
+
+  const ev0 = store.events[0];
+  assert.equal(ev0.data.url, "https://example.com/a");
+  assert.equal(ev0.data.href, "/zh/");
+  assert.equal(ev0.data.token, "[redacted]");
+  assert.equal(ev0.data.nested.secret, "[redacted]");
+  assert.equal(ev0.data.nested.arr[0], "https://e.com/x");
+  assert.equal("fn" in (ev0.data.nested.arr[2] ?? {}), false);
+});
+
 test("wireTelemetry: 注册监听 + 记录 page_view", async (t) => {
   const storage = createMemoryStorage();
   patchGlobal(t, "localStorage", storage);
@@ -1275,6 +1428,49 @@ test("SOURCE_CONFIGS: id 唯一且分类合法", () => {
     ids.add(s.id);
     assert.equal(isCategory(s.category), true);
     assert.ok(s.url.startsWith("http"));
+    if (s.homepage) assert.ok(s.homepage.startsWith("http"));
+    if (s.include) {
+      const inc = s.include;
+      assert.doesNotThrow(() => new RegExp(inc.pattern, inc.flags), `invalid include regex: ${s.id}`);
+    }
     assert.ok(typeof categoryLabel("zh", s.category) === "string");
+  }
+});
+
+test("scripts/lib/env: 数值解析与边界", () => {
+  const snapshot = (key: string): string | undefined => process.env[key];
+  const restore = (key: string, value: string | undefined) => {
+    if (value == null) delete process.env[key];
+    else process.env[key] = value;
+  };
+
+  const keys = ["TEST_ENV_INT", "TEST_ENV_POS", "TEST_ENV_RATIO"];
+  const prev = Object.fromEntries(keys.map((k) => [k, snapshot(k)]));
+
+  try {
+    delete process.env.TEST_ENV_INT;
+    assert.equal(envNonNegativeInt("TEST_ENV_INT", 7), 7);
+    process.env.TEST_ENV_INT = "-1";
+    assert.equal(envNonNegativeInt("TEST_ENV_INT", 7), 7);
+    process.env.TEST_ENV_INT = "3.9";
+    assert.equal(envNonNegativeInt("TEST_ENV_INT", 7), 3);
+
+    delete process.env.TEST_ENV_POS;
+    assert.equal(envPositiveIntInRange("TEST_ENV_POS", 3, { min: 1, max: 8 }), 3);
+    process.env.TEST_ENV_POS = "0";
+    assert.equal(envPositiveIntInRange("TEST_ENV_POS", 3, { min: 1, max: 8 }), 3);
+    process.env.TEST_ENV_POS = "99";
+    assert.equal(envPositiveIntInRange("TEST_ENV_POS", 3, { min: 1, max: 8 }), 8);
+
+    delete process.env.TEST_ENV_RATIO;
+    assert.equal(envRatio01("TEST_ENV_RATIO", 0.15), 0.15);
+    process.env.TEST_ENV_RATIO = "0.2";
+    assert.equal(envRatio01("TEST_ENV_RATIO", 0.15), 0.2);
+    process.env.TEST_ENV_RATIO = "1";
+    assert.equal(envRatio01("TEST_ENV_RATIO", 0.15), 0.15);
+  } finally {
+    for (const key of keys) {
+      restore(key, (prev as Record<string, string | undefined>)[key]);
+    }
   }
 });

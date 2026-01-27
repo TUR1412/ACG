@@ -1,5 +1,13 @@
 // Telemetry 偏好：允许用户显式开启上报并配置 endpoint（默认本地记录、不上传）。
 import { STORAGE_KEYS } from "../constants";
+import {
+  loadBoolean,
+  loadString,
+  loadTrimmedString,
+  removeKey,
+  saveBoolean,
+  saveTrimmedString
+} from "../state/storage";
 import { isJapanese } from "../utils/lang";
 import { track } from "../utils/telemetry";
 
@@ -14,35 +22,19 @@ function emitToast(params: { title: string; desc?: string; variant?: ToastVarian
 }
 
 function readBool(key: string): boolean {
-  try {
-    return localStorage.getItem(key) === "true";
-  } catch {
-    return false;
-  }
+  return loadBoolean(key);
 }
 
 function writeBool(key: string, value: boolean) {
-  try {
-    localStorage.setItem(key, value ? "true" : "false");
-  } catch {
-    // ignore
-  }
+  saveBoolean(key, value);
 }
 
 function readText(key: string): string {
-  try {
-    return (localStorage.getItem(key) ?? "").trim();
-  } catch {
-    return "";
-  }
+  return loadTrimmedString(key);
 }
 
 function writeText(key: string, value: string) {
-  try {
-    localStorage.setItem(key, value.trim());
-  } catch {
-    // ignore
-  }
+  saveTrimmedString(key, value);
 }
 
 function isHttpUrl(raw: string): boolean {
@@ -55,11 +47,7 @@ function isHttpUrl(raw: string): boolean {
 }
 
 function readTelemetryRaw(): string {
-  try {
-    return localStorage.getItem(STORAGE_KEYS.TELEMETRY) ?? "";
-  } catch {
-    return "";
-  }
+  return loadString(STORAGE_KEYS.TELEMETRY) ?? "";
 }
 
 function getTelemetryCount(raw: string): number {
@@ -230,7 +218,7 @@ export function wireTelemetryPrefs() {
 
   clearBtn?.addEventListener("click", () => {
     try {
-      localStorage.removeItem(STORAGE_KEYS.TELEMETRY);
+      removeKey(STORAGE_KEYS.TELEMETRY);
     } catch {
       // ignore
     }

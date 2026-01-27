@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from "../constants";
+import { loadString, safeJsonParse } from "../state/storage";
 import { copyToClipboard } from "../utils/clipboard";
 
 type RawEvent = Record<string, unknown>;
@@ -23,21 +24,8 @@ function emitToast(params: { title: string; desc?: string; variant?: ToastVarian
   }
 }
 
-function safeJsonParse<T>(raw: string): T | null {
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
-}
-
 function readEvents(): { raw: string; events: ViewEvent[] } {
-  let raw = "";
-  try {
-    raw = localStorage.getItem(STORAGE_KEYS.TELEMETRY) ?? "";
-  } catch {
-    raw = "";
-  }
+  const raw = loadString(STORAGE_KEYS.TELEMETRY) ?? "";
 
   if (!raw) return { raw, events: [] };
 

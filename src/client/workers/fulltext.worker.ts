@@ -1,10 +1,6 @@
-import {
-  renderMarkdownToHtmlBlocks,
-  stripInternalPlaceholdersFromHtml,
-  translateViaGtx
-} from "../features/fulltext";
-
-type FullTextLang = "zh" | "ja";
+import { renderMarkdownToHtmlBlocks, stripInternalPlaceholdersFromHtml } from "../features/fulltext/markdown";
+import { translateViaGtx } from "../features/fulltext/translate";
+import type { FullTextLang } from "../features/fulltext/types";
 
 type FullTextWorkerRenderMessage = {
   type: "render";
