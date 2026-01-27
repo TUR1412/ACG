@@ -6,7 +6,7 @@
 
 ## 模块概述
 
-- 职责：拉取来源（RSS/HTML）→ 去重排序 → 补图/预览增强 → 翻译字段（限量）→ 生成搜索包/状态趋势 → 写入 `src/data/generated` 与 `public/data`
+- 职责：拉取来源（RSS/HTML）→ 去重排序 → 补图/预览增强 → 翻译字段（限量；可用 `ACG_TRANSLATE_MAX_POSTS=0` 或 `ACG_TRANSLATE_PROVIDER=off` 关闭）→ 生成搜索包/状态趋势 → 写入 `src/data/generated` 与 `public/data`
 - 状态：✅稳定
 - 最后更新：2026-01-27
 

@@ -20,8 +20,8 @@
 
 ```yaml
 总任务: 22
-已完成: 11
-完成率: 50%
+已完成: 12
+完成率: 54%
 ```
 
 ---
@@ -86,7 +86,7 @@
   - 目标: 减少分散的 parseNonNegativeInt；避免“不同地方默认值不一致”
   - 验证: 单测覆盖边界值；CI/Actions 环境下行为一致
 
-- [ ] 3.3 翻译能力做 Provider 抽象（默认保持 `gtx`，支持显式关闭与未来扩展）
+- [√] 3.3 翻译能力做 Provider 抽象（默认保持 `gtx`，支持显式关闭与未来扩展）
 
   - 文件: `scripts/lib/translate.ts`（及新增 `scripts/lib/translate/*`）
   - 验证: `ACG_TRANSLATE_MAX_POSTS=0` 时不触发；失败返回原文且有 debug 日志
@@ -160,4 +160,5 @@
 | 2.5  | completed | telemetry 增加 data 清洗（去 query/hash + 敏感键 redaction）与去重/节流，减少隐私与噪音风险                                                                  |
 | 3.2  | completed | 新增 `scripts/lib/env.ts` 并重构 `scripts/sync.ts` 统一读取 env                                                                                              |
 | 3.1  | completed | `scripts/sync.ts` 拆分为 `scripts/pipeline/*`（sources/posts/covers/translate/status-history），并通过 `lint/check/test:coverage/build/budget/sync:dry` 验证 |
+| 3.3  | completed | `scripts/lib/translate` 增加 provider 抽象（默认 `gtx`，支持 `ACG_TRANSLATE_PROVIDER=off` 显式关闭），并新增单测覆盖                                         |
 | 3.5  | completed | 增强 `SOURCE_CONFIGS` 校验（homepage/http + include 正则可编译）                                                                                             |

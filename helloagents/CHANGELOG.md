@@ -23,6 +23,7 @@
 - Client：命令面板 `cmdk` 拆分为 `src/client/features/cmdk/*`（薄入口保留），提取 query/presets 纯函数模块并补齐单测，保持覆盖率门禁可持续。
 - Client：Telemetry 事件 data 增加隐私清洗（URL 去 query/hash + 敏感键 redaction）并加入去重/节流，降低日志噪音与潜在泄露风险。
 - Pipeline：同步脚本 `scripts/sync.ts` 拆分为 `scripts/pipeline/*` 的阶段化模块（sources/posts/covers/translate/status-history），降低单文件复杂度并提升可复用性与可维护性。
+- Pipeline：翻译能力增加 Provider 抽象：默认 `gtx`，可通过 `ACG_TRANSLATE_PROVIDER=off` 显式关闭（便于 CI/离线环境稳定运行）。
 
 ### 修复
 

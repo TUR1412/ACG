@@ -1205,6 +1205,13 @@ test("scripts/lib/html: cover/preview 提取与基础清洗", () => {
 });
 
 test("translateTextCached: cache 命中不会触发 fetch", async (t) => {
+  const prevProvider = process.env.ACG_TRANSLATE_PROVIDER;
+  process.env.ACG_TRANSLATE_PROVIDER = "gtx";
+  t.after(() => {
+    if (prevProvider == null) delete process.env.ACG_TRANSLATE_PROVIDER;
+    else process.env.ACG_TRANSLATE_PROVIDER = prevProvider;
+  });
+
   const cache: Record<string, string> = {};
   const key = sha1("zh::hello");
   cache[key] = "你好";
@@ -1226,7 +1233,42 @@ test("translateTextCached: cache 命中不会触发 fetch", async (t) => {
   assert.equal(out, "你好");
 });
 
+test("translateTextCached: provider=off 不触发 fetch 并返回原文", async (t) => {
+  const prevProvider = process.env.ACG_TRANSLATE_PROVIDER;
+  process.env.ACG_TRANSLATE_PROVIDER = "off";
+  t.after(() => {
+    if (prevProvider == null) delete process.env.ACG_TRANSLATE_PROVIDER;
+    else process.env.ACG_TRANSLATE_PROVIDER = prevProvider;
+  });
+
+  const cache: Record<string, string> = {};
+
+  patchGlobal(t, "fetch", async () => {
+    throw new Error("fetch should not be called");
+  });
+
+  const out = await translateTextCached({
+    text: "hello",
+    target: "zh",
+    cache,
+    cachePath: join(tmpdir(), "acg-translate-cache.json"),
+    timeoutMs: 8000,
+    verbose: false,
+    persistCache: false
+  });
+
+  assert.equal(out, "hello");
+  assert.equal(Object.keys(cache).length, 0);
+});
+
 test("translateTextCached: fetch 成功会写入 cache（可选落盘）", async (t) => {
+  const prevProvider = process.env.ACG_TRANSLATE_PROVIDER;
+  process.env.ACG_TRANSLATE_PROVIDER = "gtx";
+  t.after(() => {
+    if (prevProvider == null) delete process.env.ACG_TRANSLATE_PROVIDER;
+    else process.env.ACG_TRANSLATE_PROVIDER = prevProvider;
+  });
+
   const dir = join(tmpdir(), `acg-translate-${Date.now()}-${Math.random().toString(16).slice(2)}`);
   const cachePath = join(dir, "translate.json");
   const cache: Record<string, string> = {};

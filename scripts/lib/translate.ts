@@ -1,14 +1,9 @@
 import { readJsonFile, sha1, writeJsonFile } from "./http-cache";
 import { createLogger } from "./logger";
+import { translateTextGtx } from "./translate/providers/gtx";
+import type { TranslateCache, TranslateProvider, TranslateTarget } from "./translate/types";
 
-export type TranslateTarget = "zh" | "ja";
-
-export type TranslateCache = Record<string, string>;
-
-function targetToGoogleTl(target: TranslateTarget): string {
-  // Google gtx endpoint uses BCP-47-ish tags.
-  return target === "zh" ? "zh-CN" : "ja";
-}
+export type { TranslateCache, TranslateProvider, TranslateTarget } from "./translate/types";
 
 export async function readTranslateCache(filePath: string): Promise<TranslateCache> {
   return readJsonFile<TranslateCache>(filePath, {});
@@ -22,19 +17,15 @@ function cacheKey(params: { text: string; target: TranslateTarget }): string {
   return sha1(`${params.target}::${params.text}`);
 }
 
-function parseGoogleGtxResponse(json: unknown): string | null {
-  // Expected: [[["你好","hello",...], ...], null, "en", ...]
-  if (!Array.isArray(json)) return null;
-  const top0 = json[0];
-  if (!Array.isArray(top0)) return null;
-  const parts: string[] = [];
-  for (const seg of top0) {
-    if (!Array.isArray(seg)) continue;
-    const out = seg[0];
-    if (typeof out === "string" && out) parts.push(out);
-  }
-  const joined = parts.join("");
-  return joined.trim() ? joined : null;
+function readProviderEnv(): TranslateProvider {
+  const raw = (process.env.ACG_TRANSLATE_PROVIDER ?? "").trim().toLowerCase();
+  if (!raw) return "gtx";
+  if (raw === "gtx") return "gtx";
+
+  const offValues = new Set(["off", "none", "disabled", "false", "0", "no"]);
+  if (offValues.has(raw)) return "off";
+
+  return "gtx";
 }
 
 export async function translateTextCached(params: {
@@ -51,38 +42,23 @@ export async function translateTextCached(params: {
   const input = text.trim();
   if (!input) return text;
 
+  const provider = readProviderEnv();
+  if (provider === "off") {
+    log.debug(`[TRANSLATE:SKIP] provider=off target=${target}`);
+    return text;
+  }
+
   const key = cacheKey({ text: input, target });
   const cached = cache[key];
   if (typeof cached === "string" && cached.trim()) return cached;
 
-  const tl = targetToGoogleTl(target);
-  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(
-    tl
-  )}&dt=t&q=${encodeURIComponent(input)}`;
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { accept: "application/json,text/plain,*/*" }
-    });
-    if (!res.ok) {
-      log.debug(`[TRANSLATE:ERR] ${target} HTTP ${res.status}`);
-      return text;
-    }
-
-    const json = (await res.json()) as unknown;
-    const out = parseGoogleGtxResponse(json);
-    if (!out) return text;
-    cache[key] = out;
-    if (persistCache) await writeTranslateCache(cachePath, cache);
-    return out;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    log.debug(`[TRANSLATE:ERR] ${target} ${message}`);
+  const res = await translateTextGtx({ text: input, target, timeoutMs });
+  if (!res.ok) {
+    log.debug(`[TRANSLATE:ERR] provider=gtx target=${target} ${res.error}`);
     return text;
-  } finally {
-    clearTimeout(timer);
   }
+
+  cache[key] = res.text;
+  if (persistCache) await writeTranslateCache(cachePath, cache);
+  return res.text;
 }
