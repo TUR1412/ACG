@@ -24,10 +24,12 @@
 - Client：Telemetry 事件 data 增加隐私清洗（URL 去 query/hash + 敏感键 redaction）并加入去重/节流，降低日志噪音与潜在泄露风险。
 - Pipeline：同步脚本 `scripts/sync.ts` 拆分为 `scripts/pipeline/*` 的阶段化模块（sources/posts/covers/translate/status-history），降低单文件复杂度并提升可复用性与可维护性。
 - Pipeline：翻译能力增加 Provider 抽象：默认 `gtx`，可通过 `ACG_TRANSLATE_PROVIDER=off` 显式关闭（便于 CI/离线环境稳定运行）。
+- Pipeline：封面补全与翻译阶段的缓存写盘改为“统一落盘”，避免循环内反复写入大 JSON，降低 IO 与同步耗时波动。
 
 ### 修复
 
 - generated-data：读取生成数据时改为按调用时 `process.cwd()` 动态解析文件路径，避免在测试/脚本中临时切换 cwd 导致读到旧数据或读取失败。
+- Validate：生成数据校验补齐关键不变量：`posts.url` 不允许重复，且 `posts.id` 必须与 `sha1(url)` 一致，提前阻断数据异常与去重失效。
 - CI：`CI` workflow 在执行 `npm run validate` 前先运行一次最小化的 `npm run sync`（禁用翻译/封面相关耗时步骤），避免干净 checkout 下因缺少生成文件而失败。
 - Tests：修复 `cacheFilePath` 单测对 Windows 路径分隔符的硬编码断言，使 GitHub Actions（ubuntu-latest）上的 `npm test` 不再因平台差异失败。
 - UI：修复设备类型判定在桌面环境下可能因 `screen` 尺寸偏小（高缩放/Headless）误判为 `phone`，导致桌面端错误启用移动端样式（如底部导航）。

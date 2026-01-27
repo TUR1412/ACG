@@ -20,8 +20,8 @@
 
 ```yaml
 总任务: 22
-已完成: 12
-完成率: 54%
+已完成: 15
+完成率: 68%
 ```
 
 ---
@@ -70,7 +70,7 @@
   - 文件: `src/client/utils/telemetry.ts`、`src/client/utils/monitoring.ts`、`src/pages/*/telemetry.astro`
   - 验证: 默认本地；开启上报后失败不影响页面；事件不包含 query/hash/token
 
-- [ ] 2.6 补齐客户端相关单测并确保覆盖率门禁可持续
+- [√] 2.6 补齐客户端相关单测并确保覆盖率门禁可持续
   - 文件: `tests/index.test.ts`（必要时拆分到 `tests/*`）
   - 验证: `npm run test:coverage` 继续通过（阈值不降低）
 
@@ -91,7 +91,7 @@
   - 文件: `scripts/lib/translate.ts`（及新增 `scripts/lib/translate/*`）
   - 验证: `ACG_TRANSLATE_MAX_POSTS=0` 时不触发；失败返回原文且有 debug 日志
 
-- [ ] 3.4 抓取缓存与补图缓存策略再梳理（降低 IO 与重复请求，增强 TTL/上限语义）
+- [√] 3.4 抓取缓存与补图缓存策略再梳理（降低 IO 与重复请求，增强 TTL/上限语义）
 
   - 文件: `scripts/lib/http-cache.ts`
   - 验证: 触发 304/重试/退避/TTL 的行为可测且在 status 中可观测
@@ -101,7 +101,7 @@
   - 文件: `src/lib/source-config.ts`、`scripts/sources/index.ts`、`tests/index.test.ts`
   - 验证: 错误配置会在 CI 直接失败；include 失效会降级并给出可诊断日志
 
-- [ ] 3.6 `npm run validate` 增强：补齐生成数据不变量校验（结构/排序/去重/字段约束）
+- [√] 3.6 `npm run validate` 增强：补齐生成数据不变量校验（结构/排序/去重/字段约束）
   - 文件: `scripts/validate-generated-data.ts`
   - 验证: 在“干净 checkout + 最小 sync”场景下稳定通过
 
@@ -158,7 +158,10 @@
 | 2.3  | completed | 已将 `cmdk` 拆分为 `src/client/features/cmdk/*`（薄入口保留），并补齐 query/presets 单测确保覆盖率门禁可持续                                                 |
 | 2.4  | completed | `src/client` 业务代码不再直接访问 `localStorage`，统一通过 `state/storage.ts` 封装                                                                           |
 | 2.5  | completed | telemetry 增加 data 清洗（去 query/hash + 敏感键 redaction）与去重/节流，减少隐私与噪音风险                                                                  |
+| 2.6  | completed | 补齐客户端/脚本关键路径单测并维持覆盖率门禁（`test:coverage` 阈值不降低）                                                                                    |
 | 3.2  | completed | 新增 `scripts/lib/env.ts` 并重构 `scripts/sync.ts` 统一读取 env                                                                                              |
 | 3.1  | completed | `scripts/sync.ts` 拆分为 `scripts/pipeline/*`（sources/posts/covers/translate/status-history），并通过 `lint/check/test:coverage/build/budget/sync:dry` 验证 |
 | 3.3  | completed | `scripts/lib/translate` 增加 provider 抽象（默认 `gtx`，支持 `ACG_TRANSLATE_PROVIDER=off` 显式关闭），并新增单测覆盖                                         |
+| 3.4  | completed | cover/translate 阶段的 cache 写盘改为“统一落盘”，减少重复 IO 与同步耗时波动                                                                                  |
 | 3.5  | completed | 增强 `SOURCE_CONFIGS` 校验（homepage/http + include 正则可编译）                                                                                             |
+| 3.6  | completed | `validate-generated-data` 增加 URL 去重与 `id=sha1(url)` 一致性校验，提前阻断数据异常                                                                        |

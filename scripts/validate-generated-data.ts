@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { sha1 } from "./lib/http-cache";
 import { createLogger } from "./lib/logger";
 import { SOURCE_CONFIGS } from "../src/lib/source-config";
 import { isCategory } from "../src/lib/categories";
@@ -42,6 +43,7 @@ function validatePosts(json: unknown, errors: ValidationError[]) {
 
   const allowedSources = new Set(SOURCE_CONFIGS.map((s) => s.id));
   const ids = new Set<string>();
+  const urls = new Set<string>();
   let lastTime = Infinity;
 
   for (let i = 0; i < json.length; i += 1) {
@@ -58,8 +60,19 @@ function validatePosts(json: unknown, errors: ValidationError[]) {
     else ids.add(id);
 
     if (!isNonEmptyString(p.title)) pushError(errors, `${base}.title`, "title 缺失或为空");
-    if (!isNonEmptyString(p.url) || !isHttpUrl(p.url))
+    if (!isNonEmptyString(p.url) || !isHttpUrl(p.url)) {
       pushError(errors, `${base}.url`, "url 缺失或不是 http(s)");
+    } else {
+      const urlKey = p.url.toLowerCase();
+      if (urls.has(urlKey)) pushError(errors, `${base}.url`, `url 重复: ${p.url}`);
+      else urls.add(urlKey);
+
+      if (isNonEmptyString(id)) {
+        const expectedId = sha1(p.url);
+        if (id !== expectedId)
+          pushError(errors, `${base}.id`, `id 与 sha1(url) 不一致: ${id} vs ${expectedId}`);
+      }
+    }
 
     if (!isNonEmptyString(p.publishedAt)) pushError(errors, `${base}.publishedAt`, "publishedAt 缺失或为空");
     else {

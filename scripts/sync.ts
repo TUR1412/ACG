@@ -7,7 +7,7 @@ import { createLogger } from "./lib/logger";
 import { cacheFilePath, readJsonFile, writeJsonFile, type HttpCache } from "./lib/http-cache";
 import type { Post, SourceStatus, StatusHistoryEntry, StatusHistoryV1, SyncStatus } from "../src/lib/types";
 import { buildSearchPack, buildSearchPackV2 } from "../src/lib/search/pack";
-import { readTranslateCache } from "./lib/translate";
+import { readTranslateCache, writeTranslateCache } from "./lib/translate";
 import { envNonNegativeInt, envPositiveIntInRange } from "./lib/env";
 import { mapWithConcurrency } from "./pipeline/concurrency";
 import { groupBySource, dedupeAndSort, filterByDays } from "./pipeline/posts";
@@ -152,8 +152,6 @@ async function main() {
     );
   }
 
-  if (!args.dryRun) await writeJsonFile(cachePath, cache);
-
   const pruned = filterByDays(dedupeAndSort(allPosts), args.days).slice(0, args.limit);
 
   // 基于最终产物补齐“可见数量/最新发布时间”（用于状态页判断 stale）
@@ -176,7 +174,7 @@ async function main() {
       cache,
       cachePath,
       verbose: args.verbose,
-      persistCache: true
+      persistCache: false
     });
     log.info(`[COVER] enriched=${enriched}/${attempted} max=${maxTotal}`);
 
@@ -189,11 +187,15 @@ async function main() {
       cache: translateCache,
       cachePath: translateCachePath,
       verbose: args.verbose,
-      persistCache: true
+      persistCache: false
     });
     log.info(
       `[TRANSLATE] applied=${translateRes.translated}/${translateRes.attempted} maxPosts=${process.env.ACG_TRANSLATE_MAX_POSTS ?? "220"}`
     );
+
+    // 统一落盘：避免在 enrich/translate 的循环中反复写入大 JSON（减少 IO 和同步耗时波动）。
+    await writeJsonFile(cachePath, cache);
+    await writeTranslateCache(translateCachePath, translateCache);
   } else {
     log.info(`[COVER] skipped (dry-run)`);
   }
