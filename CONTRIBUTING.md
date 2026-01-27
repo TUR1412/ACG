@@ -18,16 +18,21 @@
 
 ### 环境要求 / 必要環境
 
-- Node.js `>= 20`
+- Node.js `>= 20`（建议 `nvm use`：仓库提供 `.nvmrc` / 推奨: `nvm use`、`.nvmrc` あり）
 - npm（随 Node 安装即可 / Node 付属でOK）
 
 ### 常用命令 / よく使うコマンド
 
-```bash
+````bash
 npm ci
 
 # 开发预览 / dev
 npm run dev
+
+# 数据同步（抓取/清洗/生成） / データ同期（取得/クリーニング/生成）
+npm run sync
+npm run sync:dry
+npm run validate
 
 # 代码规范 / lint
 npm run lint
@@ -58,11 +63,28 @@ npm run test:coverage
 # - `pre-push`：push 前に `npm run lint` + `npm run check` + `npm run test:coverage`
 #
 # 如需临时跳过：`HUSKY=0 git commit ...` / `HUSKY=0 git push ...`
+
+#### 可选：最小同步（排障/CI 口径） / 任意: ミニマム同期（切り分け/CI 口径）
+
+- Bash:
+
+  ```bash
+  ACG_COVER_ENRICH_MAX=0 ACG_COVER_CACHE_MAX=0 ACG_TRANSLATE_PROVIDER=off ACG_TRANSLATE_MAX_POSTS=0 npm run sync
+````
+
+- PowerShell:
+
+  ```powershell
+  $env:ACG_COVER_ENRICH_MAX='0'; $env:ACG_COVER_CACHE_MAX='0'; $env:ACG_TRANSLATE_PROVIDER='off'; $env:ACG_TRANSLATE_MAX_POSTS='0'; npm run sync
+  ```
+
 # 一時的に無効化したい場合：`HUSKY=0 git commit ...` / `HUSKY=0 git push ...`
 
 # 体积预算 / perf budget
+
 npm run budget
-```
+
+````
 
 ---
 
@@ -79,7 +101,7 @@ npm run sync:dry
 
 # 实际同步（会生成 data 输出）/ sync
 npm run sync
-```
+````
 
 ---
 

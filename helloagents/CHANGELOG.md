@@ -11,6 +11,9 @@
 - Security：新增 `/.well-known/security.txt`（指向 GitHub Security Policy），便于安全问题使用标准渠道发现与上报。
 - Meta：新增 `humans.txt`（项目/技术栈/仓库信息），提供更标准的站点元信息入口。
 - Search：新增 `opensearch.xml` 并在页面 head 注入 `rel="search"`，支持浏览器将站内搜索添加为搜索引擎（通过 `?q=` 预填充输入框）。
+- Tooling：新增 `.nvmrc` 并让 GitHub Actions 统一读取 `node-version-file`，降低 Node 版本漂移风险。
+- CI/Security：新增 `Dependency Audit` workflow（不阻塞 PR，定期输出 `npm audit --omit=dev` 结果与 artifact），便于持续跟踪供应链风险。
+- Docs：新增 `docs/release.md`（发布步骤最小闭环），并补齐 README/贡献指南里的“最小同步”排障口径。
 
 - UI：新增 Accent（强调色）系统（`neon/sakura/ocean/amber`），并持久化到本机（localStorage），全站视觉联动。
 - UI：新增 View Presets（视图预设）：保存/应用/重命名/删除/复制可复现视图链接（URL 自动套用快照后清理参数）。

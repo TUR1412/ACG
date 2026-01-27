@@ -90,7 +90,15 @@ SourceStatus：
 ### 同步管线参数（Env）
 
 - `ACG_SOURCE_CONCURRENCY`：来源抓取并发数（默认 `3`，范围 `1..8`）。
-  - 并发开启时：抓取阶段仅更新内存中的 `.cache/http.json`（etag/last-modified/lastOkAt 等），阶段结束统一落盘，避免并发写入竞态并减少 IO。
+  - 并发开启时：抓取阶段仅更新内存中的 http cache（etag/last-modified/lastOkAt 等），整轮同步结束统一落盘，避免并发写入竞态并减少 IO。
+- `ACG_TRANSLATE_PROVIDER`：翻译 Provider（默认 `gtx`）。
+  - 关闭翻译：`ACG_TRANSLATE_PROVIDER=off`
+- `ACG_TRANSLATE_MAX_POSTS`：每轮最多翻译的条目数（默认 `220`）。
+  - 关闭翻译：`ACG_TRANSLATE_MAX_POSTS=0`
+- `ACG_COVER_ENRICH_MAX`：文章页补图/补预览的总上限（默认值见 `scripts/pipeline/covers.ts`）。
+  - 关闭补全：`ACG_COVER_ENRICH_MAX=0`
+- `ACG_COVER_CACHE_MAX`：封面本地缓存上限（默认值见 `scripts/pipeline/covers.ts`）。
+  - 关闭缓存：`ACG_COVER_CACHE_MAX=0`
 
 ## StatusHistory（状态趋势）
 

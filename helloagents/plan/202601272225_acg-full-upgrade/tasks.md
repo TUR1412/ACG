@@ -20,8 +20,8 @@
 
 ```yaml
 总任务: 22
-已完成: 15
-完成率: 68%
+已完成: 22
+完成率: 100%
 ```
 
 ---
@@ -107,38 +107,38 @@
 
 ### 4. CI/CD 与运行保障（P1）
 
-- [ ] 4.1 CI/Actions 的 Node 版本策略对齐（以 `package.json#engines.node` 为准）
+- [√] 4.1 CI/Actions 的 Node 版本策略对齐（以 `package.json#engines.node` 为准）
 
   - 文件: `.github/workflows/*.yml`
   - 验证: CI 与定时部署使用同一 Node 主版本；本地开发指引同步更新
 
-- [ ] 4.2 调整 CI 的同步校验策略（确保“最小主链路验证”稳定且可重复）
+- [√] 4.2 调整 CI 的同步校验策略（确保“最小主链路验证”稳定且可重复）
 
   - 文件: `.github/workflows/ci.yml`
   - 验证: 外部依赖（翻译/封面补全）默认关闭仍可覆盖主链路；失败可定位
 
-- [ ] 4.3 依赖与供应链检查策略明确化（不以“噪音”阻塞 PR，但可持续发现风险）
+- [√] 4.3 依赖与供应链检查策略明确化（不以“噪音”阻塞 PR，但可持续发现风险）
 
   - 文件: `.github/dependabot.yml`（必要时新增 workflow）
   - 验证: 依赖更新节奏清晰；高风险漏洞可被发现并跟踪
 
-- [ ] 4.4 Lighthouse 与 Perf Budget 口径整理（避免口径漂移导致误报）
+- [√] 4.4 Lighthouse 与 Perf Budget 口径整理（避免口径漂移导致误报）
   - 文件: `.lighthouserc*.json`、`scripts/perf-budget.ts`
   - 验证: provided/simulate 两套口径对“稳定性/回归”各自有效
 
 ### 5. 文档与发布（P2）
 
-- [ ] 5.1 文档同步：根据重构后的真实结构更新 `helloagents/wiki/*`
+- [√] 5.1 文档同步：根据重构后的真实结构更新 `helloagents/wiki/*`
 
   - 文件: `helloagents/wiki/arch.md`、`helloagents/wiki/data.md`、`helloagents/wiki/modules/*`
   - 验证: 文档与代码一致（以代码为准）；新增/移动模块有明确说明
 
-- [ ] 5.2 更新对外文档（README/CONTRIBUTING）：新增来源/本地开发/排障入口更清晰
+- [√] 5.2 更新对外文档（README/CONTRIBUTING）：新增来源/本地开发/排障入口更清晰
 
   - 文件: `README.md`、`CONTRIBUTING.md`
   - 验证: 新贡献者可按文档在 15 分钟内跑通 `dev + sync + build + test`
 
-- [ ] 5.3 发布流程落地：版本号、changelog、tag/release 的最小闭环
+- [√] 5.3 发布流程落地：版本号、changelog、tag/release 的最小闭环
   - 文件: `helloagents/CHANGELOG.md`（必要时新增 `docs/release.md`）
   - 验证: 0.6.x 的发布步骤可重复；变更记录可追溯（对应方案包/决策）
 
@@ -165,3 +165,10 @@
 | 3.4  | completed | cover/translate 阶段的 cache 写盘改为“统一落盘”，减少重复 IO 与同步耗时波动                                                                                  |
 | 3.5  | completed | 增强 `SOURCE_CONFIGS` 校验（homepage/http + include 正则可编译）                                                                                             |
 | 3.6  | completed | `validate-generated-data` 增加 URL 去重与 `id=sha1(url)` 一致性校验，提前阻断数据异常                                                                        |
+| 4.1  | completed | 新增 `.nvmrc` 并让 workflows 使用 `node-version-file` 对齐 Node 主版本；README/贡献指南同步更新                                                              |
+| 4.2  | completed | CI 内默认关闭翻译与封面耗时步骤（保留主链路验证），确保可重复与更稳定的门禁                                                                                  |
+| 4.3  | completed | 新增 `Dependency Audit` workflow（不阻塞 PR，定期输出 prod deps 的 `npm audit` 摘要与 artifact）                                                             |
+| 4.4  | completed | LHCI provided/simulate 双口径与 perf-budget 指标拆分已固化，减少跑分漂移导致的误报                                                                           |
+| 5.1  | completed | `helloagents/wiki/*` 同步更新：pipeline/caching/env/release 等文档与代码保持一致                                                                             |
+| 5.2  | completed | README/贡献指南补齐 `sync/validate` 与“最小同步”排障口径（含 Bash/PowerShell 示例）                                                                          |
+| 5.3  | completed | 新增 `docs/release.md`，形成版本号/变更记录/tag/release 的最小闭环                                                                                           |

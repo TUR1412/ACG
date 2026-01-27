@@ -204,7 +204,8 @@ npm ci
 npm run dev
 ```
 
-- Node.js：`>= 20`
+- Node.js：`>= 20`（建议 `nvm use`：仓库提供 `.nvmrc`）<br/>
+  Node.js：`>= 20`（推奨: `nvm use`、`.nvmrc` あり）
 
 ---
 
@@ -215,6 +216,25 @@ npm run sync
 npm run validate
 npm run budget
 ```
+
+#### 可选：最小同步（更稳定/更省时） / 任意: ミニマム同期（より安定/省時間）
+
+- 只跑主链路（关闭翻译与封面相关耗时步骤），适合 CI 或本地排障。<br/>
+  翻訳とカバー関連の重い処理を無効化して、CI / ローカル切り分け向けに主経路だけを検証。
+
+  - Bash:
+
+    ```bash
+    ACG_COVER_ENRICH_MAX=0 ACG_COVER_CACHE_MAX=0 ACG_TRANSLATE_PROVIDER=off ACG_TRANSLATE_MAX_POSTS=0 npm run sync
+    ```
+
+  - PowerShell:
+
+    ```powershell
+    $env:ACG_COVER_ENRICH_MAX='0'; $env:ACG_COVER_CACHE_MAX='0'; $env:ACG_TRANSLATE_PROVIDER='off'; $env:ACG_TRANSLATE_MAX_POSTS='0'; npm run sync
+    ```
+
+- 只做 dry-run（不写盘）：`npm run sync:dry`
 
 - 同步摘要（CI 可观测性）：`npm run summary`（GitHub Actions 中写入 Step Summary；本地执行则输出到 stdout）<br/>
   同期サマリー（CI 可観測性）：`npm run summary`（GitHub Actions では Step Summary に出力、ローカルは stdout）

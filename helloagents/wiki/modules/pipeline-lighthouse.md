@@ -8,7 +8,7 @@
 
 - 职责：Build（base=/）→ Preview（本地 HTTP）→ LHCI autorun（collect/assert/upload）→ Job Summary 摘要输出 → 上传报告 Artifact
 - 状态：✅稳定
-- 最后更新：2026-01-13
+- 最后更新：2026-01-27
 
 ## 规范
 
@@ -17,6 +17,7 @@
 场景：不同机器/不同时间运行审计时，至少要保证阈值与采集 URL 的一致性，避免“跑分漂移”导致的误报。
 
 - 预期结果：阈值与采集 URL 由 `.lighthouserc.json` 统一管理；workflow 固定 Node 版本与 LHCI 版本。
+- 实现要点：workflow 使用 `.nvmrc` 作为 Node 版本事实来源，避免多处写死版本导致漂移。
 
 ### 需求: 满分门禁（Score=1.0）
 
