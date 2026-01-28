@@ -7,6 +7,14 @@
 
 ### 新增
 
+### 变更
+
+### 修复
+
+## [0.6.0] - 2026-01-28
+
+### 新增
+
 - SEO：新增 `robots.txt` endpoint 并指向 `sitemap.xml`，让爬虫发现入口更稳定（同时让 Lighthouse SEO 审计更稳）。
 - Security：新增 `/.well-known/security.txt`（指向 GitHub Security Policy），便于安全问题使用标准渠道发现与上报。
 - Meta：新增 `humans.txt`（项目/技术栈/仓库信息），提供更标准的站点元信息入口。
