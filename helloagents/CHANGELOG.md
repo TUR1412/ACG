@@ -11,6 +11,18 @@
 
 ### 修复
 
+## [0.6.1] - 2026-01-28
+
+### 变更
+
+- CI：更新 GitHub Actions 依赖（`actions/checkout@v6`、`actions/setup-node@v6`、`actions/cache@v5`、`actions/upload-pages-artifact@v4`、`github/codeql-action@v4`），降低旧版本弃用/安全风险。
+- Deps：依赖小版本升级（Astro/Cheerio/Prettier/Globals/TypeScript-ESLint 等），提升安全性与稳定性（由 Dependabot PR 合并）。
+- Deps：升级 `@types/node` 至 v25 系列，跟随 Node 生态类型定义更新（由 Dependabot PR 合并）。
+
+### 修复
+
+- Deps：由于 `@astrojs/tailwind` 仍要求 Tailwind v3 的 peer 约束，回退 Tailwind 版本保持安装与 CI 稳定（避免 `npm ci` 不一致/失败）。
+
 ## [0.6.0] - 2026-01-28
 
 ### 新增
