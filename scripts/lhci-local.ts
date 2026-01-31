@@ -71,6 +71,9 @@ async function main() {
   const skipBuild = args.includes("--skip-build");
   const hasDist = existsSync(distDir);
 
+  log.info("[LHCI] bootstrap data（no network）…");
+  await run("npm", ["run", "bootstrap:data"]);
+
   // 默认策略：总是先 build，避免 dist/ 存在但内容过期导致跑分与真实代码不一致。
   // 如确实需要跳过（例如重复调参），可显式传入 `--skip-build`。
   if (!skipBuild || !hasDist) {

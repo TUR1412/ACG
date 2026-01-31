@@ -87,7 +87,7 @@ const safeSourceUrl = safeExternalHttpUrl(post.url);
             referrerpolicy="no-referrer"
             data-acg-cover
             data-acg-cover-original-src={coverOriginal ?? ""}
-            class="h-56 w-full object-cover"
+            class="h-56 w-full object-cover sm:h-64 md:h-72 lg:h-80"
             onload="window.__acgCoverLoad?.(this)"
             onerror="this.closest('[data-has-cover]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
           />
@@ -123,7 +123,9 @@ const safeSourceUrl = safeExternalHttpUrl(post.url);
           }
           <span class="text-xs text-white/80">{t("zh", "post.publishedAt")}: {published}</span>
         </div>
-        <h1 class="mt-3 text-2xl font-semibold leading-tight tracking-tight text-white md:text-3xl">
+        <h1
+          class="mt-3 text-2xl font-semibold leading-tight tracking-tight text-white md:text-3xl lg:text-4xl"
+        >
           {title}
         </h1>
         <div class="mt-2">
@@ -138,7 +140,7 @@ const safeSourceUrl = safeExternalHttpUrl(post.url);
       </div>
     </div>
 
-    <div class="p-6">
+    <div class="p-6 md:p-7 lg:p-8">
       {
         post.tags?.length > 0 && (
           <div class="flex flex-wrap gap-2">
@@ -158,9 +160,11 @@ const safeSourceUrl = safeExternalHttpUrl(post.url);
 
       {
         primaryText ? (
-          <p class="mt-4 whitespace-pre-line text-sm leading-relaxed text-slate-800">{primaryText}</p>
+          <p class="mt-4 whitespace-pre-line text-sm leading-relaxed text-slate-800 md:text-base">
+            {primaryText}
+          </p>
         ) : (
-          <p class="mt-4 text-sm text-slate-700">{t("zh", "common.noData")}</p>
+          <p class="mt-4 text-sm text-slate-700 md:text-base">{t("zh", "common.noData")}</p>
         )
       }
 
@@ -175,14 +179,16 @@ const safeSourceUrl = safeExternalHttpUrl(post.url);
             <summary class="cursor-pointer select-none text-sm font-semibold text-slate-950">
               {t("zh", "post.previewTitle")}
             </summary>
-            <p class="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-800">{extraPreview}</p>
+            <p class="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-800 md:text-base">
+              {extraPreview}
+            </p>
             <p class="mt-2 text-xs text-slate-600">{t("zh", "post.previewHint")}</p>
           </details>
         ) : null
       }
 
       <section
-        class="mt-6 rounded-2xl border border-slate-900/10 bg-white/55 p-4"
+        class="mt-6 rounded-2xl border border-slate-900/10 bg-white/55 p-4 md:p-5"
         data-fulltext
         data-fulltext-lang="zh"
         data-fulltext-post-id={post.id}
@@ -226,15 +232,17 @@ const safeSourceUrl = safeExternalHttpUrl(post.url);
         {
           safeSourceUrl ? (
             <a
-              class="inline-flex rounded-xl bg-slate-950 px-4 py-2 text-sm font-medium text-white clickable"
+              class="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2 text-sm font-medium text-white clickable"
               href={safeSourceUrl}
               target="_blank"
               rel="noreferrer noopener"
             >
+              <Icon name="external-link" size={18} />
               {t("zh", "post.openSource")}
             </a>
           ) : (
-            <span class="inline-flex cursor-not-allowed rounded-xl bg-slate-950/60 px-4 py-2 text-sm font-medium text-white/80">
+            <span class="inline-flex items-center gap-2 cursor-not-allowed rounded-xl bg-slate-950/60 px-4 py-2 text-sm font-medium text-white/80">
+              <Icon name="external-link" size={18} />
               {t("zh", "post.openSource")}
             </span>
           )
@@ -266,28 +274,46 @@ const safeSourceUrl = safeExternalHttpUrl(post.url);
 
   {
     (newer || older) && (
-      <section class="mt-6 grid gap-3 sm:grid-cols-2">
+      <section class="mt-6 grid gap-3 sm:grid-cols-2 lg:gap-4">
         {newer ? (
-          <a class="glass clickable rounded-2xl p-4" href={href(`/zh/p/${newer.id}/`)}>
-            <div class="text-xs font-semibold text-slate-600">较新</div>
-            <div class="mt-1 text-sm font-semibold text-slate-950 line-clamp-2">{tt(newer)}</div>
+          <a class="glass clickable group rounded-2xl p-4 md:p-5" href={href(`/zh/p/${newer.id}/`)}>
+            <div class="flex items-start justify-between gap-4">
+              <div class="min-w-0">
+                <div class="text-xs font-semibold text-slate-600">较新</div>
+                <div class="mt-1 text-sm font-semibold text-slate-950 line-clamp-2 md:text-base">
+                  {tt(newer)}
+                </div>
+              </div>
+              <span class="mt-0.5 shrink-0 text-slate-500 opacity-90 transition-opacity group-hover:opacity-100">
+                <Icon name="chevron-right" size={18} />
+              </span>
+            </div>
           </a>
         ) : (
-          <div class="glass rounded-2xl p-4 opacity-70">
+          <div class="glass rounded-2xl p-4 opacity-70 md:p-5">
             <div class="text-xs font-semibold text-slate-600">较新</div>
-            <div class="mt-1 text-sm text-slate-700">已是本分类最新</div>
+            <div class="mt-1 text-sm text-slate-700 md:text-base">已是本分类最新</div>
           </div>
         )}
 
         {older ? (
-          <a class="glass clickable rounded-2xl p-4" href={href(`/zh/p/${older.id}/`)}>
-            <div class="text-xs font-semibold text-slate-600">较旧</div>
-            <div class="mt-1 text-sm font-semibold text-slate-950 line-clamp-2">{tt(older)}</div>
+          <a class="glass clickable group rounded-2xl p-4 md:p-5" href={href(`/zh/p/${older.id}/`)}>
+            <div class="flex items-start justify-between gap-4">
+              <div class="min-w-0">
+                <div class="text-xs font-semibold text-slate-600">较旧</div>
+                <div class="mt-1 text-sm font-semibold text-slate-950 line-clamp-2 md:text-base">
+                  {tt(older)}
+                </div>
+              </div>
+              <span class="mt-0.5 shrink-0 text-slate-500 opacity-90 transition-opacity group-hover:opacity-100">
+                <Icon name="chevron-right" size={18} />
+              </span>
+            </div>
           </a>
         ) : (
-          <div class="glass rounded-2xl p-4 opacity-70">
+          <div class="glass rounded-2xl p-4 opacity-70 md:p-5">
             <div class="text-xs font-semibold text-slate-600">较旧</div>
-            <div class="mt-1 text-sm text-slate-700">已是本分类最旧</div>
+            <div class="mt-1 text-sm text-slate-700 md:text-base">已是本分类最旧</div>
           </div>
         )}
       </section>

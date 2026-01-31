@@ -1,9 +1,14 @@
+import { statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Post, StatusHistoryV1, SyncStatus } from "./types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object");
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function isStatusHistoryV1(value: unknown): value is StatusHistoryV1 {
@@ -15,11 +20,29 @@ function generatedPath(...parts: string[]): string {
   return join(process.cwd(), "src", "data", "generated", ...parts);
 }
 
+function hasLocalCoverAsset(coverUrl: string): boolean {
+  if (!coverUrl.startsWith("/covers/")) return true;
+  const localPath = join(process.cwd(), "public", coverUrl.slice(1));
+  try {
+    const stat = statSync(localPath);
+    return stat.isFile() && stat.size > 0;
+  } catch {
+    return false;
+  }
+}
+
+function normalizePostCover(post: Post): Post {
+  if (!isNonEmptyString(post.cover)) return post;
+  if (!post.cover.startsWith("/covers/")) return post;
+  if (hasLocalCoverAsset(post.cover)) return post;
+  return { ...post, cover: undefined };
+}
+
 export async function readGeneratedPosts(): Promise<Post[]> {
   try {
     const raw = await readFile(generatedPath("posts.json"), "utf-8");
     const json = JSON.parse(raw) as unknown;
-    return Array.isArray(json) ? (json as Post[]) : [];
+    return Array.isArray(json) ? (json as Post[]).map(normalizePostCover) : [];
   } catch {
     return [];
   }

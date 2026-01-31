@@ -7,9 +7,24 @@
 
 ### 新增
 
+- Tooling：新增 `npm run bootstrap:data`（`scripts/bootstrap-data.ts`），在未执行 `sync` 的情况下生成“空数据”占位文件（`src/data/generated/*` + `public/data/*(.gz)`），用于本地预览/Lighthouse 等不依赖网络的场景。
+
 ### 变更
 
+- Lighthouse：CI workflow 在 build 前先执行 `bootstrap:data`，避免 PR/本地仅跑 `build + lhci` 时因缺少 `/data/*.json(.gz)` 导致 console error 与 Best Practices 失分。
+- Lighthouse：`scripts/lhci-local.ts` 默认先执行 `bootstrap:data` 再 build，提高 `npm run lhci:local` 的开箱可用性。
+- Lighthouse：将 `.lighthouserc.json` 的 Performance 断言从 1 调整为 0.95，降低跨环境/字体差异导致的跑分抖动与误报。
+- UI：桌面端顶部导航的非激活项补齐 hover 背景/边框，让“可点击触感”更一致；同时将 Bookmarks/Status/About 的顶部入口收敛到桌面显示（平板/移动端主要使用底部导航与横滑分类栏），避免重复与拥挤。
+- UI：桌面端阅读体验优化：提升详情页封面高度与内容留白，优化“较新/较旧”导航卡片的信息层级与指向性，并为“打开原文”按钮补齐外链图标；同时将 compact 列表卡片的点击热区扩展为“卡片主体可点”（收藏按钮独立），提高桌面端浏览效率；全文预览在 `data-acg-prose-kind` 判定前默认按 article 风格排版，减少列表/纯链接在后处理前的样式闪烁。
+- UI：compact 列表在超宽屏（`2xl`）下允许 4 列展示，提高桌面端信息密度。
+- UX：桌面端增加 `scroll-padding-top`，避免锚点跳转（如全文预览的标题定位）被 sticky 顶栏遮挡。
+
 ### 修复
+
+- DX：Prettier 格式检查恢复通过（补齐 README / global.css / 方案包 tasks 等文件的格式化差异）。
+- Lighthouse：当 `public/covers/*` 不存在或封面文件为空时，构建阶段会自动忽略 `posts.json` 中指向 `/covers/*` 的本地封面，避免首页/轮播出现 404 并触发 `errors-in-console`（Best Practices 失分）。
+- UI：主页/分类页搜索框的“清空”按钮补齐 `flex` 布局，确保图标在圆角按钮内始终居中。
+- UI：状态页（Status）表格行禁用 `.glass:hover` 的边框动画，避免桌面端鼠标移动时出现噪音与不必要的动画开销。
 
 ## [0.6.1] - 2026-01-28
 

@@ -221,7 +221,6 @@ npm run budget
 
 - 只跑主链路（关闭翻译与封面相关耗时步骤），适合 CI 或本地排障。<br/>
   翻訳とカバー関連の重い処理を無効化して、CI / ローカル切り分け向けに主経路だけを検証。
-
   - Bash:
 
     ```bash
@@ -260,6 +259,9 @@ npm run lhci
 
 - Lighthouse CI（本地）：如本机未安装 Chrome/Edge，可先设置 `LHCI_CHROME_PATH`，或使用 `npm run lhci:local`（自动探测 `chromePath`，且在缺少 `dist/` 时自动 build）。如需模拟节流对比，可使用 `npm run lhci:simulate`（输出到 `lhci_reports_simulate/`）或 `npm run lhci:local:simulate`。<br/>
   Lighthouse CI（ローカル）：Chrome/Edge が無い場合は `LHCI_CHROME_PATH` を設定、または `npm run lhci:local`（`chromePath` 自動検出 + `dist/` が無ければ build）を使用してください。スロットリングをシミュレーションして比較したい場合は `npm run lhci:simulate`（出力: `lhci_reports_simulate/`）または `npm run lhci:local:simulate` を利用できます。
+
+- Tips：若只是想在本地跑 `build/preview/lhci`（不执行 `sync`、不访问外网来源），可先运行 `npm run bootstrap:data` 生成“空数据占位”（`/data/*.json(.gz)`），避免页面产生 404/console error（Lighthouse Best Practices 会因此扣分）。<br/>
+  Tips：ローカルで `build/preview/lhci` だけを回したい（`sync` なし・外部ソースアクセスなし）場合は、先に `npm run bootstrap:data` で空データ（`/data/*.json(.gz)`）を生成すると、404/console error を避けられます（Lighthouse Best Practices の減点回避）。
 
 ---
 

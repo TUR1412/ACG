@@ -10,6 +10,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "bootstrap:data": "tsx scripts/bootstrap-data.ts",
     "sync": "tsx scripts/sync.ts",
     "sync:dry": "tsx scripts/sync.ts --dry-run",
     "validate": "tsx scripts/validate-generated-data.ts",

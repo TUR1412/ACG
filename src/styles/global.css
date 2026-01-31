@@ -10,8 +10,9 @@
   font-weight: 500;
   font-display: swap;
   src: url("../assets/fonts/outfit-latin-ext.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
-    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
   font-family: "Outfit";
@@ -19,8 +20,9 @@
   font-weight: 500;
   font-display: swap;
   src: url("../assets/fonts/outfit-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
-    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
   font-family: "Outfit";
@@ -28,8 +30,9 @@
   font-weight: 600;
   font-display: swap;
   src: url("../assets/fonts/outfit-latin-ext.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
-    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
   font-family: "Outfit";
@@ -37,8 +40,9 @@
   font-weight: 600;
   font-display: swap;
   src: url("../assets/fonts/outfit-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
-    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
   font-family: "Outfit";
@@ -46,8 +50,9 @@
   font-weight: 700;
   font-display: swap;
   src: url("../assets/fonts/outfit-latin-ext.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
-    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
   font-family: "Outfit";
@@ -55,8 +60,9 @@
   font-weight: 700;
   font-display: swap;
   src: url("../assets/fonts/outfit-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
-    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 /* Space Grotesk */
@@ -66,8 +72,9 @@
   font-weight: 400;
   font-display: swap;
   src: url("../assets/fonts/space-grotesk-latin-ext.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
-    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
   font-family: "Space Grotesk";
@@ -75,8 +82,9 @@
   font-weight: 400;
   font-display: swap;
   src: url("../assets/fonts/space-grotesk-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
-    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
   font-family: "Space Grotesk";
@@ -84,8 +92,9 @@
   font-weight: 500;
   font-display: swap;
   src: url("../assets/fonts/space-grotesk-latin-ext.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
-    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
   font-family: "Space Grotesk";
@@ -93,8 +102,9 @@
   font-weight: 500;
   font-display: swap;
   src: url("../assets/fonts/space-grotesk-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
-    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
   font-family: "Space Grotesk";
@@ -102,8 +112,9 @@
   font-weight: 600;
   font-display: swap;
   src: url("../assets/fonts/space-grotesk-latin-ext.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
-    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
   font-family: "Space Grotesk";
@@ -111,8 +122,9 @@
   font-weight: 600;
   font-display: swap;
   src: url("../assets/fonts/space-grotesk-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
-    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
   font-family: "Space Grotesk";
@@ -120,8 +132,9 @@
   font-weight: 700;
   font-display: swap;
   src: url("../assets/fonts/space-grotesk-latin-ext.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
-    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
   font-family: "Space Grotesk";
@@ -129,17 +142,19 @@
   font-weight: 700;
   font-display: swap;
   src: url("../assets/fonts/space-grotesk-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
-    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 /* 轻噪点 + 极光背景（避免死白/死黑） */
 :root {
   color-scheme: light;
-  --font-sans: "Space Grotesk", "Noto Sans SC", "Noto Sans JP", "PingFang SC", "Hiragino Sans",
-    "Microsoft YaHei", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial,
-    sans-serif;
-  --font-display: "Outfit", "Space Grotesk", "Noto Sans SC", "Noto Sans JP", "PingFang SC", "Hiragino Sans",
+  --font-sans:
+    "Space Grotesk", "Noto Sans SC", "Noto Sans JP", "PingFang SC", "Hiragino Sans", "Microsoft YaHei",
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-display:
+    "Outfit", "Space Grotesk", "Noto Sans SC", "Noto Sans JP", "PingFang SC", "Hiragino Sans",
     "Microsoft YaHei", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial,
     sans-serif;
   --acg-phi: 1.61803398875;
@@ -720,6 +735,13 @@ body {
   overflow-x: hidden;
 }
 
+@media (min-width: 1024px) {
+  html {
+    /* 粘性顶部导航：避免锚点目标被顶栏遮住 */
+    scroll-padding-top: 96px;
+  }
+}
+
 body {
   margin: 0;
   color: var(--text);
@@ -730,7 +752,8 @@ body {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   font-family: var(--font-sans);
-  background: radial-gradient(1200px 800px at 12% 8%, rgba(79, 70, 229, 0.18), transparent 55%),
+  background:
+    radial-gradient(1200px 800px at 12% 8%, rgba(79, 70, 229, 0.18), transparent 55%),
     radial-gradient(1000px 700px at 88% 18%, rgba(14, 165, 233, 0.16), transparent 55%),
     radial-gradient(1100px 900px at 30% 100%, rgba(16, 185, 129, 0.12), transparent 60%),
     linear-gradient(180deg, #f8faff 0%, #eef2ff 100%);
@@ -746,7 +769,8 @@ h4,
 }
 
 :root[data-acg-theme="dark"] body {
-  background: radial-gradient(1200px 800px at 12% 12%, rgba(79, 70, 229, 0.26), transparent 60%),
+  background:
+    radial-gradient(1200px 800px at 12% 12%, rgba(79, 70, 229, 0.26), transparent 60%),
     radial-gradient(1000px 700px at 90% 18%, rgba(14, 165, 233, 0.22), transparent 60%),
     radial-gradient(1100px 900px at 30% 100%, rgba(16, 185, 129, 0.16), transparent 65%),
     linear-gradient(180deg, #04070f 0%, #0a1224 100%);
@@ -755,7 +779,8 @@ h4,
 @media (prefers-color-scheme: dark) {
   :root:not([data-acg-theme]) body,
   :root[data-acg-theme="auto"] body {
-    background: radial-gradient(1200px 800px at 12% 12%, rgba(79, 70, 229, 0.26), transparent 60%),
+    background:
+      radial-gradient(1200px 800px at 12% 12%, rgba(79, 70, 229, 0.26), transparent 60%),
       radial-gradient(1000px 700px at 90% 18%, rgba(14, 165, 233, 0.22), transparent 60%),
       radial-gradient(1100px 900px at 30% 100%, rgba(16, 185, 129, 0.16), transparent 65%),
       linear-gradient(180deg, #04070f 0%, #0a1224 100%);
@@ -770,7 +795,8 @@ body::before {
   pointer-events: none;
   opacity: 0.06;
   /* 避免 feTurbulence 带来的重绘/卡顿：用多层点阵伪随机噪点替代 */
-  background-image: radial-gradient(rgba(15, 23, 42, 0.28) 0.6px, transparent 0.7px),
+  background-image:
+    radial-gradient(rgba(15, 23, 42, 0.28) 0.6px, transparent 0.7px),
     radial-gradient(rgba(15, 23, 42, 0.18) 0.8px, transparent 0.9px),
     radial-gradient(rgba(15, 23, 42, 0.12) 0.5px, transparent 0.6px);
   background-size:
@@ -785,7 +811,8 @@ body::before {
 
 :root[data-acg-theme="dark"] body::before {
   opacity: 0.065;
-  background-image: radial-gradient(rgba(226, 232, 240, 0.18) 0.6px, transparent 0.7px),
+  background-image:
+    radial-gradient(rgba(226, 232, 240, 0.18) 0.6px, transparent 0.7px),
     radial-gradient(rgba(226, 232, 240, 0.12) 0.8px, transparent 0.9px),
     radial-gradient(rgba(226, 232, 240, 0.08) 0.5px, transparent 0.6px);
 }
@@ -794,7 +821,8 @@ body::before {
   :root:not([data-acg-theme]) body::before,
   :root[data-acg-theme="auto"] body::before {
     opacity: 0.065;
-    background-image: radial-gradient(rgba(226, 232, 240, 0.18) 0.6px, transparent 0.7px),
+    background-image:
+      radial-gradient(rgba(226, 232, 240, 0.18) 0.6px, transparent 0.7px),
       radial-gradient(rgba(226, 232, 240, 0.12) 0.8px, transparent 0.9px),
       radial-gradient(rgba(226, 232, 240, 0.08) 0.5px, transparent 0.6px);
   }
@@ -1287,6 +1315,67 @@ html[data-acg-device="phone"] .acg-icon-fab {
   }
 }
 
+@media (min-width: 1024px) {
+  .acg-prose {
+    font-size: 16px;
+  }
+
+  /* index 更像“目录/资讯列表”，桌面端保持信息密度 */
+  .acg-prose[data-acg-prose-kind="index"] {
+    font-size: 15px;
+  }
+}
+
+/* 未判定 kind 时：默认按 article 呈现，避免后处理前出现“卡片 + 双前缀”的闪烁 */
+.acg-prose:not([data-acg-prose-kind]) ul,
+.acg-prose:not([data-acg-prose-kind]) ol {
+  padding-left: 1.25em;
+}
+
+.acg-prose:not([data-acg-prose-kind]) .acg-prose-li {
+  margin: 0.35em 0;
+}
+
+.acg-prose:not([data-acg-prose-kind]) .acg-prose-li-prefix {
+  display: none;
+}
+
+.acg-prose:not([data-acg-prose-kind]) .acg-prose-li-content {
+  display: inline;
+}
+
+.acg-prose:not([data-acg-prose-kind]) .acg-prose-autolink {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  text-decoration: underline;
+  text-decoration-color: rgba(124, 58, 237, 0.32);
+  text-underline-offset: 3px;
+  color: rgba(124, 58, 237, 0.98);
+}
+
+.acg-prose:not([data-acg-prose-kind]) .acg-prose-autolink:hover {
+  border: 0;
+  box-shadow: none;
+  text-decoration-color: rgba(124, 58, 237, 0.55);
+}
+
+.acg-prose:not([data-acg-prose-kind]) .acg-prose-autolink::before {
+  display: none;
+}
+
+.acg-prose:not([data-acg-prose-kind]) .acg-prose-autolink-text {
+  display: inline;
+  flex-direction: row;
+  gap: 0;
+}
+
+.acg-prose:not([data-acg-prose-kind]) .acg-prose-autolink-path {
+  display: none;
+}
+
 .acg-prose strong {
   font-weight: 900;
   color: var(--text);
@@ -1710,8 +1799,8 @@ html[data-acg-device="phone"] .acg-prose[data-acg-prose-kind="index"] .acg-prose
   border-radius: 10px;
   border: 1px solid rgba(15, 23, 42, 0.1);
   background: rgba(15, 23, 42, 0.04);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
-    monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 0.92em;
 }
 
@@ -2039,6 +2128,13 @@ html[data-acg-device="phone"] .acg-card {
 @media (prefers-reduced-motion: reduce) {
   .clickable {
     transition: none;
+  }
+}
+
+@media (hover: hover) {
+  /* 状态页表格：行使用 glass 仅用于静态“行底色/边框”，禁用 hover 的边框动画（避免噪音与合成开销） */
+  .acg-status-table tr.glass:hover {
+    animation: none;
   }
 }
 
@@ -2771,7 +2867,8 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   position: relative;
   border-radius: 18px;
   overflow: hidden;
-  background: radial-gradient(circle at 35% 35%, rgba(16, 185, 129, 0.35), transparent 55%),
+  background:
+    radial-gradient(circle at 35% 35%, rgba(16, 185, 129, 0.35), transparent 55%),
     radial-gradient(circle at 70% 35%, rgba(59, 130, 246, 0.3), transparent 55%),
     linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72));
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -2795,12 +2892,8 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-      circle at center,
-      transparent 0 42%,
-      rgba(255, 255, 255, 0.1) 43%,
-      transparent 44%
-    ),
+  background:
+    radial-gradient(circle at center, transparent 0 42%, rgba(255, 255, 255, 0.1) 43%, transparent 44%),
     radial-gradient(circle at center, transparent 0 66%, rgba(255, 255, 255, 0.06) 67%, transparent 68%);
   opacity: 0.85;
 }
@@ -2926,7 +3019,8 @@ button[data-source-follow-id][aria-pressed="true"] .acg-icon[data-icon="star"] {
 }
 
 .acg-carousel-vignette {
-  background: radial-gradient(900px 420px at 18% 15%, rgba(255, 255, 255, 0.1), transparent 55%),
+  background:
+    radial-gradient(900px 420px at 18% 15%, rgba(255, 255, 255, 0.1), transparent 55%),
     linear-gradient(180deg, rgba(2, 6, 23, 0.08) 0%, rgba(2, 6, 23, 0.42) 70%, rgba(2, 6, 23, 0.62) 100%);
 }
 
@@ -3566,7 +3660,8 @@ html[data-acg-device="phone"] .acg-prefs-drawer.is-open .acg-prefs-drawer-panel 
   content: "";
   position: absolute;
   inset: -40% -30%;
-  background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.12), transparent 55%),
+  background:
+    radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.12), transparent 55%),
     radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.12), transparent 50%),
     radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.12), transparent 55%);
   opacity: 0.6;

@@ -339,10 +339,10 @@ const swHref = href("/sw.js");
                   href={withLang(`/c/${c}/`)}
                   aria-current={c === currentCategory ? "page" : undefined}
                   class:list={[
-                    "rounded-xl px-3 py-2 text-sm clickable",
+                    "rounded-xl border border-transparent px-3 py-2 text-sm clickable",
                     c === currentCategory
                       ? "glass border-slate-900/20 text-slate-950 shadow-sm"
-                      : "text-slate-700 hover:text-slate-950"
+                      : "border-slate-900/10 bg-white/35 text-slate-700 hover:bg-white/60 hover:text-slate-950"
                   ]}
                 >
                   {categoryLabel(lang, c)}
@@ -372,10 +372,10 @@ const swHref = href("/sw.js");
               href={withLang("/bookmarks/")}
               aria-current={isBookmarks ? "page" : undefined}
               class:list={[
-                "hidden rounded-xl px-3 py-2 text-sm clickable sm:inline-flex",
+                "hidden rounded-xl border border-transparent px-3 py-2 text-sm clickable lg:inline-flex",
                 isBookmarks
                   ? "glass border-slate-900/20 text-slate-950 shadow-sm"
-                  : "text-slate-700 hover:text-slate-950"
+                  : "border-slate-900/10 bg-white/35 text-slate-700 hover:bg-white/60 hover:text-slate-950"
               ]}
             >
               {t(lang, "nav.bookmarks")}
@@ -384,10 +384,10 @@ const swHref = href("/sw.js");
               href={withLang("/status/")}
               aria-current={isStatus ? "page" : undefined}
               class:list={[
-                "hidden rounded-xl px-3 py-2 text-sm clickable sm:inline-flex",
+                "hidden rounded-xl border border-transparent px-3 py-2 text-sm clickable lg:inline-flex",
                 isStatus
                   ? "glass border-slate-900/20 text-slate-950 shadow-sm"
-                  : "text-slate-700 hover:text-slate-950"
+                  : "border-slate-900/10 bg-white/35 text-slate-700 hover:bg-white/60 hover:text-slate-950"
               ]}
             >
               {t(lang, "nav.status")}
@@ -396,10 +396,10 @@ const swHref = href("/sw.js");
               href={withLang("/about/")}
               aria-current={isAbout ? "page" : undefined}
               class:list={[
-                "hidden rounded-xl px-3 py-2 text-sm clickable sm:inline-flex",
+                "hidden rounded-xl border border-transparent px-3 py-2 text-sm clickable lg:inline-flex",
                 isAbout
                   ? "glass border-slate-900/20 text-slate-950 shadow-sm"
-                  : "text-slate-700 hover:text-slate-950"
+                  : "border-slate-900/10 bg-white/35 text-slate-700 hover:bg-white/60 hover:text-slate-950"
               ]}
             >
               {t(lang, "nav.about")}

@@ -24,7 +24,7 @@ const pulseScore = typeof post.pulseScore === "number" ? post.pulseScore : null;
 ---
 
 <article
-  class="glass-card rounded-2xl p-4"
+  class="glass-card clickable group relative rounded-2xl"
   data-post-id={post.id}
   data-category={post.category}
   data-source-id={post.sourceId}
@@ -34,8 +34,8 @@ const pulseScore = typeof post.pulseScore === "number" ? post.pulseScore : null;
   data-source-health={post.sourceHealth ?? ""}
   data-order={typeof index === "number" ? index : ""}
 >
-  <div class="flex items-start justify-between gap-3">
-    <div class="flex min-w-0 flex-1 items-start gap-3">
+  <a href={detailHref} aria-label={title} title={title} class="block p-4 pr-14">
+    <div class="flex min-w-0 items-start gap-3">
       <span
         class="inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-900/10 bg-white/55 px-2.5 py-1 text-[11px] font-semibold text-slate-700"
         title={categoryLabel(lang, post.category)}
@@ -45,12 +45,9 @@ const pulseScore = typeof post.pulseScore === "number" ? post.pulseScore : null;
       </span>
 
       <div class="min-w-0 flex-1">
-        <a
-          href={detailHref}
-          class="block text-sm font-semibold leading-snug text-slate-950 hover:underline line-clamp-2"
-        >
+        <div class="text-sm font-semibold leading-snug text-slate-950 group-hover:underline line-clamp-2">
           {title}
-        </a>
+        </div>
         <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
           <span class="whitespace-nowrap">{when}</span>
           <span class="text-slate-400">·</span>
@@ -65,18 +62,18 @@ const pulseScore = typeof post.pulseScore === "number" ? post.pulseScore : null;
         </div>
       </div>
     </div>
+  </a>
 
-    <button
-      type="button"
-      class="glass-card rounded-xl p-2 text-slate-950 clickable"
-      data-bookmark-id={post.id}
-      aria-pressed="false"
-      aria-label={bookmarkLabel}
-      title={bookmarkLabel}
-    >
-      <span data-bookmark-icon aria-hidden="true">
-        <Icon name="star" size={18} />
-      </span>
-    </button>
-  </div>
+  <button
+    type="button"
+    class="glass-card clickable absolute right-3 top-3 rounded-xl p-2 text-slate-950"
+    data-bookmark-id={post.id}
+    aria-pressed="false"
+    aria-label={bookmarkLabel}
+    title={bookmarkLabel}
+  >
+    <span data-bookmark-icon aria-hidden="true">
+      <Icon name="star" size={18} />
+    </span>
+  </button>
 </article>

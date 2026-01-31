@@ -81,10 +81,7 @@ export async function cacheCoverThumbnails(params: {
   const maxBytes = envNonNegativeInt("ACG_COVER_CACHE_MAX_BYTES", 2_800_000);
   const concurrency = envNonNegativeInt("ACG_COVER_CACHE_CONCURRENCY", 6);
 
-  if (max <= 0) return { attempted: 0, cached: 0, max };
-
   const outDir = resolve(root, "public", "covers");
-  await mkdir(outDir, { recursive: true });
 
   // ⚠️ 关键：历史数据会从已部署站点回读并合并。
   // 上一次部署里如果把 cover 写成了本地路径（/covers/...），本次 Actions 的工作目录里并没有这些文件。
@@ -92,12 +89,14 @@ export async function cacheCoverThumbnails(params: {
   for (const p of posts) {
     if (!p.cover || typeof p.cover !== "string") continue;
     if (!p.cover.startsWith("/covers/")) continue;
-    if (p.coverOriginal && isHttpUrl(p.coverOriginal)) {
-      p.cover = p.coverOriginal;
-    } else {
-      p.cover = undefined;
-    }
+    const localPath = resolve(outDir, p.cover.slice("/covers/".length));
+    if (existsSync(localPath)) continue;
+    p.cover = p.coverOriginal && isHttpUrl(p.coverOriginal) ? p.coverOriginal : undefined;
   }
+
+  if (max <= 0) return { attempted: 0, cached: 0, max };
+
+  await mkdir(outDir, { recursive: true });
 
   const candidates = posts
     .filter((p) => typeof p.cover === "string" && isHttpUrl(p.cover))

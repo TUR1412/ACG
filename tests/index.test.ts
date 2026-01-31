@@ -1311,6 +1311,10 @@ test("generated-data + feeds/json-feed: 在临时 cwd 下可稳定读取与生�
   try {
     const genDir = join(dir, "src", "data", "generated");
     await mkdir(genDir, { recursive: true });
+    const coversDir = join(dir, "public", "covers");
+    await mkdir(coversDir, { recursive: true });
+    await writeFile(join(coversDir, "ok.webp"), Buffer.from([0x42, 0x24, 0x11]));
+    await writeFile(join(coversDir, "empty.webp"), "");
 
     await writeFile(
       join(genDir, "posts.json"),
@@ -1325,8 +1329,36 @@ test("generated-data + feeds/json-feed: 在临时 cwd 下可稳定读取与生�
           previewJa: "プレビュー",
           url: "https://example.com/p/1",
           publishedAt: "2026-01-13T00:00:00.000Z",
+          cover: "/covers/ok.webp",
+          coverOriginal: "https://example.com/cover-ok.webp",
           category: "anime",
           tags: ["tag1"],
+          sourceId: "a",
+          sourceName: "A",
+          sourceUrl: "https://example.com/a"
+        },
+        {
+          id: "2",
+          title: "Hello 2",
+          url: "https://example.com/p/2",
+          publishedAt: "2026-01-12T00:00:00.000Z",
+          cover: "/covers/empty.webp",
+          coverOriginal: "https://example.com/cover-empty.webp",
+          category: "anime",
+          tags: ["tag2"],
+          sourceId: "a",
+          sourceName: "A",
+          sourceUrl: "https://example.com/a"
+        },
+        {
+          id: "3",
+          title: "Hello 3",
+          url: "https://example.com/p/3",
+          publishedAt: "2026-01-11T00:00:00.000Z",
+          cover: "/covers/missing.webp",
+          coverOriginal: "https://example.com/cover-missing.webp",
+          category: "anime",
+          tags: ["tag3"],
           sourceId: "a",
           sourceName: "A",
           sourceUrl: "https://example.com/a"
@@ -1347,7 +1379,10 @@ test("generated-data + feeds/json-feed: 在临时 cwd 下可稳定读取与生�
     process.chdir(dir);
 
     const posts = await readGeneratedPosts();
-    assert.equal(posts.length, 1);
+    assert.equal(posts.length, 3);
+    assert.equal(posts.find((p) => p.id === "1")?.cover, "/covers/ok.webp");
+    assert.equal(posts.find((p) => p.id === "2")?.cover, undefined);
+    assert.equal(posts.find((p) => p.id === "3")?.cover, undefined);
 
     const status = await readGeneratedStatus();
     assert.equal(status.durationMs, 1);
