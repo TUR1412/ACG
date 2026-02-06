@@ -56,7 +56,7 @@ const bookmarkLabel = t(lang, "nav.bookmarks");
 
 <article
   class:list={[
-    "acg-post-card glass-card acg-card clickable shine group relative overflow-hidden rounded-2xl",
+    "acg-post-card acg-post-card-shell glass-card acg-card clickable shine group relative overflow-hidden rounded-2xl",
     typeof animateIndex === "number" ? "stagger-item" : ""
   ]}
   style={animateStyle}
@@ -154,12 +154,14 @@ const bookmarkLabel = t(lang, "nav.bookmarks");
         <div class="min-w-0">
           <a
             href={detailHref}
-            class="block text-[15px] font-semibold leading-snug text-slate-950 hover:underline line-clamp-2 sm:text-base"
+            class="acg-post-card-title block text-[15px] font-semibold leading-snug text-slate-950 hover:underline line-clamp-2 sm:text-base"
           >
             {title}
           </a>
 
-          <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-600 sm:text-xs">
+          <div
+            class="acg-post-card-meta mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-600 sm:text-xs"
+          >
             <span class="inline-flex items-center gap-2 font-medium text-slate-700">
               <span class:list={["size-1.5 rounded-full", theme.dot]}></span>
               <span>{categoryLabel(lang, post.category)}</span>
@@ -190,7 +192,7 @@ const bookmarkLabel = t(lang, "nav.bookmarks");
 
         <button
           type="button"
-          class="glass-card rounded-full p-2 text-xs font-medium text-slate-950 clickable sm:rounded-xl sm:px-3 sm:py-2"
+          class="acg-post-card-bookmark glass-card rounded-full p-2 text-xs font-medium text-slate-950 clickable sm:rounded-xl sm:px-3 sm:py-2"
           data-bookmark-id={post.id}
           aria-pressed="false"
           aria-label={bookmarkLabel}
@@ -204,7 +206,9 @@ const bookmarkLabel = t(lang, "nav.bookmarks");
 
       {
         snippet && (
-          <p class="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-600 sm:line-clamp-3">{snippet}</p>
+          <p class="acg-post-card-snippet mt-2 line-clamp-2 text-sm leading-relaxed text-slate-600 sm:line-clamp-3">
+            {snippet}
+          </p>
         )
       }
 
@@ -237,7 +241,7 @@ const bookmarkLabel = t(lang, "nav.bookmarks");
               <button
                 type="button"
                 class:list={[
-                  "shrink-0 whitespace-nowrap rounded-full border border-slate-900/10 bg-white/50 px-2.5 py-1 text-xs hover:bg-white/70 clickable",
+                  "acg-post-card-tag shrink-0 whitespace-nowrap rounded-full border border-slate-900/10 bg-white/50 px-2.5 py-1 text-xs hover:bg-white/70 clickable",
                   theme.ink
                 ]}
                 data-tag={tag}

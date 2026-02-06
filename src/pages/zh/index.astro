@@ -57,6 +57,9 @@ const randomPickCoverOriginal = randomPick?.coverOriginal ?? randomPickCover?.or
 const showRandomPickCover = Boolean(randomPickCover && !/^https?:\/\//i.test(randomPickCover.src));
 
 const pulseTop = [...recent24h].sort((a, b) => (b.pulseScore ?? 0) - (a.pulseScore ?? 0)).slice(0, 6);
+const stableRatio =
+  healthSummary.total > 0 ? Math.round((healthSummary.stable / healthSummary.total) * 100) : 0;
+const topPulse = typeof pulseTop[0]?.pulseScore === "number" ? pulseTop[0]!.pulseScore : 0;
 
 const spotlight = (() => {
   const byPulse = (a: (typeof recent24h)[number], b: (typeof recent24h)[number]) =>
@@ -126,6 +129,49 @@ const spotlight = (() => {
               <Icon name="x" size={18} />
             </button>
           </div>
+        </div>
+
+        <div class="acg-home-kpi-grid relative mt-4">
+          <button
+            type="button"
+            class="acg-home-kpi clickable"
+            data-quick-lens="2h"
+            data-active="false"
+            title={t("zh", "prefs.timeLens2h")}
+          >
+            <span class="acg-home-kpi-label">{t("zh", "prefs.timeLens2h")}</span>
+            <span class="acg-home-kpi-value">{lensCounts["2h"]}</span>
+          </button>
+          <button
+            type="button"
+            class="acg-home-kpi clickable"
+            data-quick-lens="24h"
+            data-active="false"
+            title={t("zh", "prefs.timeLens24h")}
+          >
+            <span class="acg-home-kpi-label">{t("zh", "prefs.timeLens24h")}</span>
+            <span class="acg-home-kpi-value">{lensCounts["24h"]}</span>
+          </button>
+          <button
+            type="button"
+            class="acg-home-kpi clickable"
+            data-quick-sort="pulse"
+            data-active="false"
+            title={t("zh", "prefs.sortPulse")}
+          >
+            <span class="acg-home-kpi-label">{t("zh", "prefs.sortPulse")}</span>
+            <span class="acg-home-kpi-value">{topPulse}</span>
+          </button>
+          <button
+            type="button"
+            class="acg-home-kpi clickable"
+            data-quick-toggle="only-stable"
+            data-active="false"
+            title={t("zh", "home.stableSources")}
+          >
+            <span class="acg-home-kpi-label">{t("zh", "home.stableSources")}</span>
+            <span class="acg-home-kpi-value">{stableRatio}%</span>
+          </button>
         </div>
 
         <div

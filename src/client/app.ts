@@ -1279,6 +1279,12 @@ function openCmdkFromHash() {
   requestOpenCommandPalette();
 }
 
+function handleHashIntents() {
+  openPrefsFromHash();
+  openCmdkFromHash();
+  focusSearchFromHash();
+}
+
 function applySearchQueryFromUrl() {
   // Legacy alias: older deep links only carried `?q=...` and should keep working.
   // New view links (copy-view-link / view presets) use a richer snapshot and are
@@ -4582,9 +4588,8 @@ function initApp() {
   runWhenIdle(() => hydrateCoverStates(), UI.HYDRATE_COVER_IDLE_DELAY_MS);
   wireDeviceDebug();
   maybeStartHealthMonitor();
-  openPrefsFromHash();
-  openCmdkFromHash();
-  focusSearchFromHash();
+  window.addEventListener("hashchange", handleHashIntents);
+  handleHashIntents();
   applySearchQueryFromUrl();
 }
 
