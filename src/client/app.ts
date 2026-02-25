@@ -427,6 +427,216 @@ function wireTagChips() {
   });
 }
 
+function wireSearchSyntaxGuide() {
+  const input = document.querySelector<HTMLInputElement>("#acg-search");
+  if (!input) return;
+  const wrap = input.closest<HTMLElement>(".acg-home-search-wrap");
+  if (!wrap) return;
+  if (wrap.querySelector("[data-search-guide]")) return;
+
+  const isJa = isJapanese();
+  const chips = isJa
+    ? [
+        { label: "tag:コラボ", preset: "tag:コラボ" },
+        { label: "source:animate", preset: "source:animate" },
+        { label: "cat:anime", preset: "cat:anime" },
+        { label: "after:2026-01-01", preset: "after:2026-01-01" },
+        { label: "is:unread", preset: "is:unread" },
+        { label: "-tag:ネタバレ", preset: "-tag:ネタバレ" }
+      ]
+    : [
+        { label: "tag:联动", preset: "tag:联动" },
+        { label: "source:bilibili", preset: "source:bilibili" },
+        { label: "cat:anime", preset: "cat:anime" },
+        { label: "after:2026-01-01", preset: "after:2026-01-01" },
+        { label: "is:unread", preset: "is:unread" },
+        { label: "-tag:剧透", preset: "-tag:剧透" }
+      ];
+  const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const scenePresets: Array<{ label: string; preset: string; lens?: TimeLens; sort?: SortMode }> = isJa
+    ? [
+        { label: "未読のみ", preset: "is:unread" },
+        { label: "24h + Pulse", preset: `after:${last24h}`, lens: "24h", sort: "pulse" },
+        { label: "アニメのみ", preset: "cat:anime" },
+        { label: "ソース指定", preset: "source:animate" }
+      ]
+    : [
+        { label: "只看未读", preset: "is:unread" },
+        { label: "24h + 热度", preset: `after:${last24h}`, lens: "24h", sort: "pulse" },
+        { label: "只看动画", preset: "cat:anime" },
+        { label: "按来源筛选", preset: "source:bilibili" }
+      ];
+
+  const row = document.createElement("div");
+  row.className =
+    "acg-query-hints acg-hscroll -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0";
+  row.setAttribute("data-search-guide", "chips");
+
+  for (const chip of chips) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "acg-chip acg-query-chip rounded-full px-3 py-1 text-xs font-semibold clickable";
+    btn.dataset.searchPreset = chip.preset;
+    btn.textContent = chip.label;
+    btn.title = chip.preset;
+    row.appendChild(btn);
+  }
+
+  const sceneRow = document.createElement("div");
+  sceneRow.className =
+    "acg-query-scenes acg-hscroll -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0";
+  sceneRow.setAttribute("data-search-guide", "scenes");
+  for (const scene of scenePresets) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "acg-chip acg-query-scene-chip rounded-full px-3 py-1 text-xs font-semibold clickable";
+    btn.dataset.searchPreset = scene.preset;
+    if (scene.lens) btn.dataset.searchPresetLens = scene.lens;
+    if (scene.sort) btn.dataset.searchPresetSort = scene.sort;
+    btn.textContent = scene.label;
+    btn.title = scene.preset;
+    sceneRow.appendChild(btn);
+  }
+
+  const note = document.createElement("p");
+  note.className = "acg-query-hint-note mt-2 text-[11px] leading-relaxed text-slate-600";
+  note.setAttribute("data-search-guide", "note");
+  note.textContent = isJa
+    ? "構文ガイド: tag/source/cat/after/is:unread（先頭に - を付けると除外）"
+    : "语法提示：tag/source/cat/after/is:unread（前缀 - 表示排除）";
+
+  wrap.appendChild(row);
+  wrap.appendChild(sceneRow);
+  wrap.appendChild(note);
+  document.dispatchEvent(new CustomEvent("acg:search-presets-mounted"));
+}
+
+function wirePostCardInteractions() {
+  const cardSelector = ".acg-post-card[data-post-id], .acg-post-link-item[data-post-id]";
+  const interactiveSelector = "a[href],button,input,textarea,select,label,[role='button'],[role='link']";
+
+  const getPrimaryLink = (card: HTMLElement): HTMLAnchorElement | null =>
+    card.querySelector<HTMLAnchorElement>("a.acg-post-card-title[href], a.acg-post-link-anchor[href]") ??
+    card.querySelector<HTMLAnchorElement>("a[href]:not([target])");
+
+  const openCard = (card: HTMLElement, openInNewTab = false): boolean => {
+    const link = getPrimaryLink(card);
+    if (!link?.href) return false;
+    try {
+      if (openInNewTab) window.open(link.href, "_blank", "noopener");
+      else window.location.href = link.href;
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const syncFocusableCards = () => {
+    const cards = document.querySelectorAll<HTMLElement>(cardSelector);
+    for (const card of cards) {
+      card.classList.add("acg-card-focusable");
+      if (!card.hasAttribute("tabindex")) card.tabIndex = 0;
+    }
+  };
+
+  const focusAdjacent = (from: HTMLElement, delta: -1 | 1) => {
+    const cards = [...document.querySelectorAll<HTMLElement>(cardSelector)].filter(
+      (card) => !card.classList.contains("hidden")
+    );
+    const index = cards.indexOf(from);
+    if (index < 0) return;
+    const next = cards[Math.max(0, Math.min(cards.length - 1, index + delta))];
+    if (!next || next === from) return;
+    try {
+      next.focus({ preventScroll: true });
+      next.scrollIntoView({ block: "nearest", inline: "nearest" });
+    } catch {
+      // ignore
+    }
+  };
+
+  const pressedByPointer = new Map<number, HTMLElement>();
+  const releasePressedCard = (pointerId: number, delayMs = 0) => {
+    const card = pressedByPointer.get(pointerId);
+    if (!card) return;
+    pressedByPointer.delete(pointerId);
+    const clear = () => card.classList.remove("acg-card-touch-active");
+    if (delayMs > 0) window.setTimeout(clear, delayMs);
+    else clear();
+  };
+  const releaseAllPressedCards = () => {
+    for (const card of pressedByPointer.values()) card.classList.remove("acg-card-touch-active");
+    pressedByPointer.clear();
+  };
+
+  syncFocusableCards();
+  document.addEventListener("acg:bookmarks-changed", () => {
+    runWhenIdle(syncFocusableCards, 360);
+  });
+
+  document.addEventListener("pointerdown", (e) => {
+    if (e.defaultPrevented) return;
+    if (e.pointerType === "mouse") return;
+    if (!(e.target instanceof HTMLElement)) return;
+    const card = e.target.closest<HTMLElement>(cardSelector);
+    if (!card) return;
+    if (e.target.closest(interactiveSelector)) return;
+    card.classList.add("acg-card-touch-active");
+    pressedByPointer.set(e.pointerId, card);
+  });
+
+  document.addEventListener("pointerup", (e) => {
+    releasePressedCard(e.pointerId, 88);
+  });
+  document.addEventListener("pointercancel", (e) => {
+    releasePressedCard(e.pointerId);
+  });
+  document.addEventListener(
+    "scroll",
+    () => {
+      if (pressedByPointer.size === 0) return;
+      releaseAllPressedCards();
+    },
+    { passive: true, capture: true }
+  );
+
+  document.addEventListener("click", (e) => {
+    if (e.defaultPrevented) return;
+    if (!(e.target instanceof HTMLElement)) return;
+    const card = e.target.closest<HTMLElement>(cardSelector);
+    if (!card) return;
+    if (e.target.closest(interactiveSelector)) return;
+    if (window.getSelection()?.type === "Range") return;
+    e.preventDefault();
+    openCard(card, e.metaKey || e.ctrlKey);
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.defaultPrevented) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (!(e.target instanceof HTMLElement)) return;
+    const card = e.target.closest<HTMLElement>(cardSelector);
+    if (!card || e.target !== card) return;
+
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openCard(card);
+      return;
+    }
+
+    if (e.key === "ArrowDown" || e.key === "ArrowRight" || e.key.toLowerCase() === "j") {
+      e.preventDefault();
+      focusAdjacent(card, 1);
+      return;
+    }
+
+    if (e.key === "ArrowUp" || e.key === "ArrowLeft" || e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      focusAdjacent(card, -1);
+    }
+  });
+}
+
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!target || !(target instanceof HTMLElement)) return false;
   const tag = target.tagName.toLowerCase();
@@ -848,6 +1058,190 @@ function wireBackToTop() {
   }
 }
 
+function wireMobileQuickActions() {
+  const searchInput = document.querySelector<HTMLInputElement>("#acg-search");
+  const hasSearch = Boolean(searchInput);
+  const hasPrefs = Boolean(document.querySelector<HTMLElement>("[data-open-prefs]"));
+  if (!hasSearch && !hasPrefs) return;
+
+  const isJa = isJapanese();
+  const root = document.documentElement;
+  const host = document.createElement("div");
+  host.id = "acg-mobile-quick-actions";
+  host.className = "acg-mobile-quick-actions";
+  host.hidden = true;
+
+  const makeButton = (params: {
+    action: "search" | "prefs";
+    icon: "search" | "sliders";
+    label: string;
+    title: string;
+  }): HTMLButtonElement => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "acg-mobile-quick-action acg-icon-fab clickable";
+    btn.dataset.mobileAction = params.action;
+    btn.setAttribute("aria-label", params.title);
+    btn.title = params.title;
+
+    const iconWrap = document.createElement("span");
+    iconWrap.className = "acg-mobile-quick-action-icon";
+    iconWrap.appendChild(createUiIcon({ name: params.icon, size: 16 }));
+    btn.appendChild(iconWrap);
+
+    const label = document.createElement("span");
+    label.className = "acg-mobile-quick-action-label";
+    label.textContent = params.label;
+    btn.appendChild(label);
+    return btn;
+  };
+
+  const searchBtn = hasSearch
+    ? makeButton({
+        action: "search",
+        icon: "search",
+        label: isJa ? "検索" : "搜索",
+        title: isJa ? "検索欄へ移動" : "回到搜索框"
+      })
+    : null;
+  const prefsBtn = hasPrefs
+    ? makeButton({
+        action: "prefs",
+        icon: "sliders",
+        label: isJa ? "絞込" : "筛选",
+        title: isJa ? "絞り込みを開く" : "打开筛选面板"
+      })
+    : null;
+  if (searchBtn) searchBtn.setAttribute("aria-controls", "acg-search");
+  if (prefsBtn) {
+    prefsBtn.setAttribute("aria-controls", "acg-prefs");
+    prefsBtn.setAttribute("aria-haspopup", "dialog");
+  }
+  if (searchBtn) searchBtn.setAttribute("aria-pressed", "false");
+  if (prefsBtn) prefsBtn.setAttribute("aria-pressed", "false");
+  if (searchBtn) host.appendChild(searchBtn);
+  if (prefsBtn) host.appendChild(prefsBtn);
+  if (host.childElementCount === 0) return;
+  document.body.appendChild(host);
+
+  const focusSearch = () => {
+    if (!searchInput) return;
+    const behavior = prefersReducedMotion() ? "auto" : "smooth";
+    try {
+      searchInput.scrollIntoView({ behavior, block: "center" });
+      searchInput.focus();
+      searchInput.select();
+      flashSearchFocusCue();
+    } catch {
+      // ignore
+    }
+  };
+  const openPrefs = () => {
+    const opener = document.querySelector<HTMLElement>("[data-open-prefs]");
+    if (!opener) return;
+    opener.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+  };
+
+  searchBtn?.addEventListener("click", () => {
+    focusSearch();
+    track({ type: "mobile_quick_action", data: { action: "search" } });
+  });
+  prefsBtn?.addEventListener("click", () => {
+    openPrefs();
+    track({ type: "mobile_quick_action", data: { action: "prefs" } });
+  });
+
+  let searchVisible = false;
+  if (searchInput && "IntersectionObserver" in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        searchVisible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio > 0.2);
+        scheduleUpdate();
+      },
+      { root: null, threshold: [0, 0.2, 0.48] }
+    );
+    io.observe(searchInput);
+  }
+
+  let ticking = false;
+  const updateVisibility = () => {
+    const isPhone = root.dataset.acgDevice === "phone";
+    const drawerOpen = document.body.classList.contains("acg-no-scroll");
+    const inputFocused = Boolean(searchInput && document.activeElement === searchInput);
+
+    if (searchBtn) {
+      const active = inputFocused ? "true" : "false";
+      searchBtn.dataset.active = active;
+      searchBtn.setAttribute("aria-pressed", active);
+    }
+    if (prefsBtn) {
+      const active = drawerOpen ? "true" : "false";
+      prefsBtn.dataset.active = active;
+      prefsBtn.setAttribute("aria-pressed", active);
+    }
+
+    const shouldShow = isPhone && !drawerOpen && !inputFocused && !searchVisible && window.scrollY > 200;
+    host.hidden = !shouldShow;
+    host.classList.toggle("is-visible", shouldShow);
+  };
+  const scheduleUpdate = () => {
+    if (ticking) return;
+    ticking = true;
+    window.requestAnimationFrame(() => {
+      ticking = false;
+      updateVisibility();
+    });
+  };
+
+  window.addEventListener("scroll", scheduleUpdate, { passive: true });
+  window.addEventListener("resize", scheduleUpdate);
+  window.visualViewport?.addEventListener("resize", scheduleUpdate);
+  document.addEventListener("acg:prefs-drawer-state", scheduleUpdate);
+  document.addEventListener("focusin", scheduleUpdate);
+  document.addEventListener("focusout", scheduleUpdate);
+  scheduleUpdate();
+}
+
+function wireMobileDensityAutoTune() {
+  const root = document.documentElement;
+  let rafId = 0;
+
+  const updateNow = () => {
+    const isPhone = root.dataset.acgDevice === "phone";
+    if (!isPhone) {
+      delete root.dataset.acgPhoneNarrow;
+      delete root.dataset.acgPhoneCompact;
+      return;
+    }
+
+    const vw = window.visualViewport?.width ?? window.innerWidth;
+    const vh = window.visualViewport?.height ?? window.innerHeight;
+    const shortSide = Math.min(vw || 0, vh || 0);
+    const narrow = shortSide > 0 && shortSide <= 390;
+    const compact = shortSide > 0 && shortSide <= 360;
+
+    if (narrow) root.dataset.acgPhoneNarrow = "1";
+    else delete root.dataset.acgPhoneNarrow;
+
+    if (compact) root.dataset.acgPhoneCompact = "1";
+    else delete root.dataset.acgPhoneCompact;
+  };
+
+  const schedule = () => {
+    if (rafId) return;
+    rafId = window.requestAnimationFrame(() => {
+      rafId = 0;
+      updateNow();
+    });
+  };
+
+  window.addEventListener("resize", schedule);
+  window.addEventListener("orientationchange", schedule);
+  window.visualViewport?.addEventListener("resize", schedule);
+  window.visualViewport?.addEventListener("scroll", schedule);
+  schedule();
+}
+
 function wireScrollPerfHints() {
   // 目标：滚动期临时降级昂贵效果（backdrop-filter / shimmer 等），让滚动更稳更顺；
   // 停止滚动后自动恢复质感。
@@ -935,6 +1329,48 @@ function wireCardInViewAnimations() {
   }
 }
 
+function wireSearchCounterA11y() {
+  const count = document.querySelector<HTMLElement>("#acg-search-count");
+  const unreadCount = document.querySelector<HTMLElement>("#acg-unread-count");
+  const isJa = isJapanese();
+
+  if (count) {
+    count.setAttribute("aria-live", "polite");
+    count.setAttribute("aria-atomic", "true");
+    if (!count.hasAttribute("aria-label")) {
+      count.setAttribute("aria-label", isJa ? "検索結果件数" : "搜索结果数量");
+    }
+  }
+
+  if (unreadCount && !unreadCount.hasAttribute("aria-label")) {
+    unreadCount.setAttribute("aria-label", isJa ? "未読件数" : "未读数量");
+  }
+}
+
+let searchFocusCueTimer: number | null = null;
+function flashSearchFocusCue() {
+  const input = document.querySelector<HTMLInputElement>("#acg-search");
+  if (!input) return;
+
+  const wrap = input.closest<HTMLElement>(".acg-home-search-wrap");
+  const count = document.querySelector<HTMLElement>("#acg-search-count");
+  wrap?.classList.remove("acg-search-focus-cue");
+  input.classList.remove("acg-search-focus-cue");
+  count?.classList.remove("acg-count-bump");
+  void input.offsetWidth;
+  wrap?.classList.add("acg-search-focus-cue");
+  input.classList.add("acg-search-focus-cue");
+  count?.classList.add("acg-count-bump");
+
+  if (searchFocusCueTimer != null) window.clearTimeout(searchFocusCueTimer);
+  searchFocusCueTimer = window.setTimeout(() => {
+    wrap?.classList.remove("acg-search-focus-cue");
+    input.classList.remove("acg-search-focus-cue");
+    count?.classList.remove("acg-count-bump");
+    searchFocusCueTimer = null;
+  }, 760);
+}
+
 function wireKeyboardShortcuts() {
   const input = document.querySelector<HTMLInputElement>("#acg-search");
   if (!input) return;
@@ -947,6 +1383,7 @@ function wireKeyboardShortcuts() {
       e.preventDefault();
       input.focus();
       input.select();
+      flashSearchFocusCue();
       toast({
         title: isJapanese() ? "検索へフォーカス" : "已聚焦搜索",
         variant: "info",
@@ -1027,6 +1464,93 @@ function wirePrefsDrawer() {
 
   const openers = [...document.querySelectorAll<HTMLElement>("[data-open-prefs]")];
   const closers = [...drawer.querySelectorAll<HTMLElement>("[data-close-prefs]")];
+  const panel = drawer.querySelector<HTMLElement>(".acg-prefs-drawer-panel");
+  const dialog = panel ?? drawer;
+  const liveRegionId = "acg-prefs-live-region";
+  const dialogLabel = isJapanese() ? "絞り込み設定" : "筛选设置";
+  const openedAnnouncement = isJapanese() ? "絞り込みパネルを開きました" : "已打开筛选面板";
+  const closedAnnouncement = isJapanese() ? "絞り込みパネルを閉じました" : "已关闭筛选面板";
+  let restoreFocusTarget: HTMLElement | null = null;
+  let liveRegionTimer: number | null = null;
+
+  const ensureLiveRegion = (): HTMLElement => {
+    let region = document.querySelector<HTMLElement>(`#${liveRegionId}`);
+    if (region) return region;
+    region = document.createElement("div");
+    region.id = liveRegionId;
+    region.setAttribute("aria-live", "polite");
+    region.setAttribute("aria-atomic", "true");
+    region.style.position = "fixed";
+    region.style.width = "1px";
+    region.style.height = "1px";
+    region.style.margin = "-1px";
+    region.style.padding = "0";
+    region.style.border = "0";
+    region.style.overflow = "hidden";
+    region.style.clipPath = "inset(50%)";
+    region.style.whiteSpace = "nowrap";
+    region.style.pointerEvents = "none";
+    document.body.appendChild(region);
+    return region;
+  };
+
+  const announceDrawerState = (message: string) => {
+    const region = ensureLiveRegion();
+    region.textContent = "";
+    if (liveRegionTimer) window.clearTimeout(liveRegionTimer);
+    liveRegionTimer = window.setTimeout(() => {
+      region.textContent = message;
+    }, 16);
+  };
+
+  const ensureDialogA11y = () => {
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    if (!dialog.hasAttribute("tabindex")) dialog.setAttribute("tabindex", "-1");
+
+    const title = dialog.querySelector<HTMLElement>("h1,h2,h3,h4,h5,h6");
+    if (title) {
+      if (!title.id) title.id = "acg-prefs-title";
+      dialog.setAttribute("aria-labelledby", title.id);
+      dialog.removeAttribute("aria-label");
+    } else {
+      dialog.removeAttribute("aria-labelledby");
+      dialog.setAttribute("aria-label", dialogLabel);
+    }
+  };
+
+  const getFocusableElements = (): HTMLElement[] => {
+    const scope = panel ?? drawer;
+    const selectors = [
+      "a[href]",
+      "area[href]",
+      "input:not([disabled]):not([type='hidden'])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      "button:not([disabled])",
+      "[tabindex]:not([tabindex='-1'])"
+    ].join(",");
+    const all = [...scope.querySelectorAll<HTMLElement>(selectors)];
+    return all.filter((el) => {
+      if (el.hasAttribute("inert")) return false;
+      if (el.getAttribute("aria-hidden") === "true") return false;
+      const style = window.getComputedStyle(el);
+      return style.display !== "none" && style.visibility !== "hidden";
+    });
+  };
+
+  const emitDrawerState = () => {
+    document.dispatchEvent(
+      new CustomEvent("acg:prefs-drawer-state", {
+        detail: { open: drawer.classList.contains("is-open") }
+      })
+    );
+  };
+  const clearPanelSwipeDrag = () => {
+    if (!panel) return;
+    delete panel.dataset.swipeDragging;
+    panel.style.removeProperty("transform");
+  };
 
   const syncA11y = () => {
     const open = drawer.classList.contains("is-open");
@@ -1040,36 +1564,60 @@ function wirePrefsDrawer() {
     }
   };
 
-  const open = () => {
+  const open = (trigger?: EventTarget | null) => {
+    if (trigger instanceof HTMLElement) restoreFocusTarget = trigger;
+    else if (document.activeElement instanceof HTMLElement) restoreFocusTarget = document.activeElement;
+
+    clearPanelSwipeDrag();
+    ensureDialogA11y();
     drawer.classList.add("is-open");
     drawer.removeAttribute("inert");
     drawer.removeAttribute("aria-hidden");
     document.body.classList.add("acg-no-scroll");
+    emitDrawerState();
+    announceDrawerState(openedAnnouncement);
 
     window.setTimeout(() => {
       const focusTarget =
         drawer.querySelector<HTMLInputElement>("#acg-follow-input") ??
         drawer.querySelector<HTMLInputElement>("#acg-block-input") ??
         drawer.querySelector<HTMLInputElement>("#acg-only-followed");
+      const fallbackFocus = getFocusableElements()[0] ?? dialog;
       try {
-        focusTarget?.focus();
+        (focusTarget ?? fallbackFocus)?.focus();
       } catch {
         // ignore
       }
     }, 0);
   };
 
-  const close = () => {
+  const close = (options?: { restoreFocus?: boolean }) => {
+    const shouldRestoreFocus = options?.restoreFocus ?? true;
+    clearPanelSwipeDrag();
     drawer.classList.remove("is-open");
     document.body.classList.remove("acg-no-scroll");
     drawer.setAttribute("aria-hidden", "true");
     drawer.setAttribute("inert", "");
+    emitDrawerState();
+    announceDrawerState(closedAnnouncement);
+
+    if (!shouldRestoreFocus) return;
+    const target = restoreFocusTarget;
+    restoreFocusTarget = null;
+    if (!target || !target.isConnected) return;
+    window.setTimeout(() => {
+      try {
+        target.focus();
+      } catch {
+        // ignore
+      }
+    }, 0);
   };
 
   for (const el of openers) {
     el.addEventListener("click", (e) => {
       e.preventDefault();
-      open();
+      open(e.currentTarget);
     });
   }
 
@@ -1086,10 +1634,142 @@ function wirePrefsDrawer() {
 
   document.addEventListener("keydown", (e) => {
     if (!drawer.classList.contains("is-open")) return;
-    if (e.key === "Escape") close();
+    if (e.key === "Escape") {
+      e.preventDefault();
+      close();
+      return;
+    }
+    if (e.key !== "Tab") return;
+
+    const focusable = getFocusableElements();
+    if (focusable.length === 0) {
+      e.preventDefault();
+      try {
+        dialog.focus();
+      } catch {
+        // ignore
+      }
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    const withinDialog = active instanceof HTMLElement && dialog.contains(active);
+    if (e.shiftKey) {
+      if (!withinDialog || active === first) {
+        e.preventDefault();
+        try {
+          last.focus();
+        } catch {
+          // ignore
+        }
+      }
+      return;
+    }
+    if (!withinDialog || active === last) {
+      e.preventDefault();
+      try {
+        first.focus();
+      } catch {
+        // ignore
+      }
+    }
   });
 
+  if (panel) {
+    const SWIPE_CLOSE_THRESHOLD_PX = 72;
+    const SWIPE_FLICK_MIN_PX = 28;
+    const SWIPE_FLICK_VELOCITY = 0.52;
+    const SWIPE_HANDLE_ZONE_PX = 90;
+    let swipePointerId: number | null = null;
+    let swipeStartX = 0;
+    let swipeStartY = 0;
+    let swipeStartAt = 0;
+
+    const isPhoneDrawerUi = () => document.documentElement.dataset.acgDevice === "phone";
+    const applyDrag = (dyRaw: number) => {
+      const dy = Math.max(0, dyRaw);
+      const eased = Math.min(150, dy * 0.88);
+      panel.dataset.swipeDragging = "1";
+      panel.style.transform = `translateY(${eased.toFixed(1)}px)`;
+    };
+
+    const resetSwipe = () => {
+      if (swipePointerId != null) {
+        try {
+          panel.releasePointerCapture(swipePointerId);
+        } catch {
+          // ignore
+        }
+      }
+      swipePointerId = null;
+      swipeStartX = 0;
+      swipeStartY = 0;
+      swipeStartAt = 0;
+      clearPanelSwipeDrag();
+    };
+
+    panel.addEventListener("pointerdown", (e) => {
+      if (!isPhoneDrawerUi()) return;
+      if (!drawer.classList.contains("is-open")) return;
+      if (e.defaultPrevented) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      if (!(e.target instanceof HTMLElement)) return;
+      if (panel.scrollTop > 2) return;
+      if (e.target.closest("input,textarea,select,button,a,[role='button'],[role='link']")) return;
+
+      const rect = panel.getBoundingClientRect();
+      if (e.clientY - rect.top > SWIPE_HANDLE_ZONE_PX) return;
+
+      swipePointerId = e.pointerId;
+      swipeStartX = e.clientX;
+      swipeStartY = e.clientY;
+      swipeStartAt = e.timeStamp || performance.now();
+      try {
+        panel.setPointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
+    });
+
+    panel.addEventListener("pointermove", (e) => {
+      if (swipePointerId == null) return;
+      if (e.pointerId !== swipePointerId) return;
+      if (!drawer.classList.contains("is-open")) return;
+
+      const dx = e.clientX - swipeStartX;
+      const dy = e.clientY - swipeStartY;
+      if (dy <= 0 || Math.abs(dy) < Math.abs(dx)) {
+        applyDrag(0);
+        return;
+      }
+      applyDrag(dy);
+    });
+
+    panel.addEventListener("pointerup", (e) => {
+      if (swipePointerId == null) return;
+      if (e.pointerId !== swipePointerId) return;
+
+      const dx = e.clientX - swipeStartX;
+      const dy = e.clientY - swipeStartY;
+      const elapsed = Math.max(1, (e.timeStamp || performance.now()) - swipeStartAt);
+      const velocity = dy / elapsed;
+      const shouldClose =
+        dy > Math.abs(dx) &&
+        panel.scrollTop <= 12 &&
+        (dy >= SWIPE_CLOSE_THRESHOLD_PX || (dy >= SWIPE_FLICK_MIN_PX && velocity >= SWIPE_FLICK_VELOCITY));
+
+      resetSwipe();
+      if (shouldClose) close();
+    });
+
+    panel.addEventListener("pointercancel", resetSwipe);
+  }
+
+  ensureDialogA11y();
   syncA11y();
+  emitDrawerState();
 }
 
 function wireQuickToggles() {
@@ -1245,6 +1925,7 @@ function focusSearchFromHash() {
     input.scrollIntoView({ behavior, block: "center" });
     input.focus();
     input.select();
+    flashSearchFocusCue();
     // 清理 hash，避免返回/刷新时重复聚焦
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
   } catch {
@@ -1524,20 +2205,132 @@ function createListFilter(params: {
   const empty = document.querySelector<HTMLElement>("#acg-list-empty");
   const clear = document.querySelector<HTMLButtonElement>("#acg-clear-search");
   if (!input || !pageGrid) return;
+  type GroupCategory = "anime" | "game" | "goods" | "seiyuu";
+  const isJa = isJapanese();
+  const groupCategoryOrder: GroupCategory[] = ["anime", "game", "goods", "seiyuu"];
+  const groupCategoryLabels: Record<GroupCategory, string> = isJa
+    ? { anime: "アニメ", game: "ゲーム", goods: "グッズ", seiyuu: "声優" }
+    : { anime: "动画", game: "游戏", goods: "周边", seiyuu: "声优" };
+  const groupTexts = isJa
+    ? {
+        title: "カテゴリ分布",
+        totalPrefix: "ヒット ",
+        emptyRecommendTitle: "候補フィルター",
+        unreadOnly: "未読のみ",
+        categoryPrefix: "カテゴリ",
+        sourcePrefix: "ソース",
+        recent24h: "24h + Pulse",
+        excludeSpoiler: "ネタバレ除外"
+      }
+    : {
+        title: "分类分布",
+        totalPrefix: "命中 ",
+        emptyRecommendTitle: "试试这些筛选",
+        unreadOnly: "只看未读",
+        categoryPrefix: "分类",
+        sourcePrefix: "来源",
+        recent24h: "24h + 热度",
+        excludeSpoiler: "排除剧透"
+      };
+  const isGroupCategory = (value: string): value is GroupCategory =>
+    value === "anime" || value === "game" || value === "goods" || value === "seiyuu";
+
+  const groupSummaryUi = (() => {
+    const host = input.closest<HTMLElement>(".acg-home-search-wrap");
+    if (!host) return null;
+
+    let root = host.querySelector<HTMLElement>("#acg-search-groups");
+    if (!root) {
+      root = document.createElement("section");
+      root.id = "acg-search-groups";
+      root.className = "acg-search-groups mt-3 hidden";
+      root.setAttribute("aria-live", "polite");
+
+      const head = document.createElement("div");
+      head.className = "acg-search-groups-head";
+
+      const title = document.createElement("span");
+      title.className = "acg-search-groups-title";
+      title.textContent = groupTexts.title;
+
+      const total = document.createElement("span");
+      total.className = "acg-search-groups-count";
+      total.dataset.searchGroupsCount = "1";
+      total.textContent = `${groupTexts.totalPrefix}0`;
+
+      head.appendChild(title);
+      head.appendChild(total);
+      root.appendChild(head);
+
+      const chips = document.createElement("div");
+      chips.className = "acg-search-groups-chips";
+      chips.dataset.searchGroupsChips = "1";
+      root.appendChild(chips);
+      host.appendChild(root);
+    }
+
+    const countEl = root.querySelector<HTMLElement>("[data-search-groups-count]");
+    const chipsEl = root.querySelector<HTMLElement>("[data-search-groups-chips]");
+    if (!countEl || !chipsEl) return null;
+    return { root, countEl, chipsEl };
+  })();
+
+  const emptyRecommendationsUi = (() => {
+    if (!empty) return null;
+    const host = empty.firstElementChild instanceof HTMLElement ? empty.firstElementChild : empty;
+    let root = host.querySelector<HTMLElement>("#acg-empty-recommendations");
+    if (!root) {
+      root = document.createElement("div");
+      root.id = "acg-empty-recommendations";
+      root.className = "acg-empty-recommendations mt-3 hidden";
+
+      const title = document.createElement("p");
+      title.className = "acg-empty-recommendations-title";
+      title.textContent = groupTexts.emptyRecommendTitle;
+      root.appendChild(title);
+
+      const chips = document.createElement("div");
+      chips.className =
+        "acg-empty-recommendations-chips acg-hscroll -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0";
+      chips.dataset.emptyRecommendationChips = "1";
+      root.appendChild(chips);
+
+      host.appendChild(root);
+    }
+
+    const chipsEl = root.querySelector<HTMLElement>("[data-empty-recommendation-chips]");
+    if (!chipsEl) return null;
+    return { root, chipsEl };
+  })();
 
   // 性能：首页/分类页卡片较多时，DOMContentLoaded 里全量 query + textContent 拼接会造成“首屏卡一下”。
   // 这里做“惰性初始化”：如果没有任何筛选条件，就延后到 idle；用户一交互则立即初始化并生效。
   let cards: HTMLElement[] = [];
   let haystacks: string[] = [];
   const tagsByCard: string[][] = [];
+  const tagButtonsByCard: HTMLButtonElement[][] = [];
+  const tagTokensByCard: string[][] = [];
+  const tagLabelByToken = new Map<string, string>();
+  const tagTokenFrequency = new Map<string, number>();
   const sourceNames: string[] = [];
+  const sourceLabelByToken = new Map<string, string>();
+  const sourceTokenFrequency = new Map<string, number>();
+  const sourceBadgeByCard: (HTMLElement | null)[] = [];
+  const titleByCard: (HTMLElement | null)[] = [];
   const categories: string[] = [];
+  const allCategoryCounts: Record<GroupCategory, number> = {
+    anime: 0,
+    game: 0,
+    goods: 0,
+    seiyuu: 0
+  };
   const publishedAtMs: (number | null)[] = [];
   const pulseScores: number[] = [];
   const dedupKeys: string[] = [];
   const sourceHealth: string[] = [];
   const orderIndex: number[] = [];
   let hiddenState: boolean[] = [];
+  let lastSortKey = "";
   let initialized = false;
 
   const bestTitleText = (card: HTMLElement): string => {
@@ -1558,15 +2351,31 @@ function createListFilter(params: {
       const title = bestTitleText(card);
       const summary = card.querySelector("p")?.textContent ?? "";
 
-      const tags = [...card.querySelectorAll<HTMLButtonElement>("button[data-tag]")]
-        .map((b) => b.dataset.tag ?? b.textContent ?? "")
-        .map((t) => normalizeText(t))
-        .filter(Boolean);
+      const tagButtons = [...card.querySelectorAll<HTMLButtonElement>("button[data-tag]")];
+      const rawTags = tagButtons.map((b) => String(b.dataset.tag ?? b.textContent ?? "").trim());
+      const tagTokens = rawTags.map((raw) => normalizeText(raw));
+      const tags = tagTokens.filter(Boolean);
+      for (let j = 0; j < tagTokens.length; j += 1) {
+        const token = tagTokens[j] ?? "";
+        const raw = rawTags[j] ?? "";
+        if (!token) continue;
+        tagTokenFrequency.set(token, (tagTokenFrequency.get(token) ?? 0) + 1);
+        if (raw && !tagLabelByToken.has(token)) tagLabelByToken.set(token, raw);
+      }
 
       const sourceEl = card.querySelector<HTMLElement>("[data-source-badge]");
       const sourceNameRaw =
         sourceEl?.dataset.sourceName ?? sourceEl?.getAttribute("title") ?? sourceEl?.textContent ?? "";
+      const sourceLabel = String(sourceNameRaw).trim();
       const sourceName = normalizeText(sourceNameRaw);
+      if (sourceName) {
+        sourceTokenFrequency.set(sourceName, (sourceTokenFrequency.get(sourceName) ?? 0) + 1);
+        if (sourceLabel && !sourceLabelByToken.has(sourceName)) sourceLabelByToken.set(sourceName, sourceLabel);
+      }
+      const titleEl =
+        card.querySelector<HTMLElement>(".acg-post-card-title") ??
+        card.querySelector<HTMLElement>(".acg-post-link-title") ??
+        card.querySelector<HTMLElement>("a[href]");
 
       const category = normalizeText(card.dataset.category ?? "");
       const publishedAtRaw = card.dataset.publishedAt ?? "";
@@ -1581,8 +2390,13 @@ function createListFilter(params: {
       const order = Number.isFinite(orderRaw) ? orderRaw : index;
 
       tagsByCard.push(tags);
+      tagButtonsByCard.push(tagButtons);
+      tagTokensByCard.push(tagTokens);
       sourceNames.push(sourceName);
+      sourceBadgeByCard.push(sourceEl ?? null);
+      titleByCard.push(titleEl ?? null);
       categories.push(category);
+      if (isGroupCategory(category)) allCategoryCounts[category] += 1;
       publishedAtMs.push(published);
       pulseScores.push(pulse);
       dedupKeys.push(dedupKey);
@@ -1604,6 +2418,227 @@ function createListFilter(params: {
   });
 
   const isStableHealth = (level: string) => level === "excellent" || level === "good";
+  let filterRevealToken = 0;
+  let lastCountPulseAt = 0;
+  const canAnimateFilterFx = (): boolean => {
+    if (prefersReducedMotion()) return false;
+    const perf = document.documentElement.dataset.acgPerf ?? "";
+    if (perf === "low") return false;
+    return true;
+  };
+  const pulseCounter = (el: HTMLElement | null) => {
+    if (!el) return;
+    if (!canAnimateFilterFx()) return;
+    const now = Date.now();
+    if (now - lastCountPulseAt < 120) return;
+    lastCountPulseAt = now;
+
+    el.classList.remove("acg-count-bump");
+    void el.offsetWidth;
+    el.classList.add("acg-count-bump");
+    window.setTimeout(() => {
+      el.classList.remove("acg-count-bump");
+    }, 260);
+  };
+  const animateRevealedCards = (cardsToReveal: HTMLElement[]) => {
+    if (!canAnimateFilterFx()) return;
+    const revealList = cardsToReveal.filter((el) => !el.classList.contains("hidden")).slice(0, 18);
+    if (revealList.length === 0) return;
+
+    filterRevealToken += 1;
+    const token = filterRevealToken;
+    for (let i = 0; i < revealList.length; i += 1) {
+      const card = revealList[i];
+      const delayMs = Math.min(i * 18, 160);
+      card.style.setProperty("--acg-filter-reveal-delay", `${delayMs}ms`);
+      card.classList.remove("acg-filter-reveal");
+      void card.offsetWidth;
+      card.classList.add("acg-filter-reveal");
+      window.setTimeout(() => {
+        if (token !== filterRevealToken) return;
+        card.classList.remove("acg-filter-reveal");
+        card.style.removeProperty("--acg-filter-reveal-delay");
+      }, 420 + delayMs);
+    }
+  };
+  const topTokenFromFrequency = (map: Map<string, number>): string | null => {
+    let bestToken = "";
+    let bestCount = 0;
+    for (const [token, count] of map) {
+      if (!token || count <= 0) continue;
+      if (count > bestCount || (count === bestCount && token.length > bestToken.length)) {
+        bestToken = token;
+        bestCount = count;
+      }
+    }
+    return bestToken || null;
+  };
+  const topCategoryByTotal = (): GroupCategory | null => {
+    let best: GroupCategory | null = null;
+    let bestCount = 0;
+    for (const cat of groupCategoryOrder) {
+      const count = allCategoryCounts[cat] ?? 0;
+      if (count > bestCount) {
+        best = cat;
+        bestCount = count;
+      }
+    }
+    return best;
+  };
+  const toggleSearchToken = (token: string) => {
+    const normalizedToken = normalizeText(token);
+    if (!normalizedToken) return;
+
+    const rawTokens = input.value.trim().split(/\s+/).filter(Boolean);
+    const normalizedTokens = rawTokens.map((part) => normalizeText(part));
+    const exists = normalizedTokens.includes(normalizedToken);
+    const nextTokens = exists
+      ? rawTokens.filter((_, index) => normalizedTokens[index] !== normalizedToken)
+      : [...rawTokens, token];
+    const next = nextTokens.join(" ").trim();
+    if (next !== input.value) {
+      input.value = next;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    try {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    } catch {
+      // ignore
+    }
+    flashSearchFocusCue();
+    track({ type: "search_group_chip", data: { token: normalizedToken, active: !exists } });
+  };
+  const renderGroupSummary = (params: {
+    shown: number;
+    shownByCategory: Record<GroupCategory, number>;
+    parsed: ReturnType<typeof parseQuery>;
+  }) => {
+    if (!groupSummaryUi) return;
+    const { shown, shownByCategory, parsed } = params;
+    if (shown <= 0 || getSearchScope() === "all") {
+      groupSummaryUi.root.classList.add("hidden");
+      groupSummaryUi.chipsEl.innerHTML = "";
+      return;
+    }
+
+    const entries = groupCategoryOrder
+      .map((cat) => ({ cat, count: shownByCategory[cat] ?? 0 }))
+      .filter((entry) => entry.count > 0);
+    if (entries.length === 0) {
+      groupSummaryUi.root.classList.add("hidden");
+      groupSummaryUi.chipsEl.innerHTML = "";
+      return;
+    }
+
+    const peak = Math.max(...entries.map((entry) => entry.count));
+    groupSummaryUi.countEl.textContent = `${groupTexts.totalPrefix}${shown}`;
+    groupSummaryUi.chipsEl.innerHTML = "";
+    for (const entry of entries) {
+      const token = `cat:${entry.cat}`;
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "acg-search-group-chip clickable";
+      chip.title = token;
+      chip.setAttribute("aria-label", `${groupTexts.categoryPrefix}: ${groupCategoryLabels[entry.cat]} (${entry.count})`);
+      const active = parsed.categories.includes(entry.cat);
+      chip.dataset.active = active ? "true" : "false";
+      chip.setAttribute("aria-pressed", active ? "true" : "false");
+      chip.textContent = `${groupCategoryLabels[entry.cat]} ${entry.count}`;
+      if (entry.count === peak && entries.length > 1) chip.dataset.strong = "true";
+      chip.addEventListener("click", (e) => {
+        e.preventDefault();
+        toggleSearchToken(token);
+      });
+      groupSummaryUi.chipsEl.appendChild(chip);
+    }
+    groupSummaryUi.root.classList.remove("hidden");
+  };
+  type EmptyRecommendation = { preset: string; label: string; lens?: TimeLens; sort?: SortMode };
+  const buildEmptyRecommendations = (parsed: ReturnType<typeof parseQuery>): EmptyRecommendation[] => {
+    const recs: EmptyRecommendation[] = [];
+    const seen = new Set<string>();
+    const pushRec = (item: EmptyRecommendation) => {
+      const preset = item.preset.trim();
+      if (!preset) return;
+      const key = `${preset}|${item.lens ?? ""}|${item.sort ?? ""}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      recs.push({ ...item, preset });
+    };
+
+    if (!parsed.isUnread) {
+      pushRec({ preset: "is:unread", label: groupTexts.unreadOnly });
+    }
+    if (parsed.categories.length === 0) {
+      const topCategory = topCategoryByTotal();
+      if (topCategory) {
+        pushRec({
+          preset: `cat:${topCategory}`,
+          label: `${groupTexts.categoryPrefix}: ${groupCategoryLabels[topCategory]}`
+        });
+      }
+    }
+    if (parsed.tags.length === 0) {
+      const tagToken = topTokenFromFrequency(tagTokenFrequency);
+      if (tagToken) {
+        const tagLabel = tagLabelByToken.get(tagToken) ?? tagToken;
+        pushRec({ preset: `tag:${tagToken}`, label: `tag:${tagLabel}` });
+      }
+    }
+    if (parsed.sources.length === 0) {
+      const sourceToken = topTokenFromFrequency(sourceTokenFrequency);
+      if (sourceToken) {
+        const sourceLabel = sourceLabelByToken.get(sourceToken) ?? sourceToken;
+        pushRec({ preset: `source:${sourceToken}`, label: `${groupTexts.sourcePrefix}: ${sourceLabel}` });
+      }
+    }
+    if (parsed.afterMs == null && parsed.beforeMs == null) {
+      const after = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      pushRec({
+        preset: `after:${after}`,
+        label: groupTexts.recent24h,
+        lens: "24h",
+        sort: "pulse"
+      });
+    }
+    if (parsed.notTags.length === 0) {
+      const spoilerWord = isJa ? "ネタバレ" : "剧透";
+      pushRec({ preset: `-tag:${spoilerWord}`, label: groupTexts.excludeSpoiler });
+    }
+    return recs.slice(0, 5);
+  };
+  const renderEmptyRecommendations = (params: { shown: number; parsed: ReturnType<typeof parseQuery> }) => {
+    if (!emptyRecommendationsUi) return;
+    const { shown, parsed } = params;
+    if (getSearchScope() === "all" || shown > 0) {
+      emptyRecommendationsUi.root.classList.add("hidden");
+      emptyRecommendationsUi.chipsEl.innerHTML = "";
+      return;
+    }
+
+    const recommendations = buildEmptyRecommendations(parsed);
+    if (recommendations.length === 0) {
+      emptyRecommendationsUi.root.classList.add("hidden");
+      emptyRecommendationsUi.chipsEl.innerHTML = "";
+      return;
+    }
+
+    emptyRecommendationsUi.chipsEl.innerHTML = "";
+    for (const rec of recommendations) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className =
+        "acg-chip acg-empty-recommendation-chip rounded-full px-3 py-1 text-xs font-semibold clickable";
+      btn.dataset.searchPreset = rec.preset;
+      if (rec.lens) btn.dataset.searchPresetLens = rec.lens;
+      if (rec.sort) btn.dataset.searchPresetSort = rec.sort;
+      btn.textContent = rec.label;
+      btn.title = rec.preset;
+      emptyRecommendationsUi.chipsEl.appendChild(btn);
+    }
+    emptyRecommendationsUi.root.classList.remove("hidden");
+  };
 
   const applySort = () => {
     const container = pageGrid;
@@ -1623,11 +2658,33 @@ function createListFilter(params: {
       }
       return (orderIndex[idxA] ?? 0) - (orderIndex[idxB] ?? 0);
     });
-    for (const el of sorted) container.appendChild(el);
+    const visibleOrderKey = sorted
+      .filter((el) => !el.classList.contains("hidden"))
+      .map((el) => el.dataset.idx ?? "")
+      .join(",");
+    const sortKey = `${mode}|${visibleOrderKey}`;
+    if (sortKey === lastSortKey) return;
+
+    const currentOrder = [...container.querySelectorAll<HTMLElement>("[data-post-id]")];
+    const sameOrder =
+      currentOrder.length === sorted.length && currentOrder.every((el, index) => el === sorted[index]);
+    if (sameOrder) {
+      lastSortKey = sortKey;
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    for (const el of sorted) frag.appendChild(el);
+    container.appendChild(frag);
+    lastSortKey = sortKey;
   };
 
   const applyNow = () => {
-    if (getSearchScope() === "all") return;
+    if (getSearchScope() === "all") {
+      groupSummaryUi?.root.classList.add("hidden");
+      emptyRecommendationsUi?.root.classList.add("hidden");
+      return;
+    }
     initIfNeeded();
     if (!initialized) return;
 
@@ -1643,6 +2700,25 @@ function createListFilter(params: {
     const followWords = followOnlyEnabled ? [...follows].map((w) => normalizeText(w)).filter(Boolean) : [];
     const blockWords = blocklist.size > 0 ? [...blocklist].map((w) => normalizeText(w)).filter(Boolean) : [];
     const now = Date.now();
+    const hasVisualFilters =
+      parsed.text.length > 0 ||
+      parsed.tags.length > 0 ||
+      parsed.sources.length > 0 ||
+      parsed.categories.length > 0 ||
+      parsed.afterMs != null ||
+      parsed.beforeMs != null ||
+      parsed.isRead != null ||
+      parsed.isUnread != null ||
+      parsed.isFresh != null ||
+      lensMs != null ||
+      followOnlyEnabled ||
+      followSourcesOnlyEnabled ||
+      hideReadEnabled ||
+      stableOnlyEnabled ||
+      dedupEnabled;
+
+    if (hasVisualFilters) document.documentElement.dataset.acgFiltering = "1";
+    else delete document.documentElement.dataset.acgFiltering;
 
     let dedupLeader: Map<string, number> | null = null;
     if (dedupEnabled) {
@@ -1753,6 +2829,13 @@ function createListFilter(params: {
 
     let shown = 0;
     let unreadShown = 0;
+    const revealedCards: HTMLElement[] = [];
+    const shownByCategory: Record<GroupCategory, number> = {
+      anime: 0,
+      game: 0,
+      goods: 0,
+      seiyuu: 0
+    };
     for (let i = 0; i < cards.length; i += 1) {
       const id = cards[i].dataset.postId ?? "";
       const sourceId = cards[i].dataset.sourceId ?? "";
@@ -1845,25 +2928,66 @@ function createListFilter(params: {
         sourceEnabled &&
         (!dedupEnabled || !key || dedupLeader?.get(key) === i);
       const hidden = !ok;
-      if (hiddenState[i] !== hidden) {
+      const prevHidden = hiddenState[i];
+      if (prevHidden !== hidden) {
         cards[i].classList.toggle("hidden", hidden);
         hiddenState[i] = hidden;
+        if (!hidden && prevHidden) revealedCards.push(cards[i]);
       }
+      const titleEl = titleByCard[i];
+      const sourceBadgeEl = sourceBadgeByCard[i];
+      const tagButtons = tagButtonsByCard[i] ?? [];
+      const tagTokens = tagTokensByCard[i] ?? [];
+
+      const textFocus = parsed.text.length > 0 ? matchText : parsed.categories.length > 0 ? matchCats : false;
+      const sourceFocus =
+        (parsed.sources.length > 0 && matchSources) || (followSourcesOnlyEnabled && matchFollowSources);
+      const tagFocus = parsed.tags.length > 0 && matchTags;
+      const strongFocus = Number(textFocus) + Number(sourceFocus) + Number(tagFocus) >= 2;
+      const enableCardFocus = hasVisualFilters && ok;
+
+      if (enableCardFocus) cards[i].dataset.filterHit = "1";
+      else delete cards[i].dataset.filterHit;
+      if (enableCardFocus && strongFocus) cards[i].dataset.filterStrong = "1";
+      else delete cards[i].dataset.filterStrong;
+
+      titleEl?.classList.toggle("is-filter-match", enableCardFocus && textFocus);
+      sourceBadgeEl?.classList.toggle("is-filter-match", enableCardFocus && sourceFocus);
+      for (let j = 0; j < tagButtons.length; j += 1) {
+        const token = tagTokens[j] ?? "";
+        const tagMatched = enableCardFocus && parsed.tags.length > 0 && token
+          ? parsed.tags.some((t) => t && token.includes(t))
+          : false;
+        tagButtons[j].classList.toggle("is-filter-match", Boolean(tagMatched));
+      }
+
       if (ok) {
         shown += 1;
         if (!read) unreadShown += 1;
+        if (isGroupCategory(category)) shownByCategory[category] += 1;
       }
     }
     if (count) {
       const next = `${shown}/${cards.length}`;
-      if (count.textContent !== next) count.textContent = next;
+      if (count.textContent !== next) {
+        const prev = count.textContent ?? "";
+        count.textContent = next;
+        if (prev && prev !== "-") pulseCounter(count);
+      }
     }
     if (unreadCount) {
       const next = String(unreadShown);
-      if (unreadCount.textContent !== next) unreadCount.textContent = next;
+      if (unreadCount.textContent !== next) {
+        const prev = unreadCount.textContent ?? "";
+        unreadCount.textContent = next;
+        if (prev && prev !== "-") pulseCounter(unreadCount);
+      }
     }
     if (empty) empty.classList.toggle("hidden", shown > 0);
+    renderGroupSummary({ shown, shownByCategory, parsed });
+    renderEmptyRecommendations({ shown, parsed });
     applySort();
+    animateRevealedCards(revealedCards);
   };
 
   let scheduled = false;
@@ -1895,6 +3019,14 @@ function createListFilter(params: {
   input.addEventListener("input", scheduleSearchTrack);
   input.addEventListener("focus", () => initIfNeeded());
   document.addEventListener("acg:filters-changed", schedule);
+  document.addEventListener("acg:search-scope-changed", () => {
+    if (getSearchScope() === "all") {
+      groupSummaryUi?.root.classList.add("hidden");
+      emptyRecommendationsUi?.root.classList.add("hidden");
+      return;
+    }
+    schedule();
+  });
   document.addEventListener("acg:filters-changed", () => {
     track({
       type: "filters_changed",
@@ -2065,7 +3197,7 @@ function createCategoryIcon(params: { category: BookmarkCategory; size: number }
   return svg;
 }
 
-type UiIconName = "arrow-up" | "external-link" | "refresh" | "star" | "x";
+type UiIconName = "arrow-up" | "external-link" | "refresh" | "search" | "sliders" | "star" | "x";
 
 function createUiIcon(params: { name: UiIconName; size: number; filled?: boolean }): SVGSVGElement {
   const { name, size, filled = false } = params;
@@ -2139,6 +3271,62 @@ function createUiIcon(params: { name: UiIconName; size: number; filled?: boolean
       "stroke-width": "2",
       "stroke-linecap": "round",
       "stroke-linejoin": "round"
+    });
+  }
+
+  if (name === "search") {
+    addPath({
+      d: "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round"
+    });
+    addPath({
+      d: "m21 21-4.35-4.35",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round"
+    });
+  }
+
+  if (name === "sliders") {
+    addPath({
+      d: "M4 6h16",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round"
+    });
+    addPath({
+      d: "M4 12h16",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round"
+    });
+    addPath({
+      d: "M4 18h16",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round"
+    });
+    addPath({
+      d: "M9 6a1.5 1.5 0 1 0 0 .01",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round"
+    });
+    addPath({
+      d: "M15 12a1.5 1.5 0 1 0 0 .01",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round"
+    });
+    addPath({
+      d: "M10 18a1.5 1.5 0 1 0 0 .01",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round"
     });
   }
 
@@ -2248,12 +3436,28 @@ async function getBookmarkPostsById(): Promise<Map<string, BookmarkPost>> {
 
 function shouldPrefetchAllPosts(): boolean {
   try {
+    const root = document.documentElement;
+    const device = root.dataset.acgDevice ?? "";
+    const perf = root.dataset.acgPerf ?? "";
+    if (perf === "low") return false;
+
     type NetworkInformationLike = { saveData?: boolean; effectiveType?: string };
     type NavigatorWithConnection = Navigator & { connection?: NetworkInformationLike };
+    type NavigatorWithDeviceHints = Navigator & { deviceMemory?: number };
     const conn = (navigator as NavigatorWithConnection).connection;
     if (conn?.saveData) return false;
     const effective = String(conn?.effectiveType ?? "").toLowerCase();
     if (effective.includes("2g")) return false;
+
+    // 手机弱网（3g）时，优先保持交互响应，不做全量预取。
+    if (device === "phone" && effective.includes("3g")) return false;
+
+    const memRaw = (navigator as NavigatorWithDeviceHints).deviceMemory;
+    const coresRaw = navigator.hardwareConcurrency;
+    const memoryLow = typeof memRaw === "number" && memRaw <= 4;
+    const coresLow = typeof coresRaw === "number" && Number.isFinite(coresRaw) && coresRaw <= 4;
+
+    if ((device === "phone" || device === "tablet") && (memoryLow || coresLow)) return false;
   } catch {
     // ignore
   }
@@ -2392,6 +3596,35 @@ function wireGlobalSearch(params: {
     toggle!.setAttribute("aria-pressed", enabled ? "true" : "false");
   };
 
+  let lastCountPulseAt = 0;
+  const canAnimateCounterFx = (): boolean => {
+    if (prefersReducedMotion()) return false;
+    const perf = document.documentElement.dataset.acgPerf ?? "";
+    if (perf === "low") return false;
+    return true;
+  };
+  const pulseCounter = (el: HTMLElement | null) => {
+    if (!el) return;
+    if (!canAnimateCounterFx()) return;
+    const now = Date.now();
+    if (now - lastCountPulseAt < 120) return;
+    lastCountPulseAt = now;
+
+    el.classList.remove("acg-count-bump");
+    void el.offsetWidth;
+    el.classList.add("acg-count-bump");
+    window.setTimeout(() => {
+      el.classList.remove("acg-count-bump");
+    }, 260);
+  };
+  const setCounterText = (el: HTMLElement | null, next: string) => {
+    if (!el) return;
+    if (el.textContent === next) return;
+    const prev = el.textContent ?? "";
+    el.textContent = next;
+    if (prev && prev !== "-") pulseCounter(el);
+  };
+
   const ensureWorker = (showSkeleton: boolean) => {
     if (worker) return;
 
@@ -2452,9 +3685,8 @@ function wireGlobalSearch(params: {
       if (msg.type === "result") {
         if (msg.requestId !== latestRequestId) return;
         renderResults(msg.posts, getBookmarkLang());
-        if (count)
-          count.textContent = msg.truncated ? `${msg.matched}+/${msg.total}` : `${msg.matched}/${msg.total}`;
-        if (unreadCount) unreadCount.textContent = String(msg.unread);
+        setCounterText(count, msg.truncated ? `${msg.matched}+/${msg.total}` : `${msg.matched}/${msg.total}`);
+        setCounterText(unreadCount, String(msg.unread));
         setEmptyVisible(msg.matched === 0);
 
         if (msg.truncated && msg.requestId !== lastTruncatedToastRequestId) {
@@ -2588,8 +3820,8 @@ function wireGlobalSearch(params: {
       requestSearch(input.value);
     } else {
       renderResults([], getBookmarkLang());
-      if (count) count.textContent = workerTotal > 0 ? `0/${workerTotal}` : "0/0";
-      if (unreadCount) unreadCount.textContent = "0";
+      setCounterText(count, workerTotal > 0 ? `0/${workerTotal}` : "0/0");
+      setCounterText(unreadCount, "0");
       setEmptyVisible(true);
       return;
     }
@@ -2644,14 +3876,39 @@ function wireGlobalSearch(params: {
     input.dispatchEvent(new Event("input", { bubbles: true }));
   };
 
-  const applySearchPreset = (presetRaw: string) => {
+  const applySearchPreset = (params: { presetRaw: string; lens?: TimeLens; sort?: SortMode }) => {
+    const { presetRaw, lens, sort } = params;
     const preset = presetRaw.trim();
-    if (!preset) return;
+    if (!preset && !lens && !sort) return;
 
     try {
-      input.value = preset;
+      if (preset) input.value = preset;
     } catch {
       // ignore
+    }
+
+    if (lens) {
+      const lensBtn = document.querySelector<HTMLButtonElement>(`button[data-time-lens="${lens}"]`);
+      if (lensBtn) {
+        lensBtn.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      } else if (filters.timeLens !== lens) {
+        filters.timeLens = lens;
+        saveFilters(filters);
+        syncFilterDataset(filters);
+        document.dispatchEvent(new CustomEvent("acg:filters-changed"));
+      }
+    }
+
+    if (sort) {
+      const sortBtn = document.querySelector<HTMLButtonElement>(`button[data-sort-mode="${sort}"]`);
+      if (sortBtn) {
+        sortBtn.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      } else if (filters.sortMode !== sort) {
+        filters.sortMode = sort;
+        saveFilters(filters);
+        syncFilterDataset(filters);
+        document.dispatchEvent(new CustomEvent("acg:filters-changed"));
+      }
     }
 
     if (getSearchScope() !== "all") {
@@ -2661,7 +3918,7 @@ function wireGlobalSearch(params: {
     }
 
     try {
-      input.dispatchEvent(new Event("input", { bubbles: true }));
+      if (preset) input.dispatchEvent(new Event("input", { bubbles: true }));
     } catch {
       // ignore
     }
@@ -2671,11 +3928,46 @@ function wireGlobalSearch(params: {
       input.scrollIntoView({ behavior, block: "center" });
       input.focus();
       input.select();
+      flashSearchFocusCue();
     } catch {
       // ignore
     }
 
-    track({ type: "search_preset", data: { preset } });
+    track({ type: "search_preset", data: { preset, lens, sort } });
+    schedulePresetSync();
+  };
+
+  const syncSearchPresetState = () => {
+    const chips = [...document.querySelectorAll<HTMLElement>("[data-search-preset]")];
+    if (chips.length === 0) return;
+    const currentPreset = input.value.trim();
+    const currentLens = filters.timeLens ?? "all";
+    const currentSort = filters.sortMode ?? "latest";
+    const scopeAll = getSearchScope() === "all";
+
+    for (const chip of chips) {
+      const preset = String(chip.dataset.searchPreset ?? "").trim();
+      const lensRaw = String(chip.dataset.searchPresetLens ?? "").trim();
+      const sortRaw = String(chip.dataset.searchPresetSort ?? "").trim();
+      const lens = lensRaw ? normalizeTimeLens(lensRaw) : null;
+      const sort = sortRaw ? normalizeSortMode(sortRaw) : null;
+      const presetMatch = preset ? preset === currentPreset : true;
+      const lensMatch = lens ? lens === currentLens : true;
+      const sortMatch = sort ? sort === currentSort : true;
+      const active = scopeAll && presetMatch && lensMatch && sortMatch && Boolean(preset || lens || sort);
+      chip.dataset.active = active ? "true" : "false";
+      chip.setAttribute("aria-pressed", active ? "true" : "false");
+    }
+  };
+
+  let presetSyncScheduled = false;
+  const schedulePresetSync = () => {
+    if (presetSyncScheduled) return;
+    presetSyncScheduled = true;
+    window.requestAnimationFrame(() => {
+      presetSyncScheduled = false;
+      syncSearchPresetState();
+    });
   };
 
   document.addEventListener("click", (e) => {
@@ -2684,18 +3976,26 @@ function wireGlobalSearch(params: {
     const el = e.target.closest<HTMLElement>("[data-search-preset]");
     if (!el) return;
     const preset = String(el.dataset.searchPreset ?? "");
-    if (!preset.trim()) return;
+    const lensRaw = String(el.dataset.searchPresetLens ?? "").trim();
+    const sortRaw = String(el.dataset.searchPresetSort ?? "").trim();
+    const lens = lensRaw ? normalizeTimeLens(lensRaw) : undefined;
+    const sort = sortRaw ? normalizeSortMode(sortRaw) : undefined;
+    if (!preset.trim() && !lens && !sort) return;
     e.preventDefault();
-    applySearchPreset(preset);
+    applySearchPreset({ presetRaw: preset, lens, sort });
   });
 
   toggle.addEventListener("click", (e) => {
     e.preventDefault();
     const enabled = getSearchScope() === "all";
     setEnabled(!enabled);
+    schedulePresetSync();
   });
 
-  input.addEventListener("input", schedule);
+  input.addEventListener("input", () => {
+    schedule();
+    schedulePresetSync();
+  });
   input.addEventListener("focus", () => {
     if (!shouldPrefetchAllPosts()) return;
     void getBookmarkPostsById().catch(() => {
@@ -2705,14 +4005,17 @@ function wireGlobalSearch(params: {
   document.addEventListener("acg:filters-changed", () => {
     stateDirty = true;
     schedule();
+    schedulePresetSync();
   });
   document.addEventListener("acg:read-changed", () => {
     stateDirty = true;
     schedule();
   });
+  document.addEventListener("acg:search-presets-mounted", schedulePresetSync);
   document.addEventListener("acg:search-scope-changed", () => {
     syncToggleUi();
     if (getSearchScope() === "all") schedule();
+    schedulePresetSync();
   });
 
   // 静默预取：弱网/省流量偏好下不主动拉全量数据；否则在空闲时预热缓存。
@@ -2727,6 +4030,7 @@ function wireGlobalSearch(params: {
   // 初始：若用户上次停留在全站搜索，则自动恢复
   syncToggleUi();
   if (getSearchScope() === "all") setEnabled(true);
+  schedulePresetSync();
 }
 
 type BookmarkMetaStore = {
@@ -2834,7 +4138,7 @@ function buildBookmarkCard(params: {
       : (post.summaryJa ?? post.previewJa ?? post.summary ?? post.preview);
 
   const article = document.createElement("article");
-  article.className = "glass-card acg-card clickable shine group relative overflow-hidden rounded-2xl";
+  article.className = "acg-post-card acg-post-card-shell glass-card acg-card clickable shine group relative overflow-hidden rounded-2xl";
   article.dataset.postId = post.id;
   article.dataset.category = post.category;
   article.dataset.sourceId = post.sourceId;
@@ -2842,10 +4146,21 @@ function buildBookmarkCard(params: {
   article.dataset.hasCover = post.cover ? "true" : "false";
   if (readIds.has(post.id)) article.setAttribute("data-read", "true");
 
+  const cardBody = document.createElement("div");
+  cardBody.className = "acg-post-card-body flex gap-3 p-3 sm:block sm:p-0";
+  article.appendChild(cardBody);
+
+  const coverWrap = document.createElement("div");
+  coverWrap.className = "acg-post-card-cover relative w-32 shrink-0 sm:w-full";
+  cardBody.appendChild(coverWrap);
+
   const topLink = document.createElement("a");
   topLink.href = detailHref;
-  topLink.className = "relative block aspect-[16/9]";
-  article.appendChild(topLink);
+  topLink.className =
+    "acg-post-card-cover-link relative block aspect-[4/3] overflow-hidden rounded-xl sm:aspect-[16/9] sm:rounded-none";
+  topLink.setAttribute("aria-label", displayTitle || (lang === "ja" ? "（無題）" : "（无标题）"));
+  topLink.title = displayTitle || (lang === "ja" ? "（無題）" : "（无标题）");
+  coverWrap.appendChild(topLink);
 
   const retryBtn = document.createElement("button");
   retryBtn.type = "button";
@@ -2854,7 +4169,7 @@ function buildBookmarkCard(params: {
   retryBtn.setAttribute("aria-label", retryCoverLabel);
   retryBtn.title = retryCoverLabel;
   retryBtn.appendChild(createUiIcon({ name: "refresh", size: 18 }));
-  article.appendChild(retryBtn);
+  coverWrap.appendChild(retryBtn);
 
   const coverGrad = document.createElement("div");
   coverGrad.className = `absolute inset-0 bg-gradient-to-br ${theme.cover}`;
@@ -2910,7 +4225,7 @@ function buildBookmarkCard(params: {
   topLink.appendChild(overlay);
 
   const badgeWrap = document.createElement("div");
-  badgeWrap.className = "absolute left-3 top-3 flex flex-wrap items-center gap-2";
+  badgeWrap.className = "acg-post-card-cover-badges absolute left-3 top-3 hidden flex-wrap items-center gap-2 sm:flex";
   const badge = document.createElement("span");
   badge.className =
     "inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white";
@@ -2938,7 +4253,7 @@ function buildBookmarkCard(params: {
   topLink.appendChild(badgeWrap);
 
   const whenWrap = document.createElement("div");
-  whenWrap.className = "absolute bottom-3 left-3";
+  whenWrap.className = "acg-post-card-cover-when absolute bottom-3 left-3 hidden sm:block";
   const whenChip = document.createElement("span");
   whenChip.className =
     "inline-flex max-w-[22ch] truncate rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/90";
@@ -2947,8 +4262,8 @@ function buildBookmarkCard(params: {
   topLink.appendChild(whenWrap);
 
   const body = document.createElement("div");
-  body.className = "p-4 sm:p-5";
-  article.appendChild(body);
+  body.className = "acg-post-card-content min-w-0 flex-1 py-1 sm:p-5";
+  cardBody.appendChild(body);
 
   const head = document.createElement("div");
   head.className = "flex items-start justify-between gap-3";
@@ -2961,13 +4276,49 @@ function buildBookmarkCard(params: {
   const titleLink = document.createElement("a");
   titleLink.href = detailHref;
   titleLink.className =
-    "block text-[15px] font-semibold leading-snug text-slate-950 hover:underline line-clamp-2 sm:text-base";
+    "acg-post-card-title block text-[15px] font-semibold leading-snug text-slate-950 hover:underline line-clamp-2 sm:text-base";
   titleLink.textContent = displayTitle || (lang === "ja" ? "（無題）" : "（无标题）");
   left.appendChild(titleLink);
 
   const meta = document.createElement("div");
-  meta.className = "mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs";
+  meta.className = "acg-post-card-meta mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-600 sm:text-xs";
   left.appendChild(meta);
+
+  const categoryMeta = document.createElement("span");
+  categoryMeta.className = "inline-flex items-center gap-2 font-medium text-slate-700";
+  const categoryMetaDot = document.createElement("span");
+  categoryMetaDot.className = `size-1.5 rounded-full ${theme.dot}`;
+  const categoryMetaText = document.createElement("span");
+  categoryMetaText.textContent = label;
+  categoryMeta.appendChild(categoryMetaDot);
+  categoryMeta.appendChild(categoryMetaText);
+  meta.appendChild(categoryMeta);
+
+  const sep = document.createElement("span");
+  sep.className = "text-slate-400";
+  sep.textContent = "·";
+  meta.appendChild(sep);
+
+  const whenText = document.createElement("span");
+  whenText.textContent = when;
+  meta.appendChild(whenText);
+
+  if (isFresh) {
+    const freshChip = document.createElement("span");
+    freshChip.className =
+      "inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 font-semibold text-emerald-800";
+    const freshDot = document.createElement("span");
+    freshDot.className = "acg-dot-pulse size-1.5 rounded-full bg-emerald-500";
+    const freshText = document.createElement("span");
+    freshText.textContent = freshLabel;
+    freshChip.appendChild(freshDot);
+    freshChip.appendChild(freshText);
+    meta.appendChild(freshChip);
+  }
+
+  const sourceRow = document.createElement("div");
+  sourceRow.className = "mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs";
+  left.appendChild(sourceRow);
 
   if (post.sourceUrl && post.sourceName) {
     const sourceLink = document.createElement("a");
@@ -2994,12 +4345,13 @@ function buildBookmarkCard(params: {
     sourceIcon.appendChild(createUiIcon({ name: "external-link", size: 14 }));
     sourceLink.appendChild(sourceIcon);
 
-    meta.appendChild(sourceLink);
+    sourceRow.appendChild(sourceLink);
   }
 
   const star = document.createElement("button");
   star.type = "button";
-  star.className = "glass-card rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable";
+  star.className =
+    "acg-post-card-bookmark glass-card rounded-full p-2 text-xs font-medium text-slate-950 clickable sm:rounded-xl sm:px-3 sm:py-2";
   star.dataset.bookmarkId = post.id;
   const bookmarked = bookmarkIds.has(post.id);
   const bookmarkLabel = lang === "ja" ? "ブックマーク" : "收藏";
@@ -3015,7 +4367,7 @@ function buildBookmarkCard(params: {
 
   if (displaySnippet) {
     const p = document.createElement("p");
-    p.className = "mt-2 line-clamp-3 text-sm leading-relaxed text-slate-600";
+    p.className = "acg-post-card-snippet mt-2 line-clamp-2 text-sm leading-relaxed text-slate-600 sm:line-clamp-3";
     p.textContent = displaySnippet;
     body.appendChild(p);
   }
@@ -3027,7 +4379,7 @@ function buildBookmarkCard(params: {
     for (const tag of post.tags.slice(0, 4)) {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = `shrink-0 whitespace-nowrap rounded-full border border-slate-900/10 bg-white/50 px-2.5 py-1 text-xs hover:bg-white/70 clickable ${theme.ink}`;
+      btn.className = `acg-post-card-tag shrink-0 whitespace-nowrap rounded-full border border-slate-900/10 bg-white/50 px-2.5 py-1 text-xs hover:bg-white/70 clickable ${theme.ink}`;
       btn.dataset.tag = tag;
       btn.textContent = tag;
       wrap.appendChild(btn);
@@ -3366,6 +4718,11 @@ function wirePreferences(params: { follows: Set<string>; blocklist: Set<string>;
   const blockInput = document.querySelector<HTMLInputElement>("#acg-block-input");
   const blockAdd = document.querySelector<HTMLButtonElement>("#acg-block-add");
   const blockList = document.querySelector<HTMLElement>("#acg-block-list");
+  const searchInput = document.querySelector<HTMLInputElement>("#acg-search");
+  const summaryCount = document.querySelector<HTMLElement>("#acg-filter-summary-count");
+  const summaryChips = document.querySelector<HTMLElement>("#acg-filter-summary-chips");
+  const summaryEmpty = document.querySelector<HTMLElement>("#acg-filter-summary-empty");
+  const resetFiltersBtn = document.querySelector<HTMLButtonElement>("#acg-reset-filters");
 
   if (
     !onlyFollowed ||
@@ -3382,6 +4739,116 @@ function wirePreferences(params: { follows: Set<string>; blocklist: Set<string>;
   ) {
     return;
   }
+
+  const summaryText = isJapanese()
+    ? {
+        scope: "範囲",
+        scopePage: "ページ内",
+        scopeAll: "全件",
+        q: "Q",
+        followOnly: "キーワード一致のみ",
+        followedSourcesOnly: "フォローソースのみ",
+        hideRead: "既読を除外",
+        onlyStable: "安定ソースのみ",
+        dedup: "重複を統合",
+        lens: "時間",
+        sort: "並び",
+        followWords: "フォロー語",
+        blockWords: "除外語",
+        resetDone: "検索条件をリセットしました。"
+      }
+    : {
+        scope: "范围",
+        scopePage: "本页",
+        scopeAll: "全站",
+        q: "Q",
+        followOnly: "仅关注关键词",
+        followedSourcesOnly: "仅关注来源",
+        hideRead: "隐藏已读",
+        onlyStable: "仅稳定来源",
+        dedup: "合并重复",
+        lens: "时间窗",
+        sort: "排序",
+        followWords: "关注词",
+        blockWords: "屏蔽词",
+        resetDone: "已重置搜索条件。"
+      };
+
+  const lensLabel = (lens: TimeLens): string => {
+    if (lens === "2h") return isJapanese() ? "2時間" : "2小时";
+    if (lens === "6h") return isJapanese() ? "6時間" : "6小时";
+    if (lens === "24h") return isJapanese() ? "24時間" : "24小时";
+    return isJapanese() ? "すべて" : "全部";
+  };
+
+  const sortLabel = (mode: SortMode): string => (mode === "pulse" ? (isJapanese() ? "Pulse" : "热度") : isJapanese() ? "最新" : "最新");
+
+  const createSummaryChip = (label: string, strong = false): HTMLElement => {
+    const chip = document.createElement("span");
+    chip.className = "acg-filter-chip";
+    if (strong) chip.dataset.strong = "true";
+    chip.textContent = label;
+    return chip;
+  };
+
+  const renderFilterSummary = () => {
+    if (!summaryChips || !summaryEmpty) return;
+    const chips: HTMLElement[] = [];
+    let activeCount = 0;
+
+    const scope = getSearchScope();
+    chips.push(
+      createSummaryChip(`${summaryText.scope}: ${scope === "all" ? summaryText.scopeAll : summaryText.scopePage}`)
+    );
+
+    const q = (searchInput?.value ?? "").trim();
+    if (q) {
+      activeCount += 1;
+      const brief = q.length > 20 ? `${q.slice(0, 20)}...` : q;
+      chips.push(createSummaryChip(`${summaryText.q}: ${brief}`, true));
+    }
+    if (filters.onlyFollowed) {
+      activeCount += 1;
+      chips.push(createSummaryChip(summaryText.followOnly));
+    }
+    if (filters.onlyFollowedSources) {
+      activeCount += 1;
+      chips.push(createSummaryChip(summaryText.followedSourcesOnly));
+    }
+    if (filters.hideRead) {
+      activeCount += 1;
+      chips.push(createSummaryChip(summaryText.hideRead));
+    }
+    if (filters.onlyStableSources) {
+      activeCount += 1;
+      chips.push(createSummaryChip(summaryText.onlyStable));
+    }
+    if (filters.dedup) {
+      activeCount += 1;
+      chips.push(createSummaryChip(summaryText.dedup));
+    }
+    if (filters.timeLens !== "all") {
+      activeCount += 1;
+      chips.push(createSummaryChip(`${summaryText.lens}: ${lensLabel(filters.timeLens)}`));
+    }
+    if (filters.sortMode !== "latest") {
+      activeCount += 1;
+      chips.push(createSummaryChip(`${summaryText.sort}: ${sortLabel(filters.sortMode)}`));
+    }
+    if (follows.size > 0) {
+      activeCount += 1;
+      chips.push(createSummaryChip(`${summaryText.followWords}: ${follows.size}`));
+    }
+    if (blocklist.size > 0) {
+      activeCount += 1;
+      chips.push(createSummaryChip(`${summaryText.blockWords}: ${blocklist.size}`));
+    }
+
+    summaryChips.innerHTML = "";
+    for (const chip of chips) summaryChips.appendChild(chip);
+    summaryEmpty.classList.toggle("hidden", activeCount > 0);
+    if (summaryCount) summaryCount.textContent = String(activeCount);
+  };
 
   onlyFollowed.checked = filters.onlyFollowed;
   onlyFollowedSources.checked = filters.onlyFollowedSources;
@@ -3408,6 +4875,7 @@ function wirePreferences(params: { follows: Set<string>; blocklist: Set<string>;
   const emit = () => {
     syncFilterDataset(filters);
     syncSegments();
+    renderFilterSummary();
     document.dispatchEvent(new CustomEvent("acg:filters-changed"));
   };
 
@@ -3445,6 +4913,46 @@ function wirePreferences(params: { follows: Set<string>; blocklist: Set<string>;
 
   render();
   syncSegments();
+  renderFilterSummary();
+
+  searchInput?.addEventListener("input", renderFilterSummary);
+  document.addEventListener("acg:search-scope-changed", renderFilterSummary);
+
+  resetFiltersBtn?.addEventListener("click", () => {
+    const hadSearch = Boolean((searchInput?.value ?? "").trim());
+    const hadFilter =
+      filters.onlyFollowed ||
+      filters.onlyFollowedSources ||
+      filters.hideRead ||
+      filters.onlyStableSources ||
+      filters.dedup ||
+      filters.timeLens !== "all" ||
+      filters.sortMode !== "latest";
+
+    if (searchInput) {
+      searchInput.value = "";
+      searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    filters.onlyFollowed = false;
+    filters.onlyFollowedSources = false;
+    filters.hideRead = false;
+    filters.onlyStableSources = false;
+    filters.dedup = false;
+    filters.timeLens = "all";
+    filters.sortMode = "latest";
+
+    onlyFollowed.checked = false;
+    onlyFollowedSources.checked = false;
+    hideRead.checked = false;
+    onlyStable.checked = false;
+    dedup.checked = false;
+
+    saveFilters(filters);
+    emit();
+
+    if (hadSearch || hadFilter) setPrefsMessage(summaryText.resetDone);
+  });
 
   onlyFollowed.addEventListener("change", () => {
     filters.onlyFollowed = onlyFollowed.checked;
@@ -4398,6 +5906,34 @@ function wireSpotlightCarousel() {
   }
 }
 
+function wireReadingProgress() {
+  const article = document.querySelector<HTMLElement>("[data-reading-article]");
+  const bar = document.querySelector<HTMLElement>("[data-reading-progress-bar]");
+  if (!article || !bar) return;
+
+  let ticking = false;
+
+  const update = () => {
+    ticking = false;
+    const vh = Math.max(1, window.innerHeight || 0);
+    const rect = article.getBoundingClientRect();
+    const total = Math.max(1, rect.height - vh * 0.45);
+    const travelled = Math.min(total, Math.max(0, vh * 0.18 - rect.top));
+    const progress = Math.max(0, Math.min(1, travelled / total));
+    bar.style.transform = `scaleX(${progress.toFixed(4)})`;
+  };
+
+  const schedule = () => {
+    if (ticking) return;
+    ticking = true;
+    window.requestAnimationFrame(update);
+  };
+
+  window.addEventListener("scroll", schedule, { passive: true });
+  window.addEventListener("resize", schedule);
+  schedule();
+}
+
 function markCurrentPostRead(readIds: Set<string>) {
   const current = document.body.dataset.currentPostId ?? "";
   if (!current) return;
@@ -4559,6 +6095,8 @@ function initApp() {
   // 已读逻辑不影响关键可用性（筛选逻辑直接读 readIds），因此延后到 idle 更稳更顺。
   runWhenIdle(() => applyReadState(readIds), UI.APPLY_READ_IDLE_DELAY_MS);
   wireBackToTop();
+  wireMobileQuickActions();
+  wireMobileDensityAutoTune();
   wireCoverRetry();
   wireBookmarks(bookmarkIds);
   wireBookmarksPage(bookmarkIds, readIds);
@@ -4574,6 +6112,8 @@ function initApp() {
   wireKeyboardShortcuts();
   wireCommandPaletteShortcut();
   wireSearchClear();
+  wireSearchCounterA11y();
+  wireSearchSyntaxGuide();
   wirePrefsDrawer();
   if (document.querySelector("[data-fulltext]")) {
     void import("./features/fulltext").then((m) => m.wireFullTextReader());
@@ -4582,9 +6122,11 @@ function initApp() {
     void import("./features/telemetry-viewer").then((m) => m.wireTelemetryViewer());
   }
   wireTagChips();
+  wirePostCardInteractions();
   wireDailyBriefCopy();
   wireCopyTextButtons();
   wireSpotlightCarousel();
+  wireReadingProgress();
   runWhenIdle(() => hydrateCoverStates(), UI.HYDRATE_COVER_IDLE_DELAY_MS);
   wireDeviceDebug();
   maybeStartHealthMonitor();
