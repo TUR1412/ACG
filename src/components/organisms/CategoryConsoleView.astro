@@ -6,9 +6,13 @@ import PostList from "./PostList.astro";
 import PreferencesDrawer from "./PreferencesDrawer.astro";
 import Icon from "../atoms/Icon.astro";
 import Chip from "../atoms/Chip.astro";
+import SourceBadge from "../molecules/SourceBadge.astro";
 import { categoryLabel } from "../../lib/categories";
 import { getCategoryTheme } from "../../lib/category-theme";
 import { t } from "../../i18n/i18n";
+import { resolveCover } from "../../lib/cover";
+import { href } from "../../lib/href";
+import { formatRelativeHours } from "../../lib/format";
 
 export type Props = {
   lang: Lang;
@@ -22,33 +26,52 @@ export type Props = {
 
 const { lang, category, filtered, total, lensCounts, topPulse, stableRatio } = Astro.props as Props;
 const theme = getCategoryTheme(category);
+const featured = filtered[0] ?? null;
+const featuredTitle = featured
+  ? lang === "zh"
+    ? (featured.titleZh ?? featured.title)
+    : (featured.titleJa ?? featured.title)
+  : null;
+const featuredSummary = featured
+  ? lang === "zh"
+    ? (featured.summaryZh ?? featured.previewZh ?? featured.summary ?? featured.preview)
+    : (featured.summaryJa ?? featured.previewJa ?? featured.summary ?? featured.preview)
+  : null;
+const featuredCover = featured ? resolveCover(featured.cover, 1400) : null;
+const featuredHref = featured ? href(`/${lang}/p/${featured.id}/`) : href(`/${lang}/c/${category}/`);
+const featuredWhen = featured ? (formatRelativeHours(lang, featured.publishedAt) ?? "") : "";
+const featuredPulse = typeof featured?.pulseScore === "number" ? featured.pulseScore : topPulse;
 
 const labels = {
   zh: {
     kicker: "CHANNEL ARCHIVE",
     headline: "信号档案台",
-    lead: "把同一类别的内容汇成一条连续波段：标题区、筛选区和内容流不再彼此割裂，而是顺着同一张版面往下读。",
+    lead: "分类页不再只是过滤后的卡片网格，而是用一条更有主次的波段来讲这一类内容。",
     visible: "当前可见",
     total: "总量",
     archive: "ARCHIVE NOTE",
-    archiveBody: "这一页不再把说明、筛选、列表切成三段独立卡片，而是压到同一张连续画布里。",
+    archiveBody: "把这一类里最值得点开的内容先抬出来，再让列表继续承接深度浏览。",
     sectionTitle: "主档案流",
     sectionHint: "支持视图、密度、时间透镜、已读与关注来源联动。",
     emptyTitle: "当前条件下没有匹配到信号",
-    emptyHint: "尝试清空搜索词、恢复时间透镜，或关闭部分过滤条件。"
+    emptyHint: "尝试清空搜索词、恢复时间透镜，或关闭部分过滤条件。",
+    feature: "本类精选",
+    openSignal: "打开信号"
   },
   ja: {
     kicker: "CHANNEL ARCHIVE",
     headline: "シグナルアーカイブ",
-    lead: "同じカテゴリの更新を一つの連続した波長として閲覧できるように再構成。ヘッダー、フィルター、記事流が一枚の版面でつながります。",
+    lead: "カテゴリページを単なるフィルタ後のカード一覧ではなく、このカテゴリの“主役”を持つ波長として再構成します。",
     visible: "VISIBLE",
     total: "TOTAL",
     archive: "ARCHIVE NOTE",
-    archiveBody: "説明、フィルター、一覧を別々のカードに分断せず、一枚の連続した画面へ収め直しています。",
+    archiveBody: "このカテゴリで最も見せたい内容を先に浮かび上がらせ、そのあと一覧で深く辿れるようにします。",
     sectionTitle: "PRIMARY ARCHIVE",
     sectionHint: "ビュー・密度・タイムレンズ・既読・フォロー中ソースをまとめて操作。",
     emptyTitle: "この条件ではシグナルが見つかりません",
-    emptyHint: "検索語を削除するか、タイムレンズやフィルターを少し緩めてください。"
+    emptyHint: "検索語を削除するか、タイムレンズやフィルターを少し緩めてください。",
+    feature: "CURATED PICK",
+    openSignal: "OPEN SIGNAL"
   }
 }[lang];
 ---
@@ -56,8 +79,8 @@ const labels = {
 <section class="acg-console-page">
   <div class="acg-console-canvas glass">
     <section class="acg-console-canvas-section acg-console-canvas-hero">
-      <div class="acg-console-hero-grid acg-console-hero-grid-category">
-        <div class="space-y-5">
+      <div class="acg-console-feature-stage acg-console-feature-stage-category">
+        <div class="acg-console-feature-copy">
           <div class="acg-console-kicker-row">
             <span class="acg-console-kicker">{labels.kicker}</span>
             <span class="acg-console-status-pill">{categoryLabel(lang, category)}</span>
@@ -66,89 +89,139 @@ const labels = {
             <h1 class="acg-console-title">{categoryLabel(lang, category)} · {labels.headline}</h1>
             <p class="acg-console-copy">{labels.lead}</p>
           </div>
+
+          <div class="acg-console-search-wrap">
+            <div class="acg-console-search-head">
+              <div>
+                <div class="acg-console-search-label">{t(lang, "nav.search")}</div>
+                <div class="acg-console-search-sub">
+                  {categoryLabel(lang, category)} · {labels.sectionHint}
+                </div>
+              </div>
+              <div class="flex flex-wrap items-center gap-2 text-xs text-slate-200/72">
+                <span class="acg-console-inline-pill">
+                  {labels.visible}
+                  <span id="acg-search-count">-</span>
+                </span>
+                <span class="acg-console-inline-pill">
+                  {labels.total}
+                  <span>{total}</span>
+                </span>
+              </div>
+            </div>
+            <label class="sr-only" for="acg-search">{t(lang, "search.placeholder")}</label>
+            <div class="acg-console-search-field">
+              <div class="acg-console-search-icon">
+                <Icon name="search" size={18} />
+              </div>
+              <input
+                id="acg-search"
+                type="search"
+                enterkeyhint="search"
+                class="acg-console-input"
+                placeholder={t(lang, "search.placeholder")}
+              />
+              <button
+                type="button"
+                id="acg-search-clear"
+                class="acg-console-clear clickable"
+                hidden
+                aria-label={t(lang, "search.clear")}
+                title={t(lang, "search.clear")}
+              >
+                <Icon name="x" size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div class="acg-console-kpi-grid">
+            <button type="button" class="acg-console-kpi clickable" data-quick-lens="2h" data-active="false">
+              <span class="acg-console-kpi-label">{t(lang, "prefs.timeLens2h")}</span>
+              <span class="acg-console-kpi-value">{lensCounts["2h"]}</span>
+            </button>
+            <button type="button" class="acg-console-kpi clickable" data-quick-lens="24h" data-active="false">
+              <span class="acg-console-kpi-label">{t(lang, "prefs.timeLens24h")}</span>
+              <span class="acg-console-kpi-value">{lensCounts["24h"]}</span>
+            </button>
+            <button
+              type="button"
+              class="acg-console-kpi clickable"
+              data-quick-sort="pulse"
+              data-active="false"
+            >
+              <span class="acg-console-kpi-label">{t(lang, "prefs.sortPulse")}</span>
+              <span class="acg-console-kpi-value">{topPulse}</span>
+            </button>
+            <button
+              type="button"
+              class="acg-console-kpi clickable"
+              data-quick-toggle="only-stable"
+              data-active="false"
+            >
+              <span class="acg-console-kpi-label">{t(lang, "home.stableSources")}</span>
+              <span class="acg-console-kpi-value">{stableRatio}%</span>
+            </button>
+          </div>
         </div>
 
-        <div class="acg-console-side-note acg-console-side-note-tight">
-          <div class="acg-console-side-head">
-            <span>{labels.archive}</span>
-            <span>{categoryLabel(lang, category)}</span>
+        <div class="acg-console-feature-visual">
+          <div class="acg-console-side-note acg-console-side-note-tight">
+            <div class="acg-console-side-head">
+              <span>{labels.archive}</span>
+              <span>{categoryLabel(lang, category)}</span>
+            </div>
+            <p>{labels.archiveBody}</p>
           </div>
-          <p>{labels.archiveBody}</p>
-          <div class="acg-console-side-pills">
-            <span>{t(lang, "prefs.sortPulse")}</span>
-            <span>{t(lang, "prefs.timeLens")}</span>
-            <span>{t(lang, "prefs.view")}</span>
-          </div>
+
+          {
+            featured ? (
+              <a href={featuredHref} class="acg-console-feature-card clickable group">
+                <div class="acg-console-feature-media">
+                  {featuredCover ? (
+                    <img
+                      src={featuredCover.src}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      referrerpolicy="no-referrer"
+                      data-acg-cover
+                      data-acg-cover-original-src={featured.coverOriginal ?? featuredCover.original ?? ""}
+                      class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                      onload="window.__acgCoverLoad?.(this)"
+                      onerror="this.closest('[data-feature-card]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
+                    />
+                  ) : null}
+                  <div data-feature-card class="acg-console-feature-fallback">
+                    <Icon name="star" size={24} />
+                    <span>{labels.feature}</span>
+                  </div>
+                  <div class="acg-console-feature-overlay" />
+                </div>
+                <div class="acg-console-feature-content">
+                  <div class="acg-console-kicker-row">
+                    <span class="acg-console-inline-pill">{labels.feature}</span>
+                    {featuredWhen ? <span class="acg-console-inline-pill">{featuredWhen}</span> : null}
+                    {featuredPulse ? (
+                      <span class="acg-console-inline-pill">PULSE {featuredPulse}</span>
+                    ) : null}
+                  </div>
+                  <h2 class="acg-console-feature-title">{featuredTitle}</h2>
+                  <p class="acg-console-feature-summary">{featuredSummary}</p>
+                  <div class="acg-console-feature-footer">
+                    <SourceBadge name={featured.sourceName} dotClass={theme.dot} compact tone="dark" />
+                    <span class="acg-console-linkline">
+                      {labels.openSignal}
+                      <Icon name="chevron-right" size={16} />
+                    </span>
+                  </div>
+                </div>
+              </a>
+            ) : null
+          }
         </div>
       </div>
 
-      <div class="acg-console-search-wrap">
-        <div class="acg-console-search-head">
-          <div>
-            <div class="acg-console-search-label">{t(lang, "nav.search")}</div>
-            <div class="acg-console-search-sub">{categoryLabel(lang, category)} · {labels.sectionHint}</div>
-          </div>
-          <div class="flex flex-wrap items-center gap-2 text-xs text-slate-200/72">
-            <span class="acg-console-inline-pill">
-              {labels.visible}
-              <span id="acg-search-count">-</span>
-            </span>
-            <span class="acg-console-inline-pill">
-              {labels.total}
-              <span>{total}</span>
-            </span>
-          </div>
-        </div>
-        <label class="sr-only" for="acg-search">{t(lang, "search.placeholder")}</label>
-        <div class="acg-console-search-field">
-          <div class="acg-console-search-icon">
-            <Icon name="search" size={18} />
-          </div>
-          <input
-            id="acg-search"
-            type="search"
-            enterkeyhint="search"
-            class="acg-console-input"
-            placeholder={t(lang, "search.placeholder")}
-          />
-          <button
-            type="button"
-            id="acg-search-clear"
-            class="acg-console-clear clickable"
-            hidden
-            aria-label={t(lang, "search.clear")}
-            title={t(lang, "search.clear")}
-          >
-            <Icon name="x" size={18} />
-          </button>
-        </div>
-      </div>
-
-      <div class="acg-console-kpi-grid">
-        <button type="button" class="acg-console-kpi clickable" data-quick-lens="2h" data-active="false">
-          <span class="acg-console-kpi-label">{t(lang, "prefs.timeLens2h")}</span>
-          <span class="acg-console-kpi-value">{lensCounts["2h"]}</span>
-        </button>
-        <button type="button" class="acg-console-kpi clickable" data-quick-lens="24h" data-active="false">
-          <span class="acg-console-kpi-label">{t(lang, "prefs.timeLens24h")}</span>
-          <span class="acg-console-kpi-value">{lensCounts["24h"]}</span>
-        </button>
-        <button type="button" class="acg-console-kpi clickable" data-quick-sort="pulse" data-active="false">
-          <span class="acg-console-kpi-label">{t(lang, "prefs.sortPulse")}</span>
-          <span class="acg-console-kpi-value">{topPulse}</span>
-        </button>
-        <button
-          type="button"
-          class="acg-console-kpi clickable"
-          data-quick-toggle="only-stable"
-          data-active="false"
-        >
-          <span class="acg-console-kpi-label">{t(lang, "home.stableSources")}</span>
-          <span class="acg-console-kpi-value">{stableRatio}%</span>
-        </button>
-      </div>
-
-      <div class="acg-console-toolbar acg-hscroll">
+      <div class="acg-console-toolbar acg-hscroll mt-5">
         <Chip data-quick-toggle="only-followed" data-active="false">{t(lang, "prefs.followOnly")}</Chip>
         <Chip data-quick-toggle="only-followed-sources" data-active="false"
           >{t(lang, "prefs.followedSourcesOnly")}</Chip

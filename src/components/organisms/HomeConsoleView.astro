@@ -10,9 +10,12 @@ import PreferencesDrawer from "./PreferencesDrawer.astro";
 import CategoryIcon from "../atoms/CategoryIcon.astro";
 import Chip from "../atoms/Chip.astro";
 import Icon from "../atoms/Icon.astro";
+import SourceBadge from "../molecules/SourceBadge.astro";
 import { CATEGORIES, categoryLabel } from "../../lib/categories";
 import { href } from "../../lib/href";
 import { t } from "../../i18n/i18n";
+import { resolveCover } from "../../lib/cover";
+import { formatRelativeHours } from "../../lib/format";
 
 export type Props = {
   lang: Lang;
@@ -50,10 +53,38 @@ const {
   randomPick,
   randomPickCover,
   randomPickCoverOriginal,
-  showRandomPickCover,
   categoryCount
 } = Astro.props as Props;
 
+const heroFeature = spotlight[0] ?? latest[0] ?? randomPick;
+const heroTitle = heroFeature
+  ? lang === "zh"
+    ? (heroFeature.titleZh ?? heroFeature.title)
+    : (heroFeature.titleJa ?? heroFeature.title)
+  : null;
+const heroSummary = heroFeature
+  ? lang === "zh"
+    ? (heroFeature.summaryZh ?? heroFeature.previewZh ?? heroFeature.summary ?? heroFeature.preview)
+    : (heroFeature.summaryJa ?? heroFeature.previewJa ?? heroFeature.summary ?? heroFeature.preview)
+  : null;
+const heroCover = heroFeature ? resolveCover(heroFeature.cover, 1600) : randomPickCover;
+const heroCoverOriginal = heroFeature?.coverOriginal ?? heroCover?.original ?? randomPickCoverOriginal;
+const heroHref = heroFeature ? href(`/${lang}/p/${heroFeature.id}/`) : href(`/${lang}/`);
+const heroWhen = heroFeature ? (formatRelativeHours(lang, heroFeature.publishedAt) ?? updatedAt) : updatedAt;
+const heroPulse = typeof heroFeature?.pulseScore === "number" ? heroFeature.pulseScore : topPulse;
+const heroSourceName = heroFeature?.sourceName ?? "ACG Radar";
+const heroCategory = heroFeature?.category ?? CATEGORIES[0];
+
+const secondaryFeature = (() => {
+  const pool = [randomPick, spotlight[1], latest[1], latest[2]].filter((post): post is Post => Boolean(post));
+  return pool.find((post) => post.id !== heroFeature?.id) ?? null;
+})();
+const secondaryCover = secondaryFeature ? resolveCover(secondaryFeature.cover, 1200) : null;
+const secondaryTitle = secondaryFeature
+  ? lang === "zh"
+    ? (secondaryFeature.titleZh ?? secondaryFeature.title)
+    : (secondaryFeature.titleJa ?? secondaryFeature.title)
+  : null;
 const copyBriefText = brief
   .map(
     (post, index) =>
@@ -65,54 +96,56 @@ const labels = {
   zh: {
     kicker: "SENTINEL CONSOLE",
     headline: "信号总控台",
-    lead: "把每一条 ACG 动态都当作一次正在抵达的信号。这里不是普通资讯页，而是一张持续扫描、筛选、聚焦与归档的整版控制台。",
+    lead: "把每一条 ACG 动态都当作一次正在抵达的信号。首页不再只是面板集合，而是一张有主角、有陪衬、有节奏推进的整版封面。",
     mission: "主控说明",
     missionBody:
-      "主视觉、分类矩阵、精选信号和内容流现在在同一张连续画布里协作，而不是被切碎成互相孤立的小面板。",
+      "主视觉负责建立情绪，精选和列表负责承接内容，信号板负责补充判断依据；三者是主次关系，而不是同权重并排。",
     missionHint: "静态站点 · 每小时更新 · 双语镜像",
     statusLive: "LIVE FEED",
     statusWatch: "WATCHING",
     latestFeed: "主信号流",
-    latestHint: "精选、快报和信号板都被压进同一阅读节奏里，减少来回跳块的割裂感。",
+    latestHint: "最新信号仍然保持高信息密度，但主画面的视觉重心先交给真正值得看的内容。",
     categories: "频道矩阵",
     categoriesHint: "按类别直接进入对应波段。",
     briefTitle: "快报摘要",
     briefHint: "更像编辑摘要，而不是另一组单独小卡片。",
-    randomTitle: "随机信号",
-    randomHint: "交给系统随机投喂一条值得点开的内容。",
+    randomTitle: "系统推荐",
+    randomHint: "作为次级推荐出现，不再抢走主视觉焦点。",
     openSignal: "打开信号",
     searchScope: "全局检索",
     searchSub: "支持关键词 / 标签 / 来源联动",
     spotlight: "本轮精选",
-    spotlightHint: "把更值得点开的内容提到画面中央，而不是平铺成同权重列表。",
+    spotlightHint: "把最值得点开的内容抬到画面中央。",
     emptyTitle: "当前筛选下暂无信号",
-    emptyHint: "你可以清空搜索词或关闭部分过滤条件。"
+    emptyHint: "你可以清空搜索词或关闭部分过滤条件。",
+    heroLabel: "本轮主角"
   },
   ja: {
     kicker: "SENTINEL CONSOLE",
     headline: "シグナル統合管制室",
-    lead: "すべての ACG 更新を“到着する信号”として扱う体験へ。ここは単なる一覧ではなく、スキャン・選別・強調・保管を一枚の画面でつなぐコントロールシートです。",
+    lead: "すべての ACG 更新を“到着する信号”として扱う体験へ。トップは単なるパネル集合ではなく、主役と脇役と閲覧のリズムを持った一枚の表紙として再設計しています。",
     mission: "CONTROL NOTE",
     missionBody:
-      "主ビジュアル、カテゴリ、ピックアップ、記事ストリームを一枚の連続した画面にまとめ、分断感を減らしています。",
+      "主ビジュアルが空気を作り、ピックアップと一覧が内容を受け取り、シグナルボードが判断材料を補う──同列ではなく、役割に差をつけています。",
     missionHint: "Static site · Hourly sync · Bilingual mirror",
     statusLive: "LIVE FEED",
     statusWatch: "WATCHING",
     latestFeed: "PRIMARY STREAM",
-    latestHint: "ピックアップ、要約、シグナルボードを同じ閲覧リズムにまとめ、断片的な切れ目を抑えています。",
+    latestHint: "最新シグナルの密度は維持しつつ、最初の視線は“本当に見せたい内容”に集めます。",
     categories: "CHANNEL MATRIX",
     categoriesHint: "カテゴリごとの波長へ直接アクセス。",
     briefTitle: "BRIEF CAPSULE",
     briefHint: "独立した小カード群ではなく、編集要約として配置。",
-    randomTitle: "RANDOM SIGNAL",
-    randomHint: "今の気分で開く 1 本を自動で提示します。",
+    randomTitle: "SYSTEM PICK",
+    randomHint: "主役ではなく、次点の推薦として配置します。",
     openSignal: "OPEN SIGNAL",
     searchScope: "GLOBAL SEARCH",
     searchSub: "キーワード / タグ / ソース連動検索",
     spotlight: "CURATED SIGNALS",
-    spotlightHint: "主役にしたい内容を画面中央へ寄せ、すべてを同じ重さで並べないようにします。",
+    spotlightHint: "最も見せたい内容を画面中央へ引き上げる。",
     emptyTitle: "この条件ではシグナルがありません",
-    emptyHint: "検索語を消すか、フィルター条件を少し緩めてください。"
+    emptyHint: "検索語を消すか、フィルター条件を少し緩めてください。",
+    heroLabel: "MAIN FOCUS"
   }
 }[lang];
 ---
@@ -120,12 +153,13 @@ const labels = {
 <section class="acg-console-home">
   <div class="acg-console-canvas glass">
     <section class="acg-console-canvas-section acg-console-canvas-hero">
-      <div class="acg-console-hero-grid acg-console-hero-grid-home">
-        <div class="space-y-5">
+      <div class="acg-console-feature-stage">
+        <div class="acg-console-feature-copy">
           <div class="acg-console-kicker-row">
             <span class="acg-console-kicker">{labels.kicker}</span>
             <span class="acg-console-status-pill">{labels.statusWatch}</span>
           </div>
+
           <div class="space-y-3">
             <h1 class="acg-console-title">{t(lang, "nav.latest")} · {labels.headline}</h1>
             <p class="acg-console-copy">{labels.lead}</p>
@@ -220,55 +254,9 @@ const labels = {
               <span class="acg-console-kpi-value">{stableRatio}%</span>
             </button>
           </div>
-
-          <div class="acg-console-toolbar acg-hscroll">
-            <Chip data-quick-toggle="only-followed" data-active="false">{t(lang, "prefs.followOnly")}</Chip>
-            <Chip data-quick-toggle="only-followed-sources" data-active="false">
-              {t(lang, "prefs.followedSourcesOnly")}
-            </Chip>
-            <Chip data-quick-toggle="hide-read" data-active="false">{t(lang, "prefs.hideRead")}</Chip>
-            <Chip data-quick-toggle="only-stable" data-active="false"
-              >{t(lang, "prefs.onlyStableSources")}</Chip
-            >
-            <Chip data-quick-toggle="dedup" data-active="false">{t(lang, "prefs.dedupView")}</Chip>
-            <div class="flex gap-2" role="radiogroup" aria-label={t(lang, "prefs.view")}>
-              <Chip
-                icon="grid"
-                iconSize={16}
-                data-view-mode="grid"
-                data-active="false"
-                role="radio"
-                aria-checked="false"
-              >
-                <span>{t(lang, "prefs.viewGrid")}</span>
-              </Chip>
-              <Chip
-                icon="list"
-                iconSize={16}
-                data-view-mode="list"
-                data-active="false"
-                role="radio"
-                aria-checked="false"
-              >
-                <span>{t(lang, "prefs.viewList")}</span>
-              </Chip>
-            </div>
-            <div class="flex gap-2" role="radiogroup" aria-label={t(lang, "prefs.density")}>
-              <Chip data-density-mode="comfort" data-active="false" role="radio" aria-checked="false">
-                {t(lang, "prefs.densityComfort")}
-              </Chip>
-              <Chip data-density-mode="compact" data-active="false" role="radio" aria-checked="false">
-                {t(lang, "prefs.densityCompact")}
-              </Chip>
-            </div>
-            <Chip data-quick-lens="6h" data-active="false">{t(lang, "prefs.timeLens6h")}</Chip>
-            <Chip icon="sliders" iconSize={16} data-open-prefs data-active="false">
-              <span>{t(lang, "prefs.title")}</span>
-            </Chip>
-          </div>
         </div>
 
-        <div class="acg-console-hero-side">
+        <div class="acg-console-feature-visual">
           <div class="acg-console-side-note acg-console-side-note-tight">
             <div class="acg-console-side-head">
               <span>{labels.mission}</span>
@@ -277,65 +265,151 @@ const labels = {
             <p>{labels.missionBody}</p>
           </div>
 
-          <div class="acg-console-inline-grid">
-            <div class="acg-console-inline-panel">
-              <div class="acg-console-panel-head">
-                <div>
-                  <h2>{labels.categories}</h2>
-                  <p>{labels.categoriesHint}</p>
-                </div>
+          <a href={heroHref} class="acg-console-feature-card clickable group">
+            <div class="acg-console-feature-media">
+              {
+                heroCover ? (
+                  <img
+                    src={heroCover.src}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    referrerpolicy="no-referrer"
+                    data-acg-cover
+                    data-acg-cover-original-src={heroCoverOriginal ?? ""}
+                    class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                    onload="window.__acgCoverLoad?.(this)"
+                    onerror="this.closest('[data-feature-card]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
+                  />
+                ) : null
+              }
+              <div data-feature-card class="acg-console-feature-fallback">
+                <CategoryIcon category={heroCategory} size={28} />
+                <span>{categoryLabel(lang, heroCategory)}</span>
               </div>
-              <div class="acg-console-category-grid acg-console-category-grid-tight">
-                {
-                  CATEGORIES.map((category) => (
-                    <a href={href(`/${lang}/c/${category}/`)} class="acg-console-category-card clickable">
-                      <span class="acg-console-category-icon">
-                        <CategoryIcon category={category} size={18} />
-                      </span>
-                      <span class="min-w-0 flex-1">
-                        <strong>{categoryLabel(lang, category)}</strong>
-                        <small>{categoryCount.get(category) ?? 0}</small>
-                      </span>
-                      <Icon name="chevron-right" size={16} />
-                    </a>
-                  ))
-                }
+              <div class="acg-console-feature-overlay"></div>
+            </div>
+            <div class="acg-console-feature-content">
+              <div class="acg-console-kicker-row">
+                <span class="acg-console-inline-pill">{labels.heroLabel}</span>
+                <span class="acg-console-inline-pill">{heroWhen}</span>
+                {heroPulse ? <span class="acg-console-inline-pill">PULSE {heroPulse}</span> : null}
+              </div>
+              <h2 class="acg-console-feature-title">{heroTitle ?? t(lang, "site.name")}</h2>
+              <p class="acg-console-feature-summary">{heroSummary ?? labels.openSignal}</p>
+              <div class="acg-console-feature-footer">
+                <SourceBadge name={heroSourceName} dotClass="bg-white" tone="dark" compact />
+                <span class="acg-console-linkline">
+                  {labels.openSignal}
+                  <Icon name="chevron-right" size={16} />
+                </span>
               </div>
             </div>
+          </a>
+        </div>
+      </div>
 
-            <div class="acg-console-inline-panel">
-              <div class="acg-console-panel-head">
-                <div>
-                  <h2>{labels.briefTitle}</h2>
-                  <p>{labels.briefHint}</p>
-                </div>
-                <button
-                  type="button"
-                  class="acg-console-ghost clickable"
-                  data-copy-text={copyBriefText}
-                  aria-label={t(lang, "home.copyBrief")}
-                  title={t(lang, "home.copyBrief")}
-                >
-                  {t(lang, "home.copyBrief")}
-                </button>
-              </div>
-              <ol class="acg-console-log-list acg-console-log-list-compact">
-                {
-                  brief.slice(0, 5).map((post, index) => (
-                    <li>
-                      <a href={href(`/${lang}/p/${post.id}/`)} class="acg-console-log-item clickable">
-                        <span class="acg-console-log-rank">{String(index + 1).padStart(2, "0")}</span>
-                        <span class="min-w-0 flex-1 truncate">
-                          {lang === "zh" ? (post.titleZh ?? post.title) : (post.titleJa ?? post.title)}
-                        </span>
-                        <Icon name="chevron-right" size={16} />
-                      </a>
-                    </li>
-                  ))
-                }
-              </ol>
+      <div class="acg-console-toolbar acg-hscroll mt-5">
+        <Chip data-quick-toggle="only-followed" data-active="false">{t(lang, "prefs.followOnly")}</Chip>
+        <Chip data-quick-toggle="only-followed-sources" data-active="false">
+          {t(lang, "prefs.followedSourcesOnly")}
+        </Chip>
+        <Chip data-quick-toggle="hide-read" data-active="false">{t(lang, "prefs.hideRead")}</Chip>
+        <Chip data-quick-toggle="only-stable" data-active="false">{t(lang, "prefs.onlyStableSources")}</Chip>
+        <Chip data-quick-toggle="dedup" data-active="false">{t(lang, "prefs.dedupView")}</Chip>
+        <div class="flex gap-2" role="radiogroup" aria-label={t(lang, "prefs.view")}>
+          <Chip
+            icon="grid"
+            iconSize={16}
+            data-view-mode="grid"
+            data-active="false"
+            role="radio"
+            aria-checked="false"
+          >
+            <span>{t(lang, "prefs.viewGrid")}</span>
+          </Chip>
+          <Chip
+            icon="list"
+            iconSize={16}
+            data-view-mode="list"
+            data-active="false"
+            role="radio"
+            aria-checked="false"
+          >
+            <span>{t(lang, "prefs.viewList")}</span>
+          </Chip>
+        </div>
+        <div class="flex gap-2" role="radiogroup" aria-label={t(lang, "prefs.density")}>
+          <Chip data-density-mode="comfort" data-active="false" role="radio" aria-checked="false">
+            {t(lang, "prefs.densityComfort")}
+          </Chip>
+          <Chip data-density-mode="compact" data-active="false" role="radio" aria-checked="false">
+            {t(lang, "prefs.densityCompact")}
+          </Chip>
+        </div>
+        <Chip data-quick-lens="6h" data-active="false">{t(lang, "prefs.timeLens6h")}</Chip>
+        <Chip icon="sliders" iconSize={16} data-open-prefs data-active="false">
+          <span>{t(lang, "prefs.title")}</span>
+        </Chip>
+      </div>
+
+      <div class="acg-console-inline-grid mt-5">
+        <div class="acg-console-inline-panel">
+          <div class="acg-console-panel-head">
+            <div>
+              <h2>{labels.categories}</h2>
+              <p>{labels.categoriesHint}</p>
             </div>
           </div>
+          <div class="acg-console-category-grid acg-console-category-grid-tight">
+            {
+              CATEGORIES.map((category) => (
+                <a href={href(`/${lang}/c/${category}/`)} class="acg-console-category-card clickable">
+                  <span class="acg-console-category-icon">
+                    <CategoryIcon category={category} size={18} />
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <strong>{categoryLabel(lang, category)}</strong>
+                    <small>{categoryCount.get(category) ?? 0}</small>
+                  </span>
+                  <Icon name="chevron-right" size={16} />
+                </a>
+              ))
+            }
+          </div>
+        </div>
+
+        <div class="acg-console-inline-panel">
+          <div class="acg-console-panel-head">
+            <div>
+              <h2>{labels.briefTitle}</h2>
+              <p>{labels.briefHint}</p>
+            </div>
+            <button
+              type="button"
+              class="acg-console-ghost clickable"
+              data-copy-text={copyBriefText}
+              aria-label={t(lang, "home.copyBrief")}
+              title={t(lang, "home.copyBrief")}
+            >
+              {t(lang, "home.copyBrief")}
+            </button>
+          </div>
+          <ol class="acg-console-log-list acg-console-log-list-compact">
+            {
+              brief.slice(0, 5).map((post, index) => (
+                <li>
+                  <a href={href(`/${lang}/p/${post.id}/`)} class="acg-console-log-item clickable">
+                    <span class="acg-console-log-rank">{String(index + 1).padStart(2, "0")}</span>
+                    <span class="min-w-0 flex-1 truncate">
+                      {lang === "zh" ? (post.titleZh ?? post.title) : (post.titleJa ?? post.title)}
+                    </span>
+                    <Icon name="chevron-right" size={16} />
+                  </a>
+                </li>
+              ))
+            }
+          </ol>
         </div>
       </div>
     </section>
@@ -402,51 +476,51 @@ const labels = {
               </div>
             </div>
             {
-              randomPick ? (
+              secondaryFeature ? (
                 <a
-                  href={href(`/${lang}/p/${randomPick.id}/`)}
+                  href={href(`/${lang}/p/${secondaryFeature.id}/`)}
                   class="acg-console-random-card clickable group"
                 >
                   <div class="acg-console-random-media">
-                    {showRandomPickCover && randomPickCover ? (
+                    {secondaryCover ? (
                       <img
-                        src={randomPickCover.src}
+                        src={secondaryCover.src}
                         alt=""
                         loading="lazy"
                         decoding="async"
                         referrerpolicy="no-referrer"
                         data-acg-cover
-                        data-acg-cover-original-src={randomPickCoverOriginal ?? ""}
+                        data-acg-cover-original-src={
+                          secondaryFeature.coverOriginal ?? secondaryCover.original ?? ""
+                        }
                         class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                         onload="window.__acgCoverLoad?.(this)"
                         onerror="this.closest('[data-random-card]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
                       />
                     ) : (
                       <div class="acg-console-random-fallback">
-                        <CategoryIcon category={randomPick.category} size={26} />
-                        <span>{categoryLabel(lang, randomPick.category)}</span>
+                        <CategoryIcon category={secondaryFeature.category} size={26} />
+                        <span>{categoryLabel(lang, secondaryFeature.category)}</span>
                       </div>
                     )}
                   </div>
                   <div data-random-card class="space-y-3">
-                    <span class="acg-console-inline-pill">{categoryLabel(lang, randomPick.category)}</span>
+                    <span class="acg-console-inline-pill">
+                      {categoryLabel(lang, secondaryFeature.category)}
+                    </span>
                     <div class="space-y-2">
-                      <h3 class="acg-console-random-title">
-                        {lang === "zh"
-                          ? (randomPick.titleZh ?? randomPick.title)
-                          : (randomPick.titleJa ?? randomPick.title)}
-                      </h3>
+                      <h3 class="acg-console-random-title">{secondaryTitle}</h3>
                       <p class="acg-console-random-copy">
                         {lang === "zh"
-                          ? (randomPick.summaryZh ??
-                            randomPick.previewZh ??
-                            randomPick.summary ??
-                            randomPick.preview ??
+                          ? (secondaryFeature.summaryZh ??
+                            secondaryFeature.previewZh ??
+                            secondaryFeature.summary ??
+                            secondaryFeature.preview ??
                             labels.randomHint)
-                          : (randomPick.summaryJa ??
-                            randomPick.previewJa ??
-                            randomPick.summary ??
-                            randomPick.preview ??
+                          : (secondaryFeature.summaryJa ??
+                            secondaryFeature.previewJa ??
+                            secondaryFeature.summary ??
+                            secondaryFeature.preview ??
                             labels.randomHint)}
                       </p>
                     </div>
