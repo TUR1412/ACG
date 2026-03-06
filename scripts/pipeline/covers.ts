@@ -12,6 +12,16 @@ function isHttpUrl(url: string): boolean {
   return /^https?:\/\//i.test(url);
 }
 
+function isBlockedRemoteCoverUrl(url?: string | null): boolean {
+  if (!url || !/^https?:\/\//i.test(url)) return false;
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host === "www.animenewsnetwork.com";
+  } catch {
+    return false;
+  }
+}
+
 function contentTypeToExt(contentType: string | null): string | null {
   if (!contentType) return null;
   const ct = contentType.toLowerCase();
@@ -99,7 +109,7 @@ export async function cacheCoverThumbnails(params: {
   await mkdir(outDir, { recursive: true });
 
   const candidates = posts
-    .filter((p) => typeof p.cover === "string" && isHttpUrl(p.cover))
+    .filter((p) => typeof p.cover === "string" && isHttpUrl(p.cover) && !isBlockedRemoteCoverUrl(p.cover))
     .slice()
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
     .slice(0, max);
@@ -226,8 +236,14 @@ export async function enrichCoversFromArticlePages(params: {
     const used = perSource.get(post.sourceId) ?? 0;
     if (used >= maxPerSource) continue;
 
-    const wantCover = !post.cover || (post.cover ? isProbablyNonCoverImageUrl(post.cover) : false);
+    const coverBlocked = post.cover ? isBlockedRemoteCoverUrl(post.cover) : false;
+    const wantCover =
+      (!post.cover || (post.cover ? isProbablyNonCoverImageUrl(post.cover) : false)) && !coverBlocked;
     const wantPreview = !post.preview && (!post.summary || post.summary.length < previewMinLen);
+
+    if (coverBlocked) {
+      log.debug(`[COVER:SKIP] ${post.sourceId} ${post.url} blocked-host`);
+    }
 
     const entry = cache[post.url] ?? {};
     const coverMissAt = entry.coverMissAt;

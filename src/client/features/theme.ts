@@ -20,9 +20,9 @@ function prefersColorSchemeDark(): boolean {
 export function loadThemeMode(): ThemeMode {
   try {
     const raw = loadString(STORAGE_KEYS.THEME);
-    return raw === "light" || raw === "dark" || raw === "auto" ? raw : "auto";
+    return raw === "light" || raw === "dark" || raw === "auto" ? raw : "dark";
   } catch {
-    return "auto";
+    return "dark";
   }
 }
 

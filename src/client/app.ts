@@ -1,4 +1,4 @@
-import { toWeservImageUrl } from "../lib/cover";
+import { isBlockedRemoteCoverUrl, toWeservImageUrl } from "../lib/cover";
 import { href } from "../lib/href";
 import { NETWORK, STORAGE_KEYS, UI, MS } from "./constants";
 import { normalizeText, parseQuery } from "../lib/search/query";
@@ -4205,7 +4205,8 @@ function buildBookmarkCard(params: {
   fallback.appendChild(fallbackInner);
   topLink.appendChild(fallback);
 
-  if (post.cover) {
+  const initialCoverUrl = post.coverOriginal ?? post.cover;
+  if (post.cover && !isBlockedRemoteCoverUrl(initialCoverUrl)) {
     const img = document.createElement("img");
     img.src = bestInitialCoverSrc(post.cover, 960);
     img.alt = "";
@@ -4213,7 +4214,7 @@ function buildBookmarkCard(params: {
     img.decoding = "async";
     img.referrerPolicy = "no-referrer";
     img.dataset.acgCover = "true";
-    img.dataset.acgCoverOriginalSrc = post.coverOriginal ?? post.cover;
+    img.dataset.acgCoverOriginalSrc = initialCoverUrl;
     img.className =
       "absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]";
     img.addEventListener("load", () => handleCoverLoad(img));

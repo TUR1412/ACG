@@ -6,6 +6,8 @@ type CoverParams = {
   host?: string;
 };
 
+const BLOCKED_REMOTE_COVER_HOSTS = new Set(["www.animenewsnetwork.com"]);
+
 export type CoverAsset = {
   /** 用于页面渲染的 src（可能是原图，也可能是代理后的 https 图） */
   src: string;
@@ -19,6 +21,16 @@ function isHttpUrl(url: string): boolean {
 
 function isProxyUrl(url: string): boolean {
   return /^https:\/\/(images\.weserv\.nl|wsrv\.nl)\//i.test(url);
+}
+
+export function isBlockedRemoteCoverUrl(url?: string | null): boolean {
+  if (!url || !/^https?:\/\//i.test(url)) return false;
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return BLOCKED_REMOTE_COVER_HOSTS.has(host);
+  } catch {
+    return false;
+  }
 }
 
 function hrefInBase(pathname: string): string {
@@ -43,6 +55,8 @@ export function resolveCover(url?: string | null, width?: number): CoverAsset | 
   if (!url) return null;
   const original = String(url);
   if (!original.trim()) return null;
+
+  if (isBlockedRemoteCoverUrl(original)) return null;
 
   // 本地缓存封面：用 base path 组装（GitHub Pages 项目站点需要 /<repo>/ 前缀）
   if (!isHttpUrl(original) && original.startsWith("/")) {
