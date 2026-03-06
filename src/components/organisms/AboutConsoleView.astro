@@ -26,29 +26,30 @@ const labels = {
   zh: {
     kicker: "STATION PROFILE",
     title: "站点任务说明书",
-    lead: "ACG Radar 不是传统资讯站模板，而是一座以静态部署方式长期运行的 ACG 信号哨站：抓取、聚合、筛选、呈现，并尽量把浏览体验做成一套可操控的内容雷达。",
+    lead: "ACG Radar 不是普通说明页的堆字，而是一份解释站点如何抓取、聚合、呈现和维护信号流的连续文档。",
     mission: "Mission",
-    missionBody: "每小时由 GitHub Actions 拉取新内容并生成静态页面，前端交互全部在浏览器内渐进增强完成。",
+    missionBody:
+      "这一页的目标是让结构、导出入口、来源矩阵和抓取风险说明在同一版面里连续展开，而不是互相断开。",
     missionSub: "GitHub Pages · Astro · 双语镜像",
     cardUpdate: "最后同步",
     cardSource: "信号源",
     cardMode: "运行方式",
     cardModeValue: "静态部署 + 本地偏好",
     outputs: "导出与订阅",
-    outputsHint: "所有公开入口都维持可访问，用于订阅、调试与源管理。",
+    outputsHint: "公开入口保留，供订阅、调试与源管理使用。",
     sourceTitle: "来源矩阵",
     sourceHint: "如需增删来源，维护 `src/lib/source-config.ts` 即可。",
     riskTitle: "高风险抓取说明",
     riskBody:
-      "部分来源并未提供标准 RSS/Atom，需要靠 HTML 解析维持信号抓取。发生结构变动时会降级记录错误，但不会拖垮整站构建。"
+      "部分来源没有标准 RSS/Atom，只能依赖 HTML 解析。页面结构波动时会降级并记录错误，但不会拖垮整站构建。"
   },
   ja: {
     kicker: "STATION PROFILE",
     title: "ステーション運用ガイド",
-    lead: "ACG Radar は一般的なニューステンプレートではなく、静的配信で継続運用される ACG シグナル哨戒所です。収集・集約・選別・提示までを、操作可能なレーダー体験として再構成します。",
+    lead: "ACG Radar は単なる説明文の羅列ではなく、取得・集約・表示・保守の流れを一枚の連続した画面で示すためのドキュメントです。",
     mission: "Mission",
     missionBody:
-      "GitHub Actions が毎時コンテンツを取得し、静的ページを生成。前面のインタラクションはブラウザ内で段階的に拡張されます。",
+      "構成、公開エンドポイント、ソース一覧、スクレイピング上のリスク説明を一枚の版面に連続して展開します。",
     missionSub: "GitHub Pages · Astro · Bilingual mirror",
     cardUpdate: "Last sync",
     cardSource: "Signals",
@@ -65,135 +66,143 @@ const labels = {
 }[lang];
 ---
 
-<section class="acg-console-page space-y-6">
-  <section class="acg-console-hero glass">
-    <div class="acg-console-hero-grid">
-      <div class="space-y-5">
-        <div class="acg-console-kicker-row">
-          <span class="acg-console-kicker">{labels.kicker}</span>
-          <span class="acg-console-status-pill">{t(lang, "nav.about")}</span>
+<section class="acg-console-page">
+  <div class="acg-console-canvas glass">
+    <section class="acg-console-canvas-section acg-console-canvas-hero">
+      <div class="acg-console-hero-grid acg-console-hero-grid-home">
+        <div class="space-y-5">
+          <div class="acg-console-kicker-row">
+            <span class="acg-console-kicker">{labels.kicker}</span>
+            <span class="acg-console-status-pill">{t(lang, "nav.about")}</span>
+          </div>
+          <div class="space-y-3">
+            <h1 class="acg-console-title">{labels.title}</h1>
+            <p class="acg-console-copy">{labels.lead}</p>
+          </div>
+          <div class="acg-console-about-grid">
+            <div class="acg-console-meta-card">
+              <span class="acg-console-meta-label">{labels.cardUpdate}</span>
+              <strong>{updatedAt}</strong>
+            </div>
+            <div class="acg-console-meta-card">
+              <span class="acg-console-meta-label">{labels.cardSource}</span>
+              <strong>{sources.length}</strong>
+            </div>
+            <div class="acg-console-meta-card">
+              <span class="acg-console-meta-label">{labels.cardMode}</span>
+              <strong>{labels.cardModeValue}</strong>
+            </div>
+          </div>
         </div>
-        <div class="space-y-3">
-          <h1 class="acg-console-title">{labels.title}</h1>
-          <p class="acg-console-copy">{labels.lead}</p>
-        </div>
-      </div>
-      <div class="acg-console-side-note">
-        <div class="acg-console-side-head">
-          <span>{labels.mission}</span>
-          <span>{labels.missionSub}</span>
-        </div>
-        <p>{labels.missionBody}</p>
-        <div class="acg-console-side-pills">
-          <span>GitHub Actions</span>
-          <span>Astro</span>
-          <span>localStorage</span>
-        </div>
-      </div>
-    </div>
 
-    <div class="acg-console-about-grid">
-      <div class="acg-console-meta-card">
-        <span class="acg-console-meta-label">{labels.cardUpdate}</span>
-        <strong>{updatedAt}</strong>
-      </div>
-      <div class="acg-console-meta-card">
-        <span class="acg-console-meta-label">{labels.cardSource}</span>
-        <strong>{sources.length}</strong>
-      </div>
-      <div class="acg-console-meta-card">
-        <span class="acg-console-meta-label">{labels.cardMode}</span>
-        <strong>{labels.cardModeValue}</strong>
-      </div>
-    </div>
-  </section>
-
-  <section class="acg-console-grid grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)]">
-    <section class="acg-console-panel glass">
-      <div class="acg-console-panel-head">
-        <div>
-          <h2>{labels.outputs}</h2>
-          <p>{labels.outputsHint}</p>
+        <div class="acg-console-side-note acg-console-side-note-tight">
+          <div class="acg-console-side-head">
+            <span>{labels.mission}</span>
+            <span>{labels.missionSub}</span>
+          </div>
+          <p>{labels.missionBody}</p>
+          <div class="acg-console-side-pills">
+            <span>GitHub Actions</span>
+            <span>Astro</span>
+            <span>localStorage</span>
+          </div>
         </div>
-      </div>
-      <div class="acg-console-link-grid">
-        <a class="acg-console-link-card clickable" href={href(`/${lang}/feed.xml`)}>
-          <strong>RSS</strong>
-          <span>{href(`/${lang}/feed.xml`)}</span>
-        </a>
-        <a class="acg-console-link-card clickable" href={href(`/${lang}/feed.json`)}>
-          <strong>JSON Feed</strong>
-          <span>{href(`/${lang}/feed.json`)}</span>
-        </a>
-        <a class="acg-console-link-card clickable" href={href(`/${lang}/opml.xml`)}>
-          <strong>OPML</strong>
-          <span>{href(`/${lang}/opml.xml`)}</span>
-        </a>
-        <a class="acg-console-link-card clickable" href={href(`/${lang}/status/`)}>
-          <strong>{t(lang, "nav.status")}</strong>
-          <span>{href(`/${lang}/status/`)}</span>
-        </a>
       </div>
     </section>
 
-    <section class="acg-console-panel glass">
-      <div class="acg-console-panel-head">
-        <div>
-          <h2>{labels.riskTitle}</h2>
-          <p>{labels.riskBody}</p>
-        </div>
+    <div class="acg-console-canvas-divider"></div>
+
+    <section class="acg-console-canvas-section">
+      <div class="acg-console-grid grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)]">
+        <section class="acg-console-inline-panel">
+          <div class="acg-console-panel-head">
+            <div>
+              <h2>{labels.outputs}</h2>
+              <p>{labels.outputsHint}</p>
+            </div>
+          </div>
+          <div class="acg-console-link-grid mt-4">
+            <a class="acg-console-link-card clickable" href={href(`/${lang}/feed.xml`)}>
+              <strong>RSS</strong>
+              <span>{href(`/${lang}/feed.xml`)}</span>
+            </a>
+            <a class="acg-console-link-card clickable" href={href(`/${lang}/feed.json`)}>
+              <strong>JSON Feed</strong>
+              <span>{href(`/${lang}/feed.json`)}</span>
+            </a>
+            <a class="acg-console-link-card clickable" href={href(`/${lang}/opml.xml`)}>
+              <strong>OPML</strong>
+              <span>{href(`/${lang}/opml.xml`)}</span>
+            </a>
+            <a class="acg-console-link-card clickable" href={href(`/${lang}/status/`)}>
+              <strong>{t(lang, "nav.status")}</strong>
+              <span>{href(`/${lang}/status/`)}</span>
+            </a>
+          </div>
+        </section>
+
+        <section class="acg-console-inline-panel">
+          <div class="acg-console-panel-head">
+            <div>
+              <h2>{labels.riskTitle}</h2>
+              <p>{labels.riskBody}</p>
+            </div>
+          </div>
+        </section>
       </div>
     </section>
-  </section>
 
-  <section class="acg-console-panel glass">
-    <div class="acg-console-panel-head">
-      <div>
-        <h2>{labels.sourceTitle}</h2>
+    <div class="acg-console-canvas-divider"></div>
+
+    <section class="acg-console-canvas-section">
+      <div class="acg-console-section-head">
+        <div>
+          <span class="acg-console-eyebrow">{labels.sourceTitle}</span>
+          <h2>{labels.sourceTitle}</h2>
+        </div>
         <p>{labels.sourceHint}</p>
       </div>
-      <span class="acg-console-panel-badge">{sources.length}</span>
-    </div>
 
-    <div class="acg-console-table-wrap">
-      <table class="acg-console-table">
-        <thead>
-          <tr>
-            <th>{lang === "zh" ? "来源" : "Source"}</th>
-            <th>{lang === "zh" ? "分类" : "Category"}</th>
-            <th>{lang === "zh" ? "类型" : "Type"}</th>
-            <th>{lang === "zh" ? "入口" : "Links"}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {
-            sources.map((source) => (
-              <tr>
-                <td>
-                  <strong>{source.name}</strong>
-                  <small>{source.id}</small>
-                </td>
-                <td>{categoryLabel(lang, source.category)}</td>
-                <td>{source.kind}</td>
-                <td>
-                  <div class="acg-console-table-links">
-                    {source.homepage ? (
-                      <a href={source.homepage} target="_blank" rel="noreferrer noopener">
-                        {lang === "zh" ? "首页" : "Homepage"}
-                      </a>
-                    ) : null}
-                    {source.url ? (
-                      <a href={source.url} target="_blank" rel="noreferrer noopener">
-                        {lang === "zh" ? "Feed/列表" : "Feed/List"}
-                      </a>
-                    ) : null}
-                  </div>
-                </td>
-              </tr>
-            ))
-          }
-        </tbody>
-      </table>
-    </div>
-  </section>
+      <div class="acg-console-table-wrap mt-5">
+        <table class="acg-console-table">
+          <thead>
+            <tr>
+              <th>{lang === "zh" ? "来源" : "Source"}</th>
+              <th>{lang === "zh" ? "分类" : "Category"}</th>
+              <th>{lang === "zh" ? "类型" : "Type"}</th>
+              <th>{lang === "zh" ? "入口" : "Links"}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              sources.map((source) => (
+                <tr>
+                  <td>
+                    <strong>{source.name}</strong>
+                    <small>{source.id}</small>
+                  </td>
+                  <td>{categoryLabel(lang, source.category)}</td>
+                  <td>{source.kind}</td>
+                  <td>
+                    <div class="acg-console-table-links">
+                      {source.homepage ? (
+                        <a href={source.homepage} target="_blank" rel="noreferrer noopener">
+                          {lang === "zh" ? "首页" : "Homepage"}
+                        </a>
+                      ) : null}
+                      {source.url ? (
+                        <a href={source.url} target="_blank" rel="noreferrer noopener">
+                          {lang === "zh" ? "Feed/列表" : "Feed/List"}
+                        </a>
+                      ) : null}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
 </section>

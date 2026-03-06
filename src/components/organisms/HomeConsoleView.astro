@@ -65,58 +65,62 @@ const labels = {
   zh: {
     kicker: "SENTINEL CONSOLE",
     headline: "信号总控台",
-    lead: "把每一条 ACG 动态都当作一次正在抵达的信号。这里不是普通资讯页，而是一座持续扫描、过滤、聚焦与归档的内容司令台。",
+    lead: "把每一条 ACG 动态都当作一次正在抵达的信号。这里不是普通资讯页，而是一张持续扫描、筛选、聚焦与归档的整版控制台。",
     mission: "主控说明",
     missionBody:
-      "优先展示高热度与高置信信号，快速切换时间透镜、视图密度与来源稳定性，让浏览更像操控一套内容雷达。",
+      "主视觉、分类矩阵、精选信号和内容流现在在同一张连续画布里协作，而不是被切碎成互相孤立的小面板。",
     missionHint: "静态站点 · 每小时更新 · 双语镜像",
     statusLive: "LIVE FEED",
     statusWatch: "WATCHING",
     latestFeed: "主信号流",
-    latestHint: "保留搜索、筛选与偏好控制；重构重点放在信息层级与浏览节奏。",
+    latestHint: "精选、快报和信号板都被压进同一阅读节奏里，减少来回跳块的割裂感。",
     categories: "频道矩阵",
-    categoriesHint: "按类别进入对应的信号波段。",
+    categoriesHint: "按类别直接进入对应波段。",
     briefTitle: "快报摘要",
-    briefHint: "给想快速扫一眼的人。",
+    briefHint: "更像编辑摘要，而不是另一组单独小卡片。",
     randomTitle: "随机信号",
     randomHint: "交给系统随机投喂一条值得点开的内容。",
     openSignal: "打开信号",
     searchScope: "全局检索",
     searchSub: "支持关键词 / 标签 / 来源联动",
+    spotlight: "本轮精选",
+    spotlightHint: "把更值得点开的内容提到画面中央，而不是平铺成同权重列表。",
     emptyTitle: "当前筛选下暂无信号",
     emptyHint: "你可以清空搜索词或关闭部分过滤条件。"
   },
   ja: {
     kicker: "SENTINEL CONSOLE",
     headline: "シグナル統合管制室",
-    lead: "すべての ACG 更新を“到着する信号”として扱う閲覧体験へ。ここは単なるニュース一覧ではなく、常時スキャン・選別・強調・保管するコンテンツ司令台です。",
+    lead: "すべての ACG 更新を“到着する信号”として扱う体験へ。ここは単なる一覧ではなく、スキャン・選別・強調・保管を一枚の画面でつなぐコントロールシートです。",
     mission: "CONTROL NOTE",
     missionBody:
-      "高熱度・高信頼のシグナルを優先表示し、タイムレンズ・表示密度・ソース安定性を即座に切り替えられるようにして、閲覧そのものを“レーダー操作”へ寄せます。",
+      "主ビジュアル、カテゴリ、ピックアップ、記事ストリームを一枚の連続した画面にまとめ、分断感を減らしています。",
     missionHint: "Static site · Hourly sync · Bilingual mirror",
     statusLive: "LIVE FEED",
     statusWatch: "WATCHING",
     latestFeed: "PRIMARY STREAM",
-    latestHint: "検索・フィルター・設定導線は維持しつつ、情報の階層と巡回リズムを再設計しています。",
+    latestHint: "ピックアップ、要約、シグナルボードを同じ閲覧リズムにまとめ、断片的な切れ目を抑えています。",
     categories: "CHANNEL MATRIX",
     categoriesHint: "カテゴリごとの波長へ直接アクセス。",
     briefTitle: "BRIEF CAPSULE",
-    briefHint: "素早く全体を把握したいときの圧縮ビュー。",
+    briefHint: "独立した小カード群ではなく、編集要約として配置。",
     randomTitle: "RANDOM SIGNAL",
     randomHint: "今の気分で開く 1 本を自動で提示します。",
     openSignal: "OPEN SIGNAL",
     searchScope: "GLOBAL SEARCH",
     searchSub: "キーワード / タグ / ソース連動検索",
+    spotlight: "CURATED SIGNALS",
+    spotlightHint: "主役にしたい内容を画面中央へ寄せ、すべてを同じ重さで並べないようにします。",
     emptyTitle: "この条件ではシグナルがありません",
     emptyHint: "検索語を消すか、フィルター条件を少し緩めてください。"
   }
 }[lang];
 ---
 
-<section class="acg-console-home space-y-8">
-  <section class="acg-console-grid grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
-    <div class="acg-console-hero glass">
-      <div class="acg-console-hero-grid">
+<section class="acg-console-home">
+  <div class="acg-console-canvas glass">
+    <section class="acg-console-canvas-section acg-console-canvas-hero">
+      <div class="acg-console-hero-grid acg-console-hero-grid-home">
         <div class="space-y-5">
           <div class="acg-console-kicker-row">
             <span class="acg-console-kicker">{labels.kicker}</span>
@@ -145,299 +149,322 @@ const labels = {
               <strong>{topPulse}</strong>
             </div>
           </div>
-        </div>
 
-        <div class="acg-console-side-note">
-          <div class="acg-console-side-head">
-            <span>{labels.mission}</span>
-            <span>{labels.missionHint}</span>
-          </div>
-          <p>{labels.missionBody}</p>
-          <div class="acg-console-side-pills">
-            <span>{t(lang, "home.spotlight")}</span>
-            <span>{t(lang, "prefs.timeLens")}</span>
-            <span>{t(lang, "nav.search")}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="acg-console-search-wrap">
-        <div class="acg-console-search-head">
-          <div>
-            <div class="acg-console-search-label">{labels.searchScope}</div>
-            <div class="acg-console-search-sub">{labels.searchSub}</div>
-          </div>
-          <div class="flex flex-wrap items-center gap-2 text-xs text-slate-200/72">
-            <span class="acg-console-inline-pill">
-              {t(lang, "search.result")}
-              <span id="acg-search-count">-</span>
-            </span>
-            <span class="acg-console-inline-pill">
-              {t(lang, "home.unread")}
-              <span id="acg-unread-count">-</span>
-            </span>
-          </div>
-        </div>
-        <label class="sr-only" for="acg-search">{t(lang, "search.placeholder")}</label>
-        <div class="acg-console-search-field">
-          <div class="acg-console-search-icon">
-            <Icon name="search" size={18} />
-          </div>
-          <input
-            id="acg-search"
-            type="search"
-            enterkeyhint="search"
-            class="acg-console-input"
-            placeholder={t(lang, "search.placeholder")}
-          />
-          <button
-            type="button"
-            id="acg-search-clear"
-            class="acg-console-clear clickable"
-            hidden
-            aria-label={t(lang, "search.clear")}
-            title={t(lang, "search.clear")}
-          >
-            <Icon name="x" size={18} />
-          </button>
-        </div>
-      </div>
-
-      <div class="acg-console-kpi-grid">
-        <button type="button" class="acg-console-kpi clickable" data-quick-lens="2h" data-active="false">
-          <span class="acg-console-kpi-label">{t(lang, "prefs.timeLens2h")}</span>
-          <span class="acg-console-kpi-value">{lensCounts["2h"]}</span>
-        </button>
-        <button type="button" class="acg-console-kpi clickable" data-quick-lens="24h" data-active="false">
-          <span class="acg-console-kpi-label">{t(lang, "prefs.timeLens24h")}</span>
-          <span class="acg-console-kpi-value">{lensCounts["24h"]}</span>
-        </button>
-        <button type="button" class="acg-console-kpi clickable" data-quick-sort="pulse" data-active="false">
-          <span class="acg-console-kpi-label">{t(lang, "prefs.sortPulse")}</span>
-          <span class="acg-console-kpi-value">{topPulse}</span>
-        </button>
-        <button
-          type="button"
-          class="acg-console-kpi clickable"
-          data-quick-toggle="only-stable"
-          data-active="false"
-        >
-          <span class="acg-console-kpi-label">{t(lang, "home.stableSources")}</span>
-          <span class="acg-console-kpi-value">{stableRatio}%</span>
-        </button>
-      </div>
-
-      <div class="acg-console-toolbar acg-hscroll">
-        <Chip data-quick-toggle="only-followed" data-active="false">{t(lang, "prefs.followOnly")}</Chip>
-        <Chip data-quick-toggle="only-followed-sources" data-active="false">
-          {t(lang, "prefs.followedSourcesOnly")}
-        </Chip>
-        <Chip data-quick-toggle="hide-read" data-active="false">{t(lang, "prefs.hideRead")}</Chip>
-        <Chip data-quick-toggle="only-stable" data-active="false">{t(lang, "prefs.onlyStableSources")}</Chip>
-        <Chip data-quick-toggle="dedup" data-active="false">{t(lang, "prefs.dedupView")}</Chip>
-        <div class="flex gap-2" role="radiogroup" aria-label={t(lang, "prefs.view")}>
-          <Chip
-            icon="grid"
-            iconSize={16}
-            data-view-mode="grid"
-            data-active="false"
-            role="radio"
-            aria-checked="false"
-          >
-            <span>{t(lang, "prefs.viewGrid")}</span>
-          </Chip>
-          <Chip
-            icon="list"
-            iconSize={16}
-            data-view-mode="list"
-            data-active="false"
-            role="radio"
-            aria-checked="false"
-          >
-            <span>{t(lang, "prefs.viewList")}</span>
-          </Chip>
-        </div>
-        <div class="flex gap-2" role="radiogroup" aria-label={t(lang, "prefs.density")}>
-          <Chip data-density-mode="comfort" data-active="false" role="radio" aria-checked="false">
-            {t(lang, "prefs.densityComfort")}
-          </Chip>
-          <Chip data-density-mode="compact" data-active="false" role="radio" aria-checked="false">
-            {t(lang, "prefs.densityCompact")}
-          </Chip>
-        </div>
-        <Chip data-quick-lens="6h" data-active="false">{t(lang, "prefs.timeLens6h")}</Chip>
-        <Chip icon="sliders" iconSize={16} data-open-prefs data-active="false">
-          <span>{t(lang, "prefs.title")}</span>
-        </Chip>
-      </div>
-    </div>
-
-    <aside class="acg-console-stack">
-      <div class="acg-console-panel glass">
-        <div class="acg-console-panel-head">
-          <div>
-            <h2>{labels.categories}</h2>
-            <p>{labels.categoriesHint}</p>
-          </div>
-          <span class="acg-console-panel-badge">{CATEGORIES.length}</span>
-        </div>
-        <div class="acg-console-category-grid">
-          {
-            CATEGORIES.map((category) => (
-              <a href={href(`/${lang}/c/${category}/`)} class="acg-console-category-card clickable">
-                <span class="acg-console-category-icon">
-                  <CategoryIcon category={category} size={18} />
+          <div class="acg-console-search-wrap">
+            <div class="acg-console-search-head">
+              <div>
+                <div class="acg-console-search-label">{labels.searchScope}</div>
+                <div class="acg-console-search-sub">{labels.searchSub}</div>
+              </div>
+              <div class="flex flex-wrap items-center gap-2 text-xs text-slate-200/72">
+                <span class="acg-console-inline-pill">
+                  {t(lang, "search.result")}
+                  <span id="acg-search-count">-</span>
                 </span>
-                <span class="min-w-0 flex-1">
-                  <strong>{categoryLabel(lang, category)}</strong>
-                  <small>{categoryCount.get(category) ?? 0}</small>
+                <span class="acg-console-inline-pill">
+                  {t(lang, "home.unread")}
+                  <span id="acg-unread-count">-</span>
                 </span>
-                <Icon name="chevron-right" size={16} />
-              </a>
-            ))
-          }
+              </div>
+            </div>
+            <label class="sr-only" for="acg-search">{t(lang, "search.placeholder")}</label>
+            <div class="acg-console-search-field">
+              <div class="acg-console-search-icon">
+                <Icon name="search" size={18} />
+              </div>
+              <input
+                id="acg-search"
+                type="search"
+                enterkeyhint="search"
+                class="acg-console-input"
+                placeholder={t(lang, "search.placeholder")}
+              />
+              <button
+                type="button"
+                id="acg-search-clear"
+                class="acg-console-clear clickable"
+                hidden
+                aria-label={t(lang, "search.clear")}
+                title={t(lang, "search.clear")}
+              >
+                <Icon name="x" size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div class="acg-console-kpi-grid">
+            <button type="button" class="acg-console-kpi clickable" data-quick-lens="2h" data-active="false">
+              <span class="acg-console-kpi-label">{t(lang, "prefs.timeLens2h")}</span>
+              <span class="acg-console-kpi-value">{lensCounts["2h"]}</span>
+            </button>
+            <button type="button" class="acg-console-kpi clickable" data-quick-lens="24h" data-active="false">
+              <span class="acg-console-kpi-label">{t(lang, "prefs.timeLens24h")}</span>
+              <span class="acg-console-kpi-value">{lensCounts["24h"]}</span>
+            </button>
+            <button
+              type="button"
+              class="acg-console-kpi clickable"
+              data-quick-sort="pulse"
+              data-active="false"
+            >
+              <span class="acg-console-kpi-label">{t(lang, "prefs.sortPulse")}</span>
+              <span class="acg-console-kpi-value">{topPulse}</span>
+            </button>
+            <button
+              type="button"
+              class="acg-console-kpi clickable"
+              data-quick-toggle="only-stable"
+              data-active="false"
+            >
+              <span class="acg-console-kpi-label">{t(lang, "home.stableSources")}</span>
+              <span class="acg-console-kpi-value">{stableRatio}%</span>
+            </button>
+          </div>
+
+          <div class="acg-console-toolbar acg-hscroll">
+            <Chip data-quick-toggle="only-followed" data-active="false">{t(lang, "prefs.followOnly")}</Chip>
+            <Chip data-quick-toggle="only-followed-sources" data-active="false">
+              {t(lang, "prefs.followedSourcesOnly")}
+            </Chip>
+            <Chip data-quick-toggle="hide-read" data-active="false">{t(lang, "prefs.hideRead")}</Chip>
+            <Chip data-quick-toggle="only-stable" data-active="false"
+              >{t(lang, "prefs.onlyStableSources")}</Chip
+            >
+            <Chip data-quick-toggle="dedup" data-active="false">{t(lang, "prefs.dedupView")}</Chip>
+            <div class="flex gap-2" role="radiogroup" aria-label={t(lang, "prefs.view")}>
+              <Chip
+                icon="grid"
+                iconSize={16}
+                data-view-mode="grid"
+                data-active="false"
+                role="radio"
+                aria-checked="false"
+              >
+                <span>{t(lang, "prefs.viewGrid")}</span>
+              </Chip>
+              <Chip
+                icon="list"
+                iconSize={16}
+                data-view-mode="list"
+                data-active="false"
+                role="radio"
+                aria-checked="false"
+              >
+                <span>{t(lang, "prefs.viewList")}</span>
+              </Chip>
+            </div>
+            <div class="flex gap-2" role="radiogroup" aria-label={t(lang, "prefs.density")}>
+              <Chip data-density-mode="comfort" data-active="false" role="radio" aria-checked="false">
+                {t(lang, "prefs.densityComfort")}
+              </Chip>
+              <Chip data-density-mode="compact" data-active="false" role="radio" aria-checked="false">
+                {t(lang, "prefs.densityCompact")}
+              </Chip>
+            </div>
+            <Chip data-quick-lens="6h" data-active="false">{t(lang, "prefs.timeLens6h")}</Chip>
+            <Chip icon="sliders" iconSize={16} data-open-prefs data-active="false">
+              <span>{t(lang, "prefs.title")}</span>
+            </Chip>
+          </div>
+        </div>
+
+        <div class="acg-console-hero-side">
+          <div class="acg-console-side-note acg-console-side-note-tight">
+            <div class="acg-console-side-head">
+              <span>{labels.mission}</span>
+              <span>{labels.missionHint}</span>
+            </div>
+            <p>{labels.missionBody}</p>
+          </div>
+
+          <div class="acg-console-inline-grid">
+            <div class="acg-console-inline-panel">
+              <div class="acg-console-panel-head">
+                <div>
+                  <h2>{labels.categories}</h2>
+                  <p>{labels.categoriesHint}</p>
+                </div>
+              </div>
+              <div class="acg-console-category-grid acg-console-category-grid-tight">
+                {
+                  CATEGORIES.map((category) => (
+                    <a href={href(`/${lang}/c/${category}/`)} class="acg-console-category-card clickable">
+                      <span class="acg-console-category-icon">
+                        <CategoryIcon category={category} size={18} />
+                      </span>
+                      <span class="min-w-0 flex-1">
+                        <strong>{categoryLabel(lang, category)}</strong>
+                        <small>{categoryCount.get(category) ?? 0}</small>
+                      </span>
+                      <Icon name="chevron-right" size={16} />
+                    </a>
+                  ))
+                }
+              </div>
+            </div>
+
+            <div class="acg-console-inline-panel">
+              <div class="acg-console-panel-head">
+                <div>
+                  <h2>{labels.briefTitle}</h2>
+                  <p>{labels.briefHint}</p>
+                </div>
+                <button
+                  type="button"
+                  class="acg-console-ghost clickable"
+                  data-copy-text={copyBriefText}
+                  aria-label={t(lang, "home.copyBrief")}
+                  title={t(lang, "home.copyBrief")}
+                >
+                  {t(lang, "home.copyBrief")}
+                </button>
+              </div>
+              <ol class="acg-console-log-list acg-console-log-list-compact">
+                {
+                  brief.slice(0, 5).map((post, index) => (
+                    <li>
+                      <a href={href(`/${lang}/p/${post.id}/`)} class="acg-console-log-item clickable">
+                        <span class="acg-console-log-rank">{String(index + 1).padStart(2, "0")}</span>
+                        <span class="min-w-0 flex-1 truncate">
+                          {lang === "zh" ? (post.titleZh ?? post.title) : (post.titleJa ?? post.title)}
+                        </span>
+                        <Icon name="chevron-right" size={16} />
+                      </a>
+                    </li>
+                  ))
+                }
+              </ol>
+            </div>
+          </div>
         </div>
       </div>
+    </section>
 
-      <SignalBoard
-        lang={lang}
-        pulseTop={pulseTop}
-        hotTags={hotTags}
-        lensCounts={lensCounts}
-        healthSummary={healthSummary}
-        totalPosts={enrichedCount}
-      />
-    </aside>
-  </section>
+    <div class="acg-console-canvas-divider"></div>
 
-  <section class="acg-console-section">
-    <SpotlightGrid posts={spotlight} lang={lang} title={t(lang, "home.spotlight")} />
-  </section>
-
-  <section class="acg-console-grid grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
-    <div class="acg-console-feed space-y-4">
+    <section class="acg-console-canvas-section">
       <div class="acg-console-section-head">
         <div>
-          <span class="acg-console-eyebrow">{labels.statusLive}</span>
-          <h2>{labels.latestFeed}</h2>
+          <span class="acg-console-eyebrow">{labels.spotlight}</span>
+          <h2>{t(lang, "home.spotlight")}</h2>
         </div>
-        <p>{labels.latestHint}</p>
+        <p>{labels.spotlightHint}</p>
       </div>
-      <PostList posts={latest} lang={lang} />
-      <div id="acg-list-empty" class="acg-console-empty glass hidden">
-        <div class="radar grid size-16 place-items-center shadow-e4">
-          <span class="text-sm font-bold text-white/90">?</span>
-        </div>
-        <div>
-          <div class="text-sm font-semibold text-slate-50">{labels.emptyTitle}</div>
-          <div class="mt-2 text-xs leading-relaxed text-slate-300/72">{labels.emptyHint}</div>
-        </div>
-        <button type="button" id="acg-clear-search" class="acg-console-primary clickable">
-          {t(lang, "search.clear")}
-        </button>
+      <div class="acg-console-module mt-4">
+        <SpotlightGrid posts={spotlight} lang={lang} title={t(lang, "home.spotlight")} />
       </div>
-    </div>
+    </section>
 
-    <aside class="acg-console-stack">
-      <section class="acg-console-panel glass">
-        <div class="acg-console-panel-head">
-          <div>
-            <h2>{labels.briefTitle}</h2>
-            <p>{labels.briefHint}</p>
+    <div class="acg-console-canvas-divider"></div>
+
+    <section class="acg-console-canvas-section">
+      <div class="acg-console-feed-layout">
+        <div class="acg-console-feed space-y-4">
+          <div class="acg-console-section-head">
+            <div>
+              <span class="acg-console-eyebrow">{labels.statusLive}</span>
+              <h2>{labels.latestFeed}</h2>
+            </div>
+            <p>{labels.latestHint}</p>
           </div>
-          <button
-            type="button"
-            class="acg-console-ghost clickable"
-            data-copy-text={copyBriefText}
-            aria-label={t(lang, "home.copyBrief")}
-            title={t(lang, "home.copyBrief")}
-          >
-            {t(lang, "home.copyBrief")}
-          </button>
-        </div>
-        <ol class="acg-console-log-list">
-          {
-            brief.map((post, index) => (
-              <li>
-                <a href={href(`/${lang}/p/${post.id}/`)} class="acg-console-log-item clickable">
-                  <span class="acg-console-log-rank">{String(index + 1).padStart(2, "0")}</span>
-                  <span class="min-w-0 flex-1 truncate">
-                    {lang === "zh" ? (post.titleZh ?? post.title) : (post.titleJa ?? post.title)}
-                  </span>
-                  <Icon name="chevron-right" size={16} />
-                </a>
-              </li>
-            ))
-          }
-        </ol>
-      </section>
-
-      <section class="acg-console-panel glass">
-        <div class="acg-console-panel-head">
-          <div>
-            <h2>{labels.randomTitle}</h2>
-            <p>{labels.randomHint}</p>
+          <PostList posts={latest} lang={lang} />
+          <div id="acg-list-empty" class="acg-console-empty glass hidden">
+            <div class="radar grid size-16 place-items-center shadow-e4">
+              <span class="text-sm font-bold text-white/90">?</span>
+            </div>
+            <div>
+              <div class="text-sm font-semibold text-slate-50">{labels.emptyTitle}</div>
+              <div class="mt-2 text-xs leading-relaxed text-slate-300/72">{labels.emptyHint}</div>
+            </div>
+            <button type="button" id="acg-clear-search" class="acg-console-primary clickable">
+              {t(lang, "search.clear")}
+            </button>
           </div>
         </div>
-        {
-          randomPick ? (
-            <a href={href(`/${lang}/p/${randomPick.id}/`)} class="acg-console-random-card clickable group">
-              <div class="acg-console-random-media">
-                {showRandomPickCover && randomPickCover ? (
-                  <img
-                    src={randomPickCover.src}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    referrerpolicy="no-referrer"
-                    data-acg-cover
-                    data-acg-cover-original-src={randomPickCoverOriginal ?? ""}
-                    class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                    onload="window.__acgCoverLoad?.(this)"
-                    onerror="this.closest('[data-random-card]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
-                  />
-                ) : (
-                  <div class="acg-console-random-fallback">
-                    <CategoryIcon category={randomPick.category} size={26} />
-                    <span>{categoryLabel(lang, randomPick.category)}</span>
+
+        <aside class="acg-console-stack">
+          <div class="acg-console-module">
+            <SignalBoard
+              lang={lang}
+              pulseTop={pulseTop}
+              hotTags={hotTags}
+              lensCounts={lensCounts}
+              healthSummary={healthSummary}
+              totalPosts={enrichedCount}
+            />
+          </div>
+
+          <section class="acg-console-inline-panel acg-console-random-panel">
+            <div class="acg-console-panel-head">
+              <div>
+                <h2>{labels.randomTitle}</h2>
+                <p>{labels.randomHint}</p>
+              </div>
+            </div>
+            {
+              randomPick ? (
+                <a
+                  href={href(`/${lang}/p/${randomPick.id}/`)}
+                  class="acg-console-random-card clickable group"
+                >
+                  <div class="acg-console-random-media">
+                    {showRandomPickCover && randomPickCover ? (
+                      <img
+                        src={randomPickCover.src}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        referrerpolicy="no-referrer"
+                        data-acg-cover
+                        data-acg-cover-original-src={randomPickCoverOriginal ?? ""}
+                        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                        onload="window.__acgCoverLoad?.(this)"
+                        onerror="this.closest('[data-random-card]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
+                      />
+                    ) : (
+                      <div class="acg-console-random-fallback">
+                        <CategoryIcon category={randomPick.category} size={26} />
+                        <span>{categoryLabel(lang, randomPick.category)}</span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              <div data-random-card class="space-y-3">
-                <span class="acg-console-inline-pill">{categoryLabel(lang, randomPick.category)}</span>
-                <div class="space-y-2">
-                  <h3 class="acg-console-random-title">
-                    {lang === "zh"
-                      ? (randomPick.titleZh ?? randomPick.title)
-                      : (randomPick.titleJa ?? randomPick.title)}
-                  </h3>
-                  <p class="acg-console-random-copy">
-                    {lang === "zh"
-                      ? (randomPick.summaryZh ??
-                        randomPick.previewZh ??
-                        randomPick.summary ??
-                        randomPick.preview ??
-                        labels.randomHint)
-                      : (randomPick.summaryJa ??
-                        randomPick.previewJa ??
-                        randomPick.summary ??
-                        randomPick.preview ??
-                        labels.randomHint)}
-                  </p>
-                </div>
-                <span class="acg-console-linkline">
-                  {labels.openSignal}
-                  <Icon name="chevron-right" size={16} />
-                </span>
-              </div>
-            </a>
-          ) : (
-            <p class="text-sm text-slate-300/72">{t(lang, "common.noData")}</p>
-          )
-        }
-      </section>
-    </aside>
-  </section>
+                  <div data-random-card class="space-y-3">
+                    <span class="acg-console-inline-pill">{categoryLabel(lang, randomPick.category)}</span>
+                    <div class="space-y-2">
+                      <h3 class="acg-console-random-title">
+                        {lang === "zh"
+                          ? (randomPick.titleZh ?? randomPick.title)
+                          : (randomPick.titleJa ?? randomPick.title)}
+                      </h3>
+                      <p class="acg-console-random-copy">
+                        {lang === "zh"
+                          ? (randomPick.summaryZh ??
+                            randomPick.previewZh ??
+                            randomPick.summary ??
+                            randomPick.preview ??
+                            labels.randomHint)
+                          : (randomPick.summaryJa ??
+                            randomPick.previewJa ??
+                            randomPick.summary ??
+                            randomPick.preview ??
+                            labels.randomHint)}
+                      </p>
+                    </div>
+                    <span class="acg-console-linkline">
+                      {labels.openSignal}
+                      <Icon name="chevron-right" size={16} />
+                    </span>
+                  </div>
+                </a>
+              ) : (
+                <p class="text-sm text-slate-300/72">{t(lang, "common.noData")}</p>
+              )
+            }
+          </section>
+        </aside>
+      </div>
+    </section>
+  </div>
 
   <PreferencesDrawer lang={lang} />
 </section>

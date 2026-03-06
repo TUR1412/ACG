@@ -27,11 +27,11 @@ const labels = {
   zh: {
     kicker: "CHANNEL ARCHIVE",
     headline: "信号档案台",
-    lead: "将同一类别的内容集中到一条波段中浏览：看热度、看时间窗、看来源稳定性，也能继续用搜索和偏好做深筛。",
+    lead: "把同一类别的内容汇成一条连续波段：标题区、筛选区和内容流不再彼此割裂，而是顺着同一张版面往下读。",
     visible: "当前可见",
     total: "总量",
     archive: "ARCHIVE NOTE",
-    archiveBody: "列表仍然由现有搜索与 data-* 行为驱动，但视觉层级被重做为更偏控制台和档案界面的浏览体验。",
+    archiveBody: "这一页不再把说明、筛选、列表切成三段独立卡片，而是压到同一张连续画布里。",
     sectionTitle: "主档案流",
     sectionHint: "支持视图、密度、时间透镜、已读与关注来源联动。",
     emptyTitle: "当前条件下没有匹配到信号",
@@ -40,12 +40,11 @@ const labels = {
   ja: {
     kicker: "CHANNEL ARCHIVE",
     headline: "シグナルアーカイブ",
-    lead: "同じカテゴリの更新を一つの波長として閲覧できるように再構成。熱度・時間窓・ソース安定性を確認しながら、検索と設定でさらに絞り込めます。",
+    lead: "同じカテゴリの更新を一つの連続した波長として閲覧できるように再構成。ヘッダー、フィルター、記事流が一枚の版面でつながります。",
     visible: "VISIBLE",
     total: "TOTAL",
     archive: "ARCHIVE NOTE",
-    archiveBody:
-      "既存の検索と data-* ベースの挙動は維持しつつ、視覚レイヤーをよりコントロールパネル寄りに再設計しています。",
+    archiveBody: "説明、フィルター、一覧を別々のカードに分断せず、一枚の連続した画面へ収め直しています。",
     sectionTitle: "PRIMARY ARCHIVE",
     sectionHint: "ビュー・密度・タイムレンズ・既読・フォロー中ソースをまとめて操作。",
     emptyTitle: "この条件ではシグナルが見つかりません",
@@ -54,167 +53,174 @@ const labels = {
 }[lang];
 ---
 
-<section class="acg-console-page space-y-6">
-  <section class="acg-console-hero glass">
-    <div class="acg-console-hero-grid">
-      <div class="space-y-5">
-        <div class="acg-console-kicker-row">
-          <span class="acg-console-kicker">{labels.kicker}</span>
-          <span class="acg-console-status-pill">{categoryLabel(lang, category)}</span>
+<section class="acg-console-page">
+  <div class="acg-console-canvas glass">
+    <section class="acg-console-canvas-section acg-console-canvas-hero">
+      <div class="acg-console-hero-grid acg-console-hero-grid-category">
+        <div class="space-y-5">
+          <div class="acg-console-kicker-row">
+            <span class="acg-console-kicker">{labels.kicker}</span>
+            <span class="acg-console-status-pill">{categoryLabel(lang, category)}</span>
+          </div>
+          <div class="space-y-3">
+            <h1 class="acg-console-title">{categoryLabel(lang, category)} · {labels.headline}</h1>
+            <p class="acg-console-copy">{labels.lead}</p>
+          </div>
         </div>
-        <div class="space-y-3">
-          <h1 class="acg-console-title">{categoryLabel(lang, category)} · {labels.headline}</h1>
-          <p class="acg-console-copy">{labels.lead}</p>
-        </div>
-      </div>
-      <div class="acg-console-side-note">
-        <div class="acg-console-side-head">
-          <span>{labels.archive}</span>
-          <span>{categoryLabel(lang, category)}</span>
-        </div>
-        <p>{labels.archiveBody}</p>
-        <div class="acg-console-side-pills">
-          <span>{t(lang, "prefs.sortPulse")}</span>
-          <span>{t(lang, "prefs.timeLens")}</span>
-          <span>{t(lang, "prefs.view")}</span>
-        </div>
-      </div>
-    </div>
 
-    <div class="acg-console-search-wrap">
-      <div class="acg-console-search-head">
-        <div>
-          <div class="acg-console-search-label">{t(lang, "nav.search")}</div>
-          <div class="acg-console-search-sub">{categoryLabel(lang, category)} · {labels.sectionHint}</div>
-        </div>
-        <div class="flex flex-wrap items-center gap-2 text-xs text-slate-200/72">
-          <span class="acg-console-inline-pill">
-            {labels.visible}
-            <span id="acg-search-count">-</span>
-          </span>
-          <span class="acg-console-inline-pill">
-            {labels.total}
-            <span>{total}</span>
-          </span>
+        <div class="acg-console-side-note acg-console-side-note-tight">
+          <div class="acg-console-side-head">
+            <span>{labels.archive}</span>
+            <span>{categoryLabel(lang, category)}</span>
+          </div>
+          <p>{labels.archiveBody}</p>
+          <div class="acg-console-side-pills">
+            <span>{t(lang, "prefs.sortPulse")}</span>
+            <span>{t(lang, "prefs.timeLens")}</span>
+            <span>{t(lang, "prefs.view")}</span>
+          </div>
         </div>
       </div>
-      <label class="sr-only" for="acg-search">{t(lang, "search.placeholder")}</label>
-      <div class="acg-console-search-field">
-        <div class="acg-console-search-icon">
-          <Icon name="search" size={18} />
+
+      <div class="acg-console-search-wrap">
+        <div class="acg-console-search-head">
+          <div>
+            <div class="acg-console-search-label">{t(lang, "nav.search")}</div>
+            <div class="acg-console-search-sub">{categoryLabel(lang, category)} · {labels.sectionHint}</div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 text-xs text-slate-200/72">
+            <span class="acg-console-inline-pill">
+              {labels.visible}
+              <span id="acg-search-count">-</span>
+            </span>
+            <span class="acg-console-inline-pill">
+              {labels.total}
+              <span>{total}</span>
+            </span>
+          </div>
         </div>
-        <input
-          id="acg-search"
-          type="search"
-          enterkeyhint="search"
-          class="acg-console-input"
-          placeholder={t(lang, "search.placeholder")}
-        />
+        <label class="sr-only" for="acg-search">{t(lang, "search.placeholder")}</label>
+        <div class="acg-console-search-field">
+          <div class="acg-console-search-icon">
+            <Icon name="search" size={18} />
+          </div>
+          <input
+            id="acg-search"
+            type="search"
+            enterkeyhint="search"
+            class="acg-console-input"
+            placeholder={t(lang, "search.placeholder")}
+          />
+          <button
+            type="button"
+            id="acg-search-clear"
+            class="acg-console-clear clickable"
+            hidden
+            aria-label={t(lang, "search.clear")}
+            title={t(lang, "search.clear")}
+          >
+            <Icon name="x" size={18} />
+          </button>
+        </div>
+      </div>
+
+      <div class="acg-console-kpi-grid">
+        <button type="button" class="acg-console-kpi clickable" data-quick-lens="2h" data-active="false">
+          <span class="acg-console-kpi-label">{t(lang, "prefs.timeLens2h")}</span>
+          <span class="acg-console-kpi-value">{lensCounts["2h"]}</span>
+        </button>
+        <button type="button" class="acg-console-kpi clickable" data-quick-lens="24h" data-active="false">
+          <span class="acg-console-kpi-label">{t(lang, "prefs.timeLens24h")}</span>
+          <span class="acg-console-kpi-value">{lensCounts["24h"]}</span>
+        </button>
+        <button type="button" class="acg-console-kpi clickable" data-quick-sort="pulse" data-active="false">
+          <span class="acg-console-kpi-label">{t(lang, "prefs.sortPulse")}</span>
+          <span class="acg-console-kpi-value">{topPulse}</span>
+        </button>
         <button
           type="button"
-          id="acg-search-clear"
-          class="acg-console-clear clickable"
-          hidden
-          aria-label={t(lang, "search.clear")}
-          title={t(lang, "search.clear")}
+          class="acg-console-kpi clickable"
+          data-quick-toggle="only-stable"
+          data-active="false"
         >
-          <Icon name="x" size={18} />
+          <span class="acg-console-kpi-label">{t(lang, "home.stableSources")}</span>
+          <span class="acg-console-kpi-value">{stableRatio}%</span>
         </button>
       </div>
-    </div>
 
-    <div class="acg-console-kpi-grid">
-      <button type="button" class="acg-console-kpi clickable" data-quick-lens="2h" data-active="false">
-        <span class="acg-console-kpi-label">{t(lang, "prefs.timeLens2h")}</span>
-        <span class="acg-console-kpi-value">{lensCounts["2h"]}</span>
-      </button>
-      <button type="button" class="acg-console-kpi clickable" data-quick-lens="24h" data-active="false">
-        <span class="acg-console-kpi-label">{t(lang, "prefs.timeLens24h")}</span>
-        <span class="acg-console-kpi-value">{lensCounts["24h"]}</span>
-      </button>
-      <button type="button" class="acg-console-kpi clickable" data-quick-sort="pulse" data-active="false">
-        <span class="acg-console-kpi-label">{t(lang, "prefs.sortPulse")}</span>
-        <span class="acg-console-kpi-value">{topPulse}</span>
-      </button>
-      <button
-        type="button"
-        class="acg-console-kpi clickable"
-        data-quick-toggle="only-stable"
-        data-active="false"
-      >
-        <span class="acg-console-kpi-label">{t(lang, "home.stableSources")}</span>
-        <span class="acg-console-kpi-value">{stableRatio}%</span>
-      </button>
-    </div>
-
-    <div class="acg-console-toolbar acg-hscroll">
-      <Chip data-quick-toggle="only-followed" data-active="false">{t(lang, "prefs.followOnly")}</Chip>
-      <Chip data-quick-toggle="only-followed-sources" data-active="false"
-        >{t(lang, "prefs.followedSourcesOnly")}</Chip
-      >
-      <Chip data-quick-toggle="hide-read" data-active="false">{t(lang, "prefs.hideRead")}</Chip>
-      <Chip data-quick-toggle="only-stable" data-active="false">{t(lang, "prefs.onlyStableSources")}</Chip>
-      <Chip data-quick-toggle="dedup" data-active="false">{t(lang, "prefs.dedupView")}</Chip>
-      <div class="flex gap-2" role="radiogroup" aria-label={t(lang, "prefs.view")}>
-        <Chip
-          icon="grid"
-          iconSize={16}
-          data-view-mode="grid"
-          data-active="false"
-          role="radio"
-          aria-checked="false"
+      <div class="acg-console-toolbar acg-hscroll">
+        <Chip data-quick-toggle="only-followed" data-active="false">{t(lang, "prefs.followOnly")}</Chip>
+        <Chip data-quick-toggle="only-followed-sources" data-active="false"
+          >{t(lang, "prefs.followedSourcesOnly")}</Chip
         >
-          <span>{t(lang, "prefs.viewGrid")}</span>
-        </Chip>
-        <Chip
-          icon="list"
-          iconSize={16}
-          data-view-mode="list"
-          data-active="false"
-          role="radio"
-          aria-checked="false"
-        >
-          <span>{t(lang, "prefs.viewList")}</span>
-        </Chip>
-      </div>
-      <div class="flex gap-2" role="radiogroup" aria-label={t(lang, "prefs.density")}>
-        <Chip data-density-mode="comfort" data-active="false" role="radio" aria-checked="false"
-          >{t(lang, "prefs.densityComfort")}</Chip
-        >
-        <Chip data-density-mode="compact" data-active="false" role="radio" aria-checked="false"
-          >{t(lang, "prefs.densityCompact")}</Chip
+        <Chip data-quick-toggle="hide-read" data-active="false">{t(lang, "prefs.hideRead")}</Chip>
+        <Chip data-quick-toggle="only-stable" data-active="false">{t(lang, "prefs.onlyStableSources")}</Chip>
+        <Chip data-quick-toggle="dedup" data-active="false">{t(lang, "prefs.dedupView")}</Chip>
+        <div class="flex gap-2" role="radiogroup" aria-label={t(lang, "prefs.view")}>
+          <Chip
+            icon="grid"
+            iconSize={16}
+            data-view-mode="grid"
+            data-active="false"
+            role="radio"
+            aria-checked="false"
+          >
+            <span>{t(lang, "prefs.viewGrid")}</span>
+          </Chip>
+          <Chip
+            icon="list"
+            iconSize={16}
+            data-view-mode="list"
+            data-active="false"
+            role="radio"
+            aria-checked="false"
+          >
+            <span>{t(lang, "prefs.viewList")}</span>
+          </Chip>
+        </div>
+        <div class="flex gap-2" role="radiogroup" aria-label={t(lang, "prefs.density")}>
+          <Chip data-density-mode="comfort" data-active="false" role="radio" aria-checked="false">
+            {t(lang, "prefs.densityComfort")}
+          </Chip>
+          <Chip data-density-mode="compact" data-active="false" role="radio" aria-checked="false">
+            {t(lang, "prefs.densityCompact")}
+          </Chip>
+        </div>
+        <Chip data-quick-lens="6h" data-active="false">{t(lang, "prefs.timeLens6h")}</Chip>
+        <Chip data-quick-sort="pulse" data-active="false">{t(lang, "prefs.sortPulse")}</Chip>
+        <Chip icon="sliders" iconSize={16} data-open-prefs data-active="false"
+          ><span>{t(lang, "prefs.title")}</span></Chip
         >
       </div>
-      <Chip data-quick-lens="6h" data-active="false">{t(lang, "prefs.timeLens6h")}</Chip>
-      <Chip data-quick-sort="pulse" data-active="false">{t(lang, "prefs.sortPulse")}</Chip>
-      <Chip icon="sliders" iconSize={16} data-open-prefs data-active="false"
-        ><span>{t(lang, "prefs.title")}</span></Chip
-      >
-    </div>
-  </section>
+    </section>
 
-  <section class="acg-console-feed space-y-4">
-    <div class="acg-console-section-head">
-      <div>
-        <span class="acg-console-eyebrow">{categoryLabel(lang, category)}</span>
-        <h2>{labels.sectionTitle}</h2>
+    <div class="acg-console-canvas-divider"></div>
+
+    <section class="acg-console-canvas-section">
+      <div class="acg-console-section-head">
+        <div>
+          <span class="acg-console-eyebrow">{categoryLabel(lang, category)}</span>
+          <h2>{labels.sectionTitle}</h2>
+        </div>
+        <p>{labels.sectionHint}</p>
       </div>
-      <p>{labels.sectionHint}</p>
-    </div>
 
-    <PostList posts={filtered} lang={lang} />
-
-    <div id="acg-list-empty" class="acg-console-empty glass hidden">
-      <div class:list={["acg-console-empty-dot", theme.dot]}></div>
-      <div>
-        <div class="text-sm font-semibold text-slate-50">{labels.emptyTitle}</div>
-        <div class="mt-2 text-xs leading-relaxed text-slate-300/72">{labels.emptyHint}</div>
+      <div class="mt-5">
+        <PostList posts={filtered} lang={lang} />
       </div>
-      <button type="button" id="acg-clear-search" class="acg-console-primary clickable">
-        {t(lang, "search.clear")}
-      </button>
-    </div>
-  </section>
+
+      <div id="acg-list-empty" class="acg-console-empty glass hidden mt-5">
+        <div class:list={["acg-console-empty-dot", theme.dot]}></div>
+        <div>
+          <div class="text-sm font-semibold text-slate-50">{labels.emptyTitle}</div>
+          <div class="mt-2 text-xs leading-relaxed text-slate-300/72">{labels.emptyHint}</div>
+        </div>
+        <button type="button" id="acg-clear-search" class="acg-console-primary clickable">
+          {t(lang, "search.clear")}
+        </button>
+      </div>
+    </section>
+  </div>
 
   <PreferencesDrawer lang={lang} />
 </section>
