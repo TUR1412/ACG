@@ -97,15 +97,14 @@ const copyBriefText = brief
 
 const labels = {
   zh: {
-    kicker: "SENTINEL CONSOLE",
-    headline: "信号总控台",
-    lead: "把每一条 ACG 动态都当作一次正在抵达的信号。首页不再只是面板集合，而是一张有主角、有陪衬、有节奏推进的整版封面。",
-    mission: "主控说明",
-    missionBody:
-      "主视觉负责建立情绪，精选和列表负责承接内容，信号板负责补充判断依据；三者是主次关系，而不是同权重并排。",
-    missionHint: "静态站点 · 每小时更新 · 双语镜像",
-    statusLive: "LIVE FEED",
-    statusWatch: "WATCHING",
+    kicker: "编辑部选题",
+    headline: "今天值得先看的内容",
+    lead: "把新番、联动、舞台消息和周边动态重新排成一张像样的首页封面：先有主角内容，再有追更入口，而不是把一切挤成同一个层级。",
+    mission: "版面说明",
+    missionBody: "主视觉先负责题材和情绪，精选与列表再承担密度和追更；这更像二次元媒体首页，而不是后台面板。",
+    missionHint: "首页封面 · 每小时更新 · 双语镜像",
+    statusLive: "今日焦点",
+    statusWatch: "EDITOR'S PICK",
     latestFeed: "主信号流",
     latestHint: "最新信号仍然保持高信息密度，但主画面的视觉重心先交给真正值得看的内容。",
     categories: "频道矩阵",
@@ -117,22 +116,22 @@ const labels = {
     openSignal: "打开信号",
     searchScope: "全局检索",
     searchSub: "支持关键词 / 标签 / 来源联动",
-    spotlight: "本轮精选",
-    spotlightHint: "把最值得点开的内容抬到画面中央。",
+    spotlight: "编辑精选",
+    spotlightHint: "把最值得点开的内容抬到画面中央，而不是混在普通流里。",
     emptyTitle: "当前筛选下暂无信号",
     emptyHint: "你可以清空搜索词或关闭部分过滤条件。",
     heroLabel: "本轮主角"
   },
   ja: {
-    kicker: "SENTINEL CONSOLE",
-    headline: "シグナル統合管制室",
-    lead: "すべての ACG 更新を“到着する信号”として扱う体験へ。トップは単なるパネル集合ではなく、主役と脇役と閲覧のリズムを持った一枚の表紙として再設計しています。",
-    mission: "CONTROL NOTE",
+    kicker: "EDITORIAL DESK",
+    headline: "きょう最初に見るべき話題",
+    lead: "新作アニメ、ゲーム連動、ステージ情報、グッズ展開を“ちゃんと一枚の表紙”として並べ直します。全部を同じ重さで詰め込まないためのトップページです。",
+    mission: "LAYOUT NOTE",
     missionBody:
-      "主ビジュアルが空気を作り、ピックアップと一覧が内容を受け取り、シグナルボードが判断材料を補う──同列ではなく、役割に差をつけています。",
-    missionHint: "Static site · Hourly sync · Bilingual mirror",
-    statusLive: "LIVE FEED",
-    statusWatch: "WATCHING",
+      "主ビジュアルで空気を作り、ピックアップと一覧で追いかける。ダッシュボードではなく、ACG メディアの表紙に寄せています。",
+    missionHint: "Front cover · Hourly sync · Bilingual mirror",
+    statusLive: "TODAY'S LEAD",
+    statusWatch: "EDITOR'S PICK",
     latestFeed: "PRIMARY STREAM",
     latestHint: "最新シグナルの密度は維持しつつ、最初の視線は“本当に見せたい内容”に集めます。",
     categories: "CHANNEL MATRIX",
@@ -144,8 +143,8 @@ const labels = {
     openSignal: "OPEN SIGNAL",
     searchScope: "GLOBAL SEARCH",
     searchSub: "キーワード / タグ / ソース連動検索",
-    spotlight: "CURATED SIGNALS",
-    spotlightHint: "最も見せたい内容を画面中央へ引き上げる。",
+    spotlight: "CURATED STORIES",
+    spotlightHint: "最も見せたい内容を中央へ引き上げ、通常の一覧とは別の重みで扱います。",
     emptyTitle: "この条件ではシグナルがありません",
     emptyHint: "検索語を消すか、フィルター条件を少し緩めてください。",
     heroLabel: "MAIN FOCUS"
@@ -268,7 +267,7 @@ const labels = {
             <p>{labels.missionBody}</p>
           </div>
 
-          <a href={heroHref} class="acg-console-feature-card clickable group">
+          <a href={heroHref} class="acg-console-feature-card clickable group" data-genre={heroCategory}>
             <div class="acg-console-feature-media">
               {
                 heroCover ? (
@@ -488,6 +487,7 @@ const labels = {
                 <a
                   href={href(`/${lang}/p/${secondaryFeature.id}/`)}
                   class="acg-console-random-card clickable group"
+                  data-genre={secondaryFeature.category}
                 >
                   <div class="acg-console-random-media">
                     {secondaryCover ? (

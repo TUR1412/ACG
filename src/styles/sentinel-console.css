@@ -937,6 +937,62 @@ body::after {
   text-decoration: none;
 }
 
+.acg-console-feature-card[data-genre="anime"],
+.acg-console-random-card[data-genre="anime"],
+.acg-console-detail-poster-frame[data-genre="anime"] {
+  box-shadow: 0 28px 90px rgba(167, 139, 250, 0.22);
+}
+
+.acg-console-feature-card[data-genre="game"],
+.acg-console-random-card[data-genre="game"],
+.acg-console-detail-poster-frame[data-genre="game"] {
+  box-shadow: 0 28px 90px rgba(34, 211, 238, 0.2);
+}
+
+.acg-console-feature-card[data-genre="goods"],
+.acg-console-random-card[data-genre="goods"],
+.acg-console-detail-poster-frame[data-genre="goods"] {
+  box-shadow: 0 28px 90px rgba(251, 191, 36, 0.18);
+}
+
+.acg-console-feature-card[data-genre="seiyuu"],
+.acg-console-random-card[data-genre="seiyuu"],
+.acg-console-detail-poster-frame[data-genre="seiyuu"] {
+  box-shadow: 0 28px 90px rgba(52, 211, 153, 0.2);
+}
+
+.acg-console-feature-card[data-genre="anime"] .acg-console-feature-overlay,
+.acg-console-random-card[data-genre="anime"] .acg-console-feature-overlay,
+.acg-console-detail-poster-frame[data-genre="anime"] .acg-console-feature-overlay {
+  background:
+    linear-gradient(180deg, rgba(91, 33, 182, 0.08), transparent 35%),
+    linear-gradient(180deg, transparent 30%, rgba(59, 7, 100, 0.88) 100%);
+}
+
+.acg-console-feature-card[data-genre="game"] .acg-console-feature-overlay,
+.acg-console-random-card[data-genre="game"] .acg-console-feature-overlay,
+.acg-console-detail-poster-frame[data-genre="game"] .acg-console-feature-overlay {
+  background:
+    linear-gradient(180deg, rgba(8, 145, 178, 0.08), transparent 35%),
+    linear-gradient(180deg, transparent 30%, rgba(6, 78, 110, 0.88) 100%);
+}
+
+.acg-console-feature-card[data-genre="goods"] .acg-console-feature-overlay,
+.acg-console-random-card[data-genre="goods"] .acg-console-feature-overlay,
+.acg-console-detail-poster-frame[data-genre="goods"] .acg-console-feature-overlay {
+  background:
+    linear-gradient(180deg, rgba(180, 83, 9, 0.08), transparent 35%),
+    linear-gradient(180deg, transparent 30%, rgba(120, 53, 15, 0.88) 100%);
+}
+
+.acg-console-feature-card[data-genre="seiyuu"] .acg-console-feature-overlay,
+.acg-console-random-card[data-genre="seiyuu"] .acg-console-feature-overlay,
+.acg-console-detail-poster-frame[data-genre="seiyuu"] .acg-console-feature-overlay {
+  background:
+    linear-gradient(180deg, rgba(5, 150, 105, 0.08), transparent 35%),
+    linear-gradient(180deg, transparent 30%, rgba(6, 95, 70, 0.88) 100%);
+}
+
 .acg-console-feature-card img,
 .acg-console-detail-poster-frame img,
 .acg-console-feature-card .acg-console-feature-fallback,
