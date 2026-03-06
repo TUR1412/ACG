@@ -69,7 +69,8 @@ const labels = {
     olderEmpty: "已是本分类最旧",
     related: "关联信号",
     relatedHint: "同分类 · 标签相近 · 同来源优先",
-    copyLink: "复制链接"
+    copyLink: "复制链接",
+    fulltextIdle: "默认不自动拉取全文预览；如需加载，请点击右侧按钮。"
   },
   ja: {
     archive: "ARCHIVE ENTRY",
@@ -84,7 +85,8 @@ const labels = {
     olderEmpty: "このカテゴリで最古です",
     related: "RELATED SIGNALS",
     relatedHint: "同カテゴリ・近いタグ・同ソースを優先",
-    copyLink: "リンクをコピー"
+    copyLink: "リンクをコピー",
+    fulltextIdle: "全文プレビューは自動取得しません。必要なときだけ右側のボタンで読み込んでください。"
   }
 }[lang];
 
@@ -274,7 +276,7 @@ const nextTitle = (value?: Post) =>
         data-fulltext-lang={lang}
         data-fulltext-post-id={post.id}
         data-fulltext-url={safeSourceUrl ?? ""}
-        data-fulltext-autoload={safeSourceUrl ? "true" : "false"}
+        data-fulltext-autoload="false"
       >
         <div class="acg-console-panel-head">
           <div>
@@ -303,7 +305,7 @@ const nextTitle = (value?: Post) =>
             </button>
           </div>
         </div>
-        <p class="acg-console-reading-note" data-fulltext-status></p>
+        <p class="acg-console-reading-note" data-fulltext-status>{labels.fulltextIdle}</p>
         <div class="acg-prose acg-console-prose" data-fulltext-content></div>
       </section>
     </section>
