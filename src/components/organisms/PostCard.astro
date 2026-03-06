@@ -152,7 +152,7 @@ const bookmarkLabel = t(lang, "nav.bookmarks");
     <div class="acg-post-card-content min-w-0 flex-1 py-1 sm:p-5">
       <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <span class="acg-console-kicker">
-          {lang === "zh" ? "Signal Entry" : "Signal Entry"}
+          {theme[lang === "zh" ? "entryLabelZh" : "entryLabelJa"]}
           <span>{typeof index === "number" ? String(index + 1).padStart(2, "0") : "--"}</span>
         </span>
         {
@@ -227,6 +227,9 @@ const bookmarkLabel = t(lang, "nav.bookmarks");
       }
 
       <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-600">
+        <span class="acg-console-feature-mood acg-console-feature-mood-inline">
+          {theme[lang === "zh" ? "moodZh" : "moodJa"]}
+        </span>
         {
           pulseScore != null ? (
             <span class="acg-metric acg-metric-pulse" title={`${t(lang, "home.pulseScore")}: ${pulseScore}`}>

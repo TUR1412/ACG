@@ -206,7 +206,9 @@ const labels = {
                 </div>
                 <div class="acg-console-feature-content">
                   <div class="acg-console-kicker-row">
-                    <span class="acg-console-inline-pill">{labels.feature}</span>
+                    <span class="acg-console-inline-pill">
+                      {theme[lang === "zh" ? "featureLabelZh" : "featureLabelJa"]}
+                    </span>
                     {featuredWhen ? <span class="acg-console-inline-pill">{featuredWhen}</span> : null}
                     {featuredPulse ? (
                       <span class="acg-console-inline-pill">PULSE {featuredPulse}</span>
@@ -216,6 +218,7 @@ const labels = {
                   <p class="acg-console-feature-summary">{featuredSummary}</p>
                   <div class="acg-console-feature-footer">
                     <SourceBadge name={featured.sourceName} dotClass={theme.dot} compact tone="dark" />
+                    <span class="acg-console-feature-mood">{theme[lang === "zh" ? "moodZh" : "moodJa"]}</span>
                     <span class="acg-console-linkline">
                       {labels.openSignal}
                       <Icon name="chevron-right" size={16} />

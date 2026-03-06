@@ -12,6 +12,7 @@ import Chip from "../atoms/Chip.astro";
 import Icon from "../atoms/Icon.astro";
 import SourceBadge from "../molecules/SourceBadge.astro";
 import { CATEGORIES, categoryLabel } from "../../lib/categories";
+import { getCategoryTheme } from "../../lib/category-theme";
 import { href } from "../../lib/href";
 import { t } from "../../i18n/i18n";
 import { resolveCover } from "../../lib/cover";
@@ -74,6 +75,7 @@ const heroWhen = heroFeature ? (formatRelativeHours(lang, heroFeature.publishedA
 const heroPulse = typeof heroFeature?.pulseScore === "number" ? heroFeature.pulseScore : topPulse;
 const heroSourceName = heroFeature?.sourceName ?? "ACG Radar";
 const heroCategory = heroFeature?.category ?? CATEGORIES[0];
+const heroTheme = getCategoryTheme(heroCategory);
 
 const secondaryFeature = (() => {
   const pool = [randomPick, spotlight[1], latest[1], latest[2]].filter((post): post is Post => Boolean(post));
@@ -85,6 +87,7 @@ const secondaryTitle = secondaryFeature
     ? (secondaryFeature.titleZh ?? secondaryFeature.title)
     : (secondaryFeature.titleJa ?? secondaryFeature.title)
   : null;
+const secondaryTheme = secondaryFeature ? getCategoryTheme(secondaryFeature.category) : null;
 const copyBriefText = brief
   .map(
     (post, index) =>
@@ -291,7 +294,9 @@ const labels = {
             </div>
             <div class="acg-console-feature-content">
               <div class="acg-console-kicker-row">
-                <span class="acg-console-inline-pill">{labels.heroLabel}</span>
+                <span class="acg-console-inline-pill">
+                  {heroTheme[lang === "zh" ? "featureLabelZh" : "featureLabelJa"]}
+                </span>
                 <span class="acg-console-inline-pill">{heroWhen}</span>
                 {heroPulse ? <span class="acg-console-inline-pill">PULSE {heroPulse}</span> : null}
               </div>
@@ -299,6 +304,9 @@ const labels = {
               <p class="acg-console-feature-summary">{heroSummary ?? labels.openSignal}</p>
               <div class="acg-console-feature-footer">
                 <SourceBadge name={heroSourceName} dotClass="bg-white" tone="dark" compact />
+                <span class="acg-console-feature-mood">
+                  {heroTheme[lang === "zh" ? "moodZh" : "moodJa"]}
+                </span>
                 <span class="acg-console-linkline">
                   {labels.openSignal}
                   <Icon name="chevron-right" size={16} />
@@ -506,7 +514,8 @@ const labels = {
                   </div>
                   <div data-random-card class="space-y-3">
                     <span class="acg-console-inline-pill">
-                      {categoryLabel(lang, secondaryFeature.category)}
+                      {secondaryTheme?.[lang === "zh" ? "featureLabelZh" : "featureLabelJa"] ??
+                        categoryLabel(lang, secondaryFeature.category)}
                     </span>
                     <div class="space-y-2">
                       <h3 class="acg-console-random-title">{secondaryTitle}</h3>

@@ -5,6 +5,7 @@ import PostList from "./PostList.astro";
 import CategoryIcon from "../atoms/CategoryIcon.astro";
 import Icon from "../atoms/Icon.astro";
 import SourceBadge from "../molecules/SourceBadge.astro";
+import { getCategoryTheme } from "../../lib/category-theme";
 import { t } from "../../i18n/i18n";
 import { categoryLabel } from "../../lib/categories";
 import { href } from "../../lib/href";
@@ -95,6 +96,7 @@ const labels = {
 
 const nextTitle = (value?: Post) =>
   lang === "zh" ? (value?.titleZh ?? value?.title ?? "") : (value?.titleJa ?? value?.title ?? "");
+const categoryTheme = getCategoryTheme(post.category);
 ---
 
 <section class="acg-console-post">
@@ -105,6 +107,9 @@ const nextTitle = (value?: Post) =>
           <div class="acg-console-kicker-row">
             <span class="acg-console-kicker">{labels.archive}</span>
             <span class="acg-console-status-pill">{labels.decode}</span>
+            <span class="acg-console-inline-pill">
+              {categoryTheme[lang === "zh" ? "entryLabelZh" : "entryLabelJa"]}
+            </span>
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
@@ -130,6 +135,10 @@ const nextTitle = (value?: Post) =>
               <p class="acg-console-copy acg-console-detail-summary whitespace-pre-line">{primaryText}</p>
             ) : null
           }
+
+          <div class="acg-console-feature-mood acg-console-feature-mood-inline">
+            {categoryTheme[lang === "zh" ? "moodZh" : "moodJa"]}
+          </div>
 
           {
             post.tags?.length ? (
