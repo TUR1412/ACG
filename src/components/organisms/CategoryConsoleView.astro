@@ -44,9 +44,9 @@ const featuredPulse = typeof featured?.pulseScore === "number" ? featured.pulseS
 
 const labels = {
   zh: {
-    kicker: "CHANNEL ARCHIVE",
-    headline: "信号档案台",
-    lead: "分类页不再只是过滤后的卡片网格，而是用一条更有主次的波段来讲这一类内容。",
+    kicker: "栏目特集",
+    headline: "本类现在发生了什么",
+    lead: "分类页不再只是过滤后的卡片网格，而是把这一类最值得先看的内容抬出来，再让剩余更新顺着列表继续铺开。",
     visible: "当前可见",
     total: "总量",
     archive: "ARCHIVE NOTE",
@@ -59,9 +59,9 @@ const labels = {
     openSignal: "打开信号"
   },
   ja: {
-    kicker: "CHANNEL ARCHIVE",
-    headline: "シグナルアーカイブ",
-    lead: "カテゴリページを単なるフィルタ後のカード一覧ではなく、このカテゴリの“主役”を持つ波長として再構成します。",
+    kicker: "FEATURE FOCUS",
+    headline: "このジャンルで今見るべきもの",
+    lead: "カテゴリページを単なるフィルタ後の一覧ではなく、このジャンルの主役を先に見せる特集ページへ寄せています。",
     visible: "VISIBLE",
     total: "TOTAL",
     archive: "ARCHIVE NOTE",
@@ -175,7 +175,7 @@ const labels = {
 
           {
             featured ? (
-              <a href={featuredHref} class="acg-console-feature-card clickable group">
+              <a href={featuredHref} class="acg-console-feature-card clickable group" data-genre={category}>
                 <div class="acg-console-feature-media">
                   {featuredCover ? (
                     <img

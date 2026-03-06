@@ -1223,6 +1223,55 @@ body::after {
   gap: 1rem !important;
 }
 
+.acg-post-card[data-category="anime"],
+.acg-carousel-slide[data-genre="anime"] {
+  border-color: rgba(167, 139, 250, 0.24) !important;
+  box-shadow: 0 22px 72px rgba(109, 40, 217, 0.16);
+}
+
+.acg-post-card[data-category="game"],
+.acg-carousel-slide[data-genre="game"] {
+  border-color: rgba(34, 211, 238, 0.22) !important;
+  box-shadow: 0 22px 72px rgba(8, 145, 178, 0.15);
+}
+
+.acg-post-card[data-category="goods"],
+.acg-carousel-slide[data-genre="goods"] {
+  border-color: rgba(251, 191, 36, 0.22) !important;
+  box-shadow: 0 22px 72px rgba(217, 119, 6, 0.14);
+}
+
+.acg-post-card[data-category="seiyuu"],
+.acg-carousel-slide[data-genre="seiyuu"] {
+  border-color: rgba(52, 211, 153, 0.22) !important;
+  box-shadow: 0 22px 72px rgba(5, 150, 105, 0.14);
+}
+
+.acg-post-card-title,
+.acg-post-link-title {
+  text-wrap: balance;
+}
+
+.acg-post-card[data-category="anime"] .acg-post-card-title,
+.acg-carousel-slide[data-genre="anime"] .text-lg {
+  text-shadow: 0 0 18px rgba(192, 132, 252, 0.16);
+}
+
+.acg-post-card[data-category="game"] .acg-post-card-title,
+.acg-carousel-slide[data-genre="game"] .text-lg {
+  text-shadow: 0 0 18px rgba(34, 211, 238, 0.14);
+}
+
+.acg-post-card[data-category="goods"] .acg-post-card-title,
+.acg-carousel-slide[data-genre="goods"] .text-lg {
+  text-shadow: 0 0 18px rgba(251, 191, 36, 0.14);
+}
+
+.acg-post-card[data-category="seiyuu"] .acg-post-card-title,
+.acg-carousel-slide[data-genre="seiyuu"] .text-lg {
+  text-shadow: 0 0 18px rgba(52, 211, 153, 0.14);
+}
+
 @media (min-width: 1180px) {
   .acg-console-feed .acg-post-grid > .acg-post-card:first-child {
     grid-column: span 2;

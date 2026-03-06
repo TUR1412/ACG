@@ -152,7 +152,11 @@ const categoryTheme = getCategoryTheme(post.category);
         </div>
 
         <div class="acg-console-detail-poster">
-          <div class="acg-console-detail-poster-frame" data-has-cover={cover ? "true" : "false"}>
+          <div
+            class="acg-console-detail-poster-frame"
+            data-has-cover={cover ? "true" : "false"}
+            data-genre={post.category}
+          >
             <div class:list={["absolute inset-0 bg-gradient-to-br", theme.cover]}></div>
             <div class="acg-cover-fallback" aria-hidden="true">
               <div class="acg-cover-fallback-inner">
