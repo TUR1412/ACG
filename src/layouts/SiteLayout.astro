@@ -564,6 +564,29 @@ const consoleLead =
         gap: 0.8rem;
       }
 
+      body.sentinel-console-body .sentinel-brand-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.55rem;
+        margin-top: 0.45rem;
+      }
+
+      body.sentinel-console-body .sentinel-meta-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        min-height: 2rem;
+        padding: 0 0.78rem;
+        border: 1px solid var(--sentinel-border);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.07);
+        color: var(--sentinel-muted);
+        font-size: 0.74rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
       body.sentinel-console-body .sentinel-category-nav,
       body.sentinel-console-body .sentinel-strip-links {
         display: flex;
@@ -670,6 +693,14 @@ const consoleLead =
         color: var(--sentinel-muted);
         line-height: 1.55;
         font-size: 0.82rem;
+      }
+
+      body.sentinel-console-body .sentinel-strip-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.65rem;
       }
 
       body.sentinel-console-body .sentinel-main {
@@ -832,21 +863,13 @@ const consoleLead =
                     <span class="sentinel-eyebrow">Sentinel Console</span>
                     <span class="sentinel-title">{t(lang, "site.name")}</span>
                     <span class="sentinel-tagline">{t(lang, "site.tagline")}</span>
+                    <span class="sentinel-brand-meta">
+                      <span class="sentinel-meta-pill">{sectionLabel}</span>
+                      <span class="sentinel-meta-pill">{localeLabel}</span>
+                      <span class="sentinel-meta-pill">{currentPath ?? "/"}</span>
+                    </span>
                   </span>
                 </a>
-
-                <div class="sentinel-readout">
-                  <div class="sentinel-readout-card">
-                    <span>Sector</span>
-                    <strong>{sectionCode}</strong>
-                    <small>{sectionLabel}</small>
-                  </div>
-                  <div class="sentinel-readout-card">
-                    <span>Locale</span>
-                    <strong>{localeLabel}</strong>
-                    <small>{currentPath ?? "/"}</small>
-                  </div>
-                </div>
               </div>
 
               <div class="sentinel-toolbar">
@@ -902,16 +925,12 @@ const consoleLead =
               </div>
 
               <div class="sentinel-strip">
-                <div>
+                <div class="sentinel-strip-head">
                   <span class="sentinel-eyebrow">Sentry / {sectionCode}</span>
                   <p>{consoleLead}</p>
                 </div>
 
                 <div class="sentinel-strip-links">
-                  <span class="sentinel-route-link" data-active="true">
-                    <Icon name="grid" size={16} />
-                    <span>{lang === "ja" ? "監視中" : "持续监视"}</span>
-                  </span>
                   <a
                     href={latestHref}
                     class="sentinel-route-link clickable"
