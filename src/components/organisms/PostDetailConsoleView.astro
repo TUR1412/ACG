@@ -184,6 +184,11 @@ const nextTitle = (value?: Post) =>
               ) : null
             }
             <div class="acg-console-feature-overlay"></div>
+            <div class="acg-console-detail-fallback-copy" data-has-image={cover ? "true" : "false"}>
+              <span class="acg-console-inline-pill">{categoryLabel(lang, post.category)}</span>
+              <strong>{title}</strong>
+              <small>{post.sourceName}</small>
+            </div>
             <div class="acg-console-detail-poster-caption">
               <span class="acg-console-inline-pill">{labels.articlePoster}</span>
             </div>

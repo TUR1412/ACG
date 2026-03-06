@@ -195,6 +195,13 @@ const labels = {
                     <Icon name="star" size={24} />
                     <span>{labels.feature}</span>
                   </div>
+                  <div
+                    class="acg-console-feature-fallback-copy"
+                    data-has-image={featuredCover ? "true" : "false"}
+                  >
+                    <span class="acg-console-inline-pill">{categoryLabel(lang, category)}</span>
+                    <strong>{featuredTitle}</strong>
+                  </div>
                   <div class="acg-console-feature-overlay" />
                 </div>
                 <div class="acg-console-feature-content">
