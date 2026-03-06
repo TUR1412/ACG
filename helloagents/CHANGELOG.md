@@ -7,10 +7,13 @@
 
 ### 新增
 
+- UI：新增 `HomeConsoleView`、`CategoryConsoleView`、`PostDetailConsoleView`、`AboutConsoleView` 共享视图层，收敛中日文页面的重复结构。
 - Tooling：新增 `npm run bootstrap:data`（`scripts/bootstrap-data.ts`），在未执行 `sync` 的情况下生成“空数据”占位文件（`src/data/generated/*` + `public/data/*(.gz)`），用于本地预览/Lighthouse 等不依赖网络的场景。
 
 ### 变更
 
+- UI：全站升级为 **Sentinel Console** 视觉方向：重构 `SiteLayout`、语言入口页、首页、分类页、详情页、关于页，并新增 `src/styles/sentinel-console.css` 作为控制台式设计系统层。
+- UI：`PostCard`、`PostLinkItem`、`SignalBoard`、`SpotlightGrid`、`PreferencesPanel` 接入新的控制台语义类与统一面板风格，形成更强的“信号台 / 档案台 / 解码界面”层级。
 - Lighthouse：CI workflow 在 build 前先执行 `bootstrap:data`，避免 PR/本地仅跑 `build + lhci` 时因缺少 `/data/*.json(.gz)` 导致 console error 与 Best Practices 失分。
 - Lighthouse：`scripts/lhci-local.ts` 默认先执行 `bootstrap:data` 再 build，提高 `npm run lhci:local` 的开箱可用性。
 - Lighthouse：将 `.lighthouserc.json` 的 Performance 断言从 1 调整为 0.95，降低跨环境/字体差异导致的跑分抖动与误报。

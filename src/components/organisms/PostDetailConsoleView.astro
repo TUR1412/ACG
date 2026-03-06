@@ -1,0 +1,351 @@
+---
+import type { Post } from "../../lib/types";
+import type { Lang } from "../../i18n/i18n";
+import PostList from "./PostList.astro";
+import CategoryIcon from "../atoms/CategoryIcon.astro";
+import Icon from "../atoms/Icon.astro";
+import SourceBadge from "../molecules/SourceBadge.astro";
+import { t } from "../../i18n/i18n";
+import { categoryLabel } from "../../lib/categories";
+import { href } from "../../lib/href";
+
+export type Props = {
+  lang: Lang;
+  post: Post;
+  newer?: Post;
+  older?: Post;
+  related?: Post[];
+  theme: {
+    cover: string;
+    dot: string;
+    ink: string;
+  };
+  title: string;
+  published: string;
+  primaryText?: string;
+  extraPreview?: string;
+  previewOpen: boolean;
+  cover: { src: string; original?: string } | null;
+  coverOriginal?: string;
+  retryCoverLabel: string;
+  isFresh: boolean;
+  freshLabel: string;
+  pageUrl: string;
+  safeSourceUrl?: string | null;
+};
+
+const {
+  lang,
+  post,
+  newer,
+  older,
+  related,
+  theme,
+  title,
+  published,
+  primaryText,
+  extraPreview,
+  previewOpen,
+  cover,
+  coverOriginal,
+  retryCoverLabel,
+  isFresh,
+  freshLabel,
+  pageUrl,
+  safeSourceUrl
+} = Astro.props as Props;
+
+const labels = {
+  zh: {
+    archive: "ARCHIVE ENTRY",
+    reading: "READING CHAMBER",
+    readingHint: "摘要、原文入口与实验性全文预览被收束为同一条阅读轨道。",
+    decode: "信号解码",
+    nextTitle: "相邻信号",
+    nextHint: "沿同一类目继续前后巡航。",
+    newer: "较新",
+    older: "较旧",
+    newerEmpty: "已是本分类最新",
+    olderEmpty: "已是本分类最旧",
+    related: "关联信号",
+    relatedHint: "同分类 · 标签相近 · 同来源优先",
+    copyLink: "复制链接"
+  },
+  ja: {
+    archive: "ARCHIVE ENTRY",
+    reading: "READING CHAMBER",
+    readingHint: "要約・原文導線・実験的全文プレビューを一つの読書レールへ統合します。",
+    decode: "Signal decode",
+    nextTitle: "ADJACENT SIGNALS",
+    nextHint: "同カテゴリ内を前後に巡回。",
+    newer: "より新しい",
+    older: "より古い",
+    newerEmpty: "このカテゴリで最新です",
+    olderEmpty: "このカテゴリで最古です",
+    related: "RELATED SIGNALS",
+    relatedHint: "同カテゴリ・近いタグ・同ソースを優先",
+    copyLink: "リンクをコピー"
+  }
+}[lang];
+
+const nextTitle = (value?: Post) =>
+  lang === "zh" ? (value?.titleZh ?? value?.title ?? "") : (value?.titleJa ?? value?.title ?? "");
+---
+
+<section class="acg-console-post space-y-6">
+  <article class="acg-console-post-hero glass overflow-hidden">
+    <div class="acg-console-post-cover" data-has-cover={post.cover ? "true" : "false"}>
+      <div class:list={["absolute inset-0 bg-gradient-to-br", theme.cover]}></div>
+      <div class="acg-cover-fallback" aria-hidden="true">
+        <div class="acg-cover-fallback-inner">
+          <div class="acg-cover-fallback-icon">
+            <CategoryIcon category={post.category} size={24} />
+          </div>
+          <div class="acg-cover-fallback-brand">ACG Radar</div>
+          <div class="acg-cover-fallback-meta">{categoryLabel(lang, post.category)}</div>
+        </div>
+      </div>
+      {
+        cover ? (
+          <img
+            src={cover.src}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            referrerpolicy="no-referrer"
+            data-acg-cover
+            data-acg-cover-original-src={coverOriginal ?? ""}
+            class="h-full w-full object-cover"
+            onload="window.__acgCoverLoad?.(this)"
+            onerror="this.closest('[data-has-cover]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
+          />
+        ) : null
+      }
+      <div class="acg-console-post-overlay"></div>
+      <button
+        type="button"
+        class="acg-cover-retry acg-icon-fab clickable"
+        data-cover-retry
+        aria-label={retryCoverLabel}
+        title={retryCoverLabel}
+      >
+        <Icon name="refresh" size={18} />
+      </button>
+      <div class="acg-console-post-headline">
+        <div class="acg-console-kicker-row">
+          <span class="acg-console-kicker">{labels.archive}</span>
+          <span class="acg-console-status-pill">{labels.decode}</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="acg-console-inline-pill">
+            <span class:list={["size-1.5 rounded-full", theme.dot]}></span>
+            {categoryLabel(lang, post.category)}
+          </span>
+          {isFresh ? <span class="acg-console-inline-pill">{freshLabel}</span> : null}
+          <span class="acg-console-inline-pill">{published}</span>
+        </div>
+        <h1 class="acg-console-title acg-console-title-article">{title}</h1>
+        <SourceBadge
+          name={`${t(lang, "post.source")}: ${post.sourceName}`}
+          url={post.sourceUrl}
+          tone="dark"
+          dotClass={theme.dot}
+          compact
+        />
+      </div>
+    </div>
+
+    <div class="acg-console-post-body">
+      <div class="acg-console-post-main">
+        {
+          post.tags?.length ? (
+            <div class="acg-console-tag-cloud">
+              {post.tags.slice(0, 12).map((tag) => (
+                <span class:list={["acg-console-tag", theme.ink]}>{tag}</span>
+              ))}
+            </div>
+          ) : null
+        }
+
+        <section class="acg-console-panel acg-console-reading-panel glass">
+          <div class="acg-console-panel-head">
+            <div>
+              <h2>{labels.reading}</h2>
+              <p>{labels.readingHint}</p>
+            </div>
+          </div>
+          {
+            primaryText ? (
+              <p class="acg-console-reading-copy whitespace-pre-line">{primaryText}</p>
+            ) : (
+              <p class="acg-console-reading-copy">{t(lang, "common.noData")}</p>
+            )
+          }
+          {
+            !post.summary && post.preview ? (
+              <p class="acg-console-reading-note">{t(lang, "post.previewHint")}</p>
+            ) : null
+          }
+
+          {
+            extraPreview ? (
+              <details class="acg-console-expand-panel" open={previewOpen ? true : undefined}>
+                <summary>{t(lang, "post.previewTitle")}</summary>
+                <p class="whitespace-pre-line">{extraPreview}</p>
+                <p class="acg-console-reading-note">{t(lang, "post.previewHint")}</p>
+              </details>
+            ) : null
+          }
+        </section>
+
+        <section
+          class="acg-console-panel glass"
+          data-fulltext
+          data-fulltext-lang={lang}
+          data-fulltext-post-id={post.id}
+          data-fulltext-url={safeSourceUrl ?? ""}
+          data-fulltext-autoload={safeSourceUrl ? "true" : "false"}
+        >
+          <div class="acg-console-panel-head">
+            <div>
+              <h2>{t(lang, "post.fullTextTitle")}</h2>
+              <p>{t(lang, "post.fullTextHint")}</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" class="acg-console-ghost clickable" data-fulltext-action="reload"
+                >{t(lang, "post.fullTextReload")}</button
+              >
+              <button
+                type="button"
+                class="acg-console-ghost clickable"
+                data-fulltext-action="show-original"
+                hidden>{t(lang, "post.fullTextOriginal")}</button
+              >
+              <button
+                type="button"
+                class="acg-console-ghost clickable"
+                data-fulltext-action="show-translated"
+                hidden>{t(lang, "post.fullTextTranslated")}</button
+              >
+            </div>
+          </div>
+          <p class="acg-console-reading-note" data-fulltext-status></p>
+          <div class="acg-prose acg-console-prose" data-fulltext-content></div>
+        </section>
+      </div>
+
+      <aside class="acg-console-post-side">
+        <section class="acg-console-panel glass">
+          <div class="acg-console-panel-head">
+            <div>
+              <h2>{labels.decode}</h2>
+              <p>{t(lang, "post.publishedAt")}</p>
+            </div>
+          </div>
+          <div class="acg-console-stat-list">
+            <div><span>{t(lang, "post.publishedAt")}</span><strong>{published}</strong></div>
+            <div><span>{t(lang, "post.source")}</span><strong>{post.sourceName}</strong></div>
+            <div>
+              <span>{lang === "zh" ? "分类" : "Category"}</span><strong
+                >{categoryLabel(lang, post.category)}</strong
+              >
+            </div>
+            <div><span>{lang === "zh" ? "标签" : "Tags"}</span><strong>{post.tags?.length ?? 0}</strong></div>
+          </div>
+          <div class="acg-console-action-stack">
+            {
+              safeSourceUrl ? (
+                <a
+                  class="acg-console-primary clickable"
+                  href={safeSourceUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  <Icon name="external-link" size={18} />
+                  {t(lang, "post.openSource")}
+                </a>
+              ) : (
+                <span class="acg-console-primary acg-console-primary-disabled">
+                  <Icon name="external-link" size={18} />
+                  {t(lang, "post.openSource")}
+                </span>
+              )
+            }
+            <button
+              type="button"
+              class="acg-console-ghost clickable"
+              data-copy-text={pageUrl}
+              aria-label={labels.copyLink}
+              title={labels.copyLink}
+            >
+              <Icon name="link" size={18} />
+              {labels.copyLink}
+            </button>
+            <button
+              type="button"
+              class="acg-console-ghost clickable"
+              data-bookmark-id={post.id}
+              aria-pressed="false"
+            >
+              <span data-bookmark-icon aria-hidden="true"><Icon name="star" size={18} /></span>
+              {t(lang, "nav.bookmarks")}
+            </button>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </article>
+
+  {
+    (newer || older) && (
+      <section class="acg-console-grid grid gap-4 lg:grid-cols-2">
+        <div class="acg-console-panel glass">
+          <div class="acg-console-panel-head">
+            <div>
+              <h2>{labels.nextTitle}</h2>
+              <p>{labels.nextHint}</p>
+            </div>
+          </div>
+          <div class="acg-console-adjacent-grid">
+            {newer ? (
+              <a class="acg-console-adjacent-card clickable" href={href(`/${lang}/p/${newer.id}/`)}>
+                <span>{labels.newer}</span>
+                <strong>{nextTitle(newer)}</strong>
+              </a>
+            ) : (
+              <div class="acg-console-adjacent-card is-disabled">
+                <span>{labels.newer}</span>
+                <strong>{labels.newerEmpty}</strong>
+              </div>
+            )}
+            {older ? (
+              <a class="acg-console-adjacent-card clickable" href={href(`/${lang}/p/${older.id}/`)}>
+                <span>{labels.older}</span>
+                <strong>{nextTitle(older)}</strong>
+              </a>
+            ) : (
+              <div class="acg-console-adjacent-card is-disabled">
+                <span>{labels.older}</span>
+                <strong>{labels.olderEmpty}</strong>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    (related?.length ?? 0) > 0 && (
+      <section class="acg-console-panel glass">
+        <div class="acg-console-panel-head">
+          <div>
+            <h2>{labels.related}</h2>
+            <p>{labels.relatedHint}</p>
+          </div>
+        </div>
+        <PostList posts={related ?? []} lang={lang} variant="compact" />
+      </section>
+    )
+  }
+</section>

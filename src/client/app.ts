@@ -2370,7 +2370,8 @@ function createListFilter(params: {
       const sourceName = normalizeText(sourceNameRaw);
       if (sourceName) {
         sourceTokenFrequency.set(sourceName, (sourceTokenFrequency.get(sourceName) ?? 0) + 1);
-        if (sourceLabel && !sourceLabelByToken.has(sourceName)) sourceLabelByToken.set(sourceName, sourceLabel);
+        if (sourceLabel && !sourceLabelByToken.has(sourceName))
+          sourceLabelByToken.set(sourceName, sourceLabel);
       }
       const titleEl =
         card.querySelector<HTMLElement>(".acg-post-card-title") ??
@@ -2540,7 +2541,10 @@ function createListFilter(params: {
       chip.type = "button";
       chip.className = "acg-search-group-chip clickable";
       chip.title = token;
-      chip.setAttribute("aria-label", `${groupTexts.categoryPrefix}: ${groupCategoryLabels[entry.cat]} (${entry.count})`);
+      chip.setAttribute(
+        "aria-label",
+        `${groupTexts.categoryPrefix}: ${groupCategoryLabels[entry.cat]} (${entry.count})`
+      );
       const active = parsed.categories.includes(entry.cat);
       chip.dataset.active = active ? "true" : "false";
       chip.setAttribute("aria-pressed", active ? "true" : "false");
@@ -2955,9 +2959,10 @@ function createListFilter(params: {
       sourceBadgeEl?.classList.toggle("is-filter-match", enableCardFocus && sourceFocus);
       for (let j = 0; j < tagButtons.length; j += 1) {
         const token = tagTokens[j] ?? "";
-        const tagMatched = enableCardFocus && parsed.tags.length > 0 && token
-          ? parsed.tags.some((t) => t && token.includes(t))
-          : false;
+        const tagMatched =
+          enableCardFocus && parsed.tags.length > 0 && token
+            ? parsed.tags.some((t) => t && token.includes(t))
+            : false;
         tagButtons[j].classList.toggle("is-filter-match", Boolean(tagMatched));
       }
 
@@ -4138,7 +4143,8 @@ function buildBookmarkCard(params: {
       : (post.summaryJa ?? post.previewJa ?? post.summary ?? post.preview);
 
   const article = document.createElement("article");
-  article.className = "acg-post-card acg-post-card-shell glass-card acg-card clickable shine group relative overflow-hidden rounded-2xl";
+  article.className =
+    "acg-post-card acg-post-card-shell glass-card acg-card clickable shine group relative overflow-hidden rounded-2xl";
   article.dataset.postId = post.id;
   article.dataset.category = post.category;
   article.dataset.sourceId = post.sourceId;
@@ -4225,7 +4231,8 @@ function buildBookmarkCard(params: {
   topLink.appendChild(overlay);
 
   const badgeWrap = document.createElement("div");
-  badgeWrap.className = "acg-post-card-cover-badges absolute left-3 top-3 hidden flex-wrap items-center gap-2 sm:flex";
+  badgeWrap.className =
+    "acg-post-card-cover-badges absolute left-3 top-3 hidden flex-wrap items-center gap-2 sm:flex";
   const badge = document.createElement("span");
   badge.className =
     "inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white";
@@ -4281,7 +4288,8 @@ function buildBookmarkCard(params: {
   left.appendChild(titleLink);
 
   const meta = document.createElement("div");
-  meta.className = "acg-post-card-meta mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-600 sm:text-xs";
+  meta.className =
+    "acg-post-card-meta mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-600 sm:text-xs";
   left.appendChild(meta);
 
   const categoryMeta = document.createElement("span");
@@ -4367,7 +4375,8 @@ function buildBookmarkCard(params: {
 
   if (displaySnippet) {
     const p = document.createElement("p");
-    p.className = "acg-post-card-snippet mt-2 line-clamp-2 text-sm leading-relaxed text-slate-600 sm:line-clamp-3";
+    p.className =
+      "acg-post-card-snippet mt-2 line-clamp-2 text-sm leading-relaxed text-slate-600 sm:line-clamp-3";
     p.textContent = displaySnippet;
     body.appendChild(p);
   }
@@ -4781,7 +4790,8 @@ function wirePreferences(params: { follows: Set<string>; blocklist: Set<string>;
     return isJapanese() ? "すべて" : "全部";
   };
 
-  const sortLabel = (mode: SortMode): string => (mode === "pulse" ? (isJapanese() ? "Pulse" : "热度") : isJapanese() ? "最新" : "最新");
+  const sortLabel = (mode: SortMode): string =>
+    mode === "pulse" ? (isJapanese() ? "Pulse" : "热度") : isJapanese() ? "最新" : "最新";
 
   const createSummaryChip = (label: string, strong = false): HTMLElement => {
     const chip = document.createElement("span");
@@ -4798,7 +4808,9 @@ function wirePreferences(params: { follows: Set<string>; blocklist: Set<string>;
 
     const scope = getSearchScope();
     chips.push(
-      createSummaryChip(`${summaryText.scope}: ${scope === "all" ? summaryText.scopeAll : summaryText.scopePage}`)
+      createSummaryChip(
+        `${summaryText.scope}: ${scope === "all" ? summaryText.scopeAll : summaryText.scopePage}`
+      )
     );
 
     const q = (searchInput?.value ?? "").trim();

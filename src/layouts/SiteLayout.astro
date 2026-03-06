@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import "../styles/sentinel-console.css";
 import { t, type Lang } from "../i18n/i18n";
 import { CATEGORIES, categoryLabel, type Category } from "../lib/categories";
 import { href } from "../lib/href";
@@ -57,6 +58,36 @@ const cmdkHint = "Ctrl/⌘ K";
 
 const manifestHref = href("/manifest.webmanifest");
 const swHref = href("/sw.js");
+const latestHref = withLang("/");
+const searchHref = withLang("/#search");
+const cmdkHref = withLang("/#cmdk");
+const bookmarksHref = withLang("/bookmarks/");
+const statusHref = withLang("/status/");
+const aboutHref = withLang("/about/");
+const langSwitchLabel = lang === "zh" ? "日本語" : "中文";
+const localeLabel = lang === "zh" ? "ZH-CN" : "JA-JP";
+const sectionLabel = currentCategory
+  ? categoryLabel(lang, currentCategory)
+  : isBookmarks
+    ? t(lang, "nav.bookmarks")
+    : isStatus
+      ? t(lang, "nav.status")
+      : isAbout
+        ? t(lang, "nav.about")
+        : t(lang, "nav.latest");
+const sectionCode = currentCategory
+  ? currentCategory.toUpperCase()
+  : isBookmarks
+    ? "BOOKMARK"
+    : isStatus
+      ? "STATUS"
+      : isAbout
+        ? "ABOUT"
+        : "LATEST";
+const consoleLead =
+  lang === "ja"
+    ? "多言語レーダー、分類ナビ、個人トグルをひとつの信号台に集約。"
+    : "把多语言雷达、分类导航与个人偏好切换集中进一个信号台。";
 ---
 
 <!doctype html>
@@ -303,8 +334,471 @@ const swHref = href("/sw.js");
       })();
     </script>
     <link rel="icon" type="image/svg+xml" href={href("/favicon.svg")} />
+    <style is:global>
+      body.sentinel-console-body {
+        --sentinel-panel: rgba(255, 255, 255, 0.72);
+        --sentinel-panel-strong: rgba(255, 255, 255, 0.88);
+        --sentinel-border: rgba(15, 23, 42, 0.12);
+        --sentinel-ink: #061528;
+        --sentinel-muted: rgba(6, 21, 40, 0.72);
+        --sentinel-soft: rgba(6, 21, 40, 0.52);
+        --sentinel-grid: rgba(6, 21, 40, 0.08);
+        --sentinel-shadow: 0 28px 80px rgba(15, 23, 42, 0.14);
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 12% 18%, rgba(56, 189, 248, 0.18), transparent 24%),
+          radial-gradient(circle at 86% 10%, rgba(139, 92, 246, 0.16), transparent 22%),
+          linear-gradient(180deg, #f7faff 0%, #eef4fd 38%, #e7eef9 100%);
+        color: var(--sentinel-ink);
+      }
+
+      html[data-acg-theme="dark"] body.sentinel-console-body {
+        --sentinel-panel: rgba(7, 17, 31, 0.72);
+        --sentinel-panel-strong: rgba(9, 24, 44, 0.86);
+        --sentinel-border: rgba(148, 163, 184, 0.18);
+        --sentinel-ink: #edf6ff;
+        --sentinel-muted: rgba(226, 238, 255, 0.74);
+        --sentinel-soft: rgba(191, 211, 255, 0.56);
+        --sentinel-grid: rgba(125, 211, 252, 0.11);
+        --sentinel-shadow: 0 28px 96px rgba(2, 6, 23, 0.48);
+        background:
+          radial-gradient(circle at 15% 14%, rgba(34, 211, 238, 0.2), transparent 26%),
+          radial-gradient(circle at 86% 9%, rgba(192, 132, 252, 0.18), transparent 20%),
+          linear-gradient(180deg, #030712 0%, #07111f 42%, #0c1628 100%);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        html[data-acg-theme="auto"] body.sentinel-console-body {
+          --sentinel-panel: rgba(7, 17, 31, 0.72);
+          --sentinel-panel-strong: rgba(9, 24, 44, 0.86);
+          --sentinel-border: rgba(148, 163, 184, 0.18);
+          --sentinel-ink: #edf6ff;
+          --sentinel-muted: rgba(226, 238, 255, 0.74);
+          --sentinel-soft: rgba(191, 211, 255, 0.56);
+          --sentinel-grid: rgba(125, 211, 252, 0.11);
+          --sentinel-shadow: 0 28px 96px rgba(2, 6, 23, 0.48);
+          background:
+            radial-gradient(circle at 15% 14%, rgba(34, 211, 238, 0.2), transparent 26%),
+            radial-gradient(circle at 86% 9%, rgba(192, 132, 252, 0.18), transparent 20%),
+            linear-gradient(180deg, #030712 0%, #07111f 42%, #0c1628 100%);
+        }
+      }
+
+      body.sentinel-console-body .sentinel-console {
+        position: relative;
+        min-height: 100vh;
+        isolation: isolate;
+      }
+
+      body.sentinel-console-body .sentinel-console::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        pointer-events: none;
+        background-image:
+          linear-gradient(var(--sentinel-grid) 1px, transparent 1px),
+          linear-gradient(90deg, var(--sentinel-grid) 1px, transparent 1px);
+        background-size: 26px 26px;
+        mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.7), transparent 92%);
+        opacity: 0.72;
+      }
+
+      body.sentinel-console-body .sentinel-shell {
+        width: min(100%, 1560px);
+        margin-inline: auto;
+        padding-inline: clamp(1rem, 2.5vw, 1.75rem);
+      }
+
+      body.sentinel-console-body .sentinel-panel {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--sentinel-border);
+        border-radius: 28px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)), var(--sentinel-panel);
+        box-shadow: var(--sentinel-shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      body.sentinel-console-body .sentinel-panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: linear-gradient(
+          115deg,
+          rgba(56, 189, 248, 0.1),
+          transparent 38%,
+          rgba(139, 92, 246, 0.1)
+        );
+      }
+
+      body.sentinel-console-body .sentinel-header {
+        padding-top: 0.9rem;
+      }
+
+      body.sentinel-console-body .sentinel-header-panel {
+        padding: clamp(1rem, 1.8vw, 1.4rem);
+      }
+
+      body.sentinel-console-body .sentinel-brand,
+      body.sentinel-console-body .sentinel-chip,
+      body.sentinel-console-body .sentinel-action,
+      body.sentinel-console-body .sentinel-route-link {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      body.sentinel-console-body .sentinel-brand {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 0;
+      }
+
+      body.sentinel-console-body .sentinel-brand-mark {
+        display: grid;
+        flex: none;
+        width: 3.5rem;
+        height: 3.5rem;
+        place-items: center;
+        border-radius: 1.25rem;
+        background:
+          radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.36), transparent 44%),
+          linear-gradient(
+            135deg,
+            rgba(56, 189, 248, 0.98),
+            rgba(59, 130, 246, 0.78) 42%,
+            rgba(139, 92, 246, 0.98)
+          );
+        box-shadow:
+          inset 0 0 0 1px rgba(255, 255, 255, 0.34),
+          0 0 0 1px rgba(255, 255, 255, 0.16),
+          0 18px 48px rgba(56, 189, 248, 0.24);
+      }
+
+      body.sentinel-console-body .sentinel-brand-mark span {
+        transform: translateX(0.15em);
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.3em;
+        color: white;
+      }
+
+      body.sentinel-console-body .sentinel-eyebrow {
+        display: inline-flex;
+        font-size: 0.72rem;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: var(--sentinel-soft);
+      }
+
+      body.sentinel-console-body .sentinel-title {
+        display: block;
+        margin-top: 0.3rem;
+        font-size: clamp(1.15rem, 1.1vw + 0.95rem, 1.7rem);
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+
+      body.sentinel-console-body .sentinel-tagline {
+        display: block;
+        margin-top: 0.2rem;
+        color: var(--sentinel-muted);
+      }
+
+      body.sentinel-console-body .sentinel-readout,
+      body.sentinel-console-body .sentinel-stage-meta,
+      body.sentinel-console-body .sentinel-footer-cells {
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      }
+
+      body.sentinel-console-body .sentinel-readout-card,
+      body.sentinel-console-body .sentinel-stage-cell,
+      body.sentinel-console-body .sentinel-footer-cell {
+        min-width: 0;
+        border: 1px solid var(--sentinel-border);
+        border-radius: 20px;
+        background: var(--sentinel-panel-strong);
+        padding: 0.92rem 1rem;
+      }
+
+      body.sentinel-console-body .sentinel-readout-card span,
+      body.sentinel-console-body .sentinel-stage-cell span,
+      body.sentinel-console-body .sentinel-footer-cell span {
+        display: block;
+        font-size: 0.68rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--sentinel-soft);
+      }
+
+      body.sentinel-console-body .sentinel-readout-card strong,
+      body.sentinel-console-body .sentinel-stage-cell strong,
+      body.sentinel-console-body .sentinel-footer-cell strong {
+        display: block;
+        margin-top: 0.3rem;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      body.sentinel-console-body .sentinel-readout-card small,
+      body.sentinel-console-body .sentinel-stage-cell small,
+      body.sentinel-console-body .sentinel-footer-cell small {
+        display: block;
+        margin-top: 0.18rem;
+        overflow: hidden;
+        color: var(--sentinel-muted);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      body.sentinel-console-body .sentinel-toolbar {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      body.sentinel-console-body .sentinel-category-nav,
+      body.sentinel-console-body .sentinel-strip-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+      }
+
+      body.sentinel-console-body .sentinel-category-nav-mobile {
+        overflow-x: auto;
+        padding-bottom: 0.25rem;
+        flex-wrap: nowrap;
+      }
+
+      body.sentinel-console-body .sentinel-chip,
+      body.sentinel-console-body .sentinel-action,
+      body.sentinel-console-body .sentinel-route-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        min-height: 2.85rem;
+        padding: 0 1rem;
+        border: 1px solid var(--sentinel-border);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        color: var(--sentinel-muted);
+        transition:
+          transform 0.2s ease,
+          border-color 0.2s ease,
+          background-color 0.2s ease,
+          color 0.2s ease,
+          box-shadow 0.2s ease;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+      }
+
+      body.sentinel-console-body .sentinel-action {
+        min-height: 2.9rem;
+        border-radius: 18px;
+        background: var(--sentinel-panel-strong);
+        color: var(--sentinel-ink);
+      }
+
+      body.sentinel-console-body .sentinel-chip:hover,
+      body.sentinel-console-body .sentinel-action:hover,
+      body.sentinel-console-body .sentinel-route-link:hover {
+        transform: translateY(-1px);
+        border-color: rgba(56, 189, 248, 0.42);
+        background: rgba(255, 255, 255, 0.22);
+        color: var(--sentinel-ink);
+      }
+
+      body.sentinel-console-body .sentinel-chip[data-active="true"],
+      body.sentinel-console-body .sentinel-route-link[data-active="true"] {
+        border-color: rgba(56, 189, 248, 0.5);
+        background: linear-gradient(
+          135deg,
+          rgba(56, 189, 248, 0.2),
+          rgba(59, 130, 246, 0.18) 48%,
+          rgba(139, 92, 246, 0.18)
+        );
+        color: var(--sentinel-ink);
+        box-shadow: 0 16px 36px rgba(56, 189, 248, 0.14);
+      }
+
+      body.sentinel-console-body .sentinel-action kbd {
+        border-radius: 999px;
+        background: rgba(2, 6, 23, 0.07);
+        padding: 0.22rem 0.5rem;
+        font-size: 0.72rem;
+        color: var(--sentinel-muted);
+      }
+
+      html[data-acg-theme="dark"] body.sentinel-console-body .sentinel-action kbd,
+      html[data-acg-theme="dark"] body.sentinel-console-body .sentinel-chip,
+      html[data-acg-theme="dark"] body.sentinel-console-body .sentinel-route-link {
+        background: rgba(15, 23, 42, 0.36);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        html[data-acg-theme="auto"] body.sentinel-console-body .sentinel-action kbd,
+        html[data-acg-theme="auto"] body.sentinel-console-body .sentinel-chip,
+        html[data-acg-theme="auto"] body.sentinel-console-body .sentinel-route-link {
+          background: rgba(15, 23, 42, 0.36);
+        }
+      }
+
+      body.sentinel-console-body .sentinel-strip {
+        display: grid;
+        gap: 1rem;
+        border: 1px solid var(--sentinel-border);
+        border-radius: 22px;
+        padding: 1rem;
+        background: linear-gradient(
+          90deg,
+          rgba(56, 189, 248, 0.12),
+          transparent 38%,
+          rgba(139, 92, 246, 0.12)
+        );
+      }
+
+      body.sentinel-console-body .sentinel-strip p,
+      body.sentinel-console-body .sentinel-stage-copy p,
+      body.sentinel-console-body .sentinel-footer-copy p {
+        margin: 0.55rem 0 0;
+        color: var(--sentinel-muted);
+        line-height: 1.65;
+      }
+
+      body.sentinel-console-body .sentinel-main {
+        padding-top: 1.35rem;
+        padding-bottom: calc(2rem + var(--acg-bottom-nav-h));
+      }
+
+      body.sentinel-console-body .sentinel-stage {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      body.sentinel-console-body .sentinel-stage-head {
+        display: grid;
+        gap: 1rem;
+        border: 1px solid var(--sentinel-border);
+        border-radius: 24px;
+        padding: 1.1rem 1.15rem;
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+        backdrop-filter: blur(12px);
+      }
+
+      body.sentinel-console-body .sentinel-stage-title {
+        margin-top: 0.38rem;
+        font-size: clamp(1.2rem, 1.45vw + 1rem, 1.95rem);
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+
+      body.sentinel-console-body .sentinel-stage-slot {
+        position: relative;
+      }
+
+      body.sentinel-console-body .sentinel-stage-slot::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 32px;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        pointer-events: none;
+      }
+
+      body.sentinel-console-body .sentinel-footer {
+        padding-top: 0.25rem;
+        padding-bottom: calc(2.5rem + var(--acg-bottom-nav-h));
+      }
+
+      body.sentinel-console-body .sentinel-footer-panel {
+        padding: 1rem;
+      }
+
+      body.sentinel-console-body .sentinel-footer-grid {
+        display: grid;
+        gap: 0.9rem;
+      }
+
+      body.sentinel-console-body .sentinel-debug {
+        margin-top: 1rem;
+        border: 1px solid var(--sentinel-border);
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 0.9rem 1rem;
+      }
+
+      body.sentinel-console-body .sentinel-debug summary {
+        cursor: pointer;
+        user-select: none;
+        color: var(--sentinel-muted);
+      }
+
+      body.sentinel-console-body .sentinel-debug pre {
+        margin-top: 0.7rem;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 0.72rem;
+        line-height: 1.65;
+        color: var(--sentinel-muted);
+      }
+
+      body.sentinel-console-body .sentinel-bottom-nav {
+        border-top: 1px solid var(--sentinel-border);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)), var(--sentinel-panel);
+        backdrop-filter: blur(18px);
+      }
+
+      body.sentinel-console-body .sentinel-bottom-nav .acg-bottom-nav-item {
+        color: var(--sentinel-muted);
+      }
+
+      body.sentinel-console-body .sentinel-bottom-nav .acg-bottom-nav-item[data-active="true"] {
+        color: var(--sentinel-ink);
+      }
+
+      body.sentinel-console-body .sentinel-bottom-nav .acg-bottom-nav-icon {
+        border-color: rgba(56, 189, 248, 0.2);
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      @media (min-width: 1024px) {
+        body.sentinel-console-body .sentinel-toolbar {
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        body.sentinel-console-body .sentinel-strip {
+          grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+          align-items: end;
+        }
+
+        body.sentinel-console-body .sentinel-stage-head,
+        body.sentinel-console-body .sentinel-footer-grid {
+          grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.85fr);
+          align-items: center;
+        }
+      }
+
+      @media (max-width: 767px) {
+        body.sentinel-console-body .sentinel-readout {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        body.sentinel-console-body .sentinel-strip,
+        body.sentinel-console-body .sentinel-stage-head {
+          padding: 0.95rem;
+        }
+      }
+    </style>
   </head>
-  <body data-current-post-id={currentPostId}>
+  <body data-current-post-id={currentPostId} class="sentinel-console-body">
     <a href="#main" class="acg-skip-link glass clickable">
       {t(lang, "common.skipToContent")}
     </a>
@@ -318,279 +812,283 @@ const swHref = href("/sw.js");
         </button>
       </div>
     </div>
-    <header
-      class="sticky top-0 z-20 border-b border-slate-900/10 acg-header-surface"
-      style="view-transition-name: acg-header;"
-    >
-      <div class="mx-auto max-w-screen-2xl px-gutter py-2 sm:py-3">
-        <div class="flex items-center justify-between gap-3">
-          <a href={withLang("/")} class="flex items-center gap-3">
-            <span class="radar grid size-10 place-items-center shadow-e3">
-              <span class="text-[10px] font-bold text-white/90">ACG</span>
-            </span>
-            <div class="leading-tight">
-              <div class="text-sm font-semibold text-slate-950">{t(lang, "site.name")}</div>
-              <div class="hidden text-xs text-slate-600 sm:block">{t(lang, "site.tagline")}</div>
+    <div class="sentinel-console">
+      <header
+        class="sticky top-0 z-20 acg-header-surface sentinel-header"
+        style="view-transition-name: acg-header;"
+      >
+        <div class="sentinel-shell">
+          <div class="sentinel-panel sentinel-header-panel">
+            <div class="flex flex-col gap-5">
+              <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <a href={latestHref} class="sentinel-brand clickable">
+                  <span class="sentinel-brand-mark">
+                    <span>ACG</span>
+                  </span>
+                  <span class="min-w-0">
+                    <span class="sentinel-eyebrow">Sentinel Console</span>
+                    <span class="sentinel-title">{t(lang, "site.name")}</span>
+                    <span class="sentinel-tagline">{t(lang, "site.tagline")}</span>
+                  </span>
+                </a>
+
+                <div class="sentinel-readout">
+                  <div class="sentinel-readout-card">
+                    <span>Sector</span>
+                    <strong>{sectionCode}</strong>
+                    <small>{sectionLabel}</small>
+                  </div>
+                  <div class="sentinel-readout-card">
+                    <span>Locale</span>
+                    <strong>{localeLabel}</strong>
+                    <small>{currentPath ?? "/"}</small>
+                  </div>
+                  <div class="sentinel-readout-card">
+                    <span>Mode</span>
+                    <strong>{lang === "ja" ? "監視中" : "持续监视"}</strong>
+                    <small>{lang === "ja" ? "信号安定" : "信号稳定"}</small>
+                  </div>
+                </div>
+              </div>
+
+              <div class="sentinel-toolbar">
+                <nav class="sentinel-category-nav hidden lg:flex" aria-label="Categories">
+                  {
+                    CATEGORIES.map((c) => (
+                      <a
+                        href={withLang(`/c/${c}/`)}
+                        aria-current={c === currentCategory ? "page" : undefined}
+                        class="sentinel-chip clickable"
+                        data-active={c === currentCategory ? "true" : "false"}
+                      >
+                        {categoryLabel(lang, c)}
+                      </a>
+                    ))
+                  }
+                </nav>
+
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                  <a href={cmdkHref} class="sentinel-action clickable" title={`${cmdkLabel} (${cmdkHint})`}>
+                    <Icon name="grid" size={16} />
+                    <span>{cmdkLabel}</span>
+                    <kbd>{cmdkHint}</kbd>
+                  </a>
+                  <a href={searchHref} class="sentinel-action clickable" title={t(lang, "nav.search")}>
+                    <Icon name="search" size={16} />
+                    <span>{t(lang, "nav.search")}</span>
+                  </a>
+                  <button
+                    type="button"
+                    class="sentinel-action clickable"
+                    data-theme-toggle
+                    data-theme-label-name={t(lang, "prefs.theme")}
+                    data-theme-label-auto={t(lang, "prefs.themeAuto")}
+                    data-theme-label-light={t(lang, "prefs.themeLight")}
+                    data-theme-label-dark={t(lang, "prefs.themeDark")}
+                    aria-label={t(lang, "prefs.theme")}
+                    title={t(lang, "prefs.theme")}
+                  >
+                    <Icon name="moon" size={18} />
+                    <span data-theme-toggle-text>{t(lang, "prefs.theme")}</span>
+                  </button>
+                  <a
+                    href={langSwitchHref}
+                    class="sentinel-action clickable"
+                    data-lang-switch
+                    title={langSwitchLabel}
+                  >
+                    <Icon name="link" size={16} />
+                    <span>{langSwitchLabel}</span>
+                  </a>
+                </div>
+              </div>
+
+              <div class="sentinel-strip">
+                <div>
+                  <span class="sentinel-eyebrow">Sentry / {sectionCode}</span>
+                  <p>{consoleLead}</p>
+                </div>
+
+                <div class="sentinel-strip-links">
+                  <a
+                    href={latestHref}
+                    class="sentinel-route-link clickable"
+                    data-active={isLatest ? "true" : "false"}
+                    aria-current={isLatest ? "page" : undefined}
+                  >
+                    <Icon name="clock" size={16} />
+                    <span>{t(lang, "nav.latest")}</span>
+                  </a>
+                  <a
+                    href={bookmarksHref}
+                    class="sentinel-route-link clickable"
+                    data-active={isBookmarks ? "true" : "false"}
+                    aria-current={isBookmarks ? "page" : undefined}
+                  >
+                    <Icon name="star" size={16} filled={isBookmarks} />
+                    <span>{t(lang, "nav.bookmarks")}</span>
+                  </a>
+                  <a
+                    href={statusHref}
+                    class="sentinel-route-link clickable"
+                    data-active={isStatus ? "true" : "false"}
+                    aria-current={isStatus ? "page" : undefined}
+                  >
+                    <Icon name="chart" size={16} />
+                    <span>{t(lang, "nav.status")}</span>
+                  </a>
+                  <a
+                    href={aboutHref}
+                    class="sentinel-route-link clickable"
+                    data-active={isAbout ? "true" : "false"}
+                    aria-current={isAbout ? "page" : undefined}
+                  >
+                    <Icon name="info" size={16} />
+                    <span>{t(lang, "nav.about")}</span>
+                  </a>
+                </div>
+              </div>
+
+              <nav
+                class="sentinel-category-nav sentinel-category-nav-mobile acg-hscroll lg:hidden"
+                aria-label="Categories"
+              >
+                {
+                  CATEGORIES.map((c) => (
+                    <a
+                      href={withLang(`/c/${c}/`)}
+                      aria-current={c === currentCategory ? "page" : undefined}
+                      class="sentinel-chip clickable"
+                      data-active={c === currentCategory ? "true" : "false"}
+                    >
+                      {categoryLabel(lang, c)}
+                    </a>
+                  ))
+                }
+                <a href={cmdkHref} class="sentinel-chip clickable" data-active="false">
+                  {cmdkLabel}
+                </a>
+                <a href={langSwitchHref} class="sentinel-chip clickable" data-lang-switch data-active="false">
+                  {langSwitchLabel}
+                </a>
+              </nav>
             </div>
-          </a>
-
-          <nav class="acg-nav-desktop hidden items-center gap-2 lg:flex">
-            {
-              CATEGORIES.map((c) => (
-                <a
-                  href={withLang(`/c/${c}/`)}
-                  aria-current={c === currentCategory ? "page" : undefined}
-                  class:list={[
-                    "rounded-xl border border-transparent px-3 py-2 text-sm clickable",
-                    c === currentCategory
-                      ? "glass border-slate-900/20 text-slate-950 shadow-sm"
-                      : "border-slate-900/10 bg-white/35 text-slate-700 hover:bg-white/60 hover:text-slate-950"
-                  ]}
-                >
-                  {categoryLabel(lang, c)}
-                </a>
-              ))
-            }
-          </nav>
-
-          <div class="acg-header-actions flex items-center gap-1 sm:gap-2">
-            <a
-              href={withLang("/#cmdk")}
-              class="acg-top-chip hidden items-center gap-1.5 rounded-xl border border-slate-900/10 bg-white/35 px-3 py-2 text-xs font-medium text-slate-700 clickable shadow-sm hover:bg-white/60 hover:text-slate-950 lg:inline-flex"
-              title={`${cmdkLabel} (${cmdkHint})`}
-            >
-              <Icon name="grid" size={16} />
-              <span>{cmdkLabel}</span>
-              <kbd class="acg-kbd">{cmdkHint}</kbd>
-            </a>
-            {
-              isLatest ? (
-                <a
-                  href={withLang("/#search")}
-                  class="acg-top-chip hidden items-center gap-1.5 rounded-xl border border-slate-900/10 bg-white/35 px-3 py-2 text-xs font-medium text-slate-700 clickable shadow-sm hover:bg-white/60 hover:text-slate-950 xl:inline-flex"
-                  title={t(lang, "nav.search")}
-                >
-                  <Icon name="search" size={16} />
-                  <span>{t(lang, "nav.search")}</span>
-                </a>
-              ) : null
-            }
-            <button
-              type="button"
-              class="glass rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable shadow-sm sm:text-sm"
-              data-theme-toggle
-              data-theme-label-name={t(lang, "prefs.theme")}
-              data-theme-label-auto={t(lang, "prefs.themeAuto")}
-              data-theme-label-light={t(lang, "prefs.themeLight")}
-              data-theme-label-dark={t(lang, "prefs.themeDark")}
-              aria-label={t(lang, "prefs.theme")}
-              title={t(lang, "prefs.theme")}
-            >
-              <span class="inline-flex items-center gap-1.5">
-                <Icon name="moon" size={18} />
-                <span class="hidden sm:inline" data-theme-toggle-text>{t(lang, "prefs.theme")}</span>
-              </span>
-            </button>
-            <a
-              href={withLang("/bookmarks/")}
-              aria-current={isBookmarks ? "page" : undefined}
-              class:list={[
-                "hidden rounded-xl border border-transparent px-3 py-2 text-sm clickable lg:inline-flex",
-                isBookmarks
-                  ? "glass border-slate-900/20 text-slate-950 shadow-sm"
-                  : "border-slate-900/10 bg-white/35 text-slate-700 hover:bg-white/60 hover:text-slate-950"
-              ]}
-            >
-              {t(lang, "nav.bookmarks")}
-            </a>
-            <a
-              href={withLang("/status/")}
-              aria-current={isStatus ? "page" : undefined}
-              class:list={[
-                "hidden rounded-xl border border-transparent px-3 py-2 text-sm clickable lg:inline-flex",
-                isStatus
-                  ? "glass border-slate-900/20 text-slate-950 shadow-sm"
-                  : "border-slate-900/10 bg-white/35 text-slate-700 hover:bg-white/60 hover:text-slate-950"
-              ]}
-            >
-              {t(lang, "nav.status")}
-            </a>
-            <a
-              href={withLang("/about/")}
-              aria-current={isAbout ? "page" : undefined}
-              class:list={[
-                "hidden rounded-xl border border-transparent px-3 py-2 text-sm clickable lg:inline-flex",
-                isAbout
-                  ? "glass border-slate-900/20 text-slate-950 shadow-sm"
-                  : "border-slate-900/10 bg-white/35 text-slate-700 hover:bg-white/60 hover:text-slate-950"
-              ]}
-            >
-              {t(lang, "nav.about")}
-            </a>
-            <a
-              href={langSwitchHref}
-              class="glass rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable shadow-sm sm:text-sm"
-              data-lang-switch
-              title={lang === "zh" ? "日本語" : "中文"}
-            >
-              {lang === "zh" ? "日本語" : "中文"}
-            </a>
           </div>
         </div>
+      </header>
 
-        <nav
-          class="acg-nav-mobile acg-hscroll mt-2 flex gap-2 overflow-x-auto pb-1 sm:mt-3 lg:hidden"
-          aria-label="Categories"
-        >
-          {
-            CATEGORIES.map((c) => (
-              <a
-                href={withLang(`/c/${c}/`)}
-                aria-current={c === currentCategory ? "page" : undefined}
-                class:list={[
-                  "whitespace-nowrap rounded-full px-4 py-2 text-xs clickable",
-                  c === currentCategory
-                    ? "glass border-slate-900/20 text-slate-950 shadow-sm"
-                    : "border border-slate-900/10 bg-white/45 text-slate-700 hover:bg-white/60"
-                ]}
-              >
-                {categoryLabel(lang, c)}
-              </a>
-            ))
-          }
-          <a
-            href={withLang("/#cmdk")}
-            class="whitespace-nowrap rounded-full border border-slate-900/10 bg-white/45 px-4 py-2 text-xs text-slate-700 hover:bg-white/60 clickable"
+      <main
+        id="main"
+        tabindex="-1"
+        class="acg-main sentinel-shell sentinel-main mx-auto max-w-screen-2xl px-gutter pt-8 pb-[calc(2rem+var(--acg-bottom-nav-h))] lg:py-8"
+        style="view-transition-name: acg-main;"
+      >
+        <slot />
+      </main>
+
+      <footer
+        class="acg-footer sentinel-shell sentinel-footer mx-auto max-w-screen-2xl px-gutter pb-[calc(2.5rem+var(--acg-bottom-nav-h))] pt-4 text-xs text-slate-600"
+      >
+        <div class="glass rounded-2xl px-4 py-3">
+          <p class="m-0 leading-relaxed">{t(lang, "site.disclaimer")}</p>
+
+          <details
+            id="acg-device-debug-details"
+            class="mt-3 rounded-2xl border border-slate-900/10 bg-white/45 p-3"
+            hidden
           >
-            {cmdkLabel}
-          </a>
-          <a
-            href={withLang("/about/")}
-            aria-current={isAbout ? "page" : undefined}
-            class:list={[
-              "whitespace-nowrap rounded-full px-4 py-2 text-xs clickable",
-              isAbout
-                ? "glass border-slate-900/20 text-slate-950 shadow-sm"
-                : "border border-slate-900/10 bg-white/45 text-slate-700 hover:bg-white/60"
-            ]}
-          >
-            {t(lang, "nav.about")}
-          </a>
-        </nav>
-      </div>
-    </header>
+            <summary class="cursor-pointer select-none text-xs font-semibold text-slate-700">
+              {lang === "ja" ? "デバイス情報（デバッグ）" : "设备信息（调试）"}
+            </summary>
+            <pre
+              id="acg-device-debug"
+              class="mt-2 whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-slate-700">
+            </pre>
+          </details>
+        </div>
+      </footer>
 
-    <main
-      id="main"
-      tabindex="-1"
-      class="acg-main mx-auto max-w-screen-2xl px-gutter pt-8 pb-[calc(2rem+var(--acg-bottom-nav-h))] lg:py-8"
-      style="view-transition-name: acg-main;"
-    >
-      <slot />
-    </main>
-
-    <footer
-      class="acg-footer mx-auto max-w-screen-2xl px-gutter pb-[calc(2.5rem+var(--acg-bottom-nav-h))] pt-4 text-xs text-slate-600"
-    >
-      <div class="glass rounded-2xl px-4 py-3">
-        <p class="m-0 leading-relaxed">{t(lang, "site.disclaimer")}</p>
-
-        <details
-          id="acg-device-debug-details"
-          class="mt-3 rounded-2xl border border-slate-900/10 bg-white/45 p-3"
-          hidden
+      <nav class="acg-bottom-nav sentinel-bottom-nav lg:hidden" aria-label="Primary">
+        <a
+          href={withLang("/")}
+          class="acg-bottom-nav-item"
+          data-active={isLatest ? "true" : "false"}
+          aria-current={isLatest ? "page" : undefined}
         >
-          <summary class="cursor-pointer select-none text-xs font-semibold text-slate-700">
-            {lang === "ja" ? "デバイス情報（デバッグ）" : "设备信息（调试）"}
-          </summary>
-          <pre
-            id="acg-device-debug"
-            class="mt-2 whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-slate-700">
-          </pre>
-        </details>
-      </div>
-    </footer>
+          <span class="acg-bottom-nav-icon" aria-hidden="true">
+            <Icon name="clock" size={18} />
+          </span>
+          <span class="acg-bottom-nav-label">{t(lang, "nav.latest")}</span>
+        </a>
 
-    <nav class="acg-bottom-nav lg:hidden" aria-label="Primary">
-      <a
-        href={withLang("/")}
-        class="acg-bottom-nav-item"
-        data-active={isLatest ? "true" : "false"}
-        aria-current={isLatest ? "page" : undefined}
-      >
-        <span class="acg-bottom-nav-icon" aria-hidden="true">
-          <Icon name="clock" size={18} />
-        </span>
-        <span class="acg-bottom-nav-label">{t(lang, "nav.latest")}</span>
-      </a>
+        <a href={withLang("/#search")} class="acg-bottom-nav-item" data-active="false">
+          <span class="acg-bottom-nav-icon" aria-hidden="true">
+            <Icon name="search" size={18} />
+          </span>
+          <span class="acg-bottom-nav-label">{t(lang, "nav.search")}</span>
+        </a>
 
-      <a href={withLang("/#search")} class="acg-bottom-nav-item" data-active="false">
-        <span class="acg-bottom-nav-icon" aria-hidden="true">
-          <Icon name="search" size={18} />
-        </span>
-        <span class="acg-bottom-nav-label">{t(lang, "nav.search")}</span>
-      </a>
+        <a
+          href={withLang("/bookmarks/")}
+          class="acg-bottom-nav-item"
+          data-active={isBookmarks ? "true" : "false"}
+          aria-current={isBookmarks ? "page" : undefined}
+        >
+          <span class="acg-bottom-nav-icon" aria-hidden="true">
+            <Icon name="star" size={18} filled={isBookmarks} />
+          </span>
+          <span class="acg-bottom-nav-label">{t(lang, "nav.bookmarks")}</span>
+        </a>
 
-      <a
-        href={withLang("/bookmarks/")}
-        class="acg-bottom-nav-item"
-        data-active={isBookmarks ? "true" : "false"}
-        aria-current={isBookmarks ? "page" : undefined}
-      >
-        <span class="acg-bottom-nav-icon" aria-hidden="true">
-          <Icon name="star" size={18} filled={isBookmarks} />
-        </span>
-        <span class="acg-bottom-nav-label">{t(lang, "nav.bookmarks")}</span>
-      </a>
+        <a
+          href={withLang("/status/")}
+          class="acg-bottom-nav-item"
+          data-active={isStatus ? "true" : "false"}
+          aria-current={isStatus ? "page" : undefined}
+        >
+          <span class="acg-bottom-nav-icon" aria-hidden="true">
+            <Icon name="chart" size={18} />
+          </span>
+          <span class="acg-bottom-nav-label">{t(lang, "nav.status")}</span>
+        </a>
 
-      <a
-        href={withLang("/status/")}
-        class="acg-bottom-nav-item"
-        data-active={isStatus ? "true" : "false"}
-        aria-current={isStatus ? "page" : undefined}
-      >
-        <span class="acg-bottom-nav-icon" aria-hidden="true">
-          <Icon name="chart" size={18} />
-        </span>
-        <span class="acg-bottom-nav-label">{t(lang, "nav.status")}</span>
-      </a>
+        <a
+          href={withLang("/about/")}
+          class="acg-bottom-nav-item"
+          data-active={isAbout ? "true" : "false"}
+          aria-current={isAbout ? "page" : undefined}
+        >
+          <span class="acg-bottom-nav-icon" aria-hidden="true">
+            <Icon name="info" size={18} />
+          </span>
+          <span class="acg-bottom-nav-label">{t(lang, "nav.about")}</span>
+        </a>
+      </nav>
 
-      <a
-        href={withLang("/about/")}
-        class="acg-bottom-nav-item"
-        data-active={isAbout ? "true" : "false"}
-        aria-current={isAbout ? "page" : undefined}
-      >
-        <span class="acg-bottom-nav-icon" aria-hidden="true">
-          <Icon name="info" size={18} />
-        </span>
-        <span class="acg-bottom-nav-label">{t(lang, "nav.about")}</span>
-      </a>
-    </nav>
-
-    <script is:inline define:vars={{ swHref }}>
-      (() => {
-        try {
-          if (!("serviceWorker" in navigator)) return;
-          const swUrl = swHref;
-          window.addEventListener("load", () => {
-            navigator.serviceWorker.register(swUrl).catch(() => {
-              // ignore
+      <script is:inline define:vars={{ swHref }}>
+        (() => {
+          try {
+            if (!("serviceWorker" in navigator)) return;
+            const swUrl = swHref;
+            window.addEventListener("load", () => {
+              navigator.serviceWorker.register(swUrl).catch(() => {
+                // ignore
+              });
             });
-          });
-        } catch {
-          // ignore
-        }
-      })();
-    </script>
+          } catch {
+            // ignore
+          }
+        })();
+      </script>
 
-    <!--
+      <!--
       注意：不要用 `app.ts?url`。
       `.ts` 在部分静态站点（如 GitHub Pages）会被当成 video/mp2t，导致 <script type="module"> 严格 MIME 校验失败。
       这里用“可处理的内联 module script”，让 Astro/Vite 正确打包成 `.js` 并注入哈希路径。
     -->
-    <script>
-      import "../client/app.ts";
-    </script>
+      <script>
+        import "../client/app.ts";
+      </script>
+    </div>
   </body>
 </html>

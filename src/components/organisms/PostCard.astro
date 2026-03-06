@@ -56,7 +56,7 @@ const bookmarkLabel = t(lang, "nav.bookmarks");
 
 <article
   class:list={[
-    "acg-post-card acg-post-card-shell glass-card acg-card clickable shine group relative overflow-hidden rounded-2xl",
+    "acg-post-card acg-post-card-shell acg-console-panel glass-card acg-card clickable shine group relative overflow-hidden rounded-2xl",
     typeof animateIndex === "number" ? "stagger-item" : ""
   ]}
   style={animateStyle}
@@ -150,6 +150,20 @@ const bookmarkLabel = t(lang, "nav.bookmarks");
     </div>
 
     <div class="acg-post-card-content min-w-0 flex-1 py-1 sm:p-5">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <span class="acg-console-kicker">
+          {lang === "zh" ? "Signal Entry" : "Signal Entry"}
+          <span>{typeof index === "number" ? String(index + 1).padStart(2, "0") : "--"}</span>
+        </span>
+        {
+          pulseScore != null ? (
+            <span class="acg-console-inline-pill">
+              <Icon name="chart" size={14} />
+              <span>{pulseScore}</span>
+            </span>
+          ) : null
+        }
+      </div>
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0">
           <a

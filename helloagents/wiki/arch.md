@@ -30,6 +30,37 @@ flowchart TB
 - 数据：同步阶段生成 `public/data/*.json(.gz)` 与 `src/data/generated/*.json`（均不提交）
 - 部署：GitHub Pages
 
+## 当前 UI 壳层（Sentinel Console）
+
+- 全站主壳仍由 `src/layouts/SiteLayout.astro` 统一承载，但视觉语言已升级为 **Sentinel Console**：
+  - 顶部为信号台头部（品牌、分类导航、主题/语言/命令入口、状态读数）
+  - 中部为 stage slot（页面主内容）
+  - 底部保留移动端主导航与免责声明/调试信息
+- 页面层不再重复承载整页 UI 结构，而是收敛为共享视图组件：
+  - `src/components/organisms/HomeConsoleView.astro`
+  - `src/components/organisms/CategoryConsoleView.astro`
+  - `src/components/organisms/PostDetailConsoleView.astro`
+  - `src/components/organisms/AboutConsoleView.astro`
+- 路由页 `src/pages/zh/*` 与 `src/pages/ja/*` 现在主要负责：
+  - 读取/整理数据
+  - 传入 `lang`
+  - 包装 `SiteLayout`
+  - 将实际展示交给共享视图组件
+- 新视觉系统主要落在 `src/styles/sentinel-console.css`，负责：
+  - 控制台式背景、网格、辉光与面板层级
+  - Hero / Panel / Archive / Reading / Table / Card 等语义类
+  - 对现有 `PostCard`、`PostLinkItem`、`SignalBoard`、`SpotlightGrid`、`PreferencesPanel` 的统一覆盖
+
+## UI 运行时分层
+
+```mermaid
+flowchart TD
+  Shell[SiteLayout Sentinel Shell] --> View[Shared Console Views]
+  View --> Components[PostCard / SpotlightGrid / SignalBoard / PreferencesPanel]
+  Components --> Hooks[data-* hooks / client app]
+  Hooks --> State[(localStorage / in-browser state)]
+```
+
 ## 核心流程
 
 ```mermaid

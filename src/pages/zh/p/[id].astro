@@ -1,26 +1,21 @@
 ---
 import SiteLayout from "../../../layouts/SiteLayout.astro";
-import PostList from "../../../components/PostList.astro";
+import PostDetailConsoleView from "../../../components/organisms/PostDetailConsoleView.astro";
 import type { Post } from "../../../lib/types";
 import { readGeneratedPosts } from "../../../lib/generated-data";
-import { categoryLabel } from "../../../lib/categories";
 import { getCategoryTheme } from "../../../lib/category-theme";
 import { formatDateTime } from "../../../lib/format";
-import { t } from "../../../i18n/i18n";
 import { href } from "../../../lib/href";
 import { createRecommender } from "../../../lib/recommend";
 import { resolveCover } from "../../../lib/cover";
-import CategoryIcon from "../../../components/CategoryIcon.astro";
-import Icon from "../../../components/Icon.astro";
-import SourceBadge from "../../../components/SourceBadge.astro";
 import { safeExternalHttpUrl } from "../../../lib/safe-url";
 
 export async function getStaticPaths() {
   const posts = await readGeneratedPosts();
-  const rec = createRecommender(posts);
+  const recommender = createRecommender(posts);
   return posts.map((post) => {
-    const { newer, older } = rec.getAdjacent(post);
-    const related = rec.getRelated(post, 6);
+    const { newer, older } = recommender.getAdjacent(post);
+    const related = recommender.getRelated(post, 6);
     return { params: { id: post.id }, props: { post, newer, older, related } };
   });
 }
@@ -31,25 +26,24 @@ const { post, newer, older, related } = Astro.props as {
   older?: Post;
   related?: Post[];
 };
-const published = formatDateTime("zh", post.publishedAt);
 const theme = getCategoryTheme(post.category);
-const retryCoverLabel = "重试封面";
-const cover = resolveCover(post.cover, 1400);
-const coverOriginal = post.coverOriginal ?? cover?.original;
-const ogImage = cover ? (Astro.site ? new URL(cover.src, Astro.site).toString() : cover.src) : undefined;
 const title = post.titleZh ?? post.title;
 const summary = post.summaryZh ?? post.summary;
 const preview = post.previewZh ?? post.preview;
 const primaryText = summary ?? preview;
 const extraPreview = summary && preview && preview !== summary ? preview : undefined;
 const previewOpen = (summary?.length ?? 0) < 90;
+const published = formatDateTime("zh", post.publishedAt);
+const retryCoverLabel = "重试封面";
+const cover = resolveCover(post.cover, 1400);
+const coverOriginal = post.coverOriginal ?? cover?.original;
+const ogImage = cover ? (Astro.site ? new URL(cover.src, Astro.site).toString() : cover.src) : undefined;
 const publishedAtMs = new Date(post.publishedAt).getTime();
 const isFresh =
   Number.isFinite(publishedAtMs) &&
   Date.now() - publishedAtMs >= 0 &&
   Date.now() - publishedAtMs < 6 * 60 * 60 * 1000;
 const freshLabel = "NEW";
-const tt = (p: Post) => p.titleZh ?? p.title;
 const pageUrl = Astro.site
   ? new URL(href(`/zh/p/${post.id}/`), Astro.site).toString()
   : href(`/zh/p/${post.id}/`);
@@ -65,272 +59,24 @@ const safeSourceUrl = safeExternalHttpUrl(post.url);
   currentPath={`/p/${post.id}/`}
   currentPostId={post.id}
 >
-  <article class="glass overflow-hidden rounded-2xl">
-    <div class="relative" data-has-cover={post.cover ? "true" : "false"}>
-      <div class:list={["absolute inset-0 bg-gradient-to-br", theme.cover]}></div>
-      <div class="acg-cover-fallback" aria-hidden="true">
-        <div class="acg-cover-fallback-inner">
-          <div class="acg-cover-fallback-icon">
-            <CategoryIcon category={post.category} size={22} />
-          </div>
-          <div class="acg-cover-fallback-brand">ACG Radar</div>
-          <div class="acg-cover-fallback-meta">{categoryLabel("zh", post.category)}</div>
-        </div>
-      </div>
-      {
-        cover ? (
-          <img
-            src={cover.src}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            referrerpolicy="no-referrer"
-            data-acg-cover
-            data-acg-cover-original-src={coverOriginal ?? ""}
-            class="h-56 w-full object-cover sm:h-64 md:h-72 lg:h-80"
-            onload="window.__acgCoverLoad?.(this)"
-            onerror="this.closest('[data-has-cover]')?.classList.add('cover-failed'); this.style.opacity='0'; this.style.pointerEvents='none'; window.__acgCoverError?.(this)"
-          />
-        ) : null
-      }
-      <div class="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-slate-950/15 to-transparent"></div>
-
-      <button
-        type="button"
-        class="acg-cover-retry acg-icon-fab clickable"
-        data-cover-retry
-        aria-label={retryCoverLabel}
-        title={retryCoverLabel}
-      >
-        <Icon name="refresh" size={18} />
-      </button>
-
-      <div class="absolute bottom-5 left-5 right-5">
-        <div class="flex flex-wrap items-center gap-2">
-          <span
-            class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md"
-          >
-            <span class:list={["size-1.5 rounded-full", theme.dot]}></span>
-            <span>{categoryLabel("zh", post.category)}</span>
-          </span>
-          {
-            isFresh ? (
-              <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-md">
-                <span class="acg-dot-pulse size-1.5 rounded-full bg-emerald-400" />
-                <span>{freshLabel}</span>
-              </span>
-            ) : null
-          }
-          <span class="text-xs text-white/80">{t("zh", "post.publishedAt")}: {published}</span>
-        </div>
-        <h1
-          class="mt-3 text-2xl font-semibold leading-tight tracking-tight text-white md:text-3xl lg:text-4xl"
-        >
-          {title}
-        </h1>
-        <div class="mt-2">
-          <SourceBadge
-            name={`${t("zh", "post.source")}: ${post.sourceName}`}
-            url={post.sourceUrl}
-            tone="dark"
-            dotClass={theme.dot}
-            compact
-          />
-        </div>
-      </div>
-    </div>
-
-    <div class="p-6 md:p-7 lg:p-8">
-      {
-        post.tags?.length > 0 && (
-          <div class="flex flex-wrap gap-2">
-            {post.tags.slice(0, 12).map((tag) => (
-              <span
-                class:list={[
-                  "rounded-full border border-slate-900/10 bg-white/55 px-3 py-1 text-xs",
-                  theme.ink
-                ]}
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )
-      }
-
-      {
-        primaryText ? (
-          <p class="mt-4 whitespace-pre-line text-sm leading-relaxed text-slate-800 md:text-base">
-            {primaryText}
-          </p>
-        ) : (
-          <p class="mt-4 text-sm text-slate-700 md:text-base">{t("zh", "common.noData")}</p>
-        )
-      }
-
-      {!summary && preview ? <p class="mt-2 text-xs text-slate-600">{t("zh", "post.previewHint")}</p> : null}
-
-      {
-        extraPreview ? (
-          <details
-            class="mt-4 rounded-2xl border border-slate-900/10 bg-white/55 p-4"
-            open={previewOpen ? true : undefined}
-          >
-            <summary class="cursor-pointer select-none text-sm font-semibold text-slate-950">
-              {t("zh", "post.previewTitle")}
-            </summary>
-            <p class="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-800 md:text-base">
-              {extraPreview}
-            </p>
-            <p class="mt-2 text-xs text-slate-600">{t("zh", "post.previewHint")}</p>
-          </details>
-        ) : null
-      }
-
-      <section
-        class="mt-6 rounded-2xl border border-slate-900/10 bg-white/55 p-4 md:p-5"
-        data-fulltext
-        data-fulltext-lang="zh"
-        data-fulltext-post-id={post.id}
-        data-fulltext-url={safeSourceUrl ?? ""}
-        data-fulltext-autoload={safeSourceUrl ? "true" : "false"}
-      >
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <h2 class="m-0 text-sm font-semibold text-slate-950">{t("zh", "post.fullTextTitle")}</h2>
-          <div class="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              class="glass rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable"
-              data-fulltext-action="reload"
-            >
-              {t("zh", "post.fullTextReload")}
-            </button>
-            <button
-              type="button"
-              class="glass rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable"
-              data-fulltext-action="show-original"
-              hidden
-            >
-              {t("zh", "post.fullTextOriginal")}
-            </button>
-            <button
-              type="button"
-              class="glass rounded-xl px-3 py-2 text-xs font-medium text-slate-950 clickable"
-              data-fulltext-action="show-translated"
-              hidden
-            >
-              {t("zh", "post.fullTextTranslated")}
-            </button>
-          </div>
-        </div>
-        <p class="mt-2 text-xs leading-relaxed text-slate-600">{t("zh", "post.fullTextHint")}</p>
-        <p class="mt-2 text-xs text-slate-600" data-fulltext-status></p>
-        <div class="mt-3 acg-prose text-slate-800" data-fulltext-content></div>
-      </section>
-
-      <div class="mt-6 flex flex-wrap gap-3">
-        {
-          safeSourceUrl ? (
-            <a
-              class="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2 text-sm font-medium text-white clickable"
-              href={safeSourceUrl}
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              <Icon name="external-link" size={18} />
-              {t("zh", "post.openSource")}
-            </a>
-          ) : (
-            <span class="inline-flex items-center gap-2 cursor-not-allowed rounded-xl bg-slate-950/60 px-4 py-2 text-sm font-medium text-white/80">
-              <Icon name="external-link" size={18} />
-              {t("zh", "post.openSource")}
-            </span>
-          )
-        }
-        <button
-          type="button"
-          class="glass inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-slate-950 clickable"
-          data-copy-text={pageUrl}
-          aria-label="复制页面链接"
-          title="复制页面链接"
-        >
-          <Icon name="link" size={18} />
-          <span class="ml-2">复制链接</span>
-        </button>
-        <button
-          type="button"
-          class="glass inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-slate-950 clickable"
-          data-bookmark-id={post.id}
-          aria-pressed="false"
-        >
-          <span data-bookmark-icon aria-hidden="true">
-            <Icon name="star" size={18} />
-          </span>
-          <span class="ml-2">{t("zh", "nav.bookmarks")}</span>
-        </button>
-      </div>
-    </div>
-  </article>
-
-  {
-    (newer || older) && (
-      <section class="mt-6 grid gap-3 sm:grid-cols-2 lg:gap-4">
-        {newer ? (
-          <a class="glass clickable group rounded-2xl p-4 md:p-5" href={href(`/zh/p/${newer.id}/`)}>
-            <div class="flex items-start justify-between gap-4">
-              <div class="min-w-0">
-                <div class="text-xs font-semibold text-slate-600">较新</div>
-                <div class="mt-1 text-sm font-semibold text-slate-950 line-clamp-2 md:text-base">
-                  {tt(newer)}
-                </div>
-              </div>
-              <span class="mt-0.5 shrink-0 text-slate-500 opacity-90 transition-opacity group-hover:opacity-100">
-                <Icon name="chevron-right" size={18} />
-              </span>
-            </div>
-          </a>
-        ) : (
-          <div class="glass rounded-2xl p-4 opacity-70 md:p-5">
-            <div class="text-xs font-semibold text-slate-600">较新</div>
-            <div class="mt-1 text-sm text-slate-700 md:text-base">已是本分类最新</div>
-          </div>
-        )}
-
-        {older ? (
-          <a class="glass clickable group rounded-2xl p-4 md:p-5" href={href(`/zh/p/${older.id}/`)}>
-            <div class="flex items-start justify-between gap-4">
-              <div class="min-w-0">
-                <div class="text-xs font-semibold text-slate-600">较旧</div>
-                <div class="mt-1 text-sm font-semibold text-slate-950 line-clamp-2 md:text-base">
-                  {tt(older)}
-                </div>
-              </div>
-              <span class="mt-0.5 shrink-0 text-slate-500 opacity-90 transition-opacity group-hover:opacity-100">
-                <Icon name="chevron-right" size={18} />
-              </span>
-            </div>
-          </a>
-        ) : (
-          <div class="glass rounded-2xl p-4 opacity-70 md:p-5">
-            <div class="text-xs font-semibold text-slate-600">较旧</div>
-            <div class="mt-1 text-sm text-slate-700 md:text-base">已是本分类最旧</div>
-          </div>
-        )}
-      </section>
-    )
-  }
-
-  {
-    (related?.length ?? 0) > 0 && (
-      <section class="mt-6">
-        <div class="flex flex-wrap items-end justify-between gap-3">
-          <h2 class="m-0 text-sm font-semibold text-slate-950">相关推荐</h2>
-          <div class="text-xs text-slate-600">同分类 · 标签相近 · 同来源优先</div>
-        </div>
-        <div class="mt-3">
-          <PostList posts={related ?? []} lang="zh" variant="compact" />
-        </div>
-      </section>
-    )
-  }
+  <PostDetailConsoleView
+    lang="zh"
+    post={post}
+    newer={newer}
+    older={older}
+    related={related}
+    theme={theme}
+    title={title}
+    published={published}
+    primaryText={primaryText}
+    extraPreview={extraPreview}
+    previewOpen={previewOpen}
+    cover={cover}
+    coverOriginal={coverOriginal}
+    retryCoverLabel={retryCoverLabel}
+    isFresh={isFresh}
+    freshLabel={freshLabel}
+    pageUrl={pageUrl}
+    safeSourceUrl={safeSourceUrl}
+  />
 </SiteLayout>
